@@ -1,5 +1,5 @@
 start();
 
 async function start() {
-	Browser.newPage();
+	globalThis.Browser.newPage();
 }

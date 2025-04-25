@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const {APP_ROOT} = require('./root.js');
 
 module.exports = function(filename) {
   if (!fs.existsSync(path.join(APP_ROOT, filename))) {

@@ -5,6 +5,7 @@
   import path from 'path';
   import bodyParser from 'body-parser';
   import {timedSend, eventSendLoop} from './server.js';
+  import {APP_ROOT} from './root.js';
 
   const options = {
     key: fs.readFileSync(path.join(APP_ROOT, "certs", "server.key")),

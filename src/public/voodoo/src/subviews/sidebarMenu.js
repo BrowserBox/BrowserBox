@@ -1,6 +1,5 @@
-import {SERVICE_COUNT, DEBUG} from '../common.js';
+import {SERVICE_COUNT, DEBUG, CONFIG} from '../common.js';
 import {s as R} from '../../node_modules/bang.html/src/vv/vanillaview.js';
-import {SidebarMenuButton} from './sidebarMenuButton.js';
 
 const WAIT_FOR_ANY_ACK = 300;
 let handlerClosure;

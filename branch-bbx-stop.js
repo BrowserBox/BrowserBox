@@ -41,7 +41,7 @@ export async function stop() {
   try {
     await release();
   } catch(e) {
-    console.log(error);
+    console.log('Error releasing license', e);
   }
   try {
     // Run the installation interactively

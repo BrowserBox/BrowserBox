@@ -2,6 +2,7 @@
   // imports
     import {handleSelectMessage} from './handlers/selectInput.js';
     import {fetchTabs} from './handlers/targetInfo.js';
+    import {fetchDemoTabs} from './handlers/demo.js';
     import {detectIMEInput} from './ime_detection.js';
     import {handleMultiplayerMessage} from './handlers/multiplayer.js';
     import {handleKeysCanInputMessage} from './handlers/keysCanInput.js';
@@ -22,11 +23,11 @@
       untilTrue,
       untilHuman,
       untilTrueOrTimeout,
-      logit, sleep, debounce, DEBUG, BLANK, 
+      sleep, debounce, DEBUG, BLANK, 
       CONFIG,
       OPTIONS,
       FACADE_HOST_REGEX,
-      isFirefox, isSafari, deviceIsMobile,
+      isSafari, deviceIsMobile,
       SERVICE_COUNT,
       // for bang
       CHAR,
@@ -44,6 +45,7 @@
     import {s as R, c as X} from '../node_modules/bang.html/src/vv/vanillaview.js';
 
   // constants
+    const ALWAYS_ACTIVATE_AUDIO = true;
     const Connectivity = {
       checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
     };
@@ -142,12 +144,8 @@
         };
         await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('sessionToken'), 120); // wait 2 minutes
         await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('localCookie'), 120); // wait 2 minutes
-        const {tabs,vmPaused,activeTarget,requestId} = await (/*demoMode ? fetchDemoTabs() : */ fetchTabs({sessionToken}, () => state));
+        const {tabs,activeTarget,requestId} = await (/*demoMode ? fetchDemoTabs() : */ fetchTabs({sessionToken}, () => state));
         // when app loads get favicons for any existing tabs 
-        tabs.forEach(({targetId}) => {
-          //initialGetFavicon(targetId);
-          //getFavicon(targetId);
-        });
         const updateTabs = debounce(rawUpdateTabs, LONG_DELAY);
 
         // debug
@@ -408,7 +406,7 @@
           throttledWriteCanvas: throttle(writeCanvas, 5000),
           get setTopState() {
             return () => {
-              setState('bbpro', state); 
+              globalThis.setState('bbpro', state); 
             }
           },
 
@@ -490,7 +488,7 @@
 
       if ( (searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('.cloudtabs.net')) && ! searchParams.has('forceRegularStatusLine') ) {
         state.cloudTabsStatusLine = true; 
-        setState('bbpro', state);
+        globalThis.setState('bbpro', state);
       }
 
       if ( searchParams.has('url') ) {
@@ -520,7 +518,7 @@
           alert(`Issue with starting URL: ${e}`);
           console.warn(e);
         }
-        postInstallTasks.push(async ({queue}) => {
+        postInstallTasks.push(async () => {
           const sourceURL = new URL(location.href);
           sourceURL.hash = '';
           const source = sourceURL.origin+'';
@@ -535,10 +533,10 @@
         {
           const isTorAPI = new URL(location.origin);
           isTorAPI.pathname = '/isTor';
-          uberFetch(isTorAPI).then(r => r.json()).then(({isTor}) => {
+          globalThis.uberFetch(isTorAPI).then(r => r.json()).then(({isTor}) => {
             state.isTor = isTor;
             if ( state.isTor ) {
-              setState('bbpro', state);
+              globalThis.setState('bbpro', state);
             }
           });
         }
@@ -555,7 +553,7 @@
               extensionsAPI.pathname = '/extensions';
               const cacheKey = 'extensionsCache';
 
-              return uberFetch(extensionsAPI)
+              return globalThis.uberFetch(extensionsAPI)
                 .then(async (r) => {
                   if (r.status === 429) {
                     // If rate limit hit, use cached data if available
@@ -575,7 +573,7 @@
                 .then(({ extensions }) => {
                   state.extensions = extensions;
                   if (extensions.length) {
-                    setState('bbpro', state);
+                    globalThis.setState('bbpro', state);
                   }
                   return extensions; // Optionally return extensions for further use
                 })
@@ -635,7 +633,7 @@
           MENU.port = parseInt(CONFIG.mainPort) - 1;
           const CHAT = new URL(location);
           CHAT.port = parseInt(CONFIG.mainPort) + 2;
-          self.addEventListener('message', ({data, origin, source}) => {
+          self.addEventListener('message', ({data, origin}) => {
             if ( origin === CHAT.origin ) {
               if ( data.multiplayer ) {
                 const {chatRoute, messageReceived} = data.multiplayer;
@@ -688,7 +686,7 @@
         // download progress
           queue.addMetaListener('downloPro', ({downloPro}) => {
             DEBUG.debugDownloadProgress && console.log(JSON.stringify({downloPro}, null, 2));
-            const {receivedBytes, totalBytes, done, state: dlState} = downloPro;
+            const {state: dlState} = downloPro;
             if ( dlState == 'canceled' ) {
               const {guid, receivedBytes} = downloPro;
               console.warn(`Download ${guid} cancelled after ${receivedBytes} bytes received.`);
@@ -793,7 +791,7 @@
                               DEBUG.debugAudio && console.log('called activate audio');
                               audio.muted = false;
                               audio.removeAttribute('muted');
-                              if ( true || !audio.playing ) {
+                              if ( ALWAYS_ACTIVATE_AUDIO || !audio.playing ) {
                                 try {
                                   DEBUG.debugAudio && console.log(`Trying to play...`);
                                   await audio.play();
@@ -1238,7 +1236,7 @@
                   }
                   writeCanvas("Waiting for browser...");
                   try {
-                    const {isTor} = await Promise.race([throwAfter(1500), await uberFetch('/isTor').then(async r => await r.json())]);
+                    const {isTor} = await Promise.race([throwAfter(1500), await globalThis.uberFetch('/isTor').then(async r => await r.json())]);
                     setTimeout(() => location.reload(), 1000);
                     alert('Browser is back up. Reloading your app.');
                   } catch(e) {
@@ -1275,7 +1273,7 @@
                   }
                   writeCanvas("Waiting for browser...");
                   try {
-                    const {isTor} = await Promise.race([throwAfter(1500), await uberFetch('/isTor').then(async r => await r.json())]);
+                    const {isTor} = await Promise.race([throwAfter(1500), await globalThis.uberFetch('/isTor').then(async r => await r.json())]);
                     setTimeout(() => location.reload(), 1000);
                     alert('Browser is back up. Reloading your app.');
                   } catch(e) {
@@ -1312,7 +1310,7 @@
                   }
                   writeCanvas("Waiting for browser...");
                   try {
-                    const {isTor} = await Promise.race([throwAfter(1500), await uberFetch('/isTor').then(async r => await r.json())]);
+                    const {isTor} = await Promise.race([throwAfter(1500), await globalThis.uberFetch('/isTor').then(async r => await r.json())]);
                     setTimeout(() => location.reload(), 1000);
                     alert('Browser is back up. Reloading your app.');
                   } catch(e) {
@@ -1373,7 +1371,7 @@
               const tab = findTab(changed.targetId);
               if ( tab ) {
                 Object.assign(tab, changed);
-                setState('bbpro', state);
+                globalThis.setState('bbpro', state);
               } else {
                 DEBUG.activateDebug && console.warn(`changed tab not found in our list`, changed);
               }
@@ -1528,7 +1526,7 @@
             if ( state.showBandwidthIssue != showBandwidthIssue ) {
               DEBUG.logBandwidthIssueChanges && console.log({bandwidthIssue});
               state.showBandwidthIssue = showBandwidthIssue;
-              setState('bbpro', state);
+              globalThis.setState('bbpro', state);
             }
           });
 
@@ -1624,11 +1622,11 @@
         }
       }
 
-      bangFig({
+      globalThis.bangFig({
         componentsPath: './voodoo/src/components',
         useMagicClone: true
       });
-      await bangLoaded();
+      await globalThis.bangLoaded();
 
       {
         DEBUG.val && console.log('bang loaded: main voodoo module script.');
@@ -1644,28 +1642,28 @@
         try {
           await component(state);
           await subviews.Controls(state);
-          setEnv({
+          globalThis.setEnv({
             DEBUG,
             DEFAULT_FAVICON
           });
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
 
-          use('bb-view'); 
-          use('bb-bar');
-          use('bb-tabs'); 
-          use('bb-ctrl');
-          use('bb-select-tab');
-          use('bb-favicon');
-          use('bb-loading-indicator');
-          use('bb-context-menu');
-          use('bb-omni-box');
-          use('bb-top-bar');
-          use('bb-modals');
-          use('bb-bw-spinner');
+          globalThis.use('bb-view'); 
+          globalThis.use('bb-bar');
+          globalThis.use('bb-tabs'); 
+          globalThis.use('bb-ctrl');
+          globalThis.use('bb-select-tab');
+          globalThis.use('bb-favicon');
+          globalThis.use('bb-loading-indicator');
+          globalThis.use('bb-context-menu');
+          globalThis.use('bb-omni-box');
+          globalThis.use('bb-top-bar');
+          globalThis.use('bb-modals');
+          globalThis.use('bb-bw-spinner');
 
-          DEBUG.extensionsAssemble &&         use('bb-extensions-button');
-          DEBUG.clientsCanResetViewport &&    use('bb-resize-button');
-          CONFIG.settingsButton &&            use('bb-settings-button');
+          DEBUG.extensionsAssemble &&         globalThis.use('bb-extensions-button');
+          DEBUG.clientsCanResetViewport &&    globalThis.use('bb-resize-button');
+          CONFIG.settingsButton &&            globalThis.use('bb-settings-button');
 
           const bb = document.querySelector('bb-view');
           if ( !bb?.shadowRoot ) {
@@ -1712,7 +1710,7 @@
 
       window.addEventListener('offline', () => {
         setTimeout(() => {
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
           writeCanvas("No connection to server");
         },0);
       });
@@ -1724,7 +1722,7 @@
           } catch(e) {
             console.warn(`Connectivity checker has error`, e); 
           }
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
           writeCanvas("Online. Connecting...");
         }, 0);
       });
@@ -2488,7 +2486,7 @@
 
           state.viewState.showIMEUI = true;
           state.viewState.skipIMECheck = skipCheck;
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
 
           if ( skipCheck ) {
             state.viewState.skipIMECheck = false;
@@ -2499,7 +2497,7 @@
           if ( ! state.viewState.showIMEUI && ! document.deepActiveElement.matches('.control') ) return;
           DEBUG.val && console.log('hide IME UI');
           state.viewState.showIMEUI = false;
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
         }
 
         async function sizeTab(opts) {
@@ -2611,7 +2609,7 @@
 
             canKeysInput();
 
-            setState('bbpro', state);
+            globalThis.setState('bbpro', state);
 
             if ( CONFIG.doAckBlast ) {
               clearInterval(state.currentAckBlastInterval);
@@ -2713,7 +2711,7 @@
           } else {
             updateTabs();
           }
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
         }
 
         async function rawUpdateTabs() {
@@ -2770,7 +2768,7 @@
               } else {
                 indicateNoOpenTabs();
               }
-              setState('bbpro', state);
+              globalThis.setState('bbpro', state);
               while(state.updateTabsTasks.length) {
                 const task = state.updateTabsTasks.shift();
                 try {
@@ -2913,10 +2911,10 @@
       const flags = new Map();
       for( const [flag, value] of params ) {
         switch(flag) {
-          case "ran": {
-          } break;
-          case "url": {
-          } break;
+          case "ran": 
+            break;
+          case "url":
+            break;
           case "ui":
             try {
               const chromeUI = JSON.parse(value);
@@ -2952,6 +2950,8 @@
             if ( !active.shadowRoot ) return active;
             root = active.shadowRoot;
           }
+          // fall back to
+          return this.activeElement;
         },
         enumerable: true,
         writeable: false,

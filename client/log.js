@@ -8,6 +8,10 @@ const LOG_FILE = 'cdp.log';
       export const sleep = ms => new Promise(res => setTimeout(res, ms));
 
       // logging 
+        export function ggLog(...stuff) {
+          appendFileSync('event.log', JSON.stringify(stuff, null, 2));
+        }
+
         export function newLog(...stuff) {
           DEBUG && appendFileSync('new.log', JSON.stringify(stuff, null, 2));
         }

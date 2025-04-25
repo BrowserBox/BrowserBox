@@ -1,9 +1,8 @@
   import {
     CONFIG,
     COMMON,
-    sleep, isSafari, isFirefox, 
-    DEBUG, BLANK, littleEndian,
-    deviceIsMobile,
+    sleep, isSafari, 
+    DEBUG, littleEndian,
     untilHuman,
     untilTrueOrTimeout,
     untilTrue,
@@ -15,14 +14,11 @@
   const $ = Symbol('[[EventQueuePrivates]]');
   //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
+  const ALLOW_CLEAR_NEXT_FRAME = false;
   const FRAME_CHECK_INTERVAL = 100;
   const ALERT_TIMEOUT = 300;
-  const SOCKET_RECONNECT_MS = 1618;
   const PEER_RECONNECT_MS = 618;
   const HEADER_BYTE_LEN = 28;
-  const KEYS = [
-    1, 11, 13, 629, 1229, 2046, 17912, 37953, 92194, 151840
-  ];
   const MAX_E = 255;
   const REGULAR_NO_FRAME_ACK_INTERVAL = 3001;
   const BUFFERED_FRAME_EVENT = {
@@ -41,8 +37,7 @@
   const AlreadySent = new Map();
   const SCORE_WINDOW = 11;
   const MIN_DECISION_DATA = 5;
-  const ITYPE = true || isSafari() ? 'image/jpeg' : 'image/webp';
-  const MAX_BW_MEASURES = 10;
+  const ITYPE = 'image/jpeg'; // until 'image/webp' is natively supported by screencast ignore it
   const OldIncoming = new Map();
   const waiting = new Map();
   const isLE = littleEndian();
@@ -133,9 +128,6 @@
         }
       };
 
-      let lastBytes = 0;
-      let lastCheck = Date.now();
-
       if ( !DEBUG.framesPushed || DEBUG.regularFrameCheck ) {
         this.checkForFrames();
         DEBUG.val && console.log('Starting check for frames');
@@ -196,7 +188,7 @@
 
       if ( chain ) {
         this.sendEventChain({chain,url}).then(({data,meta,totalBandwidth}) => {
-          if ( !!data ) {
+          if ( data ) {
             if ( data.some(({vmPaused}) => vmPaused) ) {
               DEBUG.debugVM && console.log('VM PAUSED');
             }
@@ -379,7 +371,7 @@
               'content-type': 'application/json'
             }
           };
-          return uberFetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
+          return globalThis.uberFetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
             if ( !!frameBuffer && this.images.has(url) ) {
               if ( DEBUG.logAcks ) {
                 const measure = Date.now();
@@ -441,7 +433,7 @@
         await untilTrue(() => this.websockets.has(url));
         try {
           sendClosure(this.websockets.get(url));
-        } catch(e) {
+        } catch {
           resolve(false);
         }
       } else {
@@ -532,8 +524,7 @@
               async function connectPeer() {
                 (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`Running connect peer for WebRTC`, (new Error).stack);
                 try {
-                  peer = new SimplePeer({trickle: true, initiator: false});
-                  let sentAlready = false;
+                  peer = new globalThis.SimplePeer({trickle: true, initiator: false});
                   (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`WebRTC peer created`, peer);
                   peer.on('error', err => (DEBUG.debugWebRTC || DEBUG.cnx) && console.log('webrtc peer error', err));
                   peer.on('close', c => {
@@ -546,7 +537,7 @@
                       setTimeout(connectPeer, PEER_RECONNECT_MS);
                     }
                   });
-                  peer.on('connect', data => {
+                  peer.on('connect', () => {
                     console.log('peer connected');
                     privates.peer = peer;
                     privates.publics.state.webrtcConnected = true;
@@ -571,7 +562,6 @@
                     DEBUG.debugWebRTC && console.log('have webrtc signal data', data);
                     messageId++;
                     so({messageId,copeer:{signal:data}});
-                    sentAlready = true;
                   });
                   peer.on('data', MessageData => {
                     (DEBUG.debugWebRTC || DEBUG.debugConnect) && console.log(`got webrtc data frame`, MessageData);
@@ -681,7 +671,7 @@
                   if ( ! hasWebRTC() ) {
                     globalThis.setupAudio();
                   } else {
-                    if ( !! peer ) { 
+                    if ( peer ) { 
                       handleSignal(signal);
                     } else {
                       (DEBUG.cnx || DEBUG.debugWebRTC) && console.log(`Waiting for local peer to exist`, peer);
@@ -749,7 +739,7 @@
                           location.href = x;
                         }
                         socket.onmessage = null;
-                      } catch(e) {
+                      } catch {
                         talert("An error occurred. Please reload.");
                       }
                       return;
@@ -1031,7 +1021,7 @@
                 state.afterSafariPermsRequested = state.afterSafariPermsRequested.then(() => {
                   DEBUG.debugSafariWebRTC && console.log(`Signaling`);
                   peer.signal(signal);
-                }).catch(err => {
+                }).catch(() => {
                   DEBUG.cnx && console.info(`Safari User Media request to enable WebRTC peering has failed.`);
                   if ( DEBUG.tryPeeringAnywayEvenIfUserMediaFails ) {
                     DEBUG.cnx && console.info(`However we will try to peer anyway.`);
@@ -1062,7 +1052,7 @@
                 }, 30);
               }
             };
-          } catch(e) {
+          } catch {
             this.publics.state.connected = false;
             this.websockets.delete(url);
             this.senders = null;
@@ -1130,7 +1120,7 @@
       return {data:Data,meta:Meta};
     }
 
-    checkForBufferedFrames(events) {
+    checkForBufferedFrames() {
       if ( !DEBUG.regularFrameCheck ) return;
       if ( this.willCollectBufferedFrame ) {
         clearTimeout(this.willCollectBufferedFrame);
@@ -1218,7 +1208,7 @@
           console.warn(`Internet connectivity check error: ${error}`, error);
         } else if ( status != Connectivity.lastStatus ) {
           Connectivity.lastStatus = status;
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
         }
       }, CONFIG.netCheckMinGap, CONFIG.netCheckMaxGap);
 
@@ -1303,7 +1293,7 @@
         };
         imageEl.addEventListener('load', () => {
           const {canvasEl: canvas, ctx} = this.state.viewState;
-          if ( false && clearNextFrame ) {
+          if ( ALLOW_CLEAR_NEXT_FRAME && clearNextFrame ) {
             clearNextFrame = false;
             //ctx.clearRect(0,0,canvas.width,canvas.height);
             clearInterval(this[$].clearInterval);
@@ -1312,11 +1302,13 @@
           //blitImage();
           // get the scale
           if ( DEBUG.scaleImage ) {
-            const dpi = window.devicePixelRatio;
+            //const dpi = window.devicePixelRatio;
             const lastBounds = this.state.viewState.bounds;
-            const {
-              width:elementWidth, height:elementHeight
-            } = canvas.getBoundingClientRect();
+            /*
+              const {
+                width:elementWidth, height:elementHeight
+              } = canvas.getBoundingClientRect();
+            */
             const scaleX = (canvas.width / imageEl.width);
             const scaleY = (canvas.height / imageEl.height);
             this.state.viewState.scaleX = scaleX;
@@ -1447,7 +1439,7 @@
     return {img,castSessionId,frameId,targetId};
   }
 
-  async function drawFrames(state, buf, image, raw = false, typedArray = false, frameId) {
+  async function drawFrames(state, buf, image, raw = false, typedArray = false, /*frameId*/) {
     clearTimeout(state.ackIfNoFrame);
 
     if ( ! DEBUG.immediateAck ) {
@@ -1589,7 +1581,7 @@
       const pc = new RTCPeerConnection({ iceServers: [] });
       pc.close();
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -1601,7 +1593,7 @@
     if ( typeof msg != "string" ) {
       try {
         msg = JSON.stringify(msg);
-      } catch(e) {
+      } catch {
         msg = "Original msg could not be converted to string";
         console.warn(msg);
       }
@@ -1618,7 +1610,7 @@
         alert(`Your session expired. Close this message to return to your dashboard.`);
         try {
           top.location.href = 'https://browse.cloudtabs.net/';
-        } catch(e) {
+        } catch {
           location.href = 'https://browse.cloudtabs.net/'
         }
       } else {

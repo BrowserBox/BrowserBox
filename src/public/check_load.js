@@ -15,7 +15,7 @@ async function checkLoad() {
 
   if ( ! isTor ) {
     isTorAPI.pathname = '/isTor';
-    await uberFetch(isTorAPI).then(r => r.json()).then(resp => {
+    await globalThis.uberFetch(isTorAPI).then(r => r.json()).then(resp => {
       isTor = resp.isTor;
       console.log({resp});
     });

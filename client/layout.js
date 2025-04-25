@@ -1161,4 +1161,3 @@ export function getAncestorInfo(nodeIndex, nodes, strings) {
   return 'normal';
 }
 
-

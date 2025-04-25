@@ -6,6 +6,7 @@
     import os from 'os';
     import url from 'url';
     import path from 'path';
+    import http from 'http';
     import https from 'https';
     import crypto from 'crypto';
     import {spawn} from 'child_process';
@@ -20,7 +21,8 @@
     import {
       CONFIG,
     } from '../../../commons.js';
-    impprt {
+
+    import {
       file,
       APP_ROOT,
     } from './root.js';
@@ -285,7 +287,7 @@ export default start;
           DEBUG.processControl && console.log(
             `Subprocess ${connection.loginLink} failed to exit. Error: ${err}`
           );
-          console.warn(error);
+          console.warn(err);
           console.error(`Warning, port: ${port} will not be freed.`);
         });
       }

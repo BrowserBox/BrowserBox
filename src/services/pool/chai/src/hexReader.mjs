@@ -1,11 +1,9 @@
 import fs from 'fs/promises';
-import readline from 'readline';
-import cluster, { isPrimary } from 'cluster';
+import { isPrimary } from 'cluster';
 
 let fd;
 let currentPage = -1;
 let isFileOpening = false;
-let isFirstRead = true;
 let commandQueue = [];
 const PAGE_SIZE = 1024; // 1KB, you can adjust this size
 
@@ -78,7 +76,7 @@ const executeCommand = async (message) => {
         isFileOpening = false;
         processQueue();
         return;
-      default:
+      default: {
         let msgString = '';
         try {
           msgString = JSON.stringify({message}, null, 2);
@@ -86,8 +84,9 @@ const executeCommand = async (message) => {
           console.warn(`Could not stringify message. Failed with error: ${json_e}`);
           throw json_e;
         }
-        process.send({ error: 'Unknown command: ${command}\n\nmessage:\n\n${msgString}' });
+        process.send({ error: `Unknown command: ${message.command}\n\nmessage:\n\n${msgString}` });
         return;
+      }
     }
 
     const { hexData, position, pageNumber, done } = await readPage(currentPage);
@@ -106,16 +105,6 @@ const processIPC = async () => {
 
     await executeCommand(message);
   });
-};
-
-const main = async (filePath) => {
-  try {
-    fd = await fs.open(filePath, 'r');
-    const { hexData : initialHexData, pageNumber } = await readPage(currentPage);
-    processIPC();  // Activate the IPC listener
-  } catch (err) {
-    console.error('An error occurred:', err);
-  }
 };
 
 if (isPrimary) {

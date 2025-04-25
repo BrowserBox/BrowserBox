@@ -2,7 +2,6 @@
 'use strict';
 
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import url from 'url';
 import childProcess from 'child_process';
@@ -17,7 +16,7 @@ import rateLimit from 'express-rate-limit';
 import express from 'express';
 import exitOnEpipe from 'exit-on-epipe';
 import {WebSocket,WebSocketServer} from 'ws';
-import {Reader,Writer} from '@dosy/wav';
+import {Writer} from '@dosy/wav';
 
 import {
   DEBUG as APP_DEBUG, APP_ROOT, GO_SECURE, 
@@ -67,7 +66,7 @@ let primeSet = new Set(primeCache);
 let SparsePrimes = createSparsePrimes(MAX_DATA_SIZE);
 
 const argv = process.argv;
-let device = argv[3] || 'rtp.monitor' || 'auto_null.monitor';
+let device = argv[3] || 'rtp.monitor';
 
 const encoders = {
   mp3: {
@@ -106,7 +105,6 @@ const encoderType = process.env.TORBB ? 'wav' : 'wav';
 const MAX_RETRY_COUNT = 703;
 
 var hooks = 0;
-let parec = undefined;
 let savedEncoder;
 let encoderExpiration;
 let retryCount = 0;
@@ -180,8 +178,8 @@ if ( DEBUG.goSecure ) {
 const MODE = certsFound ? https: http;
 const app = express();
 let RETRY_WORTHY_EXIT = 11000;
-let shuttingDown = false;
-let audioProcessShuttingDown = false;
+//let shuttingDown = false;
+//let audioProcessShuttingDown = false;
 
 app.set('etag', false);
 if ( ! APP_DEBUG.noSecurityHeaders ) {
@@ -265,7 +263,6 @@ app.use(RateLimiter);
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 const staticPath = path.resolve(APP_ROOT, 'services', 'instance', 'parec-server', 'public');
-const serverPath = path.resolve(APP_ROOT, 'services', 'instance', 'parec-server');
 console.log({staticPath});
 app.use(express.static(staticPath));
 app.use((req,res,next) => {
@@ -297,7 +294,7 @@ if ( process.env.TORBB ) {
       if ( enc?.stdout ) {
         DEBUG.val  && console.log('Setting encoder stdout to pipe');
         enc.stdout.pipe(response);
-        unpipe = () => enc.stdout.unpipe(resopnse);
+        unpipe = () => enc.stdout.unpipe(response);
       } else if ( enc?.pipe ) {
         DEBUG.val  && console.log('Setting encoder to pipe');
         enc.pipe(response);
@@ -315,8 +312,8 @@ if ( process.env.TORBB ) {
           if ( process.env.TORBB ) {
             killEncoder(enc);
           }
-        } catch(e) {
-          console.warn(`Error on unpipe at end of request / resopnse`);
+        } catch {
+          console.warn(`Error on unpipe at end of request / response`);
         }
         response.end();
       });
@@ -387,7 +384,7 @@ if ( process.env.TORBB ) {
       if ( enc?.stdout ) {
         DEBUG.val  && console.log('Setting encoder stdout to pipe');
         enc.stdout.pipe(response);
-        unpipe = () => enc.stdout.unpipe(resopnse);
+        unpipe = () => enc.stdout.unpipe(response);
       } else if ( enc?.pipe ) {
         DEBUG.val  && console.log('Setting encoder to pipe');
         enc.pipe(response);
@@ -405,8 +402,8 @@ if ( process.env.TORBB ) {
           if ( process.env.TORBB ) {
             killEncoder(enc);
           }
-        } catch(e) {
-          console.warn(`Error on unpipe at end of request / resopnse`);
+        } catch {
+          console.warn(`Error on unpipe at end of request / response`);
         }
         response.end();
       });
@@ -427,7 +424,7 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
   let query;
   try {
     query = new URL(req.url).searchParams;
-  } catch(e) {
+  } catch {
     query = new URL(`https://localhost${req.url}`).searchParams;
   }
   const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || query.get('localCookie');
@@ -526,7 +523,7 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
       DEBUG.debugAudioSilenceFilter && console.log({sz,fac, cutoff, pr, P});
       for(let i = 0, p; i < P; i++) {
         p = Math.floor(fac*pr[i]);
-        (DEBUG.showPrimeChecks) && console.log({p, datp: dat[p], p, len: dat.length});
+        (DEBUG.showPrimeChecks) && console.log({p, datp: dat[p], len: dat.length});
         if ( dat[p] !== 0 ) {
           return false;
         }
@@ -590,7 +587,7 @@ server.on('connection', function(socket) {
   socket.setNoDelay(true);
 });
 
-server.on('upgrade', (req, socket, head) => {
+server.on('upgrade', (req, socket) => {
   sockets.add(socket);
   socket.on('close', () => sockets.delete(socket));
   console.log('http upgrade');
@@ -632,7 +629,7 @@ console.warn('Shut down buries errors');
 //process.on('exit', shutDown);
 
 async function getEncoder() {
-  audioProcessShuttingDown = false;
+  //audioProcessShuttingDown = false;
   if (savedEncoder) return savedEncoder;
   let encoder = undefined;
   let parec = undefined;
@@ -744,7 +741,7 @@ async function getEncoder() {
         const paProcess = new Promise(res => resolve2 = res);
         childProcess.spawnSync('pulseaudio', ['-k']);
         const pa = childProcess.spawn('pulseaudio', ['--start']);
-        pa.on('spawn', e => {
+        pa.on('spawn', () => {
           console.log('pa spawned');
           setTimeout(() => childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${pa.pid}`), 2000);
           resolve2();
@@ -837,6 +834,7 @@ function killEncoder(encoder) {
   }
 }
 
+/*
 function audioProcessShutDown() {
   if ( audioProcessShuttingDown ) return;
   audioProcessShuttingDown = true;
@@ -860,7 +858,9 @@ function audioProcessShutDown() {
     }
   }
 }
+*/
 
+/*
 function shutDown(...args) {
   if ( shuttingDown ) return;
   shuttingDown = true;
@@ -873,16 +873,16 @@ function shutDown(...args) {
   });
   process.exit(0);
 };
+*/
 
 function createSparsePrimes(len) {
   // take the primes up to len and then weed out 61.8 % of them
   const primes = primesUpTo(len);
   const filteredPrimes = primes.filter(() => Math.random() <= 0.5);
 
-  for(let j = 1, end = 0, p = filteredPrimes[0], nextP = filteredPrimes[1]; j < filteredPrimes.length && end < MAX_DATA_SIZE; end++) {
+  for(let j = 1, end = 0, nextP = filteredPrimes[1]; j < filteredPrimes.length && end < MAX_DATA_SIZE; end++) {
     if ( end > nextP ) {
       j++;
-      p = nextP; 
       nextP = filteredPrimes[j];
     }
     CutOff[end] = j;

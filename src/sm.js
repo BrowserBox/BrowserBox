@@ -4,6 +4,7 @@ const fs = require('fs');
 const cp = require('child_process');
 const path = require('path');
 const {promisify} = require('util');
+const {APP_ROOT} = require('./root.js');
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);

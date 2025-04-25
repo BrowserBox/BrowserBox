@@ -42,13 +42,13 @@
 
   // i believe this function next tick refers to how the focus out event will essentially occur on the 'next tick' after focus/activeEl status
   // is lost the function is for monitoring that keys can no longer input
-  function monitorActiveElementNextTick(e = {target:document.activeElement}, {alwaysNotify = false} = {}) {
+  function monitorActiveElementNextTick(e = {target: document.activeElement}, {alwaysNotify = false} = {}) {
     let focusDestination =  document.activeElement;
     let condition;
     if ( !e.path || e?.path?.length === 0) {
       e.path = e?.composedPath?.();
       if ( !e.path || e?.path?.length === 0) {
-        e.path = getAncestors(target);
+        e.path = getAncestors(e.target);
       }
     }
     setTimeout(() => {

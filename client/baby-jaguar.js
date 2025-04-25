@@ -23,16 +23,16 @@
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
   import { InputManager } from './input-manager.js';
-  import { newLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
+  import { ggLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // global scroll state
   const vScroll = {
     X: 0,
     Y: 0,
-    atMarginTop: false,
-    atMarginBottom: false,
-    atMarginLeft: false,
-    atMarginRight: false,
+    atMarginTop: true,
+    atMarginBottom: true,
+    atMarginLeft: true,
+    atMarginRight: true,
   };
 
   // Constants and state
@@ -179,7 +179,7 @@
         vScroll.atMarginLeft = false;
       }
       if ( renderY < 0 ) {
-        vScrol.atMarginTop = false;
+        vScroll.atMarginTop = false;
       } 
       if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 5 ) continue;
 
@@ -604,6 +604,15 @@
             browser.emit('targetInfoChanged', targetInfo);
             debouncedRefresh();
           }; break;
+          case 'Page.frameNavigated': {
+            ggLog(message);
+            vScroll.X = 0;
+            vScroll.Y = 0;
+            vScroll.atMarginRight = true;
+            vScroll.atMarginBottom = true;
+            vScroll.atMarginLeft = true;
+            vScroll.atMarginTop = true;
+          }
         }
       };
       connection = await connectToBrowser(handler);
@@ -661,6 +670,13 @@
             },
           }
         ));
+        // we can save vScroll state per tab later
+        vScroll.X = 0;
+        vScroll.Y = 0;
+        vScroll.atMarginRight = true;
+        vScroll.atMarginBottom = true;
+        vScroll.atMarginLeft = true;
+        vScroll.atMarginTop = true;
         await selectTabAndRender();
       });
 
@@ -907,6 +923,7 @@
       viewportWidth: 0,
     };
     stateBySession.set(sessionId, state);
+    send("Page.enable", {}, sessionId);
     return state;
   }
 

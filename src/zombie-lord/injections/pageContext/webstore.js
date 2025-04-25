@@ -1,5 +1,6 @@
 {
   try {
+    const chrome = globalThis.chrome;
     let shimmed = false;
     shim();
     let int = setInterval(() => {

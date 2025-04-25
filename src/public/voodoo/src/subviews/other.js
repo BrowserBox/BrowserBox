@@ -1,4 +1,4 @@
-import {DEBUG} from '../common.js';
+import {DEBUG, CONFIG} from '../common.js';
 import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js';
 
   // Auxilliary view functions 
@@ -285,7 +285,7 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
         working: true
       });
       Modals(state);
-      const resp = await uberFetch(form.action, request).then(r => r.json());
+      const resp = await globalThis.uberFetch(form.action, request).then(r => r.json());
       if ( resp.error ) {
         alert(resp.error);
       } else {
@@ -310,7 +310,7 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
         working: true
       });
       Modals(state);
-      const resp = await uberFetch(form.action, request).then(r => r.json());
+      const resp = await globalThis.uberFetch(form.action, request).then(r => r.json());
       if ( resp.error ) {
         alert(`An error occurred`);
         console.log({resp});
