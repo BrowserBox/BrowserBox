@@ -6,6 +6,7 @@
     import os from 'os';
     import url from 'url';
     import path from 'path';
+    import http from 'http';
     import https from 'https';
     import crypto from 'crypto';
     import {spawn, spawnSync, execSync, exec} from 'child_process';
@@ -331,7 +332,7 @@ export default start;
           DEBUG.processControl && console.log(
             `Subprocess ${connection.loginLink} failed to exit. Error: ${err}`
           );
-          console.warn(error);
+          console.warn(err);
           console.error(`Warning, port: ${port} will not be freed.`);
         });
       }
