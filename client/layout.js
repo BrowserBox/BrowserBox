@@ -1,8 +1,9 @@
 import fs from 'fs';
 import {terminal} from './baby-jaguar.js';
-import {rowsLog,debugLog,DEBUG} from './log.js';
+import {ggLog, rowsLog,debugLog,DEBUG} from './log.js';
 
 const GAP = 1;
+const NO_CACHE = false;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 const CHECKBOX_LAYOUT_WIDTH = 4;
@@ -662,8 +663,8 @@ const LayoutAlgorithm = (() => {
     const s = JSON.stringify({snapshot});
     const v = JSON.stringify({viewportWidth,viewportHeight,termWidth,termHeight,viewportX,viewportY});
     let scrollChangeOnly = false;
-    if ( CACHE.get('lastSnapshot') == s ) {
-      if ( CACHE.get('lastViewport') == v ) {
+    if ( !NO_CACHE && CACHE.get('lastSnapshot') == s ) {
+      if ( !NO_CACHE && CACHE.get('lastViewport') == v ) {
         return CACHE.get('lastLayoutState');
       } else {
         scrollChangeOnly = true;
@@ -672,11 +673,11 @@ const LayoutAlgorithm = (() => {
     } else {
       CACHE.set('lastSnapshot', s);
     }
-    let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes;
+    let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData;
     if ( ! scrollChangeOnly ) {
       DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
       DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
-      const splitSnapshotData = splitSnapshot(snapshot);
+      splitSnapshotData = splitSnapshot(snapshot);
       DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
       DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
@@ -685,9 +686,10 @@ const LayoutAlgorithm = (() => {
         DEBUG && terminal.yellow('No text boxes found.\n');
         return null;
       }
-      CACHE.set('lastSplit', { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes });
+      CACHE.set('lastSplit', { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData });
     } else {
-      ({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = CACHE.get('lastSplit');
+      //({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData } = CACHE.get('lastSplit'));
+      return CACHE.get('lastLayoutState');
     }
 
     const baseScaleX = termWidth / viewportWidth;
@@ -842,6 +844,7 @@ const LayoutAlgorithm = (() => {
       nodes,
     };
     CACHE.set('lastLayoutState', layoutState);
+    CACHE.set('lastViewport', v);
     return layoutState;
   }
 

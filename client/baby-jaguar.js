@@ -37,13 +37,14 @@
 
   // Constants and state
   const clickCounter = { value: 0 };
+  const IGNORE_VSCROLL = true;
   const USE_SYNTHETIC_FOCUS = true;
   const GLOBAL_IGNORE_CLICKABLE_FOR_INPUT = true;
   const IGNORE_CLICKABLE_FOR_TYPES = new Set([
     'input'
   ]);
   const markClicks = false;
-  const DEBOUNCE_DELAY = 280;
+  const DEBOUNCE_DELAY = 300;
   const args = process.argv.slice(2);
   const mySource = 'krnlclient' + Math.random().toString(36);
   export const renderedBoxes = [];
@@ -129,8 +130,8 @@
     for (const box of visibleBoxes) {
       DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
       const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
-      const renderX = termX - vScroll.X;
-      const renderY = termY + 1 - vScroll.Y;
+      const renderX = termX - (IGNORE_VSCROLL ? 0 : vScroll.X);
+      const renderY = termY + 1 - (IGNORE_VSCROLL ? 0 : vScroll.Y);
 
       if (renderX > termWidth) {
         vScroll.atMarginRight = false;
@@ -755,7 +756,7 @@
         const state = getTabState(getBrowserState().currentSessionId);
         try {
           if ( axis == 'vertical' ) {
-            if ( vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
+            if ( IGNORE_VSCROLL || vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
               const lineHeight = Math.round(state.viewportHeight / terminal.height);
               const deltaY = direction * lineHeight;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
@@ -763,7 +764,7 @@
               vScroll.Y += direction;
             }
           } else if ( axis == 'horizontal' ) {
-            if ( vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
+            if ( IGNORE_VSCROLL || vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
               const columnWidth = Math.round(state.viewportWidth / terminal.height);
               const deltaX = direction * columnWidth;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX, deltaY: 0 }, sessionId);

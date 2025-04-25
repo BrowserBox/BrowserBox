@@ -1,7 +1,13 @@
 GOAL: Get to a browser that we can use
 
-- streamline critical path from processNode downward
-- input width has become weird since the vScroll changes (ie ddg srp)
+- cache idea:
+  - instead of caching inside layout, let's cache at last possible point (renderBoxes)
+  - ie, if we do layout every time, then we only change the visibile boxes / renderboxes on scroll 
+  - should also defer consideration of x and y scroll offsets to last possible point
+- efficiency idea:
+  - can we pre limit snapshot/split snapshot or process node to only visible boxes?
+  - streamline critical path from processNode downward
+  - input width has become weird since the vScroll changes (ie ddg srp)
 
 Next
   - reset terminal on exit (so normal)
