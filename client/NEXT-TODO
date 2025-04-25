@@ -5,6 +5,7 @@ GOAL: Get to a browser that we can use
   - ie, if we do layout every time, then we only change the visibile boxes / renderboxes on scroll 
   - should also defer consideration of x and y scroll offsets to last possible point
 - efficiency idea:
+  - we can limit nodes processed in process node to only those with visibile descendents. Whole branches of the tree can be avoided if we can have an efficient map of this
   - can we pre limit snapshot/split snapshot or process node to only visible boxes?
   - streamline critical path from processNode downward
   - input width has become weird since the vScroll changes (ie ddg srp)
