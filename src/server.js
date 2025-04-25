@@ -1,3 +1,4 @@
+// @flow
   /* entry point */
   import fs from 'fs';
   import path from 'path';
