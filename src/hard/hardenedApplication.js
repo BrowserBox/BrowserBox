@@ -223,7 +223,7 @@ export class HardenedApplication {
       if (this.#shouldIgnore(relativePath)) {
         continue;
       } else {
-        console.log(`Including ${relativePath} / (${fullPath}) in manifest.`);
+        process.env.BBX_VERBOSE_DEBUG && console.log(`Including ${relativePath} / (${fullPath}) in manifest.`);
       }
 
       const stat = fs.statSync(fullPath);
@@ -244,7 +244,7 @@ export class HardenedApplication {
   #shouldIgnore(relativePath) {
     for (const pattern of this.#ignorePatterns) {
       if (this.#matchPattern(relativePath, pattern)) {
-        console.log(`Ignoring ${relativePath} based on ${pattern}`);
+        process.env.BBX_VERBOSE_DEBUG && console.log(`Ignoring ${relativePath} based on ${pattern}`);
         return true;
       }
     }
