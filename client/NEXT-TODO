@@ -1,6 +1,7 @@
 GOAL: Get to a browser that we can use
 
-- efficiency: run profiling on the render pipeline to radically improve efficiency and cache as much as possible
+- streamline critical path from processNode downward
+- input width has become weird since the vScroll changes (ie ddg srp)
 
 Next
   - reset terminal on exit (so normal)
