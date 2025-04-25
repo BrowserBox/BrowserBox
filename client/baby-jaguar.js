@@ -23,16 +23,16 @@
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
   import { InputManager } from './input-manager.js';
-  import { sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
+  import { ggLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // global scroll state
   const vScroll = {
     X: 0,
     Y: 0,
-    atMarginTop: false,
-    atMarginBottom: false,
-    atMarginLeft: false,
-    atMarginRight: false,
+    atMarginTop: true,
+    atMarginBottom: true,
+    atMarginLeft: true,
+    atMarginRight: true,
   };
 
   // Constants and state
@@ -604,6 +604,15 @@
             browser.emit('targetInfoChanged', targetInfo);
             debouncedRefresh();
           }; break;
+          case 'Page.frameNavigated': {
+            ggLog(message);
+            vScroll.X = 0;
+            vScroll.Y = 0;
+            vScroll.atMarginRight = true;
+            vScroll.atMarginBottom = true;
+            vScroll.atMarginLeft = true;
+            vScroll.atMarginTop = true;
+          }
         }
       };
       connection = await connectToBrowser(handler);
@@ -907,6 +916,7 @@
       viewportWidth: 0,
     };
     stateBySession.set(sessionId, state);
+    send("Page.enable", {}, sessionId);
     return state;
   }
 
