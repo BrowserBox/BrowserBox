@@ -755,11 +755,16 @@
         });
       });
 
-      browser.on('scroll', async ({ direction, axis }) => {
+      browser.on('scroll', async ({ direction, axis, resetVScroll = false }) => {
         const state = getTabState(getBrowserState().currentSessionId);
         try {
           if ( axis == 'vertical' ) {
-            if ( IGNORE_VSCROLL || vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
+            if ( resetVScroll ) {
+              vScroll.Y = 0;
+              vScroll.atMarginLeft = true;
+              vScroll.atMarginTop = true;
+            }
+            if ( IGNORE_VSCROLL || resetVScroll || vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
               const lineHeight = Math.round(state.viewportHeight / terminal.height);
               const deltaY = direction * lineHeight;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
@@ -767,7 +772,12 @@
               vScroll.Y += direction;
             }
           } else if ( axis == 'horizontal' ) {
-            if ( IGNORE_VSCROLL || vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
+            if ( resetVScroll ) {
+              vScroll.X = 0;
+              vScroll.atMarginRight = true;
+              vScroll.atMarginBottom = true;
+            }
+            if ( IGNORE_VSCROLL || resetVScroll || vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
               const columnWidth = Math.round(state.viewportWidth / terminal.height);
               const deltaX = direction * columnWidth;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX, deltaY: 0 }, sessionId);

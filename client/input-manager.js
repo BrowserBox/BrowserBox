@@ -537,7 +537,8 @@ export class InputManager {
       this.handleMouseClick(x, y);
     } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
       if (y > 4) {
-        this.browser.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1, axis: 'vertical' });
+        // not the best check actually we should check fi the scroll height of the browser exceeds some level but this heuristic for now
+        this.browser.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1, axis: 'vertical', resetVScroll: true });
       }
     }
   }
