@@ -680,8 +680,8 @@ const LayoutAlgorithm = (() => {
       }
     } else {
       ggLog('new snapshot');
-      fs.appendFileSync('last.snapshots.log', count + ' ' + JSON.stringify(JSON.parse(CACHE.get('lastSnapshot') || '{}').snapshot || {},null,2));
-      fs.appendFileSync('this.snapshots.log', count +' ' + JSON.stringify(snapshot,null,2)+'\n');
+      fs.appendFileSync(`last.${count}snapshot.log`, count + ' ' + JSON.stringify(JSON.parse(CACHE.get('lastSnapshot') || '{}').snapshot || {},null,2) + '\n');
+      fs.appendFileSync(`this.${count}snapshot.log`, count +' ' + JSON.stringify(snapshot,null,2)+'\n');
       count++;
       CACHE.set('lastSnapshot', s);
     }
