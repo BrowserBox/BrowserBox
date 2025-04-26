@@ -37,7 +37,7 @@
 
   // Constants and state
   const clickCounter = { value: 0 };
-  const IGNORE_VSCROLL = true;
+  const IGNORE_VSCROLL = false;
   const USE_SYNTHETIC_FOCUS = true;
   const GLOBAL_IGNORE_CLICKABLE_FOR_INPUT = true;
   const IGNORE_CLICKABLE_FOR_TYPES = new Set([
@@ -141,19 +141,22 @@
       }
       if (renderX > termWidth || renderY > termHeight + 4) continue;
 
-      const boxWidth = text.length;
-      const actualDisplayWidth = Math.min(termWidth, renderX + boxWidth) - Math.max(0, renderX);
-      const clipStart = Math.max(0, 0 - renderX);
-      const displayWidth = actualDisplayWidth;
-      let displayText = text.substring(clipStart, clipStart + actualDisplayWidth);
-      let termWidthForBox;
+      const displayAvailable = Math.max(0, termWidth - renderX + 1);
+      let termWidthForBox = text.length;
 
-      if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {
+      const isDeterminedInput = type === 'input' && boundingBox?.width && layoutState.viewportWidth;
+      if (isDeterminedInput) {
         const scaleFactor = termWidth / layoutState.viewportWidth;
         termWidthForBox = Math.round(boundingBox.width * scaleFactor);
-        termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayWidth));
+        termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayAvailable));
         logClicks(`Input sizing for backendNodeId: ${backendNodeId}, boundingBox.width: ${boundingBox.width}, viewportWidth: ${layoutState.viewportWidth}, scaleFactor: ${scaleFactor}, termWidth: ${termWidthForBox}`);
-      } else {
+      }
+
+      const actualDisplayWidth = Math.min(termWidth, renderX + termWidthForBox) - Math.max(0, renderX);
+      const clipStart = Math.max(0, 0 - renderX);
+      let displayText = text.substring(clipStart, clipStart + actualDisplayWidth);
+
+      if (!isDeterminedInput) {
         termWidthForBox = displayText.length;
       }
 
@@ -179,7 +182,7 @@
       if ( renderX < 0 ) {
         vScroll.atMarginLeft = false;
       }
-      if ( renderY < 0 ) {
+      if ( renderY < 5 ) {
         vScroll.atMarginTop = false;
       } 
       if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 5 ) continue;
