@@ -1,4 +1,5 @@
 - detect already in use and fetch new (auto release locked/state on valid start). ie, license revalidate when expire. 
+  - maybe some stop paths don't kill the xChecker? we need to ensure xChecker is a global and we kill it everywhere
   - isues: why we validating at end as we relesae it?
     1|master   | [2025-04-25T05:08:41.605Z] [LicenseServer] License released for instance DOSAYGO://browserbox/266943e65b99e1255b94f8ffe04712b9c1f9bf4625fbb4bbe9ef61d5e3e5967d/0b589e714120192744e58c76c0f9390c
   1|master   | [2025-04-25T05:08:43.139Z] [LicenseServer] License released for instance DOSAYGO://browserbox/266943e65b99e1255b94f8ffe04712b9c1f9bf4625fbb4bbe9ef61d5e3e5967d/0b589e714120192744e58c76c0f9390c
