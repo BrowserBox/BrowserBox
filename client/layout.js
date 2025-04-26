@@ -23,6 +23,7 @@ const BUTTON_INPUT_TYPES = new Set([
 ]);
 const CACHE = new Map();
 const INVISIBLE_DIMENSION = 5;
+let count = 0;
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -679,8 +680,9 @@ const LayoutAlgorithm = (() => {
       }
     } else {
       ggLog('new snapshot');
-      appendFileSync('last.snapshots', JSON.stringify(JSON.parse(CACHE.get('lastSnapshot')).snapshot,null,2));
-      appendFileSync('this.snapshots', JSON.stringify(s,null,2));
+      fs.appendFileSync('last.snapshots.log', count + ' ' + JSON.stringify(JSON.parse(CACHE.get('lastSnapshot') || '{}').snapshot || {},null,2));
+      fs.appendFileSync('this.snapshots.log', count +' ' + JSON.stringify(snapshot,null,2)+'\n');
+      count++;
       CACHE.set('lastSnapshot', s);
     }
     let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData;
