@@ -679,6 +679,8 @@ const LayoutAlgorithm = (() => {
       }
     } else {
       ggLog('new snapshot');
+      appendFileSync('last.snapshots', JSON.stringify(JSON.parse(CACHE.get('lastSnapshot')).snapshot,null,2));
+      appendFileSync('this.snapshots', JSON.stringify(s,null,2));
       CACHE.set('lastSnapshot', s);
     }
     let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData;
