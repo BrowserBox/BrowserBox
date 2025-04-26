@@ -1,4 +1,6 @@
-- text render performance - nove profiling to optimize
+- bbx update should be clear
+
+- text render performance 
 
 - detect already in use and fetch new (auto release locked/state on valid start). ie, license revalidate when expire. 
   - isues: why we validating at end as we relesae it?
