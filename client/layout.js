@@ -660,17 +660,25 @@ const LayoutAlgorithm = (() => {
 
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize }) {
     const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+    snapshot.documents.forEach(d => {
+      delete d.scrollOffsetX;
+      delete d.scrollOffsetY;
+    });
     const s = JSON.stringify({snapshot});
     const v = JSON.stringify({viewportWidth,viewportHeight,termWidth,termHeight,viewportX,viewportY});
+    ggLog(v);
     let scrollChangeOnly = false;
     if ( !NO_CACHE && CACHE.get('lastSnapshot') == s ) {
       if ( !NO_CACHE && CACHE.get('lastViewport') == v ) {
+        ggLog('same snapshot, same scroll');
         return CACHE.get('lastLayoutState');
       } else {
         scrollChangeOnly = true;
+        ggLog('same snapshot, different scroll');
         CACHE.set('lastViewport', v);
       }
     } else {
+      ggLog('new snapshot');
       CACHE.set('lastSnapshot', s);
     }
     let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData;
