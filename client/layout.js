@@ -664,6 +664,12 @@ const LayoutAlgorithm = (() => {
     snapshot.documents.forEach(d => {
       delete d.scrollOffsetX;
       delete d.scrollOffsetY;
+      d.layout.bounds.forEach(b => {
+        if (b[2] <= INVISIBLE_DIMENSION || b[3] <= INVISIBLE_DIMENSION) {
+          b[2] = 0;
+          b[3] = 0;
+        }
+      });
     });
     const s = JSON.stringify({snapshot});
     const v = JSON.stringify({viewportWidth,viewportHeight,termWidth,termHeight,viewportX,viewportY});
