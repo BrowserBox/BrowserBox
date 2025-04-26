@@ -1,26 +1,16 @@
 GOAL: Get to a browser that we can use
 
-- cache idea:
-  - instead of caching inside layout, let's cache at last possible point (renderBoxes)
-  - ie, if we do layout every time, then we only change the visibile boxes / renderboxes on scroll 
-  - should also defer consideration of x and y scroll offsets to last possible point
-- efficiency idea:
-  - we can limit nodes processed in process node to only those with visibile descendents. Whole branches of the tree can be avoided if we can have an efficient map of this
-  - can we pre limit snapshot/split snapshot or process node to only visible boxes?
-  - streamline critical path from processNode downward
-  - input width has become weird since the vScroll changes (ie ddg srp)
+- reset terminal on exit (so normalw)
+- sometimes scroll rightward / leftward don't work (i guess becuase at margin checks are incorrect)
+- inputs and omnibox should scroll rightward when we type beyond their right margin (up to any maxlength)
+- hook modals for file upload.
 
 Next
-  - reset terminal on exit (so normal)
   - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
   - allow copy (for visual breakout)
   - Nice to get to: rendering of autocomplete (and other live dom changes): shows but only if we trigger re-render with scroll, but then we can't click on the autocomplete options, even tho they register as clickable, or the clicks have no effect on remote
-  - ensure layout remains correct beofre proceeding to following:
-  - hook modals for file upload.
 
 Minor Polishing Bugs
-  - improve bugs in H, V scrolling around the offscreen areas
-  - inputs and omnibox should scroll rightward when we type beyond their right margin (up to any maxlength)
   - Between page loads need to clear some state (getting node no longer exists, input elements from previous renders likely still being rendered)
     - some inputs persist over page navigation, new document creation. we need to clear them when DOM is cleared, document navigated. 
   - Fix some elements are not highlighted on focus. Possible causes:
@@ -60,6 +50,9 @@ For release
     - pre compute as much as possible. e.g. the hasClicableDescendants change with the #text box check dramatically increased cost and bigly slowed rendering perf. So fix that. And there's probably more to fix, too.  
 
 -- Later -- i.e., to be omitted from initial public release
+  - efficiency idea:
+    - can we pre limit snapshot/split snapshot or process node to only visible boxes?
+    - streamline critical path from processNode downward
   - add ALT text for media placeholders (maybe decide based on space available? Or just make space. Problem is alt text has not text layout boxes so we'd have to create our own, and handle wrapping and truncation etc)
   - put media placeholders behind a toggle. So normally it's off, but you can toggle it on to view it (toggle setting will rerender)
   - rendering of OOPIF (as that involves fetching target info from separate target and stitching together)
