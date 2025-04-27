@@ -1,8 +1,7 @@
-- detect already in use and fetch new (auto release locked/state on valid start). ie, license revalidate when expire. 
-  - branch script for OS: source bbx config for license key; rm $(bbcertify); bbcertify
-  - run this if we detect that seat already in use. Basically this will nuke the ticket and fetch the next free seat. 
-
-- bbx should not attempt update if check times out
+- server indicates already in use
+  - we detect this
+  - we run the branch script (revalidate)
+    
 
 - azure qst. 
 
