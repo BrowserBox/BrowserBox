@@ -1914,7 +1914,7 @@ activate() {
     fi
 
     if [ $((counter % poll_interval)) -eq 0 ]; then
-      local response=$(curl -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
+      local response=$(curl --connect-timeout 7 -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
       state=$(echo "$response" | jq -r '.state // "unvisited"')
       license_key=$(echo "$response" | jq -r '.license_key // ""')
       seats_provisioned=$(echo "$response" | jq -r '.seats_provisioned // 0')
