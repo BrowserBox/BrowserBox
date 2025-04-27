@@ -23,7 +23,7 @@ function runRevalidate(platform) {
     args = ['-c', 'bbrevalidate'];
   }
 
-  return spawnSync(shell, args, { stdio: 'ignore', detached: true, windowsHide: true });
+  return spawnSync(shell, args, { stdio: 'inherit', detached: false, windowsHide: true });
 }
 
 /**
@@ -35,5 +35,7 @@ export async function revalidate() {
 
   runRevalidate(platform);
 }
+
+revalidate();
 
 
