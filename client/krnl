@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+./run-krnl.js $@
+reset

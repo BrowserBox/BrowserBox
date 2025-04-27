@@ -13,6 +13,7 @@
   // built in
   import util from 'util';
   import { appendFileSync } from 'fs';
+  import { exec } from 'child_process';
 
   // 3rd-party
   import TK from 'terminal-kit';
@@ -709,7 +710,7 @@
         } catch (error) {
           debugLog(JSON.stringify({ targets, index }, null, 2));
           DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
-          DEBUG && process.exit(1);
+          DEBUG && terminal.processExit(1);
         }
       });
 
@@ -852,10 +853,11 @@
       await selectTabAndRender();
 
       process.title = 'KRNL-RENDER';
-      process.on('SIGINT', () => {
+      process.on('SIGINT', async () => {
         if (connection.connectionManager) connection.connectionManager.cleanup();
         browser.destroy();
         terminal.clear();
+        terminal.grabInput(false);
         terminal.green('Exiting...\n');
         process.exit(0);
       });
@@ -878,6 +880,7 @@
       console.error(error);
       if (DEBUG) console.warn(error);
       terminal.red(`Main error: ${error.message}\n`);
+      terminal.grabInput(false);
       browser?.destroy();
       process.exit(1);
     }
