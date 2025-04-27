@@ -548,7 +548,7 @@ install() {
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
     printf "${YELLOW}Fetching BrowserBox repository...${NC}\n"
     $SUDO rm -rf $BBX_HOME/BrowserBox*
-    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
+    curl --connect-timeout 8 -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
     unzip -o -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
     mv $BBX_HOME/BrowserBox-zip/BrowserBox-${branch} $BBX_HOME/BrowserBox 
     $SUDO rm -rf $BBX_HOME/BrowserBox-zip
@@ -646,7 +646,7 @@ setup() {
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+    curl --connect-timeout 8 -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
     "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
   else
@@ -1018,7 +1018,7 @@ docker_run() {
   if [ ! -f "$run_docker_script" ]; then
     printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
     mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
-    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
+    curl --connect-timeout 8 -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
       printf "${RED}Failed to download run_docker.sh script${NC}\n"
       exit 1
     }
@@ -1426,6 +1426,12 @@ check_and_prepare_update() {
   local current_tag=$(get_version_info "$VERSION_FILE")
   local repo_tag=$(get_latest_repo_version)
 
+  # Check if repo version fetch failed
+  if [ "$repo_tag" = "unknown" ]; then
+    printf "${YELLOW}Skipping update due to timeout or failure in fetching latest version.${NC}\n"
+    return 0
+  fi
+
   printf "${BLUE}Current: $current_tag${NC}\n"
   printf "${BLUE}Latest: $repo_tag${NC}\n"
 
@@ -1517,7 +1523,12 @@ update_background() {
   mkdir -p "$BBX_NEW_DIR" || { printf "${RED}Failed to create $BBX_NEW_DIR/BrowserBox${NC}\n" >> "$LOG_FILE"; exit 1; }
   DLURL="${REPO_URL}/archive/refs/tags/${repo_tag}.zip";
   echo "Getting: $DLURL"
-  curl -sSL "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
+  curl -sSL --connect-timeout 8 "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || {
+    printf "${YELLOW}Skipping update due to timeout or failure in connecting to BrowserBox repo${NC}\n" >> "$LOG_FILE"
+    $SUDO rm -f "$BBX_NEW_DIR/BrowserBox.zip" 2>/dev/null
+    $SUDO rm -rf "$BBX_NEW_DIR" 2>/dev/null
+    return 1
+  }
   unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
   mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$tagdoo" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE"; exit 1; }
   $SUDO rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
