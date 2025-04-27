@@ -346,7 +346,7 @@ setTimeout(async () => {
   if ( ! licenseValid ) {
     console.log(`Queueing stop cnx`, {licenseValid});
     try {
-      setTimeout(stop,
+      setTimeout(async () => await globalThis.shutDown(),
         process.env.STATUS_MODE && 
           rainstormHash(256, 0, process.env.STATUS_MODE) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"
         ? 
@@ -2953,7 +2953,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
           lastV = thisV;
           viewChanges.set(thisT, thisV);
         }
-        if (true || tabOrViewportChanged) {
+        if (CONFIG.ALWAYS_RESTART_CAST || tabOrViewportChanged) {
           DEBUG.traceViewportUpdateFuncs && console.log('tabOrViewportChanged is true');
           lastVT = thisVT;
           setTimeout(async () => {
@@ -3650,7 +3650,15 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       if ( noExit ) {
         return;
       }
-      process.exit(1);
+      const finish = async () => {
+        if ( globalThis.shutDown ) {
+          await globalThis.shutDown();
+        } else if ( globalThis.exCheckers ) {
+          clearInterval(globalThis.exCheckers);
+          await stop();
+        }
+      }
+      finish().finally(() => process.exit(1));
     } catch(e2) {
       console.warn(`Error when recovering from error when making zombie`, e2); 
     }

@@ -50,7 +50,7 @@
   if ( ! licenseValid ) {
     console.log(`Queueing stop srv`, {licenseValid});
     try {
-      setTimeout(stop,
+      setTimeout(() => globalThis.shutDown(),
         process.env.STATUS_MODE && 
           rainstormHash(256, 0, process.env.STATUS_MODE) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"
         ? 
@@ -59,8 +59,8 @@
           150000
       );
     } catch(e) {
-      console.warn(`Error stopping`);
-      process.exit(1);
+      console.warn(`Error stopping. Trying again...`);
+      stop().finally(() => process.exit(1));
     }
   }
 

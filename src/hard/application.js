@@ -74,7 +74,6 @@ export async function applicationCheck() {
     console.warn(error);
     log('Application', `Error: ${error.message}`);
     return false;
-    //process.exit(1);
   }
 }
 
