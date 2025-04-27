@@ -1443,6 +1443,27 @@ check_and_prepare_update() {
     return 0
   fi
 
+  if check_prepare_and_install "$repo_tag"; then
+    return 0
+  fi
+
+  # No prepared update, start background preparation
+  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
+  # Create preparing lock file
+  $SUDO mkdir -p "$BBX_SHARE"
+  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
+  # Run update in background unless debug
+  if [ -n "$BBX_DEBUG" ]; then
+    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background 
+  else
+    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
+  fi
+  printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
+  return 0
+}
+
+check_prepare_and_install() {
+  repo_tag="$1"
   # Check if BBX_NEW_DIR has a prepared version
   if [ -f "$PREPARED_FILE" ]; then
     local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
@@ -1452,7 +1473,7 @@ check_and_prepare_update() {
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         # Move prepared version
         $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
-        mv "$BBX_NEW_DIR" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
         # Run copy_install.sh
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
         # Clean up lock files
@@ -1465,20 +1486,6 @@ check_and_prepare_update() {
       fi
     fi
   fi
-
-  # No prepared update, start background preparation
-  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
-  # Create preparing lock file
-  $SUDO mkdir -p "$BBX_SHARE"
-  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
-  # Run update in background
-  if [ -n "$BBX_DEBUG" ]; then
-    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
-  else
-    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
-  fi
-  printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
-  return 0
 }
 
 # Modified update function
@@ -1486,7 +1493,7 @@ update() {
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
-  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+  printf "${YELLOW}Updating BrowserBox to latest...${NC}\n"
 
   # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
   if [ ! -d "$BBX_HOME" ] || [ ! -d "$BBX_HOME/BrowserBox" ] || [ ! -d "$BBX_SHARE/BrowserBox" ]; then
@@ -1494,9 +1501,10 @@ update() {
     install
     return $?
   fi
-
-  # Run the standard update check
-  check_and_prepare_update "update"
+  
+  update_background
+  local repo_tag=$(get_latest_repo_version)
+  check_prepare_and_install "$repo_tag"
 }
 
 # Background update function
@@ -1821,7 +1829,7 @@ usage() {
     printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
     printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
-    printf "  ${GREEN}update${NC}         Update BrowserBox\n"
+    printf "  ${GREEN}update${NC}         Force and explicit update to latest BrowserBox\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox with Tor \t\t${BOLD}bbx tor-run [--no-anonymize] [--no-onion]${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
