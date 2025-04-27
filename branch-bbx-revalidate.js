@@ -36,6 +36,3 @@ export async function revalidate() {
   runRevalidate(platform);
 }
 
-revalidate();
-
-
