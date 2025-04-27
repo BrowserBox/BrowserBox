@@ -1,5 +1,4 @@
-﻿# bbx.ps1
-[CmdletBinding(SupportsShouldProcess=$true)]
+﻿[CmdletBinding(SupportsShouldProcess=$true)]
 param (
     [Parameter(Position=0)]
     [string]$Command,
@@ -16,6 +15,7 @@ $commands = @{
     "run"       = "start.ps1"
     "certify"   = "certify.ps1"
     "stop"      = "stop.ps1"
+    "revalidate" = "certify.ps1"
 }
 
 Write-Verbose "Script dir: $scriptDir"
@@ -40,8 +40,21 @@ if (-not $Command -or $Command -eq "--help") {
 if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
     Write-Verbose "Script path: $scriptPath"
-    if (Test-Path $scriptPath) {
+    if ($Command -eq "revalidate" -or (Test-Path $scriptPath)) {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
+        if ($Command -eq "revalidate") {
+            $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
+            Write-Verbose "Ticket path: $ticketPath"
+            if (Test-Path $ticketPath) {
+                Write-Host "Removing ticket.json..." -ForegroundColor Cyan
+                if ($PSCmdlet.ShouldProcess($ticketPath, "Remove file")) {
+                    Remove-Item $ticketPath -Force
+                    Write-Host "ticket.json removed." -ForegroundColor Green
+                }
+            } else {
+                Write-Verbose "ticket.json does not exist at $ticketPath"
+            }
+        }
         if ($Args -and $Args.Count -gt 0) {
             Write-Verbose "Parsing args: $($Args -join ', ')"
             $params = @{}
