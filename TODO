@@ -6,6 +6,8 @@
 
 - marketing: license key -> product key  (yes please! :))
 
+- simple 'canvas' client for serenityOS?
+
 - add wireguard: bbx wgrun --no-proxy  (just a tunnel to BB that then goes to the public net). --no-tunnel (just a proxy from BB to the public net, no tunnel)
 
 - when form input is focused (input radio/checkbox) we shouldn't send space scroll.
@@ -18,7 +20,7 @@
 
 - fix pointer alignment when using page zoom (pinch/spread)
 
-- ensure chrome's are shut down (can we clear bbpro from pm2?)
+- ensure chromes are shut down (can we clear bbpro from pm2?)
 
 - solidify analytics
 
