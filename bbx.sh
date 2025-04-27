@@ -601,7 +601,7 @@ install() {
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
-    printf "${GREEN}bbx v$BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
+    printf "${GREEN}bbx $BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
 }
 
 setup() {
