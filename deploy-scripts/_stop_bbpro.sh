@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
 
 source ~/.nvm/nvm.sh
-TORDIR="/var/lib/tor"
 
 if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
 fi
 
-if [[ "$OSTYPE" == darwin* ]]; then
+# Determine Tor group and cookie file dynamically
+if [[ "$(uname -s)" == "Darwin" ]]; then
     TOR_GROUP="admin"  # Homebrew default
-    prefix=$(brew --prefix tor)
-    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
+    TORDIR="$(brew --prefix)/var/lib/tor"
+    COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
 else
     TORDIR="/var/lib/tor"
-    TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 
+    COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+    TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
     if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
-      TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) 
+      TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
     fi
     if [[ -z "$TOR_GROUP" ]]; then
-      TOR_GROUP="debian-tor"
+      TOR_GROUP="${TOR_GROUP:-debian-tor}"  # Allow env override
+      printf "${YELLOW}Warning: Could not detect Tor group. Using default: $TOR_GROUP. Set TOR_GROUP env var if incorrect.${NC}\n"
     fi
 fi
 
