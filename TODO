@@ -2,6 +2,10 @@
 
 - vultr mktplc.
 
+- solidify analytics
+
+- mitigations
+
 - windows ps1 bbx v11 (auto updates) etc
 
 - marketing: license key -> product key  (yes please! :))
@@ -22,6 +26,3 @@
 
 - ensure chromes are shut down (can we clear bbpro from pm2?)
 
-- solidify analytics
-
-- mitigations
