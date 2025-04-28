@@ -1,5 +1,3 @@
-- also fix bbx auto update, we are detecting version but not proceeding to update! unless explicit bbx update called
-
 - show mitigations and nuke session in 20 seconds if we cannot contact license server for 2 checks. or if revalidate fails. or if the error is something other than already in use. 
 
 - amulet: auto clear stale1 1 hr sessions (hearbeats) 

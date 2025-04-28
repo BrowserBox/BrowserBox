@@ -401,14 +401,18 @@ export class HardenedApplication {
 
     if (!response.ok) {
       if ( result.err && result.err == 'already in use' ) {
-        await revalidate(); 
-        if ( Number.isNaN(parseInt(attempt)) ) {
-          attempt = MAX_REVALIDATE_RETRIES - 1;
-        }
-        if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
-          return this.validateLicense(attempt);
-        } else {
-          result.message = 'Failed to revalidate a stale ticket.';
+        try { 
+          await revalidate(); 
+          if ( Number.isNaN(parseInt(attempt)) ) {
+            attempt = MAX_REVALIDATE_RETRIES - 1;
+          }
+          if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
+            return this.validateLicense(attempt);
+          } else {
+            result.message = 'Failed to revalidate a stale ticket.';
+          }
+        } catch(err) {
+          result.message = err.message || 'Revalidate failed';
         }
       } else {
         throw new Error(`License server responded with status ${response.status}`);
