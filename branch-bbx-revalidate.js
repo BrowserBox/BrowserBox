@@ -23,7 +23,11 @@ function runRevalidate(platform) {
     args = ['-c', 'bbrevalidate'];
   }
 
-  return spawnSync(shell, args, { stdio: 'inherit', detached: false, windowsHide: true });
+  const { output, status } = spawnSync(shell, args, { stdio: 'inherit', detached: false, windowsHide: true });
+  if ( Number.isNaN(status) || status === null || parseInt(status) > 0 ) {
+    throw new Error(`Revalidate failed`, JSON.stringify({output, status}));
+  }
+  return { errored: false };
 }
 
 /**
@@ -33,6 +37,6 @@ export async function revalidate() {
   const platform = os.platform();
   console.log(`Detected OS: ${platform}`);
 
-  runRevalidate(platform);
+  return runRevalidate(platform);
 }
 

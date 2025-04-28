@@ -999,6 +999,7 @@
       }
     });
 
+    let runCount = 0;
     const checkers = async () => {
       if ( shuttingDown ) return;
       const targets = zl.act.getTargets(zombie_port);
@@ -1009,6 +1010,13 @@
             licenseValid
           }
         });
+        runCount++;
+        if ( runCount >= 2 ) {
+          console.log(`Queueing shutdown int win fail`, {licenseValid});
+          setTimeout(() => globalThis.shutDown(), 11372)
+        }
+      } else {
+        runCount = 0;
       }
     };
     setTimeout(checkers, 8051);

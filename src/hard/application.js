@@ -28,32 +28,6 @@ const hardenedApp = new HardenedApplication({
 /**
  * Runs the main application with integrity and license verification.
  */
-async function runApp() {
-  try {
-    // Verify application integrity
-    await hardenedApp.verifyManifest();
-    log('Application', 'Application integrity check passed.');
-
-    // Validate license
-    await hardenedApp.validateLicense();
-    log('Application', 'License validation succeeded.');
-
-    // Start application logic
-    log('Application', 'Application started.');
-
-    console.log('Hello world');
-    const waitSeconds = 5;
-    await hardenedApp.securelyMarkTime(waitSeconds, () => console.log(`Approximately ${waitSeconds} seconds was marked securely.`));
-
-    // Release license
-    await hardenedApp.releaseLicense();
-    log('Application', 'Application finished.');
-  } catch (error) {
-    console.warn(error);
-    log('Application', `Error: ${error.message}`);
-    process.exit(1);
-  }
-}
 export async function applicationCheck() {
   console.log('Application Check', {dn: __dirname(), fn: __filename(), stack: (new Error).stack});
 
@@ -110,13 +84,5 @@ export async function release() {
   return await hardenedApp.releaseLicense();
 }
 
-// Export the runApplication function
-export async function runApplication() {
-  await runApp();
-}
 
-// If this script is the entry point, run the application
-if (process.argv[1] === __filename()) {
-  runApp();
-}
 

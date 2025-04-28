@@ -135,7 +135,7 @@ export class HardenedApplication {
    */
   async verifyManifest() {
     // Fetch the root public key from the distribution server
-    const response = await fetch(`${DISTRIBUTION_SERVER_URL}/keys/root`, {
+    const response = await fetchWithTimeout(`${DISTRIBUTION_SERVER_URL}/keys/root`, {
       method: 'GET',
       agent: new https.Agent({ rejectUnauthorized: false })
     });
@@ -313,50 +313,55 @@ export class HardenedApplication {
    * @throws Will throw an error if license validation fails.
    */
   async checkLicense({targets, integrity} = {}) {
-    if (!this.#certificatePath || !this.#licenseServerUrl) {
-      throw new Error('License validation configuration is incomplete.');
-    }
-
-    const hwfp = generateHardwareId();
-    hwfp.integrity = {integrity};
-
-    console.log({certPath: this.#certificatePath });
-
-    const certificateJson = readFile(this.#certificatePath);
-
-    // Perform local validation using PKI
-    const fullChain = JSON.parse(certificateJson);
-    const isValidLocal = await this.#pki.validateTicket(fullChain);
-
-    if (!isValidLocal) {
-      throw new Error('Local certificate validation failed.');
-    }
-
-    // Send the certificate to the license server for validation
-    const response = await fetch(
-      `${this.#licenseServerUrl}/tickets/validate`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true,
-          targets, hwfp
-        }),
-        agent: new https.Agent({ rejectUnauthorized: false }),
+    try {
+      if (!this.#certificatePath || !this.#licenseServerUrl) {
+        throw new Error('License validation configuration is incomplete.');
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`License server responded with status ${response.status}`);
+      const hwfp = generateHardwareId();
+      hwfp.integrity = {integrity};
+
+      console.log({certPath: this.#certificatePath });
+
+      const certificateJson = readFile(this.#certificatePath);
+
+      // Perform local validation using PKI
+      const fullChain = JSON.parse(certificateJson);
+      const isValidLocal = await this.#pki.validateTicket(fullChain);
+
+      if (!isValidLocal) {
+        throw new Error('Local certificate validation failed.');
+      }
+
+      // Send the certificate to the license server for validation
+      const response = await fetchWithTimeout(
+        `${this.#licenseServerUrl}/tickets/validate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true,
+            targets, hwfp
+          }),
+          agent: new https.Agent({ rejectUnauthorized: false }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`License server responded with status ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.message !== 'License is valid.') {
+        throw new Error(`License validation failed: ${result.message}`);
+      }
+
+      console.log('License validation succeeded.');
+    } catch(err) {
+      console.warn(`Error validating license`, err);
+      throw new Error(`License validation failed: ${err.message}`);
     }
-
-    const result = await response.json();
-
-    if (result.message !== 'License is valid.') {
-      throw new Error(`License validation failed: ${result.message}`);
-    }
-
-    console.log('License validation succeeded.');
   }
 
   /**
@@ -381,7 +386,7 @@ export class HardenedApplication {
     }
 
     // Send the certificate to the license server for validation
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${this.#licenseServerUrl}/tickets/validate`,
       {
         method: 'POST',
@@ -401,14 +406,18 @@ export class HardenedApplication {
 
     if (!response.ok) {
       if ( result.err && result.err == 'already in use' ) {
-        await revalidate(); 
-        if ( Number.isNaN(parseInt(attempt)) ) {
-          attempt = MAX_REVALIDATE_RETRIES - 1;
-        }
-        if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
-          return this.validateLicense(attempt);
-        } else {
-          result.message = 'Failed to revalidate a stale ticket.';
+        try { 
+          await revalidate(); 
+          if ( Number.isNaN(parseInt(attempt)) ) {
+            attempt = MAX_REVALIDATE_RETRIES - 1;
+          }
+          if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
+            return this.validateLicense(attempt);
+          } else {
+            result.message = 'Failed to revalidate a stale ticket.';
+          }
+        } catch(err) {
+          result.message = err.message || 'Revalidate failed';
         }
       } else {
         throw new Error(`License server responded with status ${response.status}`);
@@ -433,7 +442,7 @@ export class HardenedApplication {
 
     const certificateJson = readFile(this.#certificatePath);
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${this.#licenseServerUrl}/tickets/release`,
       {
         method: 'POST',
@@ -517,3 +526,18 @@ export class HardenedApplication {
   }
 }
 
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 12000 } = options  // default 12 seconds
+
+  options.timeout = undefined;
+
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal
+  });
+  clearTimeout(id);
+  return response
+}
