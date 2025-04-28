@@ -1,6 +1,3 @@
-or if revalidate fails. or if the error is something other than already in use. 
-or if 2 checks fail.
-
 - amulet: auto clear stale1 1 hr sessions (hearbeats) 
 
 - amulet: we should probably also autoclean tickets are some time, too, tho they are nice record. every 150 days we clean tickets. 
