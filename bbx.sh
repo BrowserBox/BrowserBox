@@ -1492,6 +1492,7 @@ check_prepare_and_install() {
       fi
     fi
   fi
+  return 1
 }
 
 # Modified update function
