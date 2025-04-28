@@ -9,7 +9,7 @@ const LOG_FILE = 'cdp.log';
 
       // logging 
         export function ggLog(...stuff) {
-          appendFileSync('event.log', JSON.stringify(stuff, null, 2));
+          DEBUG && appendFileSync('event.log', JSON.stringify(stuff, null, 2));
         }
 
         export function newLog(...stuff) {

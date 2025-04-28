@@ -548,7 +548,7 @@ install() {
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
     printf "${YELLOW}Fetching BrowserBox repository...${NC}\n"
     $SUDO rm -rf $BBX_HOME/BrowserBox*
-    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
+    curl --connect-timeout 8 -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
     unzip -o -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
     mv $BBX_HOME/BrowserBox-zip/BrowserBox-${branch} $BBX_HOME/BrowserBox 
     $SUDO rm -rf $BBX_HOME/BrowserBox-zip
@@ -601,7 +601,7 @@ install() {
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
-    printf "${GREEN}bbx v$BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
+    printf "${GREEN}bbx $BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
 }
 
 setup() {
@@ -646,7 +646,7 @@ setup() {
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+    curl --connect-timeout 8 -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
     "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
   else
@@ -1018,7 +1018,7 @@ docker_run() {
   if [ ! -f "$run_docker_script" ]; then
     printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
     mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
-    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
+    curl --connect-timeout 8 -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
       printf "${RED}Failed to download run_docker.sh script${NC}\n"
       exit 1
     }
@@ -1426,6 +1426,12 @@ check_and_prepare_update() {
   local current_tag=$(get_version_info "$VERSION_FILE")
   local repo_tag=$(get_latest_repo_version)
 
+  # Check if repo version fetch failed
+  if [ "$repo_tag" = "unknown" ]; then
+    printf "${YELLOW}Skipping update due to timeout or failure in fetching latest version.${NC}\n"
+    return 0
+  fi
+
   printf "${BLUE}Current: $current_tag${NC}\n"
   printf "${BLUE}Latest: $repo_tag${NC}\n"
 
@@ -1443,6 +1449,27 @@ check_and_prepare_update() {
     return 0
   fi
 
+  if check_prepare_and_install "$repo_tag"; then
+    return 0
+  fi
+
+  # No prepared update, start background preparation
+  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
+  # Create preparing lock file
+  $SUDO mkdir -p "$BBX_SHARE"
+  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
+  # Run update in background unless debug
+  if [ -n "$BBX_DEBUG" ]; then
+    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background 
+  else
+    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
+  fi
+  printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
+  return 0
+}
+
+check_prepare_and_install() {
+  repo_tag="$1"
   # Check if BBX_NEW_DIR has a prepared version
   if [ -f "$PREPARED_FILE" ]; then
     local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
@@ -1452,11 +1479,11 @@ check_and_prepare_update() {
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         # Move prepared version
         $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
-        mv "$BBX_NEW_DIR" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
         # Run copy_install.sh
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
         # Clean up lock files
-        rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n"
+        $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n"
         printf "${GREEN}Update to $repo_tag complete.${NC}\n"
         return 0
       else
@@ -1465,20 +1492,6 @@ check_and_prepare_update() {
       fi
     fi
   fi
-
-  # No prepared update, start background preparation
-  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
-  # Create preparing lock file
-  $SUDO mkdir -p "$BBX_SHARE"
-  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
-  # Run update in background
-  if [ -n "$BBX_DEBUG" ]; then
-    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
-  else
-    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
-  fi
-  printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
-  return 0
 }
 
 # Modified update function
@@ -1486,7 +1499,7 @@ update() {
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
-  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+  printf "${YELLOW}Updating BrowserBox to latest...${NC}\n"
 
   # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
   if [ ! -d "$BBX_HOME" ] || [ ! -d "$BBX_HOME/BrowserBox" ] || [ ! -d "$BBX_SHARE/BrowserBox" ]; then
@@ -1494,9 +1507,10 @@ update() {
     install
     return $?
   fi
-
-  # Run the standard update check
-  check_and_prepare_update "update"
+  
+  update_background
+  local repo_tag=$(get_latest_repo_version)
+  check_prepare_and_install "$repo_tag"
 }
 
 # Background update function
@@ -1509,7 +1523,12 @@ update_background() {
   mkdir -p "$BBX_NEW_DIR" || { printf "${RED}Failed to create $BBX_NEW_DIR/BrowserBox${NC}\n" >> "$LOG_FILE"; exit 1; }
   DLURL="${REPO_URL}/archive/refs/tags/${repo_tag}.zip";
   echo "Getting: $DLURL"
-  curl -sSL "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
+  curl -sSL --connect-timeout 8 "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || {
+    printf "${YELLOW}Skipping update due to timeout or failure in connecting to BrowserBox repo${NC}\n" >> "$LOG_FILE"
+    $SUDO rm -f "$BBX_NEW_DIR/BrowserBox.zip" 2>/dev/null
+    $SUDO rm -rf "$BBX_NEW_DIR" 2>/dev/null
+    return 1
+  }
   unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
   mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$tagdoo" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE"; exit 1; }
   $SUDO rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
@@ -1821,7 +1840,7 @@ usage() {
     printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
     printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
-    printf "  ${GREEN}update${NC}         Update BrowserBox\n"
+    printf "  ${GREEN}update${NC}         Force and explicit update to latest BrowserBox\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox with Tor \t\t${BOLD}bbx tor-run [--no-anonymize] [--no-onion]${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
@@ -1895,7 +1914,7 @@ activate() {
     fi
 
     if [ $((counter % poll_interval)) -eq 0 ]; then
-      local response=$(curl -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
+      local response=$(curl --connect-timeout 7 -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
       state=$(echo "$response" | jq -r '.state // "unvisited"')
       license_key=$(echo "$response" | jq -r '.license_key // ""')
       seats_provisioned=$(echo "$response" | jq -r '.seats_provisioned // 0')

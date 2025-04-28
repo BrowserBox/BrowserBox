@@ -71,6 +71,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  SPECIAL_CASE_FOR_META_KEY: false,
   logVisibilityChange: false,
   debugDesktopOnly: false,
   debugPdf: false,
@@ -339,6 +340,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  ALWAYS_RESTART_CAST: true,
   tryRestartingChrome: false,
   useRedirectBlock: true,
   blockedRedirectLocation: 'https://browse.cloudtabs.net/blocked',

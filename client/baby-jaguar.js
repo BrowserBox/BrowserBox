@@ -13,6 +13,7 @@
   // built in
   import util from 'util';
   import { appendFileSync } from 'fs';
+  import { exec } from 'child_process';
 
   // 3rd-party
   import TK from 'terminal-kit';
@@ -37,13 +38,14 @@
 
   // Constants and state
   const clickCounter = { value: 0 };
+  const IGNORE_VSCROLL = false;
   const USE_SYNTHETIC_FOCUS = true;
   const GLOBAL_IGNORE_CLICKABLE_FOR_INPUT = true;
   const IGNORE_CLICKABLE_FOR_TYPES = new Set([
     'input'
   ]);
   const markClicks = false;
-  const DEBOUNCE_DELAY = 280;
+  const DEBOUNCE_DELAY = 300;
   const args = process.argv.slice(2);
   const mySource = 'krnlclient' + Math.random().toString(36);
   export const renderedBoxes = [];
@@ -129,8 +131,8 @@
     for (const box of visibleBoxes) {
       DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
       const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
-      const renderX = termX - vScroll.X;
-      const renderY = termY + 1 - vScroll.Y;
+      const renderX = termX - (IGNORE_VSCROLL ? 0 : vScroll.X);
+      const renderY = termY + 1 - (IGNORE_VSCROLL ? 0 : vScroll.Y);
 
       if (renderX > termWidth) {
         vScroll.atMarginRight = false;
@@ -140,19 +142,22 @@
       }
       if (renderX > termWidth || renderY > termHeight + 4) continue;
 
-      const boxWidth = text.length;
-      const actualDisplayWidth = Math.min(termWidth, renderX + boxWidth) - Math.max(0, renderX);
-      const clipStart = Math.max(0, 0 - renderX);
-      const displayWidth = actualDisplayWidth;
-      let displayText = text.substring(clipStart, clipStart + actualDisplayWidth);
-      let termWidthForBox;
+      const displayAvailable = Math.max(0, termWidth - renderX + 1);
+      let termWidthForBox = text.length;
 
-      if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {
+      const isDeterminedInput = type === 'input' && boundingBox?.width && layoutState.viewportWidth;
+      if (isDeterminedInput) {
         const scaleFactor = termWidth / layoutState.viewportWidth;
         termWidthForBox = Math.round(boundingBox.width * scaleFactor);
-        termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayWidth));
+        termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayAvailable));
         logClicks(`Input sizing for backendNodeId: ${backendNodeId}, boundingBox.width: ${boundingBox.width}, viewportWidth: ${layoutState.viewportWidth}, scaleFactor: ${scaleFactor}, termWidth: ${termWidthForBox}`);
-      } else {
+      }
+
+      const actualDisplayWidth = Math.min(termWidth, renderX + termWidthForBox) - Math.max(0, renderX);
+      const clipStart = Math.max(0, 0 - renderX);
+      let displayText = text.substring(clipStart, clipStart + actualDisplayWidth);
+
+      if (!isDeterminedInput) {
         termWidthForBox = displayText.length;
       }
 
@@ -178,7 +183,7 @@
       if ( renderX < 0 ) {
         vScroll.atMarginLeft = false;
       }
-      if ( renderY < 0 ) {
+      if ( renderY < 5 ) {
         vScroll.atMarginTop = false;
       } 
       if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 5 ) continue;
@@ -705,7 +710,7 @@
         } catch (error) {
           debugLog(JSON.stringify({ targets, index }, null, 2));
           DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
-          DEBUG && process.exit(1);
+          DEBUG && terminal.processExit(1);
         }
       });
 
@@ -751,11 +756,16 @@
         });
       });
 
-      browser.on('scroll', async ({ direction, axis }) => {
+      browser.on('scroll', async ({ direction, axis, resetVScroll = false }) => {
         const state = getTabState(getBrowserState().currentSessionId);
         try {
           if ( axis == 'vertical' ) {
-            if ( vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
+            if ( resetVScroll ) {
+              vScroll.Y = 0;
+              vScroll.atMarginLeft = true;
+              vScroll.atMarginTop = true;
+            }
+            if ( IGNORE_VSCROLL || resetVScroll || vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
               const lineHeight = Math.round(state.viewportHeight / terminal.height);
               const deltaY = direction * lineHeight;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
@@ -763,7 +773,12 @@
               vScroll.Y += direction;
             }
           } else if ( axis == 'horizontal' ) {
-            if ( vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
+            if ( resetVScroll ) {
+              vScroll.X = 0;
+              vScroll.atMarginRight = true;
+              vScroll.atMarginBottom = true;
+            }
+            if ( IGNORE_VSCROLL || resetVScroll || vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
               const columnWidth = Math.round(state.viewportWidth / terminal.height);
               const deltaX = direction * columnWidth;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX, deltaY: 0 }, sessionId);
@@ -838,10 +853,11 @@
       await selectTabAndRender();
 
       process.title = 'KRNL-RENDER';
-      process.on('SIGINT', () => {
+      process.on('SIGINT', async () => {
         if (connection.connectionManager) connection.connectionManager.cleanup();
         browser.destroy();
         terminal.clear();
+        terminal.grabInput(false);
         terminal.green('Exiting...\n');
         process.exit(0);
       });
@@ -864,6 +880,7 @@
       console.error(error);
       if (DEBUG) console.warn(error);
       terminal.red(`Main error: ${error.message}\n`);
+      terminal.grabInput(false);
       browser?.destroy();
       process.exit(1);
     }

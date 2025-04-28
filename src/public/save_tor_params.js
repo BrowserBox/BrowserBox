@@ -1,4 +1,4 @@
-import {COMMON, CONFIG} from './voodoo/src/common.js';
+import {COMMON, CONFIG, sleep} from './voodoo/src/common.js';
 
 // Note
   // some services (audio and devtools) require the client to know their URL in order to connect. 

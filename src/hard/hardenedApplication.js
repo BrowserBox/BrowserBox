@@ -10,9 +10,11 @@ import { readFile, log } from './utils.js';
 import { generateHardwareId } from './hardware_id.js';
 import { DEBUG, TICKET_DIR, DIST_DIR, DISTRIBUTION_SERVER_URL } from './config.js';
 import { rainstormHash } from '@dosyago/rainsum';
+import { revalidate } from './../../branch-bbx-revalidate.js'
 
 export const __filename = () => fileURLToPath(import.meta.url);
 export const __dirname = () => path.dirname(__filename());
+const MAX_REVALIDATE_RETRIES = 2;
 
 /**
  * HardenedApplication class encapsulates application integrity and license management.
@@ -361,7 +363,7 @@ export class HardenedApplication {
    * Validates the license by performing local PKI validation and communicating with the license server.
    * @throws Will throw an error if license validation fails.
    */
-  async validateLicense() {
+  async validateLicense(attempt = 0) {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License validation configuration is incomplete.');
     }
@@ -389,11 +391,29 @@ export class HardenedApplication {
       }
     );
 
-    if (!response.ok) {
-      throw new Error(`License server responded with status ${response.status}`);
+    let result;
+
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error(`License server produced in invalid response with code ${response.status}`);
     }
 
-    const result = await response.json();
+    if (!response.ok) {
+      if ( result.err && result.err == 'already in use' ) {
+        await revalidate(); 
+        if ( Number.isNaN(parseInt(attempt)) ) {
+          attempt = MAX_REVALIDATE_RETRIES - 1;
+        }
+        if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
+          return this.validateLicense(attempt);
+        } else {
+          result.message = 'Failed to revalidate a stale ticket.';
+        }
+      } else {
+        throw new Error(`License server responded with status ${response.status}`);
+      }
+    }
 
     if (result.message !== 'License is valid.') {
       throw new Error(`License validation failed: ${result.message}`);

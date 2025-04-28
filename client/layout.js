@@ -1,8 +1,9 @@
 import fs from 'fs';
 import {terminal} from './baby-jaguar.js';
-import {rowsLog,debugLog,DEBUG} from './log.js';
+import {ggLog, rowsLog,debugLog,DEBUG} from './log.js';
 
 const GAP = 1;
+const NO_CACHE = false;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 const CHECKBOX_LAYOUT_WIDTH = 4;
@@ -20,7 +21,9 @@ const BUTTON_INPUT_TYPES = new Set([
   'button',
   'file',
 ]);
+const CACHE = new Map();
 const INVISIBLE_DIMENSION = 5;
+let count = 0;
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -657,158 +660,234 @@ const LayoutAlgorithm = (() => {
   }
 
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize }) {
-    DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
-    DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
-    const splitSnapshotData = splitSnapshot(snapshot);
-    DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
-    DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
-
-    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData });
-    if (!textLayoutBoxes.length) {
-      DEBUG && terminal.yellow('No text boxes found.\n');
-      return null;
-    }
-
     const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-    const baseScaleX = termWidth / viewportWidth;
-    const baseScaleY = (termHeight) / viewportHeight;
-    const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
-    const scaleY = baseScaleY * VERTICAL_COMPRESSION;
-
-    let visibleBoxes = textLayoutBoxes.filter(box => {
-      const boxX = box.boundingBox.x;
-      const boxY = box.boundingBox.y;
-      const boxRight = boxX + box.boundingBox.width;
-      const boxBottom = boxY + box.boundingBox.height;
-      return boxX < viewportX + viewportWidth && boxRight > viewportX &&
-             boxY < viewportY + viewportHeight && boxBottom > viewportY;
-    }).map(box => {
-      const adjustedX = box.boundingBox.x - viewportX;
-      const adjustedY = box.boundingBox.y - viewportY;
-      box.termX = Math.ceil(adjustedX * scaleX);
-      box.termY = Math.ceil(adjustedY * scaleY);
-      box.termWidth = box.text.length;
-      box.termHeight = 1;
-      return box;
-    });
-
-    const GUI_VERTICAL_THRESHOLD = 15;
-    const GUI_GAP_THRESHOLD = 30;
-    groupBoxesVertically(visibleBoxes, GUI_VERTICAL_THRESHOLD, GUI_GAP_THRESHOLD);
-
-    const layout = splitSnapshotData.documents[0].layout;
-    if (layout.paintOrders) {
-      const paintOrderMap = new Map();
-      layout.nodeIndex.forEach((nodeIdx, layoutIdx) => {
-        paintOrderMap.set(nodeIdx, layout.paintOrders[layoutIdx]);
-      });
-
-      visibleBoxes.sort((a, b) => {
-        const paintA = paintOrderMap.get(a.nodeIndex) || 0;
-        const paintB = paintOrderMap.get(b.nodeIndex) || 0;
-        return paintB - paintA;
-      });
-      debugLog(JSON.stringify(visibleBoxes));
-
-      const occupiedAreas = [];
-      const filteredBoxes = [];
-
-      for (const box of visibleBoxes) {
-        const paintOrder = paintOrderMap.get(box.nodeIndex) || 0;
-        let boxArea;
-
-        if (USE_TEXT_BOX_FOR_OCCLUSION_TEST) {
-          // Use the text box bounds for occlusion testing
-          const bounds = box.boundingBox;
-          boxArea = {
-            x: bounds.x,
-            y: bounds.y,
-            right: bounds.x + bounds.width,
-            bottom: bounds.y + bounds.height,
-          };
-        } else {
-          // Use the parent element's bounds for occlusion testing
-          const parentLayoutIndex = getParentElementLayoutIndex(box.nodeIndex, layout, nodeToParent);
-          if (parentLayoutIndex === -1) {
-            debugLog(`No parent element found for box "${box.text}" (node ${box.nodeIndex})`);
-            continue;
+    if ( !NO_CACHE) {
+      // noise reduction to allow better comparisons
+      snapshot.documents.forEach(d => {
+        delete d.scrollOffsetX;
+        delete d.scrollOffsetY;
+        d.layout.bounds.forEach(b => {
+          if (b[2] <= INVISIBLE_DIMENSION || b[3] <= INVISIBLE_DIMENSION) {
+            b[0] = 0;
+            b[1] = 0
+            b[2] = 0;
+            b[3] = 0;
           }
-          const parentBounds = layout.bounds[parentLayoutIndex];
-          boxArea = {
-            x: parentBounds[0],
-            y: parentBounds[1],
-            right: parentBounds[0] + parentBounds[2],
-            bottom: parentBounds[1] + parentBounds[3],
-          };
-        }
-
-        // Check if this box overlaps in any way with an occupied area (which has a higher paint order)
-        let isOccluded = false;
-        for (const occupied of occupiedAreas) {
-          // Calculate overlaps
-          const horizontalOverlap = Math.min(boxArea.right, occupied.right) - 
-                                   Math.max(boxArea.x, occupied.x);
-          const verticalOverlap = Math.min(boxArea.bottom, occupied.bottom) - 
-                                 Math.max(boxArea.y, occupied.y);
-          
-          // Get box height for vertical threshold calculation
-          const boxHeight = boxArea.bottom - boxArea.y;
-          const verticalThreshold = boxHeight * 0.2; // 20% of box height
-          
-          // Check if overlap exceeds allowed thresholds
-          const exceedsHorizontal = horizontalOverlap > 5; // More than 5 pixels
-          const exceedsVertical = verticalOverlap > verticalThreshold; // More than 20%
-          
-          // Box is occluded only if BOTH horizontal AND vertical overlaps exceed thresholds
-          if (exceedsHorizontal && exceedsVertical) {
-            debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area with bounds [${occupied.x}, ${occupied.y}, ${occupied.right}, ${occupied.bottom}]`);
-            debugLog(`Horizontal overlap: ${horizontalOverlap}px (max 5px), Vertical overlap: ${verticalOverlap}px (max ${verticalThreshold}px)`);
-            isOccluded = true;
-            break;
-          }
-        }
-
-        if (!isOccluded) {
-          filteredBoxes.push(box);
-          occupiedAreas.push(boxArea);
-          debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible with bounds [${boxArea.x}, ${boxArea.y}, ${boxArea.right}, ${boxArea.bottom}]`);
-        }
+        });
+      });
+    }
+    const s = JSON.stringify({snapshot});
+    const v = JSON.stringify({viewportWidth,viewportHeight,termWidth,termHeight,viewportX,viewportY});
+    ggLog(v);
+    let scrollChangeOnly = false;
+    if ( !NO_CACHE && CACHE.get('lastSnapshot') == s ) {
+      if ( !NO_CACHE && CACHE.get('lastViewport') == v ) {
+        ggLog('same snapshot, same scroll');
+        return CACHE.get('lastLayoutState');
+      } else {
+        scrollChangeOnly = true;
+        ggLog('same snapshot, different scroll');
+        CACHE.set('lastViewport', v);
       }
-
-      visibleBoxes = filteredBoxes;
-      debugLog(`Filtered down to ${visibleBoxes.length} visible boxes after occlusion check`);
-      debugLog(JSON.stringify(visibleBoxes));
     } else {
-      debugLog('No paintOrders available in snapshot; skipping occlusion filter');
+      ggLog('new snapshot');
+      fs.appendFileSync(`last.${count}snapshot.log`, count + ' ' + JSON.stringify(JSON.parse(CACHE.get('lastSnapshot') || '{}').snapshot || {},null,2) + '\n');
+      fs.appendFileSync(`this.${count}snapshot.log`, count +' ' + JSON.stringify(snapshot,null,2)+'\n');
+      count++;
+      CACHE.set('lastSnapshot', s);
     }
+    let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData;
+    if ( ! scrollChangeOnly ) {
+      DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
+      DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
+      splitSnapshotData = splitSnapshot(snapshot);
+      DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
+      DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
-    const childrenMap = new Map();
-    for (let i = 0; i < nodes.parentIndex.length; i++) {
-      let parentIdx = nodes.parentIndex[i];
-      if (parentIdx !== -1) {
-        if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
-        childrenMap.get(parentIdx).push(i);
+      ({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData }));
+      if (!textLayoutBoxes.length) {
+        DEBUG && terminal.yellow('No text boxes found.\n');
+        return null;
       }
-    }
-    const textBoxMap = new Map();
-    for (const box of visibleBoxes) {
-      if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
-      textBoxMap.get(box.nodeIndex).push(box);
+      CACHE.set('lastSplit', { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData });
+    } else {
+      ({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData } = CACHE.get('lastSplit'));
     }
 
-    const allNodeIndices = new Set([...textBoxMap.keys(), ...childrenMap.keys()]);
-    const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
-      const parentIdx = nodeToParent.get(nodeIdx);
-      return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) &&
-             hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap);
-    });
+    // determination of visible boxes (not cacheable)
+      const baseScaleX = termWidth / viewportWidth;
+      const baseScaleY = (termHeight) / viewportHeight;
+      const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
+      const scaleY = baseScaleY * VERTICAL_COMPRESSION;
+
+      let visibleBoxes = textLayoutBoxes.filter(box => {
+        const boxX = box.boundingBox.x;
+        const boxY = box.boundingBox.y;
+        const boxRight = boxX + box.boundingBox.width;
+        const boxBottom = boxY + box.boundingBox.height;
+        return boxX < viewportX + viewportWidth && boxRight > viewportX &&
+               boxY < viewportY + viewportHeight && boxBottom > viewportY;
+      }).map(box => {
+        const adjustedX = box.boundingBox.x - viewportX;
+        const adjustedY = box.boundingBox.y - viewportY;
+        box.termX = Math.ceil(adjustedX * scaleX);
+        box.termY = Math.ceil(adjustedY * scaleY);
+        box.termWidth = box.text.length;
+        box.termHeight = 1;
+        return box;
+      });
+
+    // vertical deconflict (not cacheable)
+      const GUI_VERTICAL_THRESHOLD = 15;
+      const GUI_GAP_THRESHOLD = 30;
+      groupBoxesVertically(visibleBoxes, GUI_VERTICAL_THRESHOLD, GUI_GAP_THRESHOLD);
+
+    // paint order and layer occlusion (not cacheable)
+      const layout = splitSnapshotData.documents[0].layout;
+      if (layout.paintOrders) {
+        const paintOrderMap = new Map();
+        layout.nodeIndex.forEach((nodeIdx, layoutIdx) => {
+          paintOrderMap.set(nodeIdx, layout.paintOrders[layoutIdx]);
+        });
+
+        visibleBoxes.sort((a, b) => {
+          const paintA = paintOrderMap.get(a.nodeIndex) || 0;
+          const paintB = paintOrderMap.get(b.nodeIndex) || 0;
+          return paintB - paintA;
+        });
+        debugLog(JSON.stringify(visibleBoxes));
+
+        const occupiedAreas = [];
+        const filteredBoxes = [];
+
+        for (const box of visibleBoxes) {
+          const paintOrder = paintOrderMap.get(box.nodeIndex) || 0;
+          let boxArea;
+
+          if (USE_TEXT_BOX_FOR_OCCLUSION_TEST) {
+            // Use the text box bounds for occlusion testing
+            const bounds = box.boundingBox;
+            boxArea = {
+              x: bounds.x,
+              y: bounds.y,
+              right: bounds.x + bounds.width,
+              bottom: bounds.y + bounds.height,
+            };
+          } else {
+            // Use the parent element's bounds for occlusion testing
+            const parentLayoutIndex = getParentElementLayoutIndex(box.nodeIndex, layout, nodeToParent);
+            if (parentLayoutIndex === -1) {
+              debugLog(`No parent element found for box "${box.text}" (node ${box.nodeIndex})`);
+              continue;
+            }
+            const parentBounds = layout.bounds[parentLayoutIndex];
+            boxArea = {
+              x: parentBounds[0],
+              y: parentBounds[1],
+              right: parentBounds[0] + parentBounds[2],
+              bottom: parentBounds[1] + parentBounds[3],
+            };
+          }
+
+          // Check if this box overlaps in any way with an occupied area (which has a higher paint order)
+          let isOccluded = false;
+          for (const occupied of occupiedAreas) {
+            // Calculate overlaps
+            const horizontalOverlap = Math.min(boxArea.right, occupied.right) - 
+                                     Math.max(boxArea.x, occupied.x);
+            const verticalOverlap = Math.min(boxArea.bottom, occupied.bottom) - 
+                                   Math.max(boxArea.y, occupied.y);
+            
+            // Get box height for vertical threshold calculation
+            const boxHeight = boxArea.bottom - boxArea.y;
+            const verticalThreshold = boxHeight * 0.2; // 20% of box height
+            
+            // Check if overlap exceeds allowed thresholds
+            const exceedsHorizontal = horizontalOverlap > 5; // More than 5 pixels
+            const exceedsVertical = verticalOverlap > verticalThreshold; // More than 20%
+            
+            // Box is occluded only if BOTH horizontal AND vertical overlaps exceed thresholds
+            if (exceedsHorizontal && exceedsVertical) {
+              debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area with bounds [${occupied.x}, ${occupied.y}, ${occupied.right}, ${occupied.bottom}]`);
+              debugLog(`Horizontal overlap: ${horizontalOverlap}px (max 5px), Vertical overlap: ${verticalOverlap}px (max ${verticalThreshold}px)`);
+              isOccluded = true;
+              break;
+            }
+          }
+
+          if (!isOccluded) {
+            filteredBoxes.push(box);
+            occupiedAreas.push(boxArea);
+            debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible with bounds [${boxArea.x}, ${boxArea.y}, ${boxArea.right}, ${boxArea.bottom}]`);
+          }
+        }
+
+        visibleBoxes = filteredBoxes;
+        debugLog(`Filtered down to ${visibleBoxes.length} visible boxes after occlusion check`);
+        debugLog(JSON.stringify(visibleBoxes));
+      } else {
+        debugLog('No paintOrders available in snapshot; skipping occlusion filter');
+      }
+
+    // map text boxes to visible boxes (not cacheable)
+      const textBoxMap = new Map();
+      for (const box of visibleBoxes) {
+        if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
+        textBoxMap.get(box.nodeIndex).push(box);
+      }
+
+    // generic parent to child map (cacheable)
+      /*
+      const childrenMap = new Map();
+      for (let i = 0; i < nodes.parentIndex.length; i++) {
+        let parentIdx = nodes.parentIndex[i];
+        if (parentIdx !== -1) {
+          if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
+          childrenMap.get(parentIdx).push(i);
+        }
+      }
+      */
+
+    // filtered parent to child map
+      const filteredChildrenMap = new Map();
+      const ancestorNodes = new Set();
+
+      // Step 1: Collect all ancestor nodes of nodes with visible text boxes
+      for (const nodeIdx of textBoxMap.keys()) {
+        let currentIdx = nodeIdx;
+        while (currentIdx !== -1) {
+          ancestorNodes.add(currentIdx);
+          currentIdx = nodeToParent.get(currentIdx) || -1;
+        }
+      }
+
+      // Step 2: Build filtered children map
+      for (let i = 0; i < nodes.parentIndex.length; i++) {
+        let parentIdx = nodes.parentIndex[i];
+        if (parentIdx !== -1 && ancestorNodes.has(parentIdx)) {
+          // Only include children that are in ancestorNodes (i.e., lead to visible text boxes)
+          if (ancestorNodes.has(i)) {
+            if (!filteredChildrenMap.has(parentIdx)) filteredChildrenMap.set(parentIdx, []);
+            filteredChildrenMap.get(parentIdx).push(i);
+          }
+        }
+      }
+      const childrenMap = filteredChildrenMap;
+
+    // get root nodes we need to start at (not cacheable in theory)
+      const allNodeIndices = new Set([...textBoxMap.keys(), ...childrenMap.keys()]);
+      const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
+        const parentIdx = nodeToParent.get(nodeIdx);
+        return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) &&
+               hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap);
+      });
 
     debugLog(`Processing ${rootNodes.length} root nodes`);
     for (const rootNode of rootNodes) {
       processNode(rootNode, childrenMap, textBoxMap, splitSnapshotData, nodes);
     }
 
-    return {
+    const layoutState = {
       visibleBoxes,
       termWidth,
       termHeight: termHeight - 4,
@@ -821,6 +900,9 @@ const LayoutAlgorithm = (() => {
       nodeToParent,
       nodes,
     };
+    CACHE.set('lastLayoutState', layoutState);
+    CACHE.set('lastViewport', v);
+    return layoutState;
   }
 
   function unionBoxes(box1, box2) {

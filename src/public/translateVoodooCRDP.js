@@ -100,7 +100,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
   }
 
   // Handle special case for Meta key
-  if (false && !SYNTHETIC && retVal.command.params.key === 'Meta') {
+  if (DEBUG.SPECIAL_CASE_FOR_META_KEY && !SYNTHETIC && retVal.command.params.key === 'Meta') {
     return [
       retVal,
       SYNTHETIC_CTRL(e)

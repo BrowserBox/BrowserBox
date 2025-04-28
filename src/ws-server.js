@@ -43,7 +43,7 @@
 
   let WRTC;
   let cacheExpired = true;
-  let xCheckers;
+  globalThis.xCheckers = null;
   try { 
     await import('@roamhq/wrtc').then(module => WRTC = module.default);
   } catch(e) {
@@ -542,7 +542,7 @@
       try {
         if ( shuttingDown ) return;
         shuttingDown = true;
-        clearInterval(xCheckers);
+        clearInterval(globalThis.xCheckers);
         let markOtherTasksComplete;
         let markLicenseReleased;
         let licenseReleased = new Promise(res => markLicenseReleased = res);
@@ -552,8 +552,8 @@
           console.log(resp);
           markLicenseReleased();
           await otherTasks;
-          console.log('Queueing exit for 1 second later');
-          setTimeout(() => process.exit(0), 1111);
+          console.log('Queueing exit for 5 seconds later');
+          setTimeout(() => process.exit(0), 5111);
         });
 
         setTimeout(() => {
@@ -585,6 +585,7 @@
         markOtherTasksComplete();
         console.log('Waiting license released...');
         await licenseReleased;
+        return await stop();
         console.log('License is released.');
       } catch(e) {
         console.warn(`Error during shutdown`, e);
@@ -999,6 +1000,7 @@
     });
 
     const checkers = async () => {
+      if ( shuttingDown ) return;
       const targets = zl.act.getTargets(zombie_port);
       const licenseValid = await validityCheck({targets});
       if ( ! licenseValid ) {
@@ -1010,7 +1012,7 @@
       }
     };
     setTimeout(checkers, 8051);
-    xCheckers = setInterval(checkers, 50137);
+    globalThis.xCheckers = setInterval(checkers, 50137);
 
     server.listen(server_port, async err => {
       if ( err ) {
@@ -1587,9 +1589,10 @@
     shutdownTimer = null;
   }
 
-  function executeShutdownOfBBPRO() {
+  async function executeShutdownOfBBPRO() {
     console.warn(`Stopping BrowserBox`);
-    return stop();
+    await globalThis.shutDown();
+    return await stop();
   }
 
   function populateExtensions() {

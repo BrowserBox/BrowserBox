@@ -7,7 +7,7 @@ import {release} from './src/hard/application.js';
 console.log('Stopping BrowserBox...');
 
 /**
- * Runs the installation command interactively for the given platform.
+ * Runs the stop command for the given platform.
  * @param {string} platform - The OS platform ('win32', 'linux', 'darwin', etc.)
  * @returns {Promise<void>} - Resolves on success, rejects on failure
  */
@@ -32,7 +32,7 @@ function runStop(platform) {
 }
 
 /**
- * Main function to install BrowserBox and provide next steps.
+ * Main function to stop BrowserBox.
  */
 export async function stop() {
   const platform = os.platform();
@@ -44,7 +44,7 @@ export async function stop() {
     console.log('Error releasing license', e);
   }
   try {
-    // Run the installation interactively
+    // Run the stop 
     await runStop(platform);
   } catch (error) {
     process.exit(1);
