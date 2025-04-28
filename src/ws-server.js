@@ -1009,6 +1009,12 @@
             licenseValid
           }
         });
+        runCount++;
+        if ( runCount >= 2 ) {
+          setTimeout(() => globalThis.shutDown(), 11372)
+        }
+      } else {
+        runCount = 0;
       }
     };
     setTimeout(checkers, 8051);

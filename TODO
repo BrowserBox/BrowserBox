@@ -1,4 +1,5 @@
-- show mitigations and nuke session in 20 seconds if we cannot contact license server for 2 checks. or if revalidate fails. or if the error is something other than already in use. 
+or if revalidate fails. or if the error is something other than already in use. 
+or if 2 checks fail.
 
 - amulet: auto clear stale1 1 hr sessions (hearbeats) 
 
