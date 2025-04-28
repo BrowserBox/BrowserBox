@@ -23,7 +23,7 @@ if ($runSetupMachine -eq "y") {
 New-Item -Path "$installDir\some-directory" -ItemType Directory -Force
 New-Item -Path "$installDir\another-directory" -ItemType Directory -Force
 # Loop through service directories to install npm packages and run npm audit fix
-$serviceDirs = @("src/zombie-lord", "../public/voodoo", "../../endbacker", "../../zombie-lord/custom-launcher", "../../", "services/instance/parec-server", "../", "pptr-console-server", "websocket_chat_app", "../", "../", "../pool/crdp-secure-proxy-server", "../chai", "../../../../")
+$serviceDirs = @("src/zombie-lord", "../public/voodoo", "../../endbacker", "../../zombie-lord/custom-launcher", "../../", "services/instance/parec-server", "../", "../pool/crdp-secure-proxy-server", "../chai", "../../../../")
 foreach ($dir in $serviceDirs) {
   $fullDir = Join-Path $installDir $dir
   Set-Location -Path $fullDir

@@ -138,7 +138,7 @@ export class HardenedApplication {
     // Fetch the root public key from the distribution server
     const response = await fetchWithTimeout(`${DISTRIBUTION_SERVER_URL}/keys/root`, {
       method: 'GET',
-      agent: new https.Agent({ rejectUnauthorized: false })
+      agent: new https.Agent({ rejectUnauthorized: true })
     });
 
     if (!response.ok) {
@@ -344,7 +344,7 @@ export class HardenedApplication {
             certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true,
             targets, hwfp
           }),
-          agent: new https.Agent({ rejectUnauthorized: false }),
+          agent: new https.Agent({ rejectUnauthorized: true }),
         }
       );
 
@@ -393,7 +393,7 @@ export class HardenedApplication {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ certificateJson: fullChain, instanceId: this.#instanceId }),
-        agent: new https.Agent({ rejectUnauthorized: false }),
+        agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
 
@@ -449,7 +449,7 @@ export class HardenedApplication {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ certificateJson, instanceId: this.#instanceId }),
-        agent: new https.Agent({ rejectUnauthorized: false }),
+        agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
 
