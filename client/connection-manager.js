@@ -100,7 +100,7 @@ export class ConnectionManager {
     DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
     this.socket = new WebSocket(wsDebuggerUrl, {
       headers: { 'x-browserbox-local-auth': this.cookieValue },
-      agent: new Agent({ rejectUnauthorized: false }),
+      agent: new Agent({ rejectUnauthorized: true }),
     });
 
     // Setup browserbox WebSocket
@@ -110,7 +110,7 @@ export class ConnectionManager {
     wsBBUrl.pathname = '/';
     this.browserbox = new WebSocket(wsBBUrl, {
       headers: { 'x-browserbox-local-auth': token },
-      agent: new Agent({ rejectUnauthorized: false }),
+      agent: new Agent({ rejectUnauthorized: true }),
     });
 
     // Wait for connections
