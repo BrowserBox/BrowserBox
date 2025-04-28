@@ -65,6 +65,7 @@ export class HardenedApplication {
         '.git/',
         '.sig',
         '.swp',
+        '.log',
         'login_link.txt',
         'timechain_proof.json',
         'tickets.json',
