@@ -1,3 +1,7 @@
+- amulet: auto clear stale1 1 hr sessions (hearbeats) 
+
+- amulet: we should probably also autoclean tickets are some time, too, tho they are nice record. every 150 days we clean tickets. 
+
 - azure qst. 
 
 - vultr mktplc.
