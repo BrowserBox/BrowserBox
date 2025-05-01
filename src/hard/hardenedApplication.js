@@ -11,6 +11,7 @@ import { generateHardwareId } from './hardware_id.js';
 import { DEBUG, TICKET_DIR, DIST_DIR, DISTRIBUTION_SERVER_URL } from './config.js';
 import { rainstormHash } from '@dosyago/rainsum';
 import { revalidate } from './../../branch-bbx-revalidate.js'
+import { sleep } from './../common.js';
 
 export const __filename = () => fileURLToPath(import.meta.url);
 export const __dirname = () => path.dirname(__filename());
@@ -527,6 +528,16 @@ export class HardenedApplication {
   }
 }
 
+async function fetchWithTimeoutAndRetry(resource, options = {}) {
+  try {
+    return await fetchWithTimeout(resource, options);
+  } catch(e) {
+    console.warn(`First fetch failed`, resource); 
+    console.info(`Will retry 1 time for`, resource);
+    await sleep(2417);
+    return fetchWithTimeout(resource, options);
+  }
+}
 async function fetchWithTimeout(resource, options = {}) {
   const { timeout = 12000 } = options  // default 12 seconds
 

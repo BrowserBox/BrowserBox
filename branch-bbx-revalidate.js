@@ -3,8 +3,6 @@
 import os from 'os';
 import { spawnSync } from 'child_process';
 
-console.log('Revalidating BrowserBox ticket...');
-
 /**
  * Runs the revalidation command interactively for the given platform.
  * @param {string} platform - The OS platform ('win32', 'linux', 'darwin', etc.)
@@ -34,6 +32,8 @@ function runRevalidate(platform) {
  * Main function to revalidate BrowserBox ticket in case of staleness.
  */
 export async function revalidate() {
+  console.log('Revalidating BrowserBox ticket...');
+
   const platform = os.platform();
   console.log(`Detected OS: ${platform}`);
 
