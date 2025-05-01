@@ -1,0 +1,16 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>browserbox</id>
+    <version>11.1.6</version>
+    <title>BrowserBox</title>
+    <authors>DOSAYGO</authors>
+    <owners>DOSAYGO</owners>
+    <description>Run remote browsers securely anywhere with BrowserBox.</description>
+    <projectUrl>https://github.com/BrowserBox/BrowserBox</projectUrl>
+    <tags>browserbox cloud browser remote dosaygo</tags>
+    <licenseUrl>https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md</licenseUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+  </metadata>
+</package>
+
