@@ -1,2 +1,2 @@
-irm bbx.dosaygo.com | iex
+irm https://bbx.dosaygo.com | iex
 
