@@ -689,7 +689,10 @@
         DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
         try {
           await send('Target.createTarget', { url: tab.url || 'about:blank' });
+          await sleep(500);
           targets = await connection.connectionManager.fetchTargets();
+          browser.targets = targets;
+          browser.render();
           await selectTabAndRender();
         } catch (error) {
           DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);

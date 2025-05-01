@@ -691,18 +691,12 @@ const LayoutAlgorithm = (() => {
       }
     } else {
       ggLog('new snapshot');
-      fs.appendFileSync(`last.${count}snapshot.log`, count + ' ' + JSON.stringify(JSON.parse(CACHE.get('lastSnapshot') || '{}').snapshot || {},null,2) + '\n');
-      fs.appendFileSync(`this.${count}snapshot.log`, count +' ' + JSON.stringify(snapshot,null,2)+'\n');
       count++;
       CACHE.set('lastSnapshot', s);
     }
     let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes, splitSnapshotData;
     if ( ! scrollChangeOnly ) {
-      DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
-      DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
       splitSnapshotData = splitSnapshot(snapshot);
-      DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
-      DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
       ({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData }));
       if (!textLayoutBoxes.length) {
