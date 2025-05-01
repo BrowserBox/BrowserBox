@@ -137,7 +137,7 @@ export class HardenedApplication {
    */
   async verifyManifest() {
     // Fetch the root public key from the distribution server
-    const response = await fetchWithTimeout(`${DISTRIBUTION_SERVER_URL}/keys/root`, {
+    const response = await fetchWithTimeoutAndRetry(`${DISTRIBUTION_SERVER_URL}/keys/root`, {
       method: 'GET',
       agent: new https.Agent({ rejectUnauthorized: true })
     });
@@ -336,7 +336,7 @@ export class HardenedApplication {
       }
 
       // Send the certificate to the license server for validation
-      const response = await fetchWithTimeout(
+      const response = await fetchWithTimeoutAndRetry(
         `${this.#licenseServerUrl}/tickets/validate`,
         {
           method: 'POST',
@@ -388,7 +388,7 @@ export class HardenedApplication {
     }
 
     // Send the certificate to the license server for validation
-    const response = await fetchWithTimeout(
+    const response = await fetchWithTimeoutAndRetry(
       `${this.#licenseServerUrl}/tickets/validate`,
       {
         method: 'POST',
@@ -444,7 +444,7 @@ export class HardenedApplication {
 
     const certificateJson = readFile(this.#certificatePath);
 
-    const response = await fetchWithTimeout(
+    const response = await fetchWithTimeoutAndRetry(
       `${this.#licenseServerUrl}/tickets/release`,
       {
         method: 'POST',
@@ -528,28 +528,30 @@ export class HardenedApplication {
   }
 }
 
-async function fetchWithTimeoutAndRetry(resource, options = {}) {
-  try {
-    return await fetchWithTimeout(resource, options);
-  } catch(e) {
-    console.warn(`First fetch failed`, resource); 
-    console.info(`Will retry 1 time for`, resource);
-    await sleep(2417);
-    return fetchWithTimeout(resource, options);
+// fetch helpers
+  async function fetchWithTimeoutAndRetry(resource, options = {}) {
+    try {
+      return await fetchWithTimeout(resource, options);
+    } catch(e) {
+      console.warn(`First fetch failed`, resource, e); 
+      console.info(`Will retry 1 time for`, resource);
+      await sleep(2417);
+      return fetchWithTimeout(resource, options);
+    }
   }
-}
-async function fetchWithTimeout(resource, options = {}) {
-  const { timeout = 12000 } = options  // default 12 seconds
 
-  options.timeout = undefined;
+  async function fetchWithTimeout(resource, options = {}) {
+    const { timeout = 12000 } = options  // default 12 seconds
 
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+    options.timeout = undefined;
 
-  const response = await fetch(resource, {
-    ...options,
-    signal: controller.signal
-  });
-  clearTimeout(id);
-  return response
-}
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response
+  }
