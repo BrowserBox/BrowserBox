@@ -1,0 +1,14 @@
+{
+  "version": "11.1.6",
+  "description": "BrowserBox - secure remote browser isolation anywhere",
+  "homepage": "https://github.com/BrowserBox/BrowserBox",
+  "license": "BrowserBox-Commercial-License-10.0.0",
+  "url": "https://bbx.dosaygo.com/",
+  "hash": "1961001c6738991f82b96fbfdd27cbca9ba19faab4f9ae1faadc5aa21bb4a168",
+  "installer": {
+    "script": "irm https://bbx.dosaygo.com | iex"
+  },
+  "bin": [],
+  "notes": "This installer will prompt for administrator access to configure system paths and install dependencies."
+}
+
