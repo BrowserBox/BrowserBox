@@ -12,7 +12,7 @@
 RootModule = 'BrowserBox-Installer.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.1.7'
+ModuleVersion = '11.1.6.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -21,16 +21,16 @@ ModuleVersion = '1.3.1.7'
 GUID = '9242b39a-deff-465a-90ee-3a075c858690'
 
 # Author of this module
-Author = 'team@dosaygo.com'
+Author = 'browserbox@dosaygo.com'
 
 # Company or vendor of this module
-CompanyName = 'DOSYAGO'
+CompanyName = 'DOSAYGO'
 
 # Copyright statement for this module
-Copyright = '(c) DOSYAGO. All rights reserved.'
+Copyright = '(c) DOSAYGO. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Install and run BrowserBox remote browser isolation on Windows. Windows Server is also supported. Audio even works from Windows Server. As BrowserBox Windows support is currently in beta release, some subsystems (for example Doc-Viewer for PDFs, DOCX, etc) may not currently work on Windows.'
+Description = 'Secure remote browser isolation on Windows. Courtesy of BrowserBox and DOSAYGO. Requires a License Key. Proceed to https://dosaygo.com to purchase.'
 
 # Minimum version of the PowerShell engine required by this module
 PowerShellVersion = '5.0'
@@ -69,7 +69,7 @@ PowerShellVersion = '5.0'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Initialize-BrowserBox', 'Start-BrowserBox', 'Stop-BrowserBox', 'Install-BrowserBox')
+FunctionsToExport = @()
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
