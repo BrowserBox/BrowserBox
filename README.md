@@ -10,13 +10,14 @@
 
 [![BrowserBox](https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue)](https://dosaygo.com)
 
->[!NOTE]
-> Ensure you run `bbx update` to get the latest version (v11) to have the latest fixes and updates.
+**BrowserBox is a great fit for people who use automation to deal with sensitive data. Use cases include healthcare/HIPPA, and government.**
 
 Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
 
 ## Who It’s For
 - **Businesses**: Safeguard your network and data from web-based threats.
+- **Regulated Enterprises**: Ensure compliance and fast-track your productivity.
+- **Government**: Leverage source-available cybersecurity with generous non-commercial discounts.
 - **Developers**: Embed secure browsing into your apps with our API.
 - **IT Teams**: Deploy a scalable, isolated browser solution in minutes.
 
@@ -47,6 +48,9 @@ BrowserBox runs seamlessly on a wide range of platforms—deploy it wherever you
 
 <p></p>
 <br>
+
+>[!NOTE]
+> Ensure you run `bbx update` to get the latest version (v11) to have the latest fixes and updates.
 
 ## Quick Solutions
 
