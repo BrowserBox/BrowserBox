@@ -1,8 +1,9 @@
-# certify.ps1 - Certify a BrowserBox license key on Windows
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $false, HelpMessage = "Force license check without overwriting a valid ticket")]
-    [switch]$ForceLicense
+    [switch]$ForceLicense,
+    [Parameter(Mandatory = $false, HelpMessage = "License key to certify")]
+    [string]$LicenseKey
 )
 
 # Configuration
@@ -33,12 +34,20 @@ if (Test-Path $TestEnvFile) {
     }
 }
 
-# Check for required license key (env var takes precedence over config)
-if (-not $env:LICENSE_KEY -and -not $Config["LICENSE_KEY"]) {
-    Write-Error "LICENSE_KEY environment variable or config value in $TestEnvFile is not set."
+# Check for required license key (parameter > env var > config)
+if ($LicenseKey) {
+    $LICENSE_KEY = $LicenseKey
+    # Save the provided license key to test.env
+    $Config["LICENSE_KEY"] = $LICENSE_KEY
+    Save-Config
+} elseif ($env:LICENSE_KEY) {
+    $LICENSE_KEY = $env:LICENSE_KEY
+} elseif ($Config["LICENSE_KEY"]) {
+    $LICENSE_KEY = $Config["LICENSE_KEY"]
+} else {
+    Write-Error "No LICENSE_KEY provided. Purchase a license key at: http://getbrowserbox.com or email sales@dosaygo.com for help. Then run 'bbx certify <LicenseKey>' to install."
     throw "LICENSE Error"
 }
-$LICENSE_KEY = if ($env:LICENSE_KEY) { $env:LICENSE_KEY } else { $Config["LICENSE_KEY"] }
 
 # Function to save config to test.env
 function Save-Config {
@@ -135,22 +144,19 @@ function New-Ticket {
         Write-Error "Error issuing ticket. No response from server."
         throw "SERVER Error"
     }
-    # Write-Verbose "Full ticket response: $($response | ConvertTo-Json -Depth 10 -Compress)"
     $ticket = $response.ticket
     if (-not $ticket) {
         Write-Error "Error issuing ticket. 'ticket' property missing in response: $($response | ConvertTo-Json -Depth 10 -Compress)"
         throw "TICKET Error"
     }
     Write-Host "Ticket issued successfully" -ForegroundColor Green
-    # Write-Verbose "Issued ticket JSON: $($ticket | ConvertTo-Json -Depth 10 -Compress)"
-    return $ticket  # Return the full response object
+    return $ticket
 }
 
 # Function to register ticket as certificate
 function Register-Certificate {
     param ([PSObject]$Ticket)
     Write-Host "Registering ticket as certificate..." -ForegroundColor Yellow
-    # Ensure the full ticket is serialized with sufficient depth
     $payload = @{ certificates = @($Ticket) } | ConvertTo-Json -Depth 10 -Compress
     Write-Verbose "Register payload: $payload"
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
@@ -172,7 +178,6 @@ try {
         $seatId = Get-VacantSeat
         $fullTicket = New-Ticket -SeatId $seatId
         if (-not $ticketValid) {
-            # Save the full ticket response with proper JSON depth
             $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
             Register-Certificate -Ticket $fullTicket
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green

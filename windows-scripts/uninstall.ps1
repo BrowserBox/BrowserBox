@@ -1,9 +1,22 @@
-# uninstall.ps1
-# Located at C:\Program Files\browserbox\windows-scripts\uninstall.ps1
 [CmdletBinding()]
 param (
     [switch]$Force  # Optional: Skip prompts and remove all without asking
 )
+
+# Check if running as Administrator
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Not running as Administrator. Relaunching..." -ForegroundColor Yellow
+    $arguments = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $PSCommandPath
+    )
+    if ($Force) { $arguments += "-Force" }
+    Start-Process powershell -Verb RunAs -ArgumentList $arguments
+    exit
+}
+
+Write-Host "Running as Administrator." -ForegroundColor Green
 
 $installDir = "C:\Program Files\browserbox"
 $bbxDir = "$installDir\windows-scripts"
