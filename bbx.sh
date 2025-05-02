@@ -71,8 +71,8 @@ get_latest_tag() {
     fi
 
     # Debug to stderr
-    [[ -n "$BBX_DEBUG" ]] && echo "Input tags:" >&2
-    [[ -n "$BBX_DEBUG" ]] && eecho "$input" >&2
+    # [[ -n "$BBX_DEBUG" ]] && echo "Input tags:" >&2
+    # [[ -n "$BBX_DEBUG" ]] && echo "$input" >&2
 
     # Get all tags and non-rc tags
     ALL_TAGS=$(echo "$input" | sort_git_tags)
@@ -85,10 +85,10 @@ get_latest_tag() {
     fi
 
     # Debug lists to stderr
-    [[ -n "$BBX_DEBUG" ]] && echo "All tags (sorted):" >&2
-    [[ -n "$BBX_DEBUG" ]] && echo "$ALL_TAGS" >&2
-    [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tags (sorted):" >&2
-    [[ -n "$BBX_DEBUG" ]] && echo "$NON_RC_TAGS" >&2
+    # [[ -n "$BBX_DEBUG" ]] && echo "All tags (sorted):" >&2
+    # [[ -n "$BBX_DEBUG" ]] && echo "$ALL_TAGS" >&2
+    # [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tags (sorted):" >&2
+    # [[ -n "$BBX_DEBUG" ]] && echo "$NON_RC_TAGS" >&2
 
     # Get tails
     ALL_TAIL=$(echo "$ALL_TAGS" | tail -n 1)
