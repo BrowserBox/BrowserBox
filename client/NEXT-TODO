@@ -1,6 +1,7 @@
 GOAL: Get to a browser that we can use
 
 - sometimes scroll rightward / leftward don't work (i guess becuase at margin checks are incorrect)
+  - could it just be a focus?
 - inputs and omnibox should scroll rightward when we type beyond their right margin (up to any maxlength)
 - chatgpt input on landing page doesn't render as input
 - hook modals for file upload.
