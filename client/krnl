@@ -1,4 +1,19 @@
 #!/usr/bin/env bash
 
-./run-krnl.js $@
+# Check if running on macOS or Linux
+OS=$(uname -s)
+if [[ "$OS" == "Darwin" || "$OS" == "Linux" ]]; then
+    # Check if @browserbox/speaker is installed
+    if ! npm list @browserbox/speaker >/dev/null 2>&1; then
+        echo "Installing @browserbox/speaker..."
+        npm install @browserbox/speaker
+        if [[ $? -eq 0 ]]; then
+            echo "@browserbox/speaker installed successfully."
+        else
+            echo "Failed to install @browserbox/speaker. Continuing anyway..."
+        fi
+    fi
+fi
+
+./run-krnl.js "$@"
 reset
