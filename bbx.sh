@@ -640,6 +640,7 @@ setup() {
   PORT="$port"
   BBX_HOSTNAME="$hostname"
   TOKEN="${token:-$(openssl rand -hex 16)}"
+  BB_TOKEN="${TOKEN}"
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
@@ -657,7 +658,11 @@ setup() {
     validate_license_key "true"  # Force prompt if invalid or missing
   fi
 
+  TOKEN="${BB_TOKEN}"
+
+  pkill ncat
   setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
+  echo "Token: $TOKEN"
   for i in {-2..2}; do
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
@@ -822,6 +827,7 @@ tor_run() {
         [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$BB_CONFIG_DIR/torbb_errors.txt"; echo "$login_link"; exit 1; }
         TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
+        pkill ncat
         for i in {-2..2}; do
             test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
         done
@@ -1791,6 +1797,7 @@ run_as() {
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Test port accessibility
+    pkill ncat
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
