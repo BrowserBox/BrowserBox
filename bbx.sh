@@ -439,7 +439,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:nmap,redhat:nmap-ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
+    local deps=("curl" "rsync" "debian:ncat,redhat:nmap/ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
