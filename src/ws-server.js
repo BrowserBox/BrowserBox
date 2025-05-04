@@ -1356,10 +1356,11 @@
               return res.status(200).send('Stopped');
             } catch(e) {
               console.warn(e);
+              stop();
             }
           } else {
             DEBUG.debugRestart && console.log(`Is not pm2. Exiting process`);
-            shutDown();
+            stop();
           }
         });
       // app integrity check
@@ -1600,7 +1601,7 @@
   async function executeShutdownOfBBPRO() {
     console.warn(`Stopping BrowserBox`);
     await globalThis.shutDown();
-    return await stop();
+    return stop();
   }
 
   function populateExtensions() {
