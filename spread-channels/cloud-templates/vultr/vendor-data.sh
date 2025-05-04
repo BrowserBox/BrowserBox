@@ -141,7 +141,7 @@ export TOKEN="${TOKEN:-$RAND}"
 export username="${BBX_INSTALL_USER}"
 yes yes | bash <(curl -sSL bbx.sh.dosaygo.com) install
 
-# Deploy BrowserBox as the 'pro' user
+# Deploy BrowserBox as the 'browserbox' user
 su - "$username" <<EOF
   cd "/home/$username" || cd "\$HOME" || fail "Cannot access home dir"
   source .nvm/nvm.sh;
