@@ -407,7 +407,7 @@ export class HardenedApplication {
     }
 
     if (!response.ok) {
-      if ( result.err && result.err == 'already in use' ) {
+      if ( result.err && (result.err == 'already in use' || result.err == 'ticket expired') ) {
         try { 
           await revalidate(); 
           if ( Number.isNaN(parseInt(attempt)) ) {
