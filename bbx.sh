@@ -440,7 +440,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
+    local deps=("curl" "rsync" "debian:nmap,redhat:nmap-ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
@@ -508,7 +508,7 @@ find_free_port_block() {
 test_port_access() {
     local port="$1"
     printf "${YELLOW}Testing port $port accessibility...${NC}\n"
-    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | nc -l "$port" >/dev/null 2>&1) &
+    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" --keep-open >/dev/null 2>&1) &
     local pid=$!
     sleep 1
     if curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; then
@@ -849,7 +849,7 @@ tor_run() {
         fi
 
         local cmd=$(printf 'AUTHENTICATE %s\r\nGETINFO status/bootstrap-phase\r\nQUIT\r\n' "$cookie_hex")
-        local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 9051 2>/dev/null)
+        local response=$(echo -e "$cmd" | ncat --send-only --wait 5 127.0.0.1 9051 2>/dev/null)
 
         if [ -z "$response" ]; then
             printf "${YELLOW}Warning: Tor control port not responding${NC}\n" >&2
@@ -1193,10 +1193,14 @@ pre_install() {
         fi
 
         # Prompt for a non-root user to run the install as
-        read -p "Enter a regular user to run the installation: " install_user
-        if [ -z "$install_user" ]; then
-            printf "${RED}ERROR: A username is required${NC}\n"
-            exit 1
+        if [ -z "$BBX_INSTALL_USER" ]; then
+          read -p "Enter a regular user to run the installation: " install_user
+          if [ -z "$install_user" ]; then
+              printf "${RED}ERROR: A username is required${NC}\n"
+              exit 1
+          fi
+        else
+          install_user="${BBX_INSTALL_USER}"
         fi
 
         mkdir -p "$BB_CONFIG_DIR"

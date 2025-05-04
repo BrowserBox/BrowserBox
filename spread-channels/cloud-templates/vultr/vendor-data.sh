@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ################################################
 # Vultr Marketplace User-Data Script for BrowserBox
-# Updated: March 02, 2025 - xAI Edition
+# Updated: May 04, 2025 - xAI Edition
 ################################################
 
 # Prerequisites
@@ -9,15 +9,6 @@ chmod +x /root/vultr-helper.sh 2>/dev/null || true
 . /root/vultr-helper.sh 2>/dev/null || true
 error_detect_on
 install_cloud_init latest
-
-# Fetch Vultr Marketplace vars
-export HOSTNAME="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-hostname)"
-export TOKEN="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-token)"
-export EMAIL="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-email)"
-export LICENSE_KEY="${LICENSE_KEY:-$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-license_key 2>/dev/null)}"
-
-# Default config (can be overridden via Marketplace vars)
-export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER:-false}"
 
 # Utility functions
 log() { echo "$@" >&2; }
@@ -48,69 +39,138 @@ install_packages() {
   esac
 }
 
-add_user() {
-  local username=$1
-  local distro=$(get_distro)
-  case $distro in
-    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
-      adduser --gecos "" --disabled-password "$username" || fail "User add failed"
+ensure_curl() {
+  if command -v curl >/dev/null 2>&1; then
+    echo "✅ curl is already installed"
+    return 0
+  fi
+
+  echo "🔍 curl not found. Attempting to install..."
+
+  OS="$(uname -s)"
+  case "$OS" in
+    Linux)
+      if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+          ubuntu|debian)
+            sudo apt update && sudo apt install -y curl
+            ;;
+          alpine)
+            sudo apk update && sudo apk add curl
+            ;;
+          fedora)
+            sudo dnf check-update || true
+            sudo dnf install -y curl
+            ;;
+          centos|rhel)
+            sudo yum check-update || true
+            sudo yum install -y curl
+            ;;
+          arch)
+            sudo pacman -Sy --noconfirm curl
+            ;;
+          *)
+            echo "❌ Unsupported Linux distro: $ID"
+            return 1
+            ;;
+        esac
+      else
+        echo "❌ Unknown Linux system"
+        return 1
+      fi
       ;;
-    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
-      adduser "$username" && passwd -d "$username" || fail "User add failed"
+    Darwin)
+      echo "Detected macOS"
+      if command -v brew >/dev/null 2>&1; then
+        brew update && brew install curl
+      else
+        echo "❌ Homebrew not found. Install Homebrew from https://brew.sh/"
+        return 1
+      fi
+      ;;
+    OpenBSD)
+      doas pkg_add -u curl || doas pkg_add curl
+      ;;
+    FreeBSD)
+      sudo pkg update && sudo pkg install -y curl
       ;;
     *)
-      fail "Unsupported distro: $distro"
+      echo "❌ Unsupported OS: $OS"
+      return 1
       ;;
   esac
+
+  # Final check
+  if command -v curl >/dev/null 2>&1; then
+    echo "✅ curl installed successfully"
+    return 0
+  else
+    echo "❌ curl installation failed"
+    return 1
+  fi
 }
+
+# Ensure curl is available before fetching metadata
+ensure_curl || fail "curl is required for metadata fetching"
+
+# Fetch Vultr Marketplace vars
+export HOSTNAME="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-hostname)"
+export TOKEN="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-token)"
+export EMAIL="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-email)"
+export LICENSE_KEY="${LICENSE_KEY:-$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-license_key 2>/dev/null)}"
+
+# Default config (can be overridden via Marketplace vars)
+export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER:-false}"
 
 # Validate inputs
 [ -z "$EMAIL" ] || [ -z "$HOSTNAME" ] || [ -z "$LICENSE_KEY" ] && fail "EMAIL, HOSTNAME, and LICENSE_KEY required"
-
-# Setup system
 install_packages
-username="pro"
-if ! id "$username" &>/dev/null; then
-  add_user "$username"
-  echo "$username ALL=(ALL) NOPASSWD:/usr/bin/git,/usr/bin/bash" > /etc/sudoers.d/$username
-  chmod 0440 /etc/sudoers.d/$username || fail "Sudoers setup failed"
-fi
 
-# Deploy BrowserBox
+export BBX_HOSTNAME="${HOSTNAME:-localhost}"
+export EMAIL="${EMAIL:-test@example.com}"
+export LICENSE_KEY="${LICENSE_KEY:-TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR}"
+export BBX_TEST_AGREEMENT="${BBX_TEST_AGREEMENT:-true}"
+export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
+export BB_USER_EMAIL="$EMAIL"
+export BBX_INSTALL_USER="browserbox"
+RAND="$(openssl rand -hex 16 2>/dev/null || head /dev/urandom | tr -dc 'a-f0-9' | head -c 32)"
+[ -z "$RAND" ] && fail "Failed to generate random token"
+export TOKEN="${TOKEN:-$RAND}"
+
+export username="${BBX_INSTALL_USER}"
+yes yes | bash <(curl -sSL bbx.sh.dosaygo.com) install
+
+# Deploy BrowserBox as the 'pro' user
 su - "$username" <<EOF
   cd "/home/$username" || cd "\$HOME" || fail "Cannot access home dir"
-  for i in {1..3}; do git clone https://github.com/BrowserBox/BrowserBox.git && break || sleep 5; done
-  [ -d "BrowserBox" ] || fail "Git clone failed"
-  cd BrowserBox || fail "Cannot enter BrowserBox dir"
-  
+  source .nvm/nvm.sh;
   export LICENSE_KEY="$LICENSE_KEY"
-  export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
-  export BB_USER_EMAIL="$EMAIL"
-  
-  ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME" || fail "Hostname wait failed"
-  ./deploy-scripts/tls "$HOSTNAME" || fail "TLS setup failed"
-  mkdir -p "/home/$username/sslcerts" && ./deploy-scripts/cp_certs "$HOSTNAME" "/home/$username/sslcerts" || fail "Cert copy failed"
   
   # Wait for commands to be available
-  for cmd in setup_bbpro bbcertify bbpro; do
+  for cmd in bbx setup_bbpro bbcertify bbpro; do
+    log "Waiting for \$cmd to be available..."
     timeout 120 bash -c "until command -v \$cmd >/dev/null 2>&1; do sleep 5; done" || fail "\$cmd not available after 120s"
   done
   
   # Generate token if not provided
-  [ -z "$TOKEN" ] && TOKEN="\$(openssl rand -hex 16 2>/dev/null || head /dev/urandom | tr -dc 'a-f0-9' | head -c 32)"
   echo "Login token: \$TOKEN" > "/home/$username/token.txt"
   
-  setup_bbpro --port 8080 --token "\$TOKEN" || fail "Setup failed"
+  bbx setup --port 8080 --token "\$TOKEN" || fail "Setup failed"
   bbcertify || fail "Certification failed - check LICENSE_KEY"
-  bbpro &>> "/home/$username/bbpro.log" & disown
+  bbx run
   pm2 save || fail "PM2 save failed"
   
-  # Auto-start with PM2
+  # Set up PM2 to auto-start BrowserBox on boot
   pm2_cmd="\$(pm2 startup | grep -v '^\[PM2\]' | awk '/^sudo env/')"
-  [ -n "\$pm2_cmd" ] && eval "\$pm2_cmd" || log "Warning: PM2 startup command not set"
+  if [ -n "\$pm2_cmd" ]; then
+    eval "\$pm2_cmd" || log "Warning: Failed to execute PM2 startup command"
+  else
+    log "Warning: PM2 startup command not found; auto-start not configured"
+  fi
 EOF
 
 # Final checks
 log "BrowserBox deployed! Access: https://$HOSTNAME:8080/login?token=$TOKEN"
-log "Logs: /home/$username/bbpro.log, Token: /home/$username/token.txt"
+log "Token: /home/$username/token.txt"
 exit 0
