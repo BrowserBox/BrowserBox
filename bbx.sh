@@ -439,7 +439,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:nmap,redhat:nmap-ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
+    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "debian:ncat,redhat:nmap/ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
@@ -848,7 +848,7 @@ tor_run() {
         fi
 
         local cmd=$(printf 'AUTHENTICATE %s\r\nGETINFO status/bootstrap-phase\r\nQUIT\r\n' "$cookie_hex")
-        local response=$(echo -e "$cmd" | ncat --send-only --wait 5 127.0.0.1 9051 2>/dev/null)
+        local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 9051 2>/dev/null)
 
         if [ -z "$response" ]; then
             printf "${YELLOW}Warning: Tor control port not responding${NC}\n" >&2
