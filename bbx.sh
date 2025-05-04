@@ -1,7 +1,6 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 
-
 ##########################################################
 #  ____                                  ____
 # | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
@@ -80,7 +79,7 @@ get_latest_tag() {
 
     # Check if lists are empty
     if [ -z "$ALL_TAGS" ]; then
-        [[ -n "$BBX_DEBUG" ]] && eecho "Error: No tags found" >&2
+        [[ -n "$BBX_DEBUG" ]] && echo "Error: No tags found" >&2
         return 1
     fi
 
@@ -508,16 +507,16 @@ find_free_port_block() {
 test_port_access() {
     local port="$1"
     printf "${YELLOW}Testing port $port accessibility...${NC}\n"
-    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" --keep-open >/dev/null 2>&1) &
+    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" >/dev/null 2>&1) &
     local pid=$!
     sleep 1
     if curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; then
         printf "${GREEN}Port $port is accessible.${NC}\n"
-        kill $pid 2>/dev/null
+        kill $pid &>/dev/null
         return 0
     else
         printf "${RED}Port $port is blocked by firewall. Open with ufw/firewall-cmd.${NC}\n"
-        kill $pid 2>/dev/null
+        kill $pid &>/dev/null
         return 1
     fi
 }
