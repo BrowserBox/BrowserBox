@@ -662,7 +662,6 @@ setup() {
 
   pkill ncat
   setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
-  echo "Token: $TOKEN"
   for i in {-2..2}; do
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
