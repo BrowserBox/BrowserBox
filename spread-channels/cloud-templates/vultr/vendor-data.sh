@@ -4,8 +4,6 @@
 # Updated: May 04, 2025 - xAI Edition
 ################################################
 
-set -x
-
 # Prerequisites
 chmod +x /root/vultr-helper.sh 2>/dev/null || true
 . /root/vultr-helper.sh 2>/dev/null || true
