@@ -21,6 +21,40 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 - **Developers**: Embed secure browsing into your apps with our API.
 - **IT Teams**: Deploy a scalable, isolated browser solution in minutes.
 
+## What's It Do
+
+BrowserBox does pretty normal browsery stuff, like:
+
+<figure>
+  <img width="1392" alt="BrowserBox displays the web, like a normal browser, but enterprise secure." src="https://github.com/user-attachments/assets/22150497-a6c9-4e05-9770-e9f5e7196c61" />
+  <figcaption>Secure Web Browsing: Enterprise-grade protection.</figcaption>
+</figure>
+<br>
+
+------
+
+<figure>
+  <img width="1392" alt="BrowserBox displays PDFs like a normal browser." src="https://github.com/user-attachments/assets/45240ca9-3f1d-458f-9d92-d05cfb14f991" />
+  <figcaption>Seamless PDF Viewing: Fast and reliable.</figcaption>
+</figure>
+<br>
+
+------
+
+<figure>
+  <img width="1392" alt="BrowserBox has DevTools like a normal browser" src="https://github.com/user-attachments/assets/a6457338-117a-44ee-8ab8-87dafa471f11" />
+  <figcaption>Powerful DevTools: Debug with ease.</figcaption>
+</figure>
+<br>
+
+------
+
+<figure>
+  <img width="1392" alt="BrowserBox uploads files, and does many other things, just like a normal browser." src="https://github.com/user-attachments/assets/a70608cd-30d7-48ad-a707-4bacfc6d9a73" />
+  <figcaption>Full Browser Features: File uploads and more.</figcaption>
+</figure>
+<br>
+
 ## Compatible With
 
 BrowserBox runs seamlessly on a wide range of platforms—deploy it wherever your team works!
