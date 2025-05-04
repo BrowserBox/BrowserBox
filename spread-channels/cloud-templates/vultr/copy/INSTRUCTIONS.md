@@ -31,11 +31,11 @@ This connects your shiny new fortress to the internet. Once BrowserBox detects t
 
 ### 3. Log In and Launch
 
-Setup takes around 25 minutes (grab a coffee or consult the stars 🌌). Once it's ready, head to:
+Once you've completed steps 0 to 2, setup takes around 25 minutes (grab a coffee or consult the stars 🌌). You can try visiting the login link below to check if it's complete. One complete, load it up to remote browse:
 
 `https://{{hostname}}:8080/login?token={{token}}`
 
-Boom — you’re browsing the web from a zero-trust fortress.
+And boom — you’re browsing the web from a zero-trust fortress.
 
 ## Why BrowserBox?
 
