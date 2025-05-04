@@ -145,6 +145,7 @@ yes yes | bash <(curl -sSL bbx.sh.dosaygo.com) install
 su - "$username" <<EOF
   cd "/home/$username" || cd "\$HOME" || fail "Cannot access home dir"
   source .nvm/nvm.sh;
+  export TOKEN="$TOKEN"
   export LICENSE_KEY="$LICENSE_KEY"
   
   # Wait for commands to be available
@@ -154,9 +155,9 @@ su - "$username" <<EOF
   done
   
   # Generate token if not provided
-  echo "Login token: \$TOKEN" > "/home/$username/token.txt"
+  echo "Login token: $TOKEN" > "/home/$username/token.txt"
   
-  bbx setup --port 8080 --token "\$TOKEN" || fail "Setup failed"
+  bbx setup --port 8080 --token "$TOKEN" || fail "Setup failed"
   bbcertify || fail "Certification failed - check LICENSE_KEY"
   bbx run
   pm2 save || fail "PM2 save failed"
@@ -171,6 +172,8 @@ su - "$username" <<EOF
 EOF
 
 # Final checks
-log "BrowserBox deployed! Access: https://$HOSTNAME:8080/login?token=$TOKEN"
 log "Token: /home/$username/token.txt"
+log "BrowserBox deployed! Access: https://$HOSTNAME:8080/login?token=$TOKEN"
+log "BrowserBox Login Link: $(cat /home/$username/.config/dosyago/bbpro/login.link)"
+
 exit 0
