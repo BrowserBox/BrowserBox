@@ -145,9 +145,12 @@ yes yes | bash <(curl --connect-timeout 22 -sSL bbx.sh.dosaygo.com) install
 
 # Deploy BrowserBox as the 'browserbox' user
 su - "$username" <<EOF
-  log() { echo "$@" >&2; }
-  fail() { log "Error: $1"; exit 1; }
   cd "/home/$username" || cd "\$HOME" || fail "Cannot access home dir"
+
+  log() { echo "$@" >&2; }
+
+  fail() { log "Error: $1"; exit 1; }
+
   source ~/.nvm/nvm.sh
   export TOKEN="$TOKEN"
   export LICENSE_KEY="$LICENSE_KEY"
@@ -182,3 +185,4 @@ log "BrowserBox deployed! Access: https://$HOSTNAME:8080/login?token=$TOKEN"
 log "BrowserBox Login Link: $(cat /home/$username/.config/dosyago/bbpro/login.link)"
 
 exit 0
+
