@@ -4,6 +4,8 @@
 # Updated: May 04, 2025 - xAI Edition
 ################################################
 
+set -x
+
 # Prerequisites
 chmod +x /root/vultr-helper.sh 2>/dev/null || true
 . /root/vultr-helper.sh 2>/dev/null || true
@@ -115,10 +117,10 @@ ensure_curl() {
 ensure_curl || fail "curl is required for metadata fetching"
 
 # Fetch Vultr Marketplace vars
-export HOSTNAME="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-hostname)"
-export TOKEN="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-token)"
-export EMAIL="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-email)"
-export LICENSE_KEY="${LICENSE_KEY:-$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-license_key 2>/dev/null)}"
+export HOSTNAME="$(curl --connect-timeout 15 -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-hostname)"
+export TOKEN="$(curl --connect-timeout 15 -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-token)"
+export EMAIL="$(curl --connect-timeout 15 -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-email)"
+export LICENSE_KEY="${LICENSE_KEY:-$(curl --connect-timeout 15 -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-license_key 2>/dev/null)}"
 
 # Default config (can be overridden via Marketplace vars)
 export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER:-false}"
@@ -139,12 +141,14 @@ RAND="$(openssl rand -hex 16 2>/dev/null || head /dev/urandom | tr -dc 'a-f0-9' 
 export TOKEN="${TOKEN:-$RAND}"
 
 export username="${BBX_INSTALL_USER}"
-yes yes | bash <(curl -sSL bbx.sh.dosaygo.com) install
+yes yes | bash <(curl --connect-timeout 22 -sSL bbx.sh.dosaygo.com) install
 
 # Deploy BrowserBox as the 'browserbox' user
 su - "$username" <<EOF
+  log() { echo "$@" >&2; }
+  fail() { log "Error: $1"; exit 1; }
   cd "/home/$username" || cd "\$HOME" || fail "Cannot access home dir"
-  source .nvm/nvm.sh;
+  source ~/.nvm/nvm.sh
   export TOKEN="$TOKEN"
   export LICENSE_KEY="$LICENSE_KEY"
   
@@ -169,6 +173,7 @@ su - "$username" <<EOF
   else
     log "Warning: PM2 startup command not found; auto-start not configured"
   fi
+  exit 0
 EOF
 
 # Final checks
