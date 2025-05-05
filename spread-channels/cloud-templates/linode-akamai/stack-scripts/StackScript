@@ -5,146 +5,179 @@
 # <UDF name="install_doc_viewer" label="Install doc viewer for PDFs? Takes longer" oneOf="true,false" default="false" />
 # <UDF name="understanding" label="I will open ports tcp:8078-8082 and add DNS A record" oneOf="true,false" default="true" />
 # <UDF name="license_key_password" label="My BrowserBox license key (masked)" example="Purchase at sales@dosaygo.com" />
-# <UDF name="use_docker" label="Deploy with Docker instead of raw install?" oneOf="true,false" default="false" />
+
+
+
 
 set -x
 
+
 # Import Linode Bash Library
 source <ssinclude StackScriptID="1">
+
+
+
 
 # --- Utility Functions ---
 log() { echo "$@" >&2; }
 fail() { log "Error: $1"; shutdown now & exit 1; }
 get_distro() {
-  [ -f /etc/os-release ] || fail "Cannot determine distribution"
-  . /etc/os-release
-  echo "$ID"
+  [ -f /etc/os-release ] || fail "Cannot determine distribution"
+  . /etc/os-release
+  echo "$ID"
 }
+
+
+
+
+ensure_curl() {
+  if command -v curl >/dev/null 2>&1; then
+    log "curl is already installed"
+    return 0
+  fi
+  log "curl not found. Attempting to install..."
+  local distro=$(get_distro)
+  case "$distro" in
+    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+      if ! apt-get update && apt-get install -y curl; then
+        fail "curl install failed"
+      fi
+      ;;
+    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+      yum install -y curl || fail "curl install failed"
+      ;;
+    *)
+      fail "Unsupported distro for curl install: $distro"
+      ;;
+  esac
+  command -v curl >/dev/null 2>&1 || fail "curl installation failed"
+  log "curl installed successfully"
+}
+
+
+
+
+check_port() {
+  local port=$1
+  if command -v nc >/dev/null 2>&1; then
+    nc -z localhost "$port" && return 0 || return 1
+  elif command -v ss >/dev/null 2>&1; then
+    ss -tuln | grep -q ":$port" && return 0 || return 1
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -tuln | grep -q ":$port" && return 0 || return 1
+  else
+    log "Warning: No port-checking tool available. Assuming port $port is closed."
+    return 1
+  fi
+}
+
+
+
 
 # --- System Setup Functions ---
 install_packages() {
-  system_update  # From Bash Library
-  system_install_package "$1"  # From Bash Library, handles distro differences
+  system_update  # From Bash Library
+  system_install_package "git sudo"  # From Bash Library
+  ensure_curl
 }
 
-check_port() {
-  local port=$1
-  if command -v nc >/dev/null 2>&1; then
-    nc -z localhost "$port" && return 0 || return 1
-  elif command -v ss >/dev/null 2>&1; then
-    ss -tuln | grep -q ":$port" && return 0 || return 1
-  elif command -v netstat >/dev/null 2>&1; then
-    netstat -tuln | grep -q ":$port" && return 0 || return 1
-  else
-    log "Warning: No port-checking tool available. Assuming port $port is closed."
-    return 1
-  fi
-}
 
-add_user() {
-  local username=$1
-  local distro=$(get_distro)
-  case $distro in
-    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
-      adduser --gecos "" --disabled-password "$username"
-      ;;
-    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
-      adduser "$username"
-      passwd -d "$username"
-      ;;
-    *)
-      fail "Unsupported distribution for user creation: $distro"
-      ;;
-  esac
-}
+
 
 # --- Validation Functions ---
 validate_inputs() {
-  local signature="yes"
-  [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ] || [ -z "$LICENSE_KEY_PASSWORD" ] && fail "HOSTNAME, USEREMAIL, and LICENSE_KEY_PASSWORD are required"
-  [ "$signature" != "yes" ] && fail "You must agree to the terms and conditions"
+  [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ] || [ -z "$LICENSE_KEY_PASSWORD" ] && fail "HOSTNAME, USEREMAIL, and LICENSE_KEY_PASSWORD are required"
+  [ "$UNDERSTANDING" != "true" ] && fail "You must agree to open ports and set DNS"
 }
+
+
+
 
 # --- Deployment Functions ---
 generate_token() {
-  if [ -z "$TOKEN" ]; then
-    TOKEN=$(openssl rand -hex 16 2>/dev/null || head /dev/urandom | tr -dc 'a-f0-9' | head -c 32)
-    echo "Generated login token: $TOKEN" | tee /home/pro/token.txt
-  fi
+  if [ -z "$TOKEN" ]; then
+    TOKEN=$(openssl rand -hex 16 2>/dev/null || head /dev/urandom | tr -dc 'a-f0-9' | head -c 32)
+    [ -z "$TOKEN" ] && fail "Failed to generate random token"
+  fi
 }
 
-deploy_docker() {
-  install_packages "docker.io"
-  su - "pro" <<EOF
-    docker pull ghcr.io/browserbox/browserbox:latest
-    docker run -d -p 8080:8080 -p 8078-8082:8078-8082 \
-      -e LICENSE_KEY="$LICENSE_KEY_PASSWORD" \
-      -e INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER" \
-      --name browserbox ghcr.io/browserbox/browserbox:latest
-EOF
-}
+
+
 
 deploy_raw() {
-  su - "pro" <<EOF
-    cd "/home/pro" || cd "$HOME"
-    for i in {1..3}; do git clone https://github.com/BrowserBox/BrowserBox.git && break || sleep 5; done
-    [ ! -d "BrowserBox" ] && exit 1
-    cd BrowserBox
-    ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
-    export LICENSE_KEY="$LICENSE_KEY_PASSWORD"
-    export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
-    yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL" | tee /home/pro/install.log
-    setup_bbpro --port 8080 --token "$TOKEN"
-    bbcertify
-    export LICENSE_KEY=""
-    bbpro &>> /home/pro/bbpro.log &
+  local username="browserbox"
+  export BBX_INSTALL_USER="$username"
+  export BBX_HOSTNAME="$HOSTNAME"
+  export BB_USER_EMAIL="$USEREMAIL"
+  export LICENSE_KEY="$LICENSE_KEY_PASSWORD"
+  export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
+  export TOKEN="$TOKEN"
+  yes yes | bash <(curl --connect-timeout 22 -sSL bbx.sh.dosaygo.com) install || fail "BBX install script failed"
+  su - "$username" <<EOF
+    cd "/home/$username" || cd "\$HOME" || fail "Cannot access home dir"
+    log() { echo "\$@" >&2; }
+    fail() { log "Error: \$1"; exit 1; }
+    source ~/.nvm/nvm.sh
+    for cmd in bbx setup_bbpro bbcertify bbpro; do
+      log "Waiting for \$cmd to be available..."
+      timeout 120 bash -c "until command -v \$cmd >/dev/null 2>&1; do sleep 5; done" || fail "\$cmd not available after 120s"
+    done
+    echo "Login token: $TOKEN" > "/home/$username/token.txt"
+    bbx setup --port 8080 --token "$TOKEN" || fail "Setup failed"
+    bbcertify || fail "Certification failed - check LICENSE_KEY"
+    bbx run || fail "Run failed"
+    pm2 save || fail "PM2 save failed"
+    pm2_cmd="\$(pm2 startup | grep -v '^\[PM2\]' | awk '/^sudo env/')"
+    if [ -n "\$pm2_cmd" ]; then
+      eval "\$pm2_cmd" || log "Warning: Failed to execute PM2 startup command"
+    else
+      log "Warning: PM2 startup command not found; auto-start not configured"
+    fi
 EOF
-  [ $? -ne 0 ] && fail "Raw deployment failed"
+  [ $? -ne 0 ] && fail "Raw deployment failed"
 }
+
+
+
 
 # --- Post-Install Functions ---
 check_ports() {
-  if ! check_port 8080; then
-    log "Warning: Port 8080 not open. Check firewall."
-  fi
-  for port in {8078..8082}; do
-    if ! check_port "$port"; then
-      log "Warning: Port $port not open. WebRTC may fail."
-    fi
-  done
+  if ! check_port 8080; then
+    log "Warning: Port 8080 not open. Check firewall."
+  fi
+  for port in {8078..8082}; do
+    if ! check_port "$port"; then
+      log "Warning: Port $port not open. WebRTC may fail."
+    fi
+  done
 }
+
+
+
 
 print_success() {
-  echo "BrowserBox deployed successfully!"
-  echo "Access it at: https://$HOSTNAME:8080/login?token=$TOKEN"
-  echo "Logs: /home/pro/install.log, /home/pro/bbpro.log"
-  echo "Linode ID: $LINODE_ID, Data Center ID: $LINODE_DATACENTERID"
-  [ "$USE_DOCKER" == "true" ] && echo "Docker container 'browserbox' running. Use 'docker logs browserbox' to troubleshoot."
+  log "BrowserBox deployed successfully!"
+  log "Access it at: https://$HOSTNAME:8080/login?token=$TOKEN"
+  log "Token: /home/browserbox/token.txt"
+  log "Logs: /home/browserbox/.config/dosyago/bbpro/bbpro.log"
+  log "Linode ID: $LINODE_ID, Data Center ID: $LINODE_DATACENTERID"
 }
 
-cleanup() {
-  rm -f /tmp/*.env 2>/dev/null  # Placeholder for future external file use
-}
+
+
 
 # --- Main Execution ---
 main() {
-  validate_inputs
-  sleep 15
-  install_packages "git sudo"
-  if ! id "pro" &>/dev/null; then
-    add_user "pro"
-    echo "pro ALL=(ALL) NOPASSWD:/usr/bin/git,/usr/bin/bash,/usr/bin/docker" > /etc/sudoers.d/pro
-    chmod 0440 /etc/sudoers.d/pro
-  fi
-  generate_token
-  if [ "$USE_DOCKER" == "true" ]; then
-    deploy_docker
-  else
-    deploy_raw
-  fi
-  check_ports
-  print_success
-  cleanup
+  validate_inputs
+  install_packages
+  generate_token
+  deploy_raw
+  check_ports
+  print_success
 }
 
+
+
+
 main
+

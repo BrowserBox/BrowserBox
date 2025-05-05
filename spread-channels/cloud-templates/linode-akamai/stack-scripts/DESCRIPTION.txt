@@ -1,63 +1,138 @@
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          *** BROWSERBOX DEPLOYMENT ZINE ***                
-       <<< ISSUE #1 - MARCH 02, 2025 - xAI EDITION >>>     
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       BrowserBox Linode Edition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  WELCOME TO THE FUTURE OF SECURE BROWSING, '90S STYLE!
-  -----------------------------------------------
-  Got a Linode? Wanna run BrowserBox - the dope remote
-  browser isolation tool from DOSYAGO/xAI? This StackScript
-  slams it onto your box FAST. Secure web? Check. Zero
-  latency? Check. License key? YOU NEED ONE, fam! Hit up
-  sales@dosaygo.com to grab yours and join the party.
 
-  HOW TO DEPLOY (7 QUICK FIELDS):
-  -----------------------------
 
-    * useremail: Your email - sign here to agree to T&Cs!
-      - Ex: jcitizen@website.net
-      - We won't spam ya, promise.
 
-    * hostname: Your FQDN - point DNS here!
-      - Ex: bb.mydomain.com
-      - No DNS? No dice.
+Setup Guide
+-----------
 
-    * token: Login key for https://HOSTNAME:8080/login
-      - Leave blank, we?ll cook one up for ya!
-      - Want your own? Drop it in.
 
-    * install_doc_viewer: PDF viewer? Y/N (takes longer)
-      - Yes/No: Pick "true" or "false" (default: false)
-      - Secure docs FTW.
 
-    * understanding: Ports 8078-8082 + DNS A record
-      - Yes/No: "true" = I?ll handle it (default: true)
-      - Don?t skip this or WebRTC cries.
 
-    * license_key_password: YOUR BROWSERBOX KEY (masked)
-      - Ex: Get it @ sales@dosaygo.com
-      - No key, no play - snag one now!
+Welcome to BrowserBox, the premier remote browser isolation solution. Deploy it on your Linode instance with this StackScript for secure, zero-trust browsing.
 
-    * use_docker: Docker or raw install?
-      - Yes/No: "true" = Docker, "false" = raw (default: false)
-      - Docker?s cleaner, raw?s old-school.
 
-  WHAT YOU GET:
-  ------------
-    - BrowserBox Pro slammed onto your Linode.
-    - Ports 8080 + 8078-8082 ready to roll.
-    - Logs + token for easy access.
-    - Works on Ubuntu, Fedora, CentOS, Kali - ALL THE DISTROS!
 
-  PRO TIPS:
-  --------
-    - Open them ports (8078-8082, 8080) or it?s a no-go.
-    - DNS A record to your hostname = must-have.
-    - Check logs at /home/pro/* if ya get stuck.
 
-  READY? DEPLOY THIS sucker + EMAIL sales@dosaygo.com
-  FOR YOUR LICENSE KEY! LET?S BROWSE SECURELY, RETRO STYLE!
+1. Obtain a License Key
+----------------------
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     *** END OF LINE - STAY RAD, HACKERS! ***             
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+Purchase a BrowserBox license (1 seat) at:
+- http://getbrowserbox.com
+- https://dosaygo.com
+
+
+
+
+2. Configure and Deploy
+----------------------
+
+
+
+
+Fill out the StackScript fields in the Linode dashboard, then click Deploy:
+
+
+
+
+- useremail: Your email (confirms agreement to T&Cs)
+  Example: jcitizen@website.net
+- hostname: Your FQDN (point DNS here)
+  Example: bb.mydomain.com
+- token: Login token for https://HOSTNAME:8080/login
+  Leave blank to auto-generate
+- install_doc_viewer: Install PDF viewer? (takes longer)
+  Options: true, false (default: false)
+- understanding: Confirm ports 8078-8082 and DNS A record setup
+  Options: true (required), false
+- license_key_password: Your BrowserBox license key
+  Example: Obtained from purchase
+
+
+
+
+3. Open Firewall Ports
+---------------------
+
+
+
+
+Ensure these ports are open in your Linode firewall:
+- 8080 (TCP): BrowserBox access
+- 8078-8082 (TCP): BrowserBox services (WebRTC)
+
+
+
+
+Check firewall settings in the Linode dashboard under Networking.
+
+
+
+
+4. Set Up DNS
+------------
+
+
+
+
+Add a DNS A record at your registrar (e.g., GoDaddy, Name.com):
+- Domain: Your hostname (e.g., bb.mydomain.com)
+- IP Address: Your Linode's public IP
+
+
+
+
+This links your domain to your instance. Setup begins once the DNS record is detected.
+
+
+
+
+5. Access BrowserBox
+-------------------
+
+
+
+
+After deployment (approx. 25 minutes), access BrowserBox at:
+https://YOUR_HOSTNAME:8080/login?token=YOUR_TOKEN
+
+
+
+
+Token is saved at: /home/browserbox/token.txt
+Logs are at: /home/browserbox/.config/dosyago/bbpro/bbpro.log
+
+
+
+
+Why BrowserBox?
+---------------
+
+
+
+
+Developed by DOSYAGO, BrowserBox offers robust remote browser isolation for enhanced cybersecurity. Browse securely with a modern, open-source solution.
+
+
+
+
+Need Help?
+----------
+
+
+
+
+- Deployment taking over 30 minutes? Redeploy via the Linode dashboard.
+- Check logs or use the Linode Console for errors.
+- Contact support@dosaygo.com for assistance.
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       Secure Browsing, Made Simple
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
