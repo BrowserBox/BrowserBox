@@ -8,9 +8,9 @@
 # [BrowserBox](https://dosaygo.com)
 *by [DOSAYGO](https://dosaygo.com)*
 
-[![BrowserBox](https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue)](https://dosaygo.com)
+[![BrowserBox](https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue)](https://dosaygo.com) [![BrowserBox](https://img.shields.io/badge/NIST%20800%2053-Secure-green)](https://dosaygo.com/nist800-53) [![BrowserBox](https://img.shields.io/badge/HIPAA-Protection-purple)](https://dosaygo.com/hipaa) [![BrowserBox](https://img.shields.io/badge/DLP-Solution-pink)](https://dosaygo.com/dlp)
 
-**BrowserBox is a great fit for people who use automation to deal with sensitive data. Use cases include healthcare/HIPPA, and government.**
+**BrowserBox is a great fit for people who use automation to deal with sensitive data. Use cases include DLP/healthcare/HIPPA, and government.**
 
 Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
 
@@ -92,6 +92,7 @@ BrowserBox runs seamlessly on a wide range of platforms—deploy it wherever you
   <li><a href="https://browse.cloudtabs.net/l" class="cta-button">Get a Commercial License</a></li>
   <li><a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a></li>
   <li><a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Try Free for 14-Days</a></li>
+  <li><a href="https://dosaygo.com/regulated-enterprise">Solutions for HIPAA, NIST 800-53, DLP or more!</a></li>
 </ul>
 
 ## DOSAYGO
