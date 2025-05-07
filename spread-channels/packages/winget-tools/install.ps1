@@ -28,7 +28,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 Write-Host "Running as Administrator." -ForegroundColor Green
 Start-Sleep -Seconds 2
 
-# Function to fetch installer URLs (from winget_test.ps1)
+# Function to fetch installer URLs (unchanged)
 function Get-InstallerUrlFromWinget {
   param (
     [Parameter(Mandatory = $true)][string]$PackageId,
@@ -136,7 +136,7 @@ function Get-InstallerUrlFromWinget {
   }
 }
 
-# Function to detect system architecture (from winget_test.ps1)
+# Function to detect system architecture (unchanged)
 function Get-SystemArchitecture {
   $arch = (Get-CimInstance Win32_OperatingSystem).OSArchitecture
   switch -Wildcard ($arch) {
@@ -153,13 +153,13 @@ function Get-SystemArchitecture {
 $arch = Get-SystemArchitecture
 Write-Host "🎯 System architecture detected: $arch`n"
 
-# Define packages and versions (same as winget_test.ps1)
+# Define packages and versions with dynamic paths
 $packages = @(
-  @{ Id = "Git.Git"; Version = "2.49.0"; InstallPath = "C:\Program Files\Git"; PathAdd = "C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin"; IsPortable = $false },
-  @{ Id = "OpenJS.NodeJS.LTS"; Version = "22.15.0"; InstallPath = "C:\Program Files\nodejs"; PathAdd = "C:\Program Files\nodejs"; IsPortable = $false },
-  @{ Id = "FiloSottile.mkcert"; Version = "1.4.4"; InstallPath = "C:\Program Files\mkcert"; PathAdd = "C:\Program Files\mkcert"; IsPortable = $true },
-  @{ Id = "EFF.Certbot"; Version = "2.9.0"; InstallPath = "C:\Program Files\Certbot"; PathAdd = "C:\Program Files\Certbot\bin"; IsPortable = $false },
-  @{ Id = "Google.Chrome.EXE"; Version = "136.0.7103.49"; InstallPath = $null; PathAdd = $null; IsPortable = $false }  # Chrome installs to default location, no PATH needed
+  @{ Id = "Git.Git"; Version = "2.49.0"; InstallPath = "$env:ProgramFiles\Git"; PathAdd = "$env:ProgramFiles\Git\cmd;$env:ProgramFiles\Git\usr\bin"; IsPortable = $false },
+  @{ Id = "OpenJS.NodeJS.LTS"; Version = "22.15.0"; InstallPath = "$env:ProgramFiles\nodejs"; PathAdd = "$env:ProgramFiles\nodejs"; IsPortable = $false },
+  @{ Id = "FiloSottile.mkcert"; Version = "1.4.4"; InstallPath = "$env:ProgramFiles\mkcert"; PathAdd = "$env:ProgramFiles\mkcert"; IsPortable = $true },
+  @{ Id = "EFF.Certbot"; Version = "2.9.0"; InstallPath = "$env:ProgramFiles\Certbot"; PathAdd = "$env:ProgramFiles\Certbot\bin"; IsPortable = $false },
+  @{ Id = "Google.Chrome.EXE"; Version = "136.0.7103.49"; InstallPath = $null; PathAdd = $null; IsPortable = $false }
 )
 
 # Create timestamped installers directory
@@ -190,7 +190,7 @@ foreach ($pkg in $packages) {
   # Check if already installed
   $isInstalled = $false
   if ($packageId -eq "Git.Git") {
-    $isInstalled = Test-Path "C:\Program Files\Git\usr\bin\unzip.exe"
+    $isInstalled = Test-Path "$env:ProgramFiles\Git\usr\bin\unzip.exe"
   } elseif ($packageId -eq "OpenJS.NodeJS.LTS") {
     $isInstalled = (Get-Command node -ErrorAction SilentlyContinue) -and (Test-Path "$installPath\node.exe")
   } elseif ($packageId -eq "FiloSottile.mkcert") {
@@ -262,9 +262,9 @@ foreach ($pkg in $packages) {
           $installerArgs += "INSTALLDIR=`"$installPath`""
         }
       } else {
-        $installerArgs = @("/S")  # Common silent switch for EXEs (NSIS/Innosetup)
+        $installerArgs = @("/S")
         if ($installPath) {
-          $installerArgs += "/DIR=`"$installPath`""  # For NSIS/Innosetup EXEs
+          $installerArgs += "/DIR=`"$installPath`""
         }
       }
     } else {  # /shh
@@ -274,9 +274,9 @@ foreach ($pkg in $packages) {
           $installerArgs += "INSTALLDIR=`"$installPath`""
         }
       } else {
-        $installerArgs = @("/S")  # EXEs often don't have a "progress only" mode, fall back to silent
+        $installerArgs = @("/S")
         if ($installPath) {
-          $installerArgs += "/DIR=`"$installPath`""  # For NSIS/Innosetup EXEs
+          $installerArgs += "/DIR=`"$installPath`""
         }
       }
     }
@@ -312,13 +312,13 @@ foreach ($pkg in $packages) {
 # Update current session PATH
 $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
 
-# BrowserBox setup (unchanged from original)
+# BrowserBox setup with dynamic paths
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/$branch.zip"
 $tempZip = "$env:TEMP\browserbox-$branch.zip"
-$installDir = "C:\Program Files\browserbox"
+$installDir = "$env:ProgramFiles\browserbox"
 $bbxDir = "$installDir\windows-scripts"
 $tempExtractDir = "$env:TEMP\browserbox-extract-$branch"
-$unzipPath = "C:\Program Files\Git\usr\bin\unzip.exe"
+$unzipPath = "$env:ProgramFiles\Git\usr\bin\unzip.exe"
 
 # BrowserBox
 Write-Host "Downloading BrowserBox from branch '$branch'..." -ForegroundColor Cyan
@@ -383,9 +383,6 @@ Get-ChildItem $installDir -Recurse | ForEach-Object { if ($Debug) { Write-Host "
 if ($Debug) { Read-Host "Listed contents of $installDir. Press Enter to continue..." }
 
 # PATH (add bbx.ps1 directory to both Machine and User scopes)
-$bbxDir = "$installDir\windows-scripts"
-
-# Machine PATH
 $currentMachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 if ($currentMachinePath -notlike "*$bbxDir*") {
     Write-Host "Adding '$bbxDir' to Machine PATH permanently..." -ForegroundColor Cyan

@@ -1,4 +1,6 @@
-## BrowserBox Vultr Edition
+# BrowserBox Vultr Edition
+
+## Setup Guide
 
 Welcome to **BrowserBox**, your cutting-edge remote browser isolation solution! Your instance is spinning up now—here’s how to get it live and secure in just a few steps.
 
@@ -29,15 +31,13 @@ This connects your shiny new fortress to the internet. Once BrowserBox detects t
 
 ### 3. Log In and Launch
 
-Setup takes around 25 minutes (grab a coffee or consult the stars 🌌). Once it's ready, head to:
+Once you've completed steps 0 to 2, setup takes around 25 minutes (grab a coffee or consult the stars 🌌). You can try visiting the login link below to check if it's complete. One complete, load it up to remote browse:
 
 `https://{{hostname}}:8080/login?token={{token}}`
 
-Boom — you’re browsing the web from a zero-trust fortress.
+And boom — you’re browsing the web from a zero-trust fortress.
 
----
-
-### Why BrowserBox?
+## Why BrowserBox?
 
 Built by DOSYAGO, BrowserBox delivers **advanced remote browser isolation** for cybersecurity. It’s your shield against the wild web—powered by sleek, modern architecture, with source code available.
 
@@ -49,6 +49,5 @@ Taking longer than 30 minutes? Something feel off?
 - Click **Server Reinstall** to try again  
 - Or tap **View Console** to spot any errors
 
-Still stuck? Reach out to us: **support@dosyago.com**  
+Still stuck? Reach out to us: **support@dosaygo.com**  
 We’re here to make your BrowserBox experience stellar! 🚀
-

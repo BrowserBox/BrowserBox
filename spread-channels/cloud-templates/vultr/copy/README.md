@@ -1,13 +1,24 @@
-## BrowserBox Vultr Edition - Unleash the Web, xAI-Style
+# [BrowserBox](https://dosaygo.com)
 
-Say hello to **BrowserBox**, the open-source browser virtualization beast that’s here to turbocharge your web game. Deployed on Vultr, it’s your gateway to next-level browsing power. Here’s what it brings to the table:
+[![BrowserBox | Secure RBI Badge](https://www.vultr.com/marketplace-assets/DOSAYGO-readme_image-1f2c5ada-5168-45e4-9c83-03c18329db2d-1746376281.svg)](https://dosaygo.com) *by [DOSAYGO](https://dosaygo.com)*
 
-- **Zero-Trust Isolation**: Surf the wild web with a cybersecurity shield—remote browsing, locked and loaded.
-- **Beyond Extensions**: Customize browsers to flex features web stores can only dream of.
-- **RPA Supercharge**: Automate like a pro with browser intervention magic.
-- **Proxy Power**: Reverse content and CORS proxies to cloak your IP and smash cross-site barriers.
-- **Multiplayer Mode**: Embeddable, co-browsing, watch-party-ready—virtual web desktops that vibe together!
+**BrowserBox is a great fit for people who use automation to deal with sensitive data. Use cases include healthcare/HIPPA, and government.**
+
+Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
+
+## Who It’s For
+- **Businesses**: Safeguard your network and data from web-based threats.
+- **Regulated Enterprises**: Ensure compliance and fast-track your productivity.
+- **Government**: Leverage source-available cybersecurity with generous non-commercial discounts.
+- **Developers**: Embed secure browsing into your apps with our API.
+- **IT Teams**: Deploy a scalable, isolated browser solution in minutes.
+
+## Quick Solutions
+
+- [⚖️ Procure the Commercial Writ](https://browse.cloudtabs.net/l)
+- [📜 Claim the Scroll of Non-Commerce](https://browse.cloudtabs.net/M/jl)
+- [🧪 Embark Upon a Fortnight Trial — Free](https://tally.so/r/wkv4aM)
 
 Dive deeper into the goodness: [Explore our README](https://github.com/BrowserBox/BrowserBox).
 
-BrowserBox is © DOSYAGO 2023. By firing up this app, you’re cool with [our terms](https://dosyago.com/terms.txt), [privacy policy](https://dosyago.com/privacy.txt), [BrowserBox License](https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md), and Let’s Encrypt’s rules. Let’s roll!
+BrowserBox is © DOSAYGO 2025. By firing up this app, you’re cool with [our terms](https://dosaygo.com/terms), [privacy policy](https://dosaygo.com/privacy), [BrowserBox License](https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md), and Let’s Encrypt’s  HTTPS certificate rules. Let’s roll!
