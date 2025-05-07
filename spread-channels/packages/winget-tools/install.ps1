@@ -83,7 +83,7 @@ function Get-InstallerUrlFromWinget {
           continue
         }
         if ($inInstallers -and $currentArch -ieq $TargetArch) {
-          if ($key -eq "Installer pełni") {
+          if ($key -eq "InstallerUrl") {
             $installerUrl = $value
             continue
           }

@@ -1406,18 +1406,47 @@ logs() {
     fi
 }
 
+# Helper function to convert epoch time to a timestamp format for touch -t
+epoch_to_timestamp() {
+  local epoch="$1"
+  if [ "$(uname)" = "Darwin" ]; then
+    # macOS uses date -r to convert epoch to a formatted string
+    date -r "$epoch" +%Y%m%d%H%M.%S
+  else
+    # Linux uses date -d with @epoch
+    date -d @"$epoch" +%Y%m%d%H%M.%S
+  fi
+}
+
 is_lock_file_recent() {
   local lock_file="$1"
-  if [ -f "$lock_file" ]; then
-    # Check if lock file is less than 1 hour old (3600 seconds)
-    local current_time=$(date +%s)
-    local file_time=$(stat -f %m "$lock_file" 2>/dev/null || stat -c %Y "$lock_file" 2>/dev/null)
-    local time_diff=$((current_time - file_time))
-    if [ "$time_diff" -lt 3600 ]; then
-      return 0  # Lock file is recent
-    fi
+  # Check if the lock file exists
+  if [ ! -f "$lock_file" ]; then
+    return 1  # File doesn’t exist, so not recent
   fi
-  return 1  # Lock file is not recent or doesn't exist
+
+  # Create a temporary file with a unique name based on process ID
+  local temp_file="/tmp/lock_check_$$"
+  touch "$temp_file" || return 1  # Create the temp file; fail if it can’t be created
+
+  # Get current time in seconds since epoch
+  local current_time=$(date +%s)
+  # Calculate the time 1 hour ago (3600 seconds)
+  local one_hour_ago=$((current_time - 3600))
+  # Convert to a timestamp format compatible with touch -t
+  local timestamp=$(epoch_to_timestamp "$one_hour_ago")
+
+  # Set the temp file’s modification time to 1 hour ago
+  touch -t "$timestamp" "$temp_file"
+
+  # Check if the lock file is newer than the temp file
+  if [ "$lock_file" -nt "$temp_file" ]; then
+    rm "$temp_file"
+    return 0  # Lock file is less than 1 hour old
+  else
+    rm "$temp_file"
+    return 1  # Lock file is older than 1 hour
+  fi
 }
 
 check_and_prepare_update() {
