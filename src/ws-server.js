@@ -559,7 +559,7 @@
         setTimeout(() => {
           console.warn(`We do not terminate normally within more than 20 seconds, so shutting down now.`);
           return process.exit(0);
-        }, 22222);
+        }, 422_222);
 
         server.close(() => console.info(`Server closed on ${sig}`));
         peers.forEach(peer => {

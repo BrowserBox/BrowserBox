@@ -5,7 +5,6 @@
   import {exec,spawn} from 'child_process';
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
-  import { rainstormHash } from '@dosyago/rainsum';
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
   import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
@@ -52,7 +51,7 @@
     try {
       setTimeout(
         () => globalThis.shutDown(),
-        22222
+        422_222
       );
     } catch(e) {
       console.warn(`Error stopping. Trying again...`);
