@@ -264,7 +264,7 @@ ensure_nvm() {
     fi
 }
 
-# Validate license key with server, loop until valid
+# Validate product key with server, loop until valid
 validate_license_key() {
   local force_prompt="${1:-false}"  # Only force prompt if explicitly requested
   load_config
@@ -296,10 +296,10 @@ validate_license_key() {
     # Validate existing key
     export LICENSE_KEY
     if eval "bbcertify --force-license $REDIRECT 2>&1"; then
-      printf "${GREEN}Existing license key is valid.${NC}\n"
+      printf "${GREEN}Existing product key is valid.${NC}\n"
       return 0
     else
-      printf "${RED}Current license key ($LICENSE_KEY) is invalid. Run 'bbx certify' to update it.${NC}\n"
+      printf "${RED}Current product key ($LICENSE_KEY) is invalid. Run 'bbx certify' to update it.${NC}\n"
       return 1
     fi
   fi
@@ -652,10 +652,11 @@ setup() {
     ensure_hosts_entry "$hostname"
   fi
 
-  # Ensure we have a valid license key
+  # Ensure we have a valid product key
   if ! validate_license_key; then
-    printf "${YELLOW}Setting up a new license key...${NC}\n"
-    validate_license_key "true"  # Force prompt if invalid or missing
+    #printf "${YELLOW}Setting up a new product key...${NC}\n"
+    #validate_license_key "true"  # Force prompt if invalid or missing
+    printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
   fi
 
   TOKEN="${BB_TOKEN}"
@@ -678,10 +679,14 @@ run() {
   load_config
 
   # Ensure setup has been run
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
+  fi
+
+  if [ -z "$LICENSE_KEY" ]; then
+    LICENSE_KEY="AAAA-BBBB-CCCC-DDDD-EEEE-FFFF-GGGG-HHHH"
   fi
 
   # Default values (should be set by setup, but fallback for safety)
@@ -717,11 +722,11 @@ run() {
     ensure_hosts_entry "$hostname"
   fi
 
-  # Validate existing license key
+  # Validate existing product key
   export LICENSE_KEY;
   if ! bbcertify >/dev/null 2>&1; then
-    printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
-    exit 1
+    printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+    #exit 1
   fi
   printf "${GREEN}Certification complete.${NC}\n"
 
@@ -753,7 +758,7 @@ tor_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
@@ -801,11 +806,11 @@ tor_run() {
     fi
     $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
     source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    # Validate existing license key
+    # Validate existing product key
     export LICENSE_KEY
     if ! bbcertify >/dev/null 2>&1; then
-      printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
-      exit 1
+      printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+      #exit 1
     fi
     printf "${GREEN}Certification complete.${NC}\n"
 
@@ -979,11 +984,16 @@ docker_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
   fi
+
+  if [ -z "$LICENSE_KEY" ]; then
+    LICENSE_KEY="AAAA-BBBB-CCCC-DDDD-EEEE-FFFF-GGGG-HHHH"
+  fi
+
 
   PORT="$port"  # Override PORT if specified
   BBX_HOSTNAME="$hostname"
@@ -1011,7 +1021,7 @@ docker_run() {
     fi
   fi
 
-  # Validate existing license key
+  # Validate existing product key
   if ! validate_license_key; then
     printf "${RED}License key invalid. Run 'bbx certify' to update it.${NC}\n"
     exit 1
@@ -1382,7 +1392,7 @@ certify() {
       fi
     fi
   else
-    printf "${BLUE}No license key found. Please enter one.${NC}\n"
+    printf "${BLUE}No product key found. Please enter one.${NC}\n"
     validate_license_key "true"  # Force prompt for initial setup
   fi
   printf "${GREEN}Certification complete.${NC}\n"
@@ -1584,7 +1594,7 @@ license() {
     draw_box "License: $REPO_URL/blob/${branch}/LICENSE.md"
     draw_box "Privacy: https://dosaygo.com/privacy.txt"
     draw_box "Get a License: https://dosaygo.com/license"
-    printf "Run 'bbx certify' to enter your license key.\n"
+    printf "Run 'bbx certify' to enter your product key.\n"
 }
 
 status() {
@@ -1839,10 +1849,10 @@ run_as() {
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
-        printf "${RED}Caller must have a license key set in LICENSE_KEY env var${NC}\n"
-        exit 1
+        printf "${RED}No product key set in LICENSE_KEY env var. Run 'bbx activate' or go to dosaygo.com to get a valid product key.${NC}\n"
+        #exit 1
     fi
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify; bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
     # Retrieve token
@@ -1869,7 +1879,7 @@ usage() {
     printf "${BOLD}Commands:${NC}\n"
     printf "  ${GREEN}install${NC}        Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}      Remove BrowserBox, config, and all related files\n"
-    printf "  ${CYAN}activate${NC}       Activate your copy of BrowserBox by purchasing a license key for 1 or more seats\n"
+    printf "  ${CYAN}activate${NC}       Activate your copy of BrowserBox by purchasing a product key for 1 or more seats\n"
     printf "                   \t\t\t\t\t${BOLD}${CYAN}bbx activate [seats]${NC}\n"
     printf "  ${GREEN}setup${NC}          Set up BrowserBox \t\t\t${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>]${NC}\n"
     printf "  ${GREEN}certify${NC}        Certify your license\n"
