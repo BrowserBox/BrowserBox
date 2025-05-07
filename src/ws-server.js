@@ -1418,7 +1418,7 @@
     }
 
     function forceMeta(...metas) {
-      console.log("meta", ...metas);
+      DEBUG.metaDebug && console.log("meta", ...metas);
       zl.act.fanOut(socket => so(
         socket,
         {
