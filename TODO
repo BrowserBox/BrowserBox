@@ -1,5 +1,3 @@
-- vultr mktplc.
-
 - solidify analytics
 
 - mitigations
@@ -21,6 +19,4 @@
 - UNBLOCK drive. Mitigations to unblock sites like WSJ/Bloomberg. 
 
 - fix pointer alignment when using page zoom (pinch/spread)
-
-- ensure chromes are shut down (can we clear bbpro from pm2?)
 
