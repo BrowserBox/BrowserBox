@@ -559,7 +559,7 @@
         setTimeout(() => {
           console.warn(`We do not terminate normally within more than 20 seconds, so shutting down now.`);
           return process.exit(0);
-        }, 422_222);
+        }, 22_222);
 
         server.close(() => console.info(`Server closed on ${sig}`));
         peers.forEach(peer => {
@@ -1013,10 +1013,11 @@
         runCount++;
         if ( runCount >= 2 ) {
           console.log(`Queueing shutdown int win fail`, {licenseValid});
-          setTimeout(() => globalThis.shutDown(), 11372)
+          globalThis.megaKiller = setTimeout(() => globalThis.shutDown(), 422_222)
         }
       } else {
         runCount = 0;
+        clearTimeout(globalThis.megaKiller);
       }
     };
     setTimeout(checkers, 8051);
