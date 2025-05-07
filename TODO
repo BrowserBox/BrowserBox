@@ -1,3 +1,5 @@
+- add back quick exit on license failure for test / CI. 
+
 - solidify analytics
 
 - mitigations
