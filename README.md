@@ -164,7 +164,7 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
 ---
 
 >[!CAUTION]  
->Unlicensed instances display a warning and shut down after 2 minutes.
+>Unlicensed instances display a warning and shut down after a few minutes.
 
 ---
 

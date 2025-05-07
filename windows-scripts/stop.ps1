@@ -1,4 +1,3 @@
-# stop.ps1
 [CmdletBinding()]
 param (
     [string]$Hostname,
@@ -13,6 +12,7 @@ $configDir = "$env:USERPROFILE\.config\dosyago\bbpro"
 $logDir = "$configDir\logs"
 $mainPidFile = "$logDir\browserbox-main.pid"
 $devtoolsPidFile = "$logDir\browserbox-devtools.pid"
+$chromeBaseDir = "$configDir"  # Base directory for Chrome PID files
 
 # Function to kill process by PID file with graceful shutdown
 function Stop-ProcessByPidFile {
@@ -45,9 +45,46 @@ function Stop-ProcessByPidFile {
     }
 }
 
+# Function to stop all Chrome processes by enumerating chrome-* subdirectories
+function Stop-Chrome {
+    # Enumerate all chrome-* subdirectories and stop processes
+    $chromeDirs = Get-ChildItem -Path $chromeBaseDir -Directory | Where-Object { $_.Name -like "chrome-*" }
+    foreach ($chromeDir in $chromeDirs) {
+        $chromePidFile = "$chromeDir\pid"
+        if (Test-Path $chromePidFile) {
+            $chromePid = Get-Content $chromePidFile -ErrorAction SilentlyContinue
+            if ($chromePid -and (Get-Process -Id $chromePid -ErrorAction SilentlyContinue)) {
+                Write-Host "Attempting graceful shutdown of Chrome (PID: $chromePid)..." -ForegroundColor Cyan
+                node -e "process.kill($chromePid, 'SIGINT')"  # Graceful shutdown via SIGINT
+
+                Start-Sleep -Seconds $GraceSeconds # Wait for specified grace period
+
+                # Check and force kill if still running
+                $remainingChromeProcs = Get-Process -Id $chromePid -ErrorAction SilentlyContinue
+                if ($remainingChromeProcs) {
+                    Stop-Process -Id $chromePid -Force
+                    Write-Host "Forced stop of Chrome process (PID: $chromePid)." -ForegroundColor Cyan
+                } else {
+                    Write-Host "Chrome process shut down gracefully (PID: $chromePid)." -ForegroundColor Cyan
+                }
+
+                Remove-Item $chromePidFile -Force  # Clean up PID file
+            } else {
+                Write-Host "Chrome process not running (PID: $chromePid)." -ForegroundColor Yellow
+                Remove-Item $chromePidFile -Force  # Clean up stale PID file
+            }
+        } else {
+            Write-Host "No PID file found for Chrome in $chromeDir." -ForegroundColor Yellow
+        }
+    }
+}
+
 # Stop services by PID
 Stop-ProcessByPidFile -PidFile $mainPidFile -ServiceName "main"
 Stop-ProcessByPidFile -PidFile $devtoolsPidFile -ServiceName "devtools"
+
+# Stop Chrome by enumerating the directories
+Stop-Chrome
 
 # Backup: Kill any lingering node processes with graceful shutdown attempt
 $nodeProcs = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
@@ -75,3 +112,4 @@ if ($nodeProcs) {
 }
 
 Write-Host "BrowserBox services stopped successfully." -ForegroundColor Green
+

@@ -348,7 +348,7 @@ setTimeout(async () => {
     try {
       setTimeout(
         async () => await globalThis.shutDown(),
-        22000
+        422_222
       );
     } catch(e) {
       console.warn(`Error stopping. Trying again...`);

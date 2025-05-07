@@ -558,35 +558,56 @@
 
         setTimeout(() => {
           console.warn(`We do not terminate normally within more than 20 seconds, so shutting down now.`);
-          return process.exit(0);
-        }, 22222);
+          stop();
+          setTimeout(() => { process.exit(1); }, 22_222);
+        }, 22_222);
 
-        server.close(() => console.info(`Server closed on ${sig}`));
-        peers.forEach(peer => {
-          try {
-            peer.destroy(`Server going down.`);
-          } catch(e) {
-            DEBUG.debugConnect && console.info(`Error closing peer`, e, peer);
-          }
-        });
-        websockets.forEach(ws => {
-          try {
-            ws.close(1001, "server going down");
-          } catch(e) {
-            DEBUG.debugConnect && console.info(`Error closing websocket`, e, ws);
-          }
-        });
-        sockets.forEach(socket => {
-          try { socket.destroy() } catch(e) { 
-            DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
-          }
-        });
+        try {
+          server.close(() => console.info(`Server closed on ${sig}`));
+        } catch {
+          console.log(`Issuing closing server`);
+        }
+        try {
+          peers.forEach(peer => {
+            try {
+              peer.destroy(`Server going down.`);
+            } catch(e) {
+              DEBUG.debugConnect && console.info(`Error closing peer`, e, peer);
+            }
+          });
+        } catch { 
+          console.log(`Issue closing peers`);
+        }
+        try {
+          websockets.forEach(ws => {
+            try {
+              ws.close(1001, "server going down");
+            } catch(e) {
+              DEBUG.debugConnect && console.info(`Error closing websocket`, e, ws);
+            }
+          });
+        } catch {
+          console.log(`Issue closing websockets`);
+        }
+        try {
+          sockets.forEach(socket => {
+            try { socket.destroy() } catch(e) { 
+              DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
+            }
+          });
+        } catch {
+          console.log(`Issue closing sockets`);
+        }
         console.log('Complete shutdown stanza');
-        markOtherTasksComplete();
-        console.log('Waiting license released...');
-        await licenseReleased;
-        return await stop();
+        try {
+          markOtherTasksComplete();
+          console.log('Waiting license released...');
+          await licenseReleased;
+        } catch {
+          console.log(`Issue waiting license release and marking other tasks complete`);
+        }
         console.log('License is released.');
+        return await stop();
       } catch(e) {
         console.warn(`Error during shutdown`, e);
       }
@@ -1013,10 +1034,11 @@
         runCount++;
         if ( runCount >= 2 ) {
           console.log(`Queueing shutdown int win fail`, {licenseValid});
-          setTimeout(() => globalThis.shutDown(), 11372)
+          globalThis.megaKiller = setTimeout(() => globalThis.shutDown(), 422_222)
         }
       } else {
         runCount = 0;
+        clearTimeout(globalThis.megaKiller);
       }
     };
     setTimeout(checkers, 8051);
@@ -1396,7 +1418,7 @@
     }
 
     function forceMeta(...metas) {
-      console.log("meta", ...metas);
+      DEBUG.metaDebug && console.log("meta", ...metas);
       zl.act.fanOut(socket => so(
         socket,
         {

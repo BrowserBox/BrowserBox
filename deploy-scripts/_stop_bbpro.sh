@@ -51,10 +51,21 @@ if [[ "$(pm2 jlist)" == "[]" ]]; then
   pm2 kill
 fi
 
+kill_chrome() {
+  # Loop through all the pid files for Chrome processes
+  for pidf in "$HOME/.config/dosyago/bbpro/chrome-"*/pid; do
+    pid=$(cat "$pidf")
+    if [ "$(ps -o user= -p "$pid")" = "$(whoami)" ]; then
+      # Call the killtree function to kill the process group
+      killtree "$pid"
+    fi
+  done
+}
+
 sleep 1
 
 pkill -u "$(whoami)" browserbox*
-pkill -u "$(whoami)" chrome
+kill_chrome
 pulseaudio -k
 
 # Check if the login link is an onion address and torbb.env exists

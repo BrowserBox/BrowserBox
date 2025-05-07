@@ -6,7 +6,7 @@
 
 <h1>BrowserBox on Docker</h1>
 <p><strong>THE ULTIMATE BROWSING POWERHOUSE—SECURE, SCALABLE, UNSTOPPABLE!</strong><br>
-BrowserBox v11 by DOSAYGO delivers remote browser isolation (RBI) built for infra, cyber, and product teams. Deploy it anywhere—Linux, macOS, your stack. <strong>LICENSE REQUIRED!</strong> Unlicensed instances shut down after 2 minutes. Unlock now at <a href="https://browse.cloudtabs.net/l">BrowserBox Activation</a>—bulk deals available!</p>
+BrowserBox v11 by DOSAYGO delivers remote browser isolation (RBI) built for infra, cyber, and product teams. Deploy it anywhere—Linux, macOS, your stack. <strong>LICENSE REQUIRED!</strong> Unlicensed instances shut down after 7 minutes. Unlock now at <a href="https://browse.cloudtabs.net/l">BrowserBox Activation</a>—bulk deals available!</p>
 
 <h2>🚀 Deploy in One Command</h2>
 <p><strong>Step 1: Get Your License</strong> – <a href="https://browse.cloudtabs.net/l">Activate BrowserBox</a><br>
