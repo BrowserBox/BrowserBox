@@ -1,4 +1,10 @@
+Next
+
+- fix background update preparing stage hangs / doesn't complete
+
 - add back quick exit on license failure for test / CI. 
+
+--
 
 - solidify analytics
 
