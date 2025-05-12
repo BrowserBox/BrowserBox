@@ -183,9 +183,6 @@ export const DEBUG = Object.freeze({
   showBlockedCaptureScreenshots: false,
   coords: false,
   debugScrollbars: true,
-  get ensureUptimeBeforeRestart() {
-    return this.mode !== 'dev'
-  },
   debugRestart: true,
   debugUntilTrue: false,
   debugUntilForever: false,
