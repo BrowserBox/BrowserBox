@@ -103,6 +103,7 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
+    "parcel": "^2.15.0",
     "patch-package": "^8.0.0",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
@@ -116,6 +117,8 @@
   "devDependencies": {
     "@eslint/js": "^9.25.1",
     "@mapbox/node-pre-gyp": "latest",
+    "@parcel/packager-raw-url": "^2.15.0",
+    "@parcel/transformer-webmanifest": "^2.15.0",
     "@types/body-parser": "latest",
     "@types/cookie-parser": "latest",
     "@types/current-git-branch": "latest",
@@ -127,6 +130,7 @@
     "@vertx/core": "latest",
     "eslint": "^9.25.1",
     "globals": "^16.0.0",
+    "parcel-resolver-ignore": "^2.2.0",
     "whatwg-fetch": "^3.6.20"
   }
 }
