@@ -27,6 +27,7 @@
     T2_MINUTES,
     version, APP_ROOT, 
     COOKIENAME, GO_SECURE, DEBUG,
+    KILL_TIME,
     CONFIG,
     ALLOWED_3RD_PARTY_EMBEDDERS,
     BASE_PATH,
@@ -1034,11 +1035,14 @@
         runCount++;
         if ( runCount >= 2 ) {
           console.log(`Queueing shutdown int win fail`, {licenseValid});
-          globalThis.megaKiller = setTimeout(() => globalThis.shutDown(), 422_222)
+          if ( ! globalThis.megaKiller ) {
+            globalThis.megaKiller = setTimeout(() => globalThis.shutDown(), KILL_TIME)
+          }
         }
       } else {
         runCount = 0;
         clearTimeout(globalThis.megaKiller);
+        globalThis.megaKiller = null;
       }
     };
     setTimeout(checkers, 8051);

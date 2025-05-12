@@ -19,6 +19,7 @@ import {
   OurWorld,
   StartupTabs,
   EXPEDITE,
+  KILL_TIME,
   LOG_FILE,
   SignalNotices,
   NoticeFile,
@@ -346,10 +347,12 @@ setTimeout(async () => {
   if ( ! licenseValid ) {
     console.log(`Queueing stop cnx`, {licenseValid});
     try {
-      setTimeout(
-        async () => await globalThis.shutDown(),
-        422_222
-      );
+      if ( ! globalThis.megaKiller ) {
+        globalThis.megaKiller = setTimeout(
+          () => globalThis.shutDown(),
+          KILL_TIME
+        );
+      }
     } catch(e) {
       console.warn(`Error stopping. Trying again...`);
       stop().finally(() => process.exit(1));
