@@ -143,6 +143,7 @@
       Host: 'localhost'
     };
 
+    app.set('etag', 'strong');
     app.use(compression());
 
     app.use(express.urlencoded({ extended: true }));

@@ -1,5 +1,5 @@
-const USW = false; // service worker
-export const VERSION = '10.5.1';
+const USW = true; // service worker
+export const VERSION = '11.2.1';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 

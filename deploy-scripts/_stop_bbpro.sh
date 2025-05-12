@@ -38,17 +38,19 @@ pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
 
-sleep 2
+sleep 1
 
 pm2 stop basic-bb-main-service 
 
-sleep 2
+sleep 1
 
 pm2 delete basic-bb-main-service
 pm2 save --force
+
 # Kill pm2 if no processes are running
-if [[ "$(pm2 jlist)" == "[]" ]]; then
+if [[ "$(pm2 jlist)" == "[]" ]] || ! timeout 5s pm2 jlist; then
   pm2 kill
+  pkill pm2
 fi
 
 kill_chrome() {
@@ -60,11 +62,11 @@ kill_chrome() {
       killtree "$pid"
     fi
   done
+  pkill -i chrome
 }
 
-sleep 1
-
 pkill -u "$(whoami)" browserbox*
+
 kill_chrome
 pulseaudio -k
 

@@ -128,6 +128,7 @@ jobs:
         run: |
           source $HOME/.nvm/nvm.sh
           export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
+          export BB_QUICK_EXIT="whatever"
           export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
           bbcertify
           export LICENSE_KEY=""

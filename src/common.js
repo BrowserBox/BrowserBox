@@ -15,6 +15,7 @@ export const scratchState = {
   cameFromTOR: false,
   slowConnection: false,
 };
+export const KILL_TIME = process.env.BB_QUICK_EXIT ? 18_222 : 422_222;
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
@@ -182,9 +183,6 @@ export const DEBUG = Object.freeze({
   showBlockedCaptureScreenshots: false,
   coords: false,
   debugScrollbars: true,
-  get ensureUptimeBeforeRestart() {
-    return this.mode !== 'dev'
-  },
   debugRestart: true,
   debugUntilTrue: false,
   debugUntilForever: false,

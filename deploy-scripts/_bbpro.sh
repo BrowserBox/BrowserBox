@@ -120,6 +120,12 @@ if $SUDO which tuned-adm >/dev/null 2>&1; then
   echo "Tuned!" >&2
 fi
 
+# Kill pm2 if no processes are running
+if [[ "$(pm2 jlist)" == "[]" ]] || ! timeout 5s pm2 jlist; then
+  pm2 kill
+  pkill pm2
+fi
+
 echo Running bbpro for user $USER... >&2
 
 echo "Install dir: " $INSTALL_DIR >&2

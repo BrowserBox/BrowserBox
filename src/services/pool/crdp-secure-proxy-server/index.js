@@ -79,6 +79,7 @@ const limiter = rateLimit({
 });
 
 const app = express();
+app.set('etag', 'strong');
 app.use(limiter);
 app.use(compression());
 app.use(express.urlencoded({extended:true}));

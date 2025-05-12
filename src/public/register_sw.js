@@ -22,8 +22,10 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
                     console.log(`Failed to delete cache: ${cacheName}`);
                   }
                 }
-                alert(`Your app has been updated and needs to reload.`);
-                location.reload();
+                setTimeout(() => {
+                  alert(`Your app has been updated and needs to reload.`);
+                  location.reload();
+                }, 500);
               }
             });
           }
@@ -42,8 +44,10 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
     S.addEventListener('message', event => {
       if ( event.data.message == 'cache-out-of-sync' ) {
         DEBUG.debugSW && console.log('Cache out of sync, reloading page.');
-        alert(`We need to refresh your cache. We will reload now.`);
-        globalThis.window.location.reload();
+        setTimeout(() => {
+          alert(`We need to refresh your cache. We will reload now.`);
+          globalThis.window.location.reload();
+        }, 500);
       }
       if (event.data.message === 'content-updated') {
         CONFIG.logUpdatedContent && console.log(`Content updated for: ${event.data.url}`);

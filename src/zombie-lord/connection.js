@@ -19,6 +19,7 @@ import {
   OurWorld,
   StartupTabs,
   EXPEDITE,
+  KILL_TIME,
   LOG_FILE,
   SignalNotices,
   NoticeFile,
@@ -44,7 +45,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {Document} from './api/document.js';
-import {extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js';
+import {websockets, extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js';
 import {validityCheck} from './../hard/application.js';
 
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
@@ -346,10 +347,12 @@ setTimeout(async () => {
   if ( ! licenseValid ) {
     console.log(`Queueing stop cnx`, {licenseValid});
     try {
-      setTimeout(
-        async () => await globalThis.shutDown(),
-        422_222
-      );
+      if ( ! globalThis.megaKiller ) {
+        globalThis.megaKiller = setTimeout(
+          () => globalThis.shutDown(),
+          KILL_TIME
+        );
+      }
     } catch(e) {
       console.warn(`Error stopping. Trying again...`);
       stop().finally(() => process.exit(1));
@@ -1097,7 +1100,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       },null,2)+"\n");
     }
     if ( typeof connection?.forceMeta != "function" ) {
-      await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 4).catch(reason => console.log(`Connection not ready but receiving messages. Clients may miss these.`, reason));
+      await untilTrueOrTimeout(() => (typeof connection?.forceMeta) == "function", 4).then(() => console.log(`forceMeta loaded`)).catch(reason => websockets.size > 0 && console.log(`Connection not ready but clients are connected and we are receiving messages from browser. Clients may miss these.`, reason, message));
     }
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;

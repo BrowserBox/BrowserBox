@@ -1,4 +1,4 @@
-// @flow
+// 
   import http from 'http';
   import https from 'https';
   import fs from 'fs';
@@ -27,6 +27,7 @@
     T2_MINUTES,
     version, APP_ROOT, 
     COOKIENAME, GO_SECURE, DEBUG,
+    KILL_TIME,
     CONFIG,
     ALLOWED_3RD_PARTY_EMBEDDERS,
     BASE_PATH,
@@ -154,6 +155,9 @@
   // keep tabs organized
   const TabNumbers = new Map();
 
+  // global for export
+  export const websockets = new Set();
+
   // extensions
   export const extensions = [];
 
@@ -176,6 +180,7 @@
     }
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
+    app.set('etag', 'strong');
     app.use(compression());
     const server_port = parseInt(port);
     const StandardCSP = {
@@ -287,7 +292,6 @@
       upgradeInsecureRequests: [],
     };
     const sockets = new Set();
-    const websockets = new Set();
     const peers = new Set();
 
     let latestMessageId = 0;
@@ -1034,11 +1038,14 @@
         runCount++;
         if ( runCount >= 2 ) {
           console.log(`Queueing shutdown int win fail`, {licenseValid});
-          globalThis.megaKiller = setTimeout(() => globalThis.shutDown(), 422_222)
+          if ( ! globalThis.megaKiller ) {
+            globalThis.megaKiller = setTimeout(() => globalThis.shutDown(), KILL_TIME)
+          }
         }
       } else {
         runCount = 0;
         clearTimeout(globalThis.megaKiller);
+        globalThis.megaKiller = null;
       }
     };
     setTimeout(checkers, 8051);
