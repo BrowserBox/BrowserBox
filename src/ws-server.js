@@ -180,6 +180,7 @@
     }
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
+    app.set('etag', 'strong');
     app.use(compression());
     const server_port = parseInt(port);
     const StandardCSP = {
