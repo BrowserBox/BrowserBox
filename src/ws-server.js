@@ -1,4 +1,4 @@
-// @flow
+// 
   import http from 'http';
   import https from 'https';
   import fs from 'fs';
@@ -155,6 +155,9 @@
   // keep tabs organized
   const TabNumbers = new Map();
 
+  // global for export
+  export const websockets = new Set();
+
   // extensions
   export const extensions = [];
 
@@ -288,7 +291,6 @@
       upgradeInsecureRequests: [],
     };
     const sockets = new Set();
-    const websockets = new Set();
     const peers = new Set();
 
     let latestMessageId = 0;
