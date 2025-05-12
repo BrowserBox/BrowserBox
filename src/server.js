@@ -7,7 +7,7 @@
   import express from 'express';
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
-  import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
+  import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter, KILL_TIME} from './common.js';
   import {stop} from '../branch-bbx-stop.js';
   import {start_ws_server} from './ws-server.js';
   import {release,applicationCheck} from './hard/application.js';
@@ -49,10 +49,12 @@
   if ( ! licenseValid ) {
     console.log(`Queueing stop srv`, {licenseValid});
     try {
-      setTimeout(
-        () => globalThis.shutDown(),
-        422_222
-      );
+      if ( ! globalThis.megaKiller ) {
+        globalThis.megaKiller = setTimeout(
+          () => globalThis.shutDown(),
+          KILL_TIME
+        );
+      }
     } catch(e) {
       console.warn(`Error stopping. Trying again...`);
       stop().finally(() => process.exit(1));

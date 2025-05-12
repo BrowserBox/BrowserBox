@@ -53,6 +53,7 @@ node="$(command -v node)"
 echo Using "$node"
 
 echo "Starting audio service..."
+timeout 5s pm2 update
 pm2 start ./scripts/global/start_audio.sh -- $1
 
 echo "Starting main bbpro service..."

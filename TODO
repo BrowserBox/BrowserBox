@@ -1,4 +1,4 @@
-- add back quick exit on license failure for test / CI. 
+Next
 
 - solidify analytics
 
@@ -6,21 +6,19 @@
 
 - windows ps1 bbx v11 (auto updates) etc
 
-- marketing: license key -> product key  (yes please! :))
-
-- simple 'canvas' client for serenityOS?
-
-- add wireguard: bbx wgrun --no-proxy  (just a tunnel to BB that then goes to the public net). --no-tunnel (just a proxy from BB to the public net, no tunnel)
-
-- support for nginx in public to permit standard ports
-
-- when form input is focused (input radio/checkbox) we shouldn't send space scroll.
-
-- bug with page copy link and related (open in) - sometimes doesn't work. If basic auth has been 'canceled' system gets in invalid state.
-
 - don't accept connection.closeModal if the handleJavaScriptDialog failed (ie still a modal)
 
 - UNBLOCK drive. Mitigations to unblock sites like WSJ/Bloomberg. 
 
 - fix pointer alignment when using page zoom (pinch/spread)
+
+- simple 'canvas'  using raylib / raygui? Yes please!
+
+- add wireguard: bbx wgrun --no-proxy  (just a tunnel to BB that then goes to the public net). --no-tunnel (just a proxy from BB to the public net, no tunnel)
+
+- support for nginx in public to permit standard ports
+
+- bug with page copy link and related (open in) - sometimes doesn't work. If basic auth has been 'canceled' system gets in invalid state.
+
+- when form input is focused (input radio/checkbox) we shouldn't send space scroll.
 

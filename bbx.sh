@@ -1441,12 +1441,12 @@ is_lock_file_recent() {
 
   # Get current time in seconds since epoch
   local current_time=$(date +%s)
-  # Calculate the time 1 hour ago (3600 seconds)
-  local one_hour_ago=$((current_time - 3600))
+  # Calculate the time 37 minutes ago (2220 seconds) as updates should never take longer than that
+  local one_hour_ago=$((current_time - 2220))
   # Convert to a timestamp format compatible with touch -t
   local timestamp=$(epoch_to_timestamp "$one_hour_ago")
 
-  # Set the temp file’s modification time to 1 hour ago
+  # Set the temp file’s modification time the max allowed update preparing time
   touch -t "$timestamp" "$temp_file"
 
   # Check if the lock file is newer than the temp file
@@ -1500,17 +1500,14 @@ check_and_prepare_update() {
   fi
 
   # No prepared update, start background preparation
-  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
-  # Create preparing lock file
-  $SUDO mkdir -p "$BBX_SHARE"
-  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
   # Run update in background unless debug
   if [ -n "$BBX_DEBUG" ]; then
-    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background 
+    printf "${GREEN}Background update starting...${NC}\n"
+    update_background 
   else
-    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
+    update_background &
+    printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
   fi
-  printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
   return 0
 }
 
@@ -1534,7 +1531,7 @@ check_prepare_and_install() {
         return 0
       else
         printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n"
-        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
+        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
       fi
     fi
   fi
@@ -1562,28 +1559,39 @@ update() {
 
 # Background update function
 update_background() {
+  load_config
   local repo_tag="$(get_latest_repo_version)"
   local tagdoo="${repo_tag#v}"
+  printf "${YELLOW}Requesting update lock...${NC}\n" >> "$LOG_FILE"
+  # Create preparing lock file
+  $SUDO mkdir -p "$BBX_SHARE"
+  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   printf "${YELLOW}Starting background update to $repo_tag...${NC}\n" >> "$LOG_FILE"
   # Clean up any existing BBX_NEW_DIR
-  $SUDO rm -rf "$BBX_NEW_DIR" || { printf "${RED}Failed to clean $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"; exit 1; }
-  mkdir -p "$BBX_NEW_DIR" || { printf "${RED}Failed to create $BBX_NEW_DIR/BrowserBox${NC}\n" >> "$LOG_FILE"; exit 1; }
+  $SUDO rm -rf "$BBX_NEW_DIR" || { printf "${RED}Failed to clean $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+  mkdir -p "$BBX_NEW_DIR" || { printf "${RED}Failed to create $BBX_NEW_DIR/BrowserBox${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   DLURL="${REPO_URL}/archive/refs/tags/${repo_tag}.zip";
-  echo "Getting: $DLURL"
+  echo "Getting: $DLURL" >> "$LOG_FILE"
   curl -sSL --connect-timeout 8 "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || {
     printf "${YELLOW}Skipping update due to timeout or failure in connecting to BrowserBox repo${NC}\n" >> "$LOG_FILE"
+    $SUDO rm -f "$PREPARING_FILE"
     $SUDO rm -f "$BBX_NEW_DIR/BrowserBox.zip" 2>/dev/null
     $SUDO rm -rf "$BBX_NEW_DIR" 2>/dev/null
     return 1
   }
-  unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
-  mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$tagdoo" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE"; exit 1; }
+  printf "${YELLOW}Unzipping archive for $repo_tag...${NC}\n" >> "$LOG_FILE"
+  unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+  printf "${YELLOW}Moving folder into place...${NC}\n" >> "$LOG_FILE"
+  mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$tagdoo" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   $SUDO rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
-  chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE"; exit 1; }
-  cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE"; exit 1; }
+  chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+  printf "${YELLOW}Preparing update...${NC}\n" >> "$LOG_FILE"
+  cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
     # Mark as prepared
-  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
+  printf "${YELLOW}Marking update as prepared...${NC}\n" >> "$LOG_FILE"
+  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   # Remove preparing lock file
+  printf "${YELLOW}Completing preparation step (removing update lock)...${NC}\n" >> "$LOG_FILE"
   $SUDO rm -f "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARING_FILE${NC}\n" >> "$LOG_FILE"
   printf "${GREEN}Background update prepared in $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"
 }
