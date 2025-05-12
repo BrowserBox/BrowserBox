@@ -12,7 +12,7 @@
 
 **BrowserBox is a great fit for people who use automation to deal with sensitive data. Use cases include DLP/healthcare/HIPPA, and government.**
 
-Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
+Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **product key** for all usage—unlock advanced security and productivity today!
 
 ## Who It’s For
 - **Businesses**: Safeguard your network and data from web-based threats.
@@ -108,7 +108,7 @@ We make cool tech, including BrowserBox, CloudTabs (BrowserBox SaaS) and DiskerN
 # `bbx`
 
 - ✅💻 Manage and activate your BrowserBox copy
-- 💳💻 Purchase a BrowserBox license key
+- 💳💻 Purchase a BrowserBox product key
 - 👩👨 Run BrowserBox as multiple users on one machine
 - 🐳🟦 Run BrowserBox inside Docker
 - 🧅🟣 Run BrowserBox through Tor
@@ -222,21 +222,21 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
    ```
 
    >[!IMPORTANT]
-   >When you purchase a license you will be emailed a link to view your **License Key** securely. Save it somewhere safely, you can only view it one time. If your license key is lost, <a href=mailto:support@dosaygo.com>Support</a> can roll it to a new key and invalidate the old one. Please note: evaluation license keys cannot be rolled.
+   >When you purchase a license you will be emailed a link to view your **Product Key** securely. Save it somewhere safely, you can only view it one time. If your product key is lost, <a href=mailto:support@dosaygo.com>Support</a> can roll it to a new key and invalidate the old one. Please note: evaluation product keys cannot be rolled.
 
-3. **Activate your copy of BrowserBox with a License Key**
+3. **Activate your copy of BrowserBox with a Product Key**
 
   **On Windows:**
   
   Before using `bbx`, set the `LICENSE_KEY` environment variable:
 
   ```powershell
-  $Env:LICENSE_KEY = "a valid BrowserBox license key"
+  $Env:LICENSE_KEY = "a valid BrowserBox product key"
   ```
 
   **Everywhere else:**`
 
-  Use `bbx certify` to enter a License Key and save it to your config.
+  Use `bbx certify` to enter a Product Key and save it to your config.
 
   If you used `bbx activate` it will already be saved.
 
@@ -318,7 +318,7 @@ BrowserBox combines enterprise-grade security with developer-friendly tools and 
 
 **When I purchase a license, what do I get?**
 
-You will get an email with the link to view the license key. This key is good for the number of seats you purchased. You can adjust the seat count in the **Qty** field on the payment page, after hitting subscribe. 
+You will get an email with the link to view the product key. This key is good for the number of seats you purchased. You can adjust the seat count in the **Qty** field on the payment page, after hitting subscribe. 
 
 **How do I get a license?**  
 
