@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v11.5.1';
+const CACHE_VERSION = 'v11.2.0';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;

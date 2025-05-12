@@ -1100,7 +1100,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       },null,2)+"\n");
     }
     if ( typeof connection?.forceMeta != "function" ) {
-      await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 4).catch(reason => console.log(`Connection not ready but receiving messages. Clients may miss these.`, reason));
+      await untilTrueOrTimeout(() => (typeof connection?.forceMeta) == "function", 4).then(() => console.log(`forceMeta loaded`)).catch(reason => console.log(`Connection not ready but receiving messages. Clients may miss these.`, reason, message));
     }
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
