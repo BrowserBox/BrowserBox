@@ -1562,7 +1562,7 @@ update_background() {
   load_config
   local repo_tag="$(get_latest_repo_version)"
   local tagdoo="${repo_tag#v}"
-  printf "${YELLOW}Requesting update lock...${NC}\n"
+  printf "${YELLOW}Requesting update lock...${NC}\n" >> "$LOG_FILE"
   # Create preparing lock file
   $SUDO mkdir -p "$BBX_SHARE"
   printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
