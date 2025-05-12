@@ -56,6 +56,7 @@ jobs:
         shell: bash
         env:
           BBX_HOSTNAME: "localhost"
+          BB_QUICK_EXIT: "yesplease"
           EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           BBX_TEST_AGREEMENT: "true"
@@ -77,6 +78,7 @@ jobs:
         env:
           BBX_HOSTNAME: "localhost"
           EMAIL: "test@example.com"
+          BB_QUICK_EXIT: "surewhatevs"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
