@@ -435,4 +435,4 @@ function makeHttpsRequest(parsedUrl, requestOptions, timeout, body, redirect, re
   });
 }
 
-export { fetch, CustomResponse };
+export { fetch, CustomResponse, CustomHeaders };
