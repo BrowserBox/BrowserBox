@@ -47,6 +47,43 @@ LOG_FILE="$BB_CONFIG_DIR/update.log"
 PREPARING_FILE="$BBX_SHARE/preparing"
 PREPARED_FILE="$BBX_SHARE/prepared"
 
+# Clean up any leftover temp installer scripts
+clean_temp_installers() {
+  local TMPDIR="$HOME/.cache/myscript-installer"
+  find "$TMPDIR" -type f -name 'installer-*' -exec rm -f {} \; 2>/dev/null
+}
+
+# Returns 0 if currently running from official location (not temp copy)
+is_running_in_official() {
+  local TMPDIR="$HOME/.cache/myscript-installer"
+  [[ "$0" != "$TMPDIR/"* ]]
+}
+
+# Elevate to a temp copy (if not already in temp); will not return if elevation happens
+self_elevate_to_temp() {
+  local TMPDIR="$HOME/.cache/myscript-installer"
+  mkdir -p "$TMPDIR"
+
+  # Are we already running from temp? Then just return
+  if ! is_running_in_official; then
+    return
+  fi
+
+  clean_temp_installers
+
+  local TEMP_SCRIPT
+  TEMP_SCRIPT="$(mktemp "$TMPDIR/installer-XXXXXX")" || {
+    echo "Failed to create temp script in $TMPDIR"
+    exit 1
+  }
+
+  cp "$0" "$TEMP_SCRIPT"
+  chmod +x "$TEMP_SCRIPT"
+
+  echo "Elevating to temp execution at: $TEMP_SCRIPT"
+  exec "$TEMP_SCRIPT" "$@"
+}
+
 sort_git_tags() {
     # Read input from stdin or file
     local input

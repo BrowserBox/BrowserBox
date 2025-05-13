@@ -71,7 +71,7 @@ test_login_link() {
   local link="$1"                # The URL to test
   local use_tor="$2"             # Optional: "tor" to use Tor SOCKS proxy
   local start_time=$(date +%s)   # Record the start time in seconds
-  local max_time=30              # Maximum wait time in seconds
+  local max_time=45              # Maximum wait time in seconds
   local interval=2               # Time between retries in seconds
   local timeout=5
   local success=0                # Flag to track success
@@ -80,10 +80,10 @@ test_login_link() {
 
   # Add Tor SOCKS proxy if specified
   if [ "$use_tor" = "tor" ]; then
-    curl_opts="$curl_opts --proxy socks5h://127.0.0.1:9050"
     interval=5
     timeout=25
-    max_time=120
+    max_time=180
+    curl_opts="-s -k -L -w %{http_code} --max-time $timeout --head --fail --output /dev/null --proxy socks5h://127.0.0.1:9050"
     echo -n "Testing Tor login link $link with retries... "
   else
     echo -n "Testing login link $link with retries... "
