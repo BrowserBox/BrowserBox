@@ -4,8 +4,8 @@ import { Readable } from 'stream';
 
 // Imports, constants, then state
 const DEFAULT_TIMEOUT = 10000; // 10s
-const DEFAULT_USER_AGENT = 'Node.js Custom Fetch/1.0';
-const MAX_REDIRECTS = 20;
+const DEFAULT_USER_AGENT = 'curl/8.7.1';
+const MAX_REDIRECTS = 11;
 
 const STATUS_TEXT = {
   100: 'Continue',
@@ -68,6 +68,9 @@ const STATUS_TEXT = {
   510: 'Not Extended',
   511: 'Network Authentication Required',
 };
+
+// Logic (top-level function calls)
+// None needed, as fetch is exported
 
 // Functions, then helper functions
 class CustomHeaders {
@@ -159,8 +162,9 @@ class CustomHeaders {
 
 class CustomResponse {
   constructor({ stream, status, headers, url, redirected = false, type = 'basic', protocol }) {
-    console.log({headers});
-    this.body = stream ? Readable.toWeb(stream) : null;
+    this._stream = stream; // Store Node.js stream.Readable
+    this._buffered = false; // Track if stream is buffered
+    this._buffer = null; // Store buffered content for cloning
     this.status = status;
     this.headers = new CustomHeaders(headers);
     this.url = url;
@@ -171,8 +175,11 @@ class CustomResponse {
     this.protocol = protocol || 'http/1.1';
   }
 
-  get ok() {
-    return this.status >= 200 && this.status < 300;
+  get body() {
+    if (this.bodyUsed) {
+      throw new TypeError('Body already used');
+    }
+    return this._stream ? Readable.toWeb(this._stream) : null; // Convert to ReadableStream only when accessed
   }
 
   async text() {
@@ -180,14 +187,11 @@ class CustomResponse {
       throw new TypeError('Body already used');
     }
     this.bodyUsed = true;
-    if (!this.body) {
+    await this._bufferStream();
+    if (!this._buffer) {
       return '';
     }
-    const chunks = [];
-    for await (const chunk of this.body) {
-      chunks.push(chunk);
-    }
-    return Buffer.concat(chunks).toString('utf8');
+    return this._buffer.toString('utf8');
   }
 
   async json() {
@@ -200,15 +204,11 @@ class CustomResponse {
       throw new TypeError('Body already used');
     }
     this.bodyUsed = true;
-    if (!this.body) {
+    await this._bufferStream();
+    if (!this._buffer) {
       return new ArrayBuffer(0);
     }
-    const chunks = [];
-    for await (const chunk of this.body) {
-      chunks.push(chunk);
-    }
-    const buffer = Buffer.concat(chunks);
-    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    return this._buffer.buffer.slice(this._buffer.byteOffset, this._buffer.byteOffset + this._buffer.byteLength);
   }
 
   async blob() {
@@ -225,17 +225,17 @@ class CustomResponse {
   }
 
   clone() {
-    if (this.bodyUsed || (this.body && this.body.locked)) {
+    if (this.bodyUsed || (this._stream && this._buffered && !this._buffer)) {
       throw new TypeError('Cannot clone a response that has already been consumed');
     }
-    let newBody = null;
-    if (this.body) {
-      const [stream1, stream2] = this.body.tee();
-      newBody = stream1;
-      this.body = stream2;
+    // Buffer the stream if not already buffered to ensure cloning works
+    if (this._stream && !this._buffered) {
+      this._bufferStream();
     }
+    // Create a new stream from the buffered content or null
+    const newStream = this._buffer ? Readable.from(this._buffer) : null;
     return new CustomResponse({
-      stream: newBody,
+      stream: newStream,
       status: this.status,
       headers: new CustomHeaders(this.headers),
       url: this.url,
@@ -243,6 +243,19 @@ class CustomResponse {
       type: this.type,
       protocol: this.protocol,
     });
+  }
+
+  async _bufferStream() {
+    if (this._buffered || !this._stream) {
+      return;
+    }
+    const chunks = [];
+    for await (const chunk of this._stream) {
+      chunks.push(chunk);
+    }
+    this._buffer = Buffer.concat(chunks);
+    this._buffered = true;
+    this._stream = null; // Clear stream to prevent further use
   }
 
   static error() {
@@ -288,10 +301,10 @@ async function fetch(url, options = {}) {
     port: currentUrl.port || (protocol === 'https:' ? 443 : 80),
     path: currentUrl.pathname + currentUrl.search,
     method: options.method || 'GET',
-    headers: {
+    headers: new CustomHeaders({
       'User-Agent': DEFAULT_USER_AGENT,
       ...options.headers,
-    },
+    }),
   };
 
   async function doFetch(currentUrl, requestOptions, redirectCount) {
@@ -344,7 +357,11 @@ async function fetch(url, options = {}) {
 
 function makeHttpRequest(parsedUrl, requestOptions, module, timeout, body, redirect) {
   return new Promise((resolve, reject) => {
-    const req = module.request(requestOptions, (res) => {
+    const headersObj = {};
+    for (const [key, value] of requestOptions.headers.entries()) {
+      headersObj[key] = value;
+    }
+    const req = module.request({ ...requestOptions, headers: headersObj }, (res) => {
       const response = new CustomResponse({
         stream: res,
         status: res.statusCode,
@@ -371,14 +388,17 @@ function makeHttpsRequest(parsedUrl, requestOptions, timeout, body, redirect, re
   return new Promise((resolve, reject) => {
     const session = http2.connect(parsedUrl.origin, {
       timeout,
-      // Let Node.js negotiate HTTP/2 or HTTP/1.1 via ALPN
     });
 
     session.on('connect', () => {
+      const headersObj = {};
+      for (const [key, value] of requestOptions.headers.entries()) {
+        headersObj[key] = value;
+      }
       const headers = {
         ':method': requestOptions.method,
         ':path': requestOptions.path,
-        ...requestOptions.headers,
+        ...headersObj,
       };
       const req = session.request(headers);
 
@@ -415,4 +435,4 @@ function makeHttpsRequest(parsedUrl, requestOptions, timeout, body, redirect, re
   });
 }
 
-export { fetch, CustomResponse, CustomHeaders };
+export { fetch, CustomResponse };
