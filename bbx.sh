@@ -28,24 +28,25 @@ BOLD='\033[1m'
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
+BBX_NEW_DIR="${BBX_HOME}/new"
 COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
 # Config file (secondary to test.env and login.link)
-BB_CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$BB_CONFIG_DIR/config"
+BB_CONFIG_DIR="${HOME}/.config/dosyago/bbpro"
+CONFIG_FILE="${BB_CONFIG_DIR}/config"
 [ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
 
 DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
 # Version file paths
-VERSION_FILE="$BBX_SHARE/BrowserBox/version.json"
-BBX_NEW_DIR="$BBX_HOME/new"
-LOG_FILE="$BB_CONFIG_DIR/update.log"
-PREPARING_FILE="$BBX_SHARE/preparing"
-PREPARED_FILE="$BBX_SHARE/prepared"
+VERSION_FILE="${BBX_SHARE}/BrowserBox/version.json"
+PREPARED_VERSION_FILE="${BBX_NEW_DIR}/BrowserBox/version.json"
+LOG_FILE="${BB_CONFIG_DIR}/update.log"
+PREPARING_FILE="${BBX_SHARE}/preparing"
+PREPARED_FILE="${BBX_SHARE}/prepared"
 
 # Clean up any leftover temp installer scripts
 clean_temp_installers() {
@@ -1545,7 +1546,7 @@ check_prepare_and_install() {
   if [ -f "$PREPARED_FILE" ]; then
     local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
     if [ "$prepared_location" = "$BBX_NEW_DIR" ] && [[ -d "$BBX_NEW_DIR/BrowserBox" ]]; then
-      local new_tag=$(get_version_info "$VERSION_FILE")
+      local new_tag=$(get_version_info "$PREPARED_VERSION_FILE")
       if [ "$new_tag" = "$repo_tag" ]; then
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n" >> "$LOG_FILE"
