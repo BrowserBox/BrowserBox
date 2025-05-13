@@ -1455,7 +1455,8 @@ is_lock_file_recent() {
     return 0  # Lock file is less than 1 hour old
   else
     rm "$temp_file"
-    return 1  # Lock file is older than 1 hour
+    $SUDO rm -f "$lock_file"
+    return 1  # Lock file is older than 1 hour update is error or timed out
   fi
 }
 
@@ -1489,16 +1490,6 @@ check_and_prepare_update() {
     return 0
   fi
 
-  # Check lock files
-  if is_lock_file_recent "$PREPARING_FILE"; then
-    printf "${YELLOW}Another update is being prepared. Skipping...${NC}\n"
-    return 0
-  fi
-
-  if check_prepare_and_install "$repo_tag"; then
-    return 0
-  fi
-
   # No prepared update, start background preparation
   # Run update in background unless debug
   if [ -n "$BBX_DEBUG" ]; then
@@ -1516,22 +1507,22 @@ check_prepare_and_install() {
   # Check if BBX_NEW_DIR has a prepared version
   if [ -f "$PREPARED_FILE" ]; then
     local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
-    if [ "$prepared_location" = "$BBX_NEW_DIR" ]; then
+    if [ "$prepared_location" = "$BBX_NEW_DIR" ] && [[ -d "$BBX_NEW_DIR/BrowserBox" ]]; then
       local new_tag=$(get_version_info "$VERSION_FILE")
       if [ "$new_tag" = "$repo_tag" ]; then
-        printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
+        printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n" >> "$LOG_FILE"
         # Move prepared version
-        $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
-        mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
+        mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n" >> $"$LOG_FILE"; return 1; }
         # Run copy_install.sh
-        cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
+        cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n" >> "$LOG_FILE"; return 1; }
         # Clean up lock files
-        $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n"
-        printf "${GREEN}Update to $repo_tag complete.${NC}\n"
+        $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n" >> "$LOG_FILE"
+        printf "${GREEN}Update to $repo_tag complete.${NC}\n" >> "$LOG_FILE"
         return 0
       else
-        printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n"
-        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
+        printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n" >> "$LOG_FILE"
+        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n" >> "$LOG_FILE"
       fi
     fi
   fi
@@ -1562,9 +1553,21 @@ update_background() {
   load_config
   local repo_tag="$(get_latest_repo_version)"
   local tagdoo="${repo_tag#v}"
+
+  printf "${YELLOW}Checking update lock...${NC}\n" >> "$LOG_FILE"
+  # Check lock files
+  if is_lock_file_recent "$PREPARING_FILE"; then
+    printf "${YELLOW}Another update is being prepared. Skipping...${NC}\n"
+    return 0
+  fi
+
+  if check_prepare_and_install "$repo_tag"; then
+    return 0
+  fi
+
   printf "${YELLOW}Requesting update lock...${NC}\n" >> "$LOG_FILE"
   # Create preparing lock file
-  $SUDO mkdir -p "$BBX_SHARE"
+  $SUDO mkdir -p "$BBX_SHARE" || { printf "${RED}Failed to create install directory $BBX_SHARE ... ${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   printf "${YELLOW}Starting background update to $repo_tag...${NC}\n" >> "$LOG_FILE"
   # Clean up any existing BBX_NEW_DIR
@@ -1586,7 +1589,9 @@ update_background() {
   $SUDO rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
   chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   printf "${YELLOW}Preparing update...${NC}\n" >> "$LOG_FILE"
-  cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+  cd "$BBX_NEW_DIR/BrowserBox"
+  export BBX_NO_COPY=1
+  yes yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL" >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
     # Mark as prepared
   printf "${YELLOW}Marking update as prepared...${NC}\n" >> "$LOG_FILE"
   printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
