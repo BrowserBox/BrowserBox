@@ -363,7 +363,7 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
   logDebug(`${testId} - Request Options`, { ...options, headers: Object.fromEntries(options.headers.entries()), body: options.body ? (options.body.length > 100 ? options.body.substring(0,100) + "..." : options.body) : undefined });
 
   try {
-    const response = await fetchFunc.fn(test.url, options);
+    const response = await fetchFunc.fn(test.url, options); // This is the ORIGINAL response object
     const duration = Date.now() - startTime;
 
     log(`[RESPONSE] ${testId} | Status: ${response.status || response.statusCode} ${response.statusText || ''} | Duration: ${duration}ms`);
@@ -387,7 +387,9 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
     // === HEADER ASSERTIONS ===
     if (test.url.includes('httpbin.org/headers')) { // Checks if request headers are sent correctly
         assert(fetchFunc.supports.includes('json'), `JSON support needed for httpbin.org/headers check`, `${testId} - Prereq: JSON support`);
-        const jsonBody = await (response.clone && fetchFunc.supports.includes('clone') ? response.clone() : response).json();
+        // Use a clone for this check if possible, to keep original response body intact for later tests
+        const resForHeaderCheck = (response.clone && fetchFunc.supports.includes('clone')) ? response.clone() : response;
+        const jsonBody = await resForHeaderCheck.json();
         const echoedHeaders = jsonBody.headers;
         assert(echoedHeaders['X-Request-Id'] && echoedHeaders['User-Agent'] === 'UnleashFetchTester/1.1',
             `Request headers (X-Request-Id, User-Agent) echoed by httpbin.org/headers. UA: ${echoedHeaders['User-Agent']}`,
@@ -402,7 +404,7 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
     // === STATUS AND REDIRECT ASSERTIONS ===
     if (test.expect === 'timeout') {
       assert(false, `Fetch call did NOT timeout as expected. Status: ${response.status}`, `${testId} - Timeout Failure`);
-      return;
+      return; // Exit early if timeout was expected but didn't happen
     }
 
     if (test.expect === 'error') {
@@ -415,14 +417,13 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
     }
 
     if (test.expect === 'redirect') {
-      const currentUrl = response.url || test.url; // response.url might not be available for fetchWithTor
+      const currentUrl = response.url || test.url;
       if (redirect === 'follow') {
         assert(response.redirected === true, `response.redirected should be true for 'follow'. Got: ${response.redirected}`, `${testId} - Redirect Follow (redirected)`);
         assert(currentUrl.includes(test.finalUrlPart), `Final URL should contain '${test.finalUrlPart}'. Got: ${currentUrl}`, `${testId} - Redirect Follow (url)`);
       } else if (redirect === 'manual') {
         const status = response.status || response.statusCode;
         const isRedirectStatus = status >= 300 && status < 400;
-        // For 'manual', type can be 'opaqueredirect' (cross-origin) or status is 3xx and redirected is false (same-origin or Node-fetch like)
         assert(response.type === 'opaqueredirect' || (isRedirectStatus && response.redirected === false),
             `Manual redirect: type 'opaqueredirect' or (3xx status and redirected=false). Type: ${response.type}, Status: ${status}, Redirected: ${response.redirected}`,
             `${testId} - Redirect Manual (type/status)`);
@@ -438,37 +439,44 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
         continue;
       }
 
-      let resForBodyTest = response;
+      let resForBodyTest = response; // By default, operate on the original response
       let isCloneTest = false;
 
       if (methodName !== 'clone' && response.clone && fetchFunc.supports.includes('clone')) {
+        // If we are testing a body method (not 'clone' itself) AND cloning is supported,
+        // we create a clone to run the body method on.
+        // The original 'response' object should remain usable if the clone is consumed.
         try {
-          resForBodyTest = response.clone();
+          resForBodyTest = response.clone(); // This is the CLONED response
           isCloneTest = true;
           logDebug(`${testId} - Body Method`, `Testing with CLONED response for ${methodName}()`);
         } catch (e) {
           assert(false, `response.clone() failed: ${e.message}`, `${testId} - Response Clone Method Error`, e);
-          continue;
+          continue; // Skip this body method test if cloning failed
         }
-      } else if (methodName === 'clone') { // Just testing the act of cloning
+      } else if (methodName === 'clone') { // This is the specific test FOR the .clone() method itself
         if (response.clone && fetchFunc.supports.includes('clone')) {
-            const cloned = response.clone();
-            assert(!!cloned, `response.clone() should return a new response object.`, `${testId} - Response Clone Call`);
-            assert(response.bodyUsed === false, `Original response.bodyUsed should be false after clone() call. Got: ${response.bodyUsed}`, `${testId} - Original BodyUsed After Clone Call`);
+            const clonedObject = response.clone(); // Call clone on the original response
+            assert(!!clonedObject, `response.clone() should return a new response object.`, `${testId} - Response Clone Call`);
+            assert(clonedObject !== response, `response.clone() should return a NEW instance.`, `${testId} - Response Clone New Instance`);
+            assert(response.bodyUsed === false, `Original response.bodyUsed should be false after its clone() method is called. Got: ${response.bodyUsed}`, `${testId} - Original BodyUsed After Clone Call`);
+            assert(clonedObject.bodyUsed === false, `Cloned response.bodyUsed should be false initially. Got: ${clonedObject.bodyUsed}`, `${testId} - Cloned BodyUsed Initial`);
         } else {
+            // This case should ideally not be hit if fetchFunc.supports is accurate
             assert(false, `response.clone() is listed in supports but not available/supported.`, `${testId} - Response Clone Not Supported`);
         }
-        continue;
+        continue; // Move to the next methodName after testing 'clone'
       } else {
+        // Not testing a body method that uses a clone, so we're using the original 'response' directly.
+        // Or, cloning is not supported by this fetchFunc.
         logDebug(`${testId} - Body Method`, `Testing with ORIGINAL response for ${methodName}()`);
       }
 
+      // Handle expectations for no-body responses
       if (test.expect === 'no-body') {
         if (['json', 'text', 'arrayBuffer', 'blob'].includes(methodName)) {
           try {
             const bodyResult = await resForBodyTest[methodName]();
-            // Some impls might return empty string/buffer for no-body, others throw.
-            // Standard says text() on no-body should resolve to empty string. json() should throw.
             if (methodName === 'json') {
                  assert(false, `${methodName}() should throw for no-body response. It resolved.`, `${testId} - ${methodName} No-Body Failure`);
             } else if (methodName === 'text') {
@@ -480,47 +488,97 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
             assert(true, `${methodName}() threw (expected for json, or if strict): ${e.message}`, `${testId} - ${methodName} No-Body Exception`);
           }
         }
-        continue;
+        continue; // Move to next methodName for no-body tests
       }
 
+      // Skip certain body methods for error responses if content type is unlikely to match
       if (test.expect === 'error' && (methodName === 'json' || methodName === 'blob')) {
         log(`Skipping ${methodName}() for error response (content likely not ${methodName}).`, COLORS.yellow);
         continue;
       }
 
+      // --- Main body consumption and reuse test block ---
       try {
-        logDebug(`${testId} - Body Method`, `Attempting: ${isCloneTest ? "clonedResponse" : "response"}.${methodName}()`);
-        const result = await resForBodyTest[methodName]();
+        logDebug(`${testId} - Body Method`, `Attempting: ${isCloneTest ? "clonedResponse" : "originalResponse"}.${methodName}()`);
+        const result = await resForBodyTest[methodName](); // Consumes resForBodyTest (either original or clone)
         const resultPreview = result && typeof result === 'string' ? result.substring(0, 70) + '...' : (result ? `${typeof result} (size/length: ${result.size || result.byteLength || result.length || 'N/A'})` : String(result));
         logDebug(`${testId} - Body Method Result [${methodName}]`, resultPreview);
 
+        // Assertions for the type of result from the body method
         if (methodName === 'text') assert(typeof result === 'string', `text() result type.`, `${testId} - ${methodName} Type`);
         else if (methodName === 'json') assert(typeof result === 'object' && result !== null, `json() result type.`, `${testId} - ${methodName} Type`);
         else if (methodName === 'arrayBuffer') assert(result instanceof ArrayBuffer || (typeof SharedArrayBuffer !== 'undefined' && result instanceof SharedArrayBuffer) || (result && typeof result.byteLength === 'number'), `arrayBuffer() result type. Got: ${Object.prototype.toString.call(result)}`, `${testId} - ${methodName} Type`);
         else if (methodName === 'blob') assert(result && typeof result.size === 'number' && typeof result.type === 'string', `blob() result type.`, `${testId} - ${methodName} Type`);
 
-        assert(true, `${methodName}() call succeeded.`, `${testId} - ${methodName} Success`);
+        assert(true, `${methodName}() call on ${isCloneTest ? "clone" : "original"} succeeded.`, `${testId} - ${methodName} Success`);
 
-        // Test body reuse
-        const targetForReuseTest = isCloneTest ? response : resForBodyTest; // If cloned, test reuse on original. Else, test on the (now used) response.
-        if (methodName !== 'clone' && targetForReuseTest.bodyUsed !== undefined) { // bodyUsed might not be on fetchWithTor
-            assert(targetForReuseTest.bodyUsed === true, `bodyUsed should be true after ${methodName}(). Got: ${targetForReuseTest.bodyUsed}`, `${testId} - ${methodName} bodyUsed After`);
+        //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        // START OF MODIFIED SECTION FOR bodyUsed and REUSE TESTING
+        //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        if (isCloneTest) { // We consumed the CLONED response (resForBodyTest)
+            assert(resForBodyTest.bodyUsed === true,
+                `Cloned response bodyUsed should be true after ${methodName}(). Got: ${resForBodyTest.bodyUsed}`,
+                `${testId} - Cloned ${methodName} bodyUsed After`);
+
+            assert(response.bodyUsed === false, // Check ORIGINAL response
+                `Original response bodyUsed should be false after consuming clone. Got: ${response.bodyUsed}`,
+                `${testId} - Original ${methodName} bodyUsed After Clone Consumed`);
+
+            // Try to reuse the CLONED response (should fail)
             try {
-                await targetForReuseTest[methodName](); // Should fail
-                assert(false, `${methodName}() should throw on body reuse.`, `${testId} - ${methodName} Reuse Failure`);
-            } catch (e_reuse) {
-                assert(true, `Threw expected error on ${methodName}() reuse: ${e_reuse.message}`, `${testId} - ${methodName} Reuse Success`);
+                await resForBodyTest[methodName]();
+                assert(false, `Cloned ${methodName}() should throw on body reuse.`, `${testId} - Cloned ${methodName} Reuse Failure`);
+            } catch (e_reuse_clone) {
+                assert(true, `Cloned ${methodName}() threw expected reuse error: ${e_reuse_clone.message}`, `${testId} - Cloned ${methodName} Reuse Success`);
             }
-        } else if (methodName !== 'clone') {
-            logDebug(`${testId}`, `Skipping body reuse test for ${methodName} as targetForReuseTest.bodyUsed is undefined.`);
+
+            // Now, try to use the ORIGINAL response for the first time (should succeed)
+            if (response.bodyUsed === false) { // Ensure original hasn't been accidentally used
+                try {
+                    logDebug(`${testId} - Body Method`, `Attempting originalResponse.${methodName}() after clone was consumed.`);
+                    await response[methodName](); // This will mark the original as used
+                    assert(true, `Original ${methodName}() succeeded after clone was consumed.`, `${testId} - Original ${methodName} After Clone Consumed Success`);
+
+                    assert(response.bodyUsed === true,
+                        `Original response bodyUsed should be true after its own ${methodName}(). Got: ${response.bodyUsed}`,
+                        `${testId} - Original ${methodName} bodyUsed After Own Consumption`);
+                    // And try to reuse original (should fail)
+                    try {
+                        await response[methodName]();
+                        assert(false, `Original ${methodName}() should throw on body reuse after own consumption.`, `${testId} - Original ${methodName} Reuse Failure After Own Consumption`);
+                    } catch (e_reuse_original_own) {
+                        assert(true, `Original ${methodName}() threw expected reuse error after own consumption: ${e_reuse_original_own.message}`, `${testId} - Original ${methodName} Reuse Success After Own Consumption`);
+                    }
+                } catch (e_original_after_clone) {
+                    assert(false, `Original ${methodName}() failed unexpectedly after clone was consumed: ${e_original_after_clone.message}`, `${testId} - Original ${methodName} After Clone Consumed Failure`, e_original_after_clone);
+                }
+            } else {
+                log(`Skipping consumption test of original response after clone, as original.bodyUsed is already true. This might indicate an issue.`, COLORS.yellow);
+            }
+
+        } else { // We consumed the ORIGINAL response (resForBodyTest is the same as response)
+            assert(response.bodyUsed === true,
+                `Original response bodyUsed should be true after ${methodName}(). Got: ${response.bodyUsed}`,
+                `${testId} - Original ${methodName} bodyUsed After`);
+
+            // Try to reuse the ORIGINAL response (should fail)
+            try {
+                await response[methodName]();
+                assert(false, `Original ${methodName}() should throw on body reuse.`, `${testId} - Original ${methodName} Reuse Failure`);
+            } catch (e_reuse_original) {
+                assert(true, `Original ${methodName}() threw expected reuse error: ${e_reuse_original.message}`, `${testId} - Original ${methodName} Reuse Success`);
+            }
         }
+        //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        // END OF MODIFIED SECTION FOR bodyUsed and REUSE TESTING
+        //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
       } catch (e_body) {
-        assert(false, `${methodName}() threw unexpected error: ${e_body.message}`, `${testId} - ${methodName} Unexpected Error`, e_body);
+        assert(false, `${methodName}() on ${isCloneTest ? "clone" : "original"} threw unexpected error: ${e_body.message}`, `${testId} - ${methodName} Unexpected Error`, e_body);
       }
-    }
+    } // End of for...of methodName loop
 
-  } catch (error) {
+  } catch (error) { // Catch errors from the main fetchFunc.fn call or initial setup
     const duration = Date.now() - startTime;
     log(`[FETCH ERROR] ${testId} | Duration: ${duration}ms`, COLORS.red);
     logErrorDetails(error, `${testId} - Main Catch Block`);
@@ -530,6 +588,7 @@ async function testFetchScenario(fetchFunc, test, method, redirect) {
       assert(isTimeoutErr, `Expected timeout error. Got: ${error.name} - ${error.message}`, `${testId} - Timeout Exception`, undefined, 'TimeoutError/AbortError', error.name);
     } else if (test.expect === 'redirect' && redirect === 'error') {
       // Fetch should throw if redirect='error' and a redirect occurs
+      // This error might be a TypeError from fetch itself, or a custom error.
       assert(true, `Fetch correctly threw for redirect='error': ${error.message}`, `${testId} - Redirect Error Mode Exception`);
     } else {
       assert(false, `Unexpected fetch error: ${error.message}`, `${testId} - Unexpected Fetch Exception`, error);
