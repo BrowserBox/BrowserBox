@@ -33,6 +33,8 @@ COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
+OGARGS=("$@")
+
 # Config file (secondary to test.env and login.link)
 BB_CONFIG_DIR="${HOME}/.config/dosyago/bbpro"
 CONFIG_FILE="${BB_CONFIG_DIR}/config"
@@ -1551,7 +1553,7 @@ check_prepare_and_install() {
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n" >> "$LOG_FILE"
         # we execute outside ourselves to avoid overwriting the bbx script when we finally move the prepared install into place
-        is_running_in_official && self_elevate_to_temp "$@"
+        is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
         # Move prepared version
         $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
         mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n" >> $"$LOG_FILE"; return 1; }
