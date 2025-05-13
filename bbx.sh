@@ -1547,7 +1547,10 @@ check_prepare_and_install() {
     if [ "$prepared_location" = "$BBX_NEW_DIR" ] && [[ -d "$BBX_NEW_DIR/BrowserBox" ]]; then
       local new_tag=$(get_version_info "$VERSION_FILE")
       if [ "$new_tag" = "$repo_tag" ]; then
+        printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n" >> "$LOG_FILE"
+        # we execute outside ourselves to avoid overwriting the bbx script when we finally move the prepared install into place
+        is_running_in_official && self_elevate_to_temp "$@"
         # Move prepared version
         $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
         mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n" >> $"$LOG_FILE"; return 1; }
@@ -1556,6 +1559,7 @@ check_prepare_and_install() {
         # Clean up lock files
         $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n" >> "$LOG_FILE"
         printf "${GREEN}Update to $repo_tag complete.${NC}\n" >> "$LOG_FILE"
+        printf "${GREEN}Update to $repo_tag complete.${NC}\n" 
         return 0
       else
         printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n" >> "$LOG_FILE"
