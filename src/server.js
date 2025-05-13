@@ -1,5 +1,6 @@
 // @flow
   /* entry point */
+  import './unleash-fetch.js';
   import fs from 'fs';
   import path from 'path';
   import {exec,spawn} from 'child_process';

@@ -1,3 +1,4 @@
+import './unleash-fetch.js';
 import os from 'os';
 import {spawn} from 'node:child_process';
 import Connect from './connection.js';

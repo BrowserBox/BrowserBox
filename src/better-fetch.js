@@ -177,178 +177,194 @@ class CustomHeaders {
   }
 }
 
+// In better-fetch.js
+// In better-fetch.js
 class CustomResponse {
-  constructor({ stream, status, headers, url, redirected = false, type = 'basic', protocol }) {
-    this._stream = stream;
-    this._buffered = false;
-    this._buffer = null;
-    this.status = Number(status); // Ensure status is a number
+  constructor({ stream, status, headers, url, redirected = false, type = 'basic', protocol, _sharedStateOverride = null }) {
+    this.status = Number(status);
     this.headers = headers instanceof CustomHeaders ? headers : new CustomHeaders(headers);
     this.url = String(url);
     this.bodyUsed = false;
     this.redirected = !!redirected;
     this.type = String(type);
     this.statusText = STATUS_TEXT[this.status] || '';
-    this.protocol = protocol || (this.url.startsWith('https') ? 'h2' : 'http/1.1'); // Guess protocol
-  }
+    this.protocol = protocol || (this.url.startsWith('https') ? 'h2' : 'http/1.1');
 
-  get ok() {
-    return this.status >= 200 && this.status <= 299;
-  }
-
-  get body() {
-    if (this._stream && !Readable.isDisturbed?.(this._stream) && !this.bodyUsed) { // isDisturbed is newer
-        return Readable.toWeb(this._stream);
-    } else if (this._buffer && !this.bodyUsed) { // If already buffered, provide stream from buffer
-        return Readable.toWeb(Readable.from(this._buffer));
+    if (_sharedStateOverride) {
+      this._sharedState = _sharedStateOverride;
+      // this._stream on a clone is conceptually null, data comes via _sharedState
+      this._stream = null; // Clones don't "own" the primary stream directly
+    } else {
+      this._sharedState = {
+        originalNodeStream: stream, // Store the actual Node.js stream here
+        bufferPromise: null,
+        buffer: null,
+        buffered: !stream,
+        streamError: null,
+      };
+      if (!stream) {
+        this._sharedState.bufferPromise = Promise.resolve();
+      }
+      // The original response instance can keep a direct _stream ref until it's consumed
+      this._stream = stream;
     }
-    // If bodyUsed or no stream/buffer, return null or throw as per spec for ReadableStream
-    // For simplicity, if bodyUsed, we let methods below throw. If no body, methods return empty.
+  }
+
+  get body() { 
+    if (this.bodyUsed) return null;
+    const state = this._sharedState;
+    if (state.buffered && state.buffer) {
+        return Readable.toWeb(Readable.from(state.buffer));
+    }
+    // This part is tricky if state.originalNodeStream is the single source
+    // and Readable.toWeb consumes it.
+    // For now, assume .text() etc. are the primary consumption paths.
+    if (state.originalNodeStream && !state.bufferPromise && !Readable.isDisturbed?.(state.originalNodeStream)) {
+        // console.warn("Accessing .body directly on an unconsumed response. This might interfere with cloning if not handled carefully.");
+        return Readable.toWeb(state.originalNodeStream);
+    }
     return null;
   }
 
   async _bufferStream() {
-    if (this._buffered || !this._stream) {
-      return;
+    const state = this._sharedState;
+
+    if (state.bufferPromise) {
+      return state.bufferPromise; // Buffering already initiated or completed
     }
-    try {
-      const chunks = [];
-      for await (const chunk of this._stream) {
-        chunks.push(chunk);
-      }
-      this._buffer = Buffer.concat(chunks);
-    } catch (err) {
-      // If stream errors during buffering, store the error and rethrow
-      this._streamError = err;
-      throw err;
-    } finally {
-      this._buffered = true;
-      // According to WHATWG Streams, the original stream should be "disturbed" or "closed"
-      // We effectively nullify it to prevent reuse.
-      if (this._stream && typeof this._stream.destroy === 'function') {
-        this._stream.destroy();
-      }
-      this._stream = null;
+
+    // If there's no original stream to process in the shared state
+    if (!state.originalNodeStream) {
+      // This means either it was null initially, or it has already been processed by a previous call.
+      // Ensure 'buffered' is true and resolve.
+      state.buffered = true;
+      state.bufferPromise = Promise.resolve();
+      return state.bufferPromise;
     }
+
+    // Capture the stream from shared state to ensure we use the one true source.
+    const streamToBuffer = state.originalNodeStream;
+    // Mark the originalNodeStream in shared state as "taken" for processing by nulling it.
+    // This prevents any other instance from trying to re-process it.
+    state.originalNodeStream = null;
+
+    state.bufferPromise = (async () => {
+      try {
+        const chunks = [];
+        for await (const chunk of streamToBuffer) {
+          chunks.push(chunk);
+        }
+        state.buffer = Buffer.concat(chunks);
+      } catch (err) {
+        state.streamError = err;
+        throw err;
+      } finally {
+        state.buffered = true;
+        // The streamToBuffer is now fully consumed.
+        // No need to destroy it here usually, as 'end' should have been emitted.
+      }
+    })();
+    // Also nullify the instance's _stream if it was the one initiating this.
+    // This instance's _stream was just a temporary holder for the original response.
+    this._stream = null;
+    return state.bufferPromise;
+  }
+
+  clone() {
+    if (this.bodyUsed) {
+      throw new TypeError('Cannot clone: this response instance body is already used.');
+    }
+
+    if (this._sharedState.originalNodeStream && !this._sharedState.buffered) {
+        console.warn("Cloning a response with an unconsumed stream. Original and clone will share the buffering process. First read triggers buffering for all.");
+    }
+
+    return new CustomResponse({
+      stream: null, // Clone does not get a direct initial _stream reference; uses shared state.
+      status: this.status,
+      headers: new CustomHeaders(this.headers),
+      url: this.url,
+      redirected: this.redirected,
+      type: this.type,
+      protocol: this.protocol,
+      _sharedStateOverride: this._sharedState, // Key: Pass the shared state
+    });
   }
 
   async text() {
     if (this.bodyUsed) throw new TypeError('Body already used');
     this.bodyUsed = true;
-    if (this._streamError) throw this._streamError; // Rethrow if buffering failed
+
     await this._bufferStream();
-    return this._buffer ? this._buffer.toString('utf8') : '';
+    const state = this._sharedState;
+    if (state.streamError) throw state.streamError;
+    return state.buffer ? state.buffer.toString('utf8') : '';
   }
 
   async json() {
     const bodyText = await this.text();
-    if (bodyText === '') { // Handle empty body for JSON parsing
+    if (bodyText === '') {
+        // For httpbin.org/headers, an empty body would mean no headers echoed.
+        // This would cause the assertion to fail.
+        console.warn(`[DEBUG] json() received empty text to parse for URL: ${this.url}`);
         throw new SyntaxError('Unexpected end of JSON input');
     }
     try {
         return JSON.parse(bodyText);
     } catch (e) {
-        throw new SyntaxError(`Failed to parse JSON: ${e.message}`);
+        const preview = bodyText.length > 100 ? bodyText.substring(0, 100) + "..." : bodyText;
+        console.error(`[DEBUG] Failed to parse JSON for URL: ${this.url}. Preview: "${preview}". Error: ${e.message}`);
+        throw new SyntaxError(`Failed to parse JSON (source: "${preview}"): ${e.message}`);
     }
   }
 
   async arrayBuffer() {
     if (this.bodyUsed) throw new TypeError('Body already used');
     this.bodyUsed = true;
-    if (this._streamError) throw this._streamError;
+
     await this._bufferStream();
-    if (!this._buffer) return new ArrayBuffer(0);
-    return this._buffer.buffer.slice(this._buffer.byteOffset, this._buffer.byteOffset + this._buffer.byteLength);
+    const state = this._sharedState;
+    if (state.streamError) throw state.streamError;
+    if (!state.buffer) return new ArrayBuffer(0);
+    const slice = state.buffer.buffer.slice(state.buffer.byteOffset, state.buffer.byteOffset + state.buffer.byteLength);
+    return slice;
   }
 
   async blob() {
-    // Blob is not globally available in Node.js by default before v18.
-    // For testing, we might need a polyfill or ensure Node >= 18.
-    // Assuming Blob is available (e.g., via `import { Blob } from 'buffer';`)
     if (typeof Blob === 'undefined') {
-        throw new Error('Blob is not supported in this environment. Requires Node.js 18+ or a polyfill.');
+        try {
+            const { Blob: BufferBlob } = await import('buffer');
+            if (typeof BufferBlob !== 'function') throw new Error();
+            globalThis.Blob = BufferBlob;
+        } catch (e) {
+            throw new Error('Blob is not supported in this environment. Requires Node.js 18+ or `buffer.Blob`.');
+        }
     }
     const buffer = await this.arrayBuffer();
     return new Blob([buffer], { type: this.headers.get('content-type') || '' });
   }
 
+  get ok() {
+    return this.status >= 200 && this.status <= 299;
+  }
+
   async formData() {
-    // formData parsing is complex and typically requires a multipart parser.
     if (this.bodyUsed) throw new TypeError('Body already used');
     this.bodyUsed = true;
     throw new Error('formData() is not yet supported in this fetch implementation.');
   }
 
-  clone() {
-    if (this.bodyUsed) {
-      throw new TypeError('Cannot clone: response body is already used or stream is disturbed.');
-    }
-    if (this._stream && !this._buffered) {
-      // If stream exists and not buffered, we must buffer it first to clone.
-      // This is an async operation, which makes clone() effectively async if not buffered.
-      // Standard clone() is synchronous. This is a deviation or requires pre-buffering.
-      // For simplicity here, we'll assume if clone is called, buffering is acceptable.
-      // A more advanced implementation might use Teeing for WHATWG streams.
-      // Let's make _bufferStream synchronous for clone or throw if not possible.
-      // Or, we accept that clone() might need to be async if it triggers buffering.
-      // For now, let's throw if trying to clone an unbuffered live stream,
-      // or make it clear that clone() might implicitly buffer.
-      // The test suite implies clone is sync. So, if we have a live stream, we can't truly clone it
-      // without consuming it or using Teeing (which Node's Readable doesn't directly support for toWeb).
-      // Let's assume for this version, if _stream exists, it must be buffered by calling a body method first,
-      // or clone will operate on a null stream if no body method was called.
-      // A better approach: if _stream exists and not buffered, the clone gets a new stream from _buffer if it becomes available.
-      // This is complex. Let's stick to: clone works if buffered, or if stream is null.
-      if (!this._buffered) {
-          // To make clone() synchronous and safe with an unbuffered stream,
-          // the original stream would need to be tee-able.
-          // Since Node.js Readable.toWeb() doesn't inherently tee,
-          // and we don't want clone() to be async here:
-          console.warn("Cloning a response with an unbuffered stream. The clone will not have a body until the original is consumed and buffered, or it will have an empty body if the original is never consumed. This behavior might differ from browser fetch.");
-      }
-    }
-
-    // If already buffered, the clone gets a new stream from the existing buffer.
-    const newStream = this._buffer ? Readable.from(this._buffer) : null;
-
-    const clonedResponse = new CustomResponse({
-      stream: newStream, // The clone gets a new stream from the buffer if available
-      status: this.status,
-      headers: new CustomHeaders(this.headers), // Deep copy headers
-      url: this.url,
-      redirected: this.redirected,
-      type: this.type,
-      protocol: this.protocol,
-    });
-    // If the original was buffered, the clone is also considered buffered with the same data.
-    if (this._buffered) {
-        clonedResponse._buffer = this._buffer; // Share the immutable buffer
-        clonedResponse._buffered = true;
-    }
-    return clonedResponse;
-  }
-
   static error() {
-    return new CustomResponse({
-      stream: null,
-      status: 0, // Network errors are typically represented by status 0
-      headers: new CustomHeaders(),
-      url: '',
-      type: 'error',
-    });
+    // Error responses have no body stream
+    return new CustomResponse({ stream: null, status: 0, headers: new CustomHeaders(), url: '', type: 'error' });
   }
 
   static redirect(url, status = 302) {
     if (![301, 302, 303, 307, 308].includes(status)) {
       throw new RangeError('Invalid status code for redirect');
     }
-    return new CustomResponse({
-      stream: null,
-      status: status,
-      headers: new CustomHeaders({ Location: url }),
-      url: '', // The URL of the Response object itself is empty for a redirect response
-      type: 'default', // Per spec, type is 'default' for Response.redirect()
-    });
+    // Redirect responses have no body stream
+    return new CustomResponse({ stream: null, status: status, headers: new CustomHeaders({ Location: url }), url: '', type: 'default' });
   }
 }
 
