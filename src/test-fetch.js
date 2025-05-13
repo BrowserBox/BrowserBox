@@ -1,4 +1,5 @@
 import './unleash-fetch.js'; // Assuming this provides globalThis.fetch and potentially other fetch functions
+import * as BetterFetch from './better-fetch.js';
 import { Readable, Writable } from 'stream';
 
 // ANSI color codes
@@ -124,8 +125,8 @@ async function fetchWithTor(url, options = {}) {
   // Timeout for this would need to be handled by the caller or internally.
   logDebug('fetchWithTor', `Executing for URL: ${url} with options: ${JSON.stringify(options)}`);
 
-  return new Promise((resolve, reject) => {
-    const protocol = url.startsWith('https') ? require('https') : require('http');
+  return new Promise(async (resolve, reject) => {
+    const protocol = await import(url.startsWith('https') ? 'https' : 'http');
     const requestOptions = {
       agent, // This would be the Tor SOCKS proxy agent if customProxy is configured for Tor
       method: options.method || 'GET',
@@ -206,7 +207,7 @@ async function runTests() {
   log('\n=== Testing Static Response Methods ===', COLORS.cyan);
   await testStaticMethods();
 
-  if (globalThis.fetch === require('./unleash-fetch.js').fetch) { // Crude check if unleash-fetch is the global fetch
+  if (globalThis.fetch === BetterFetch.fetch) { // Crude check if unleash-fetch is the global fetch
     log('\n=== Testing Node.js Stream Compatibility (unleash-fetch specific) ===', COLORS.cyan);
     await testNodeStreamCompatibility();
   }
@@ -332,7 +333,6 @@ async function testNodeStreamCompatibility() {
     assert(false, `Node.js stream compatibility error: ${e.message}`, 'Stream Compatibility: _stream Error', e);
   }
 }
-
 
 async function testFetchScenario(fetchFunc, test, method, redirect) {
   const testId = `${fetchFunc.name} | ${test.desc} | ${method} | Redirect: ${redirect}`;
