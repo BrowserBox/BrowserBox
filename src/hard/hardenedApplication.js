@@ -349,11 +349,35 @@ export class HardenedApplication {
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`License server responded with status ${response.status}`);
+      let result;
+      try {
+        result = await response.text();
+        result = JSON.parse(result);
+      } catch {
+        console.warn({result});
+        throw new Error(`License server produced in invalid response with code ${response.status}`);
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        if ( result.err && (result.err == 'already in use' || result.err == 'ticket expired') ) {
+          try { 
+            await revalidate(); 
+            if ( Number.isNaN(parseInt(attempt)) ) {
+              attempt = MAX_REVALIDATE_RETRIES - 1;
+            }
+            if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
+              return this.validateLicense(attempt);
+            } else {
+              result.message = 'Failed to revalidate a stale ticket.';
+            }
+          } catch(err) {
+            result.message = err.message || 'Revalidate failed';
+          }
+        } else {
+          console.warn(result);
+          throw new Error(`License server responded with status ${response.status}`);
+        }
+      }
 
       if (result.message !== 'License is valid.') {
         throw new Error(`License validation failed: ${result.message}`);
@@ -399,10 +423,11 @@ export class HardenedApplication {
     );
 
     let result;
-
     try {
-      result = await response.json();
+      result = await response.text();
+      result = JSON.parse(result);
     } catch {
+      console.warn({result});
       throw new Error(`License server produced in invalid response with code ${response.status}`);
     }
 
@@ -422,6 +447,7 @@ export class HardenedApplication {
           result.message = err.message || 'Revalidate failed';
         }
       } else {
+        console.warn(result);
         throw new Error(`License server responded with status ${response.status}`);
       }
     }

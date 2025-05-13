@@ -14,4 +14,6 @@ rm -f $TICKET_FILE
 
 source "${HOME}/.config/dosyago/bbpro/config"
 
+export LICENSE_KEY="${LICENSE_KEY}"
+
 bbcertify

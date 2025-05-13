@@ -6,6 +6,8 @@ Next
 
 - windows ps1 bbx v11 (auto updates) etc
 
+- ensure the test-fetch.js passess all tests (even over tor)
+
 - don't accept connection.closeModal if the handleJavaScriptDialog failed (ie still a modal)
 
 - UNBLOCK drive. Mitigations to unblock sites like WSJ/Bloomberg. 
@@ -16,7 +18,7 @@ Next
 
 - add wireguard: bbx wgrun --no-proxy  (just a tunnel to BB that then goes to the public net). --no-tunnel (just a proxy from BB to the public net, no tunnel)
 
-- support for nginx in public to permit standard ports
+- support for nginx in public to permit standard ports (but don't support http2 in nginx until widespread we can proxy it to https on backend this is because nginx to a standard port is a *backup* for browserbox for networks that can't do standard port, so if we require the browserbox be http for the nginx versions that can't proxy https through when using http2 then that will break those non-standard ports and the state of it being a backup)
 
 - bug with page copy link and related (open in) - sometimes doesn't work. If basic auth has been 'canceled' system gets in invalid state.
 
