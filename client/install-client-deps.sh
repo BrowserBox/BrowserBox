@@ -88,7 +88,7 @@ install_speaker() {
     else
         echo "📦 Installing '@browserbox/speaker' for audio support..."
         source ~/.nvm/nvm.sh
-        npm install @browserbox/speaker
+        npm install --no-save @browserbox/speaker
         if [ $? -eq 0 ]; then
             echo "🎉 '@browserbox/speaker' installed successfully!"
         else

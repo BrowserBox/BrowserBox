@@ -17,7 +17,7 @@ if [[ -z "$1" ]]; then
   echo "Supply a hostname as first argument" >&2
   exit 1
 fi
-BBX_NO_COPY=""
+BBX_NO_COPY="${BBX_NO_COPY}"
 
 unset npm_config_prefix
 
