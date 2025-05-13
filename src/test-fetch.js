@@ -194,7 +194,7 @@ const TEST_URLS = [
   { url: 'https://httpbin.org/status/404', expect: 'error', status: 404, desc: 'Not Found (404)' },
   { url: 'https://httpbin.org/status/500', expect: 'error', status: 500, desc: 'Server Error (500)' },
   { url: 'https://httpbin.org/redirect-to?url=https://httpbin.org/get&status_code=302', expect: 'redirect', finalUrlPart: '/get', desc: 'Redirect (302 to httpbin/get)' },
-  { url: 'https://httpbin.org/redirect/2', method: ['GET'], expect: 'redirect', finalUrlPart: '/get', desc: 'Multiple Redirects (2)' },
+  { url: 'https://httpbin.org/redirect/2', methods: ['GET'], expect: 'redirect', finalUrlPart: '/get', desc: 'Multiple Redirects (2)' },
 ];
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 // END OF MODIFIED SECTION: TEST_URLS
