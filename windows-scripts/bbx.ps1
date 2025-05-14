@@ -1,20 +1,20 @@
 ﻿[CmdletBinding(SupportsShouldProcess=$true)]
 param (
-    [Parameter(Position=0)]
-    [string]$Command,
-    [Parameter(ValueFromRemainingArguments)]
-    [string[]]$Args
+  [Parameter(Position=0)]
+  [string]$Command,
+  [Parameter(ValueFromRemainingArguments)]
+  [string[]]$Args
 )
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $installDir = "C:\Program Files\browserbox"
 $commands = @{
-    "install"   = "install.ps1"
-    "uninstall" = "uninstall.ps1"
-    "setup"     = "setup.ps1"
-    "run"       = "start.ps1"
-    "certify"   = "certify.ps1"
-    "stop"      = "stop.ps1"
+  "install"   = "install.ps1"
+  "uninstall" = "uninstall.ps1"
+  "setup"     = "setup.ps1"
+  "run"       = "start.ps1"
+  "certify"   = "certify.ps1"
+  "stop"      = "stop.ps1"
 }
 
 Write-Verbose "Script dir: $scriptDir"
@@ -51,7 +51,7 @@ if (-not $Command -or $Command -eq "-help") {
 if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
     Write-Verbose "Script path: $scriptPath"
-    if (Test-Path $scriptPath -or $Command -eq "revalidate") {
+    if ((Test-Path "$scriptPath") -or ($Command -eq "revalidate")) {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
         if ($Command -eq "revalidate") {
             $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
