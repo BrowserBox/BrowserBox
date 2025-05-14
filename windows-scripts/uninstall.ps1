@@ -4,12 +4,12 @@ param (
     [switch]$Force
 )
 
-if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '--help') {
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "bbx uninstall" -ForegroundColor Green
     Write-Host "Remove BrowserBox and related files" -ForegroundColor Yellow
-    Write-Host "Usage: bbx uninstall [--Force]" -ForegroundColor Cyan
+    Write-Host "Usage: bbx uninstall [-Force]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  --Force  Skip confirmation prompts during uninstall" -ForegroundColor White
+    Write-Host "  -Force  Skip confirmation prompts during uninstall" -ForegroundColor White
     return
 }
 

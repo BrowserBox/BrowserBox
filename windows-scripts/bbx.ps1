@@ -28,22 +28,22 @@ function Show-Help {
     Write-Host "Commands:" -ForegroundColor Cyan
     $commandDescriptions = @{
         "install"   = "Install BrowserBox and bbx CLI`n    bbx install"
-        "uninstall" = "Remove BrowserBox and related files`n    bbx uninstall [--Force]"
-        "setup"     = "Set up BrowserBox`n    bbx setup [--Hostname <hostname>] [--Email <email>] [--Port <port>] [--Token <token>] [--Force]"
-        "run"       = "Run BrowserBox`n    bbx run [--Hostname <hostname>] [--Port <port>] [--Token <token>] [--Email <email>]"
-        "certify"   = "Certify your license`n    bbx certify [--ForceLicense] [--LicenseKey <key>]"
-        "stop"      = "Stop BrowserBox`n    bbx stop [--GraceSeconds <seconds>]"
+        "uninstall" = "Remove BrowserBox and related files`n    bbx uninstall [-Force]"
+        "setup"     = "Set up BrowserBox`n    bbx setup [-Hostname <hostname>] [-Email <email>] [-Port <port>] [-Token <token>] [-Force]"
+        "run"       = "Run BrowserBox`n    bbx run [-Hostname <hostname>] [-Port <port>] [-Token <token>] [-Email <email>]"
+        "certify"   = "Certify your license`n    bbx certify [-ForceLicense] [-LicenseKey <key>]"
+        "stop"      = "Stop BrowserBox`n    bbx stop [-GraceSeconds <seconds>]"
         "revalidate" = "Clears ticket and revalidates`n    bbx revalidate"
     }
     $commands.Keys + "revalidate" | Sort-Object | ForEach-Object {
         Write-Host "  $_" -ForegroundColor White
         Write-Host "    $($commandDescriptions[$_])" -ForegroundColor Gray
     }
-    Write-Host "Run 'bbx <command> --help' for command-specific options." -ForegroundColor Gray
+    Write-Host "Run 'bbx <command> -help' for command-specific options." -ForegroundColor Gray
 }
 
-if (-not $Command -or $Command -eq "--help") {
-    Write-Verbose "No command or --help specified—showing help"
+if (-not $Command -or $Command -eq "-help") {
+    Write-Verbose "No command or -help specified—showing help"
     Show-Help
     return
 }
@@ -56,7 +56,7 @@ if ($commands.ContainsKey($Command)) {
         if ($Command -eq "revalidate") {
             $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
             Write-Verbose "Ticket path: $ticketPath"
-            if ($Args -contains "--help") {
+            if ($Args -contains "-help") {
                 Write-Host "bbx revalidate" -ForegroundColor Green
                 Write-Host "Clears ticket and revalidates license" -ForegroundColor Yellow
                 Write-Host "Usage: bbx revalidate" -ForegroundColor Cyan
@@ -80,9 +80,9 @@ if ($commands.ContainsKey($Command)) {
         }
         if ($Args -and $Args.Count -gt 0) {
             Write-Verbose "Parsing args: $($Args -join ', ')"
-            if ($Args -contains "--help") {
-                Write-Verbose "Passing --help to $scriptPath"
-                & $scriptPath --help
+            if ($Args -contains "-help") {
+                Write-Verbose "Passing -help to $scriptPath"
+                & $scriptPath -help
                 return
             }
             $params = @{}

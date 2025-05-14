@@ -12,13 +12,13 @@ param (
     [int]$GraceSeconds = 5
 )
 
-if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '--help') {
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "bbx stop" -ForegroundColor Green
     Write-Host "Stop BrowserBox services" -ForegroundColor Yellow
-    Write-Host "Usage: bbx stop [--GraceSeconds <seconds>]" -ForegroundColor Cyan
+    Write-Host "Usage: bbx stop [-GraceSeconds <seconds>]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  --GraceSeconds  Wait time in seconds for graceful shutdown (default: 5)" -ForegroundColor White
-    Write-Host "Note: --Hostname, --Email, --Port, --Token are accepted but unused" -ForegroundColor Gray
+    Write-Host "  -GraceSeconds  Wait time in seconds for graceful shutdown (default: 5)" -ForegroundColor White
+    Write-Host "Note: --Hostname, --Email, --Port, -Token are accepted but unused" -ForegroundColor Gray
     return
 }
 

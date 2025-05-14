@@ -6,13 +6,13 @@ param (
     [string]$LicenseKey
 )
 
-if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '--help') {
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "bbx certify" -ForegroundColor Green
     Write-Host "Certify your BrowserBox license" -ForegroundColor Yellow
-    Write-Host "Usage: bbx certify [--ForceLicense] [--LicenseKey <key>]" -ForegroundColor Cyan
+    Write-Host "Usage: bbx certify [-ForceLicense] [-LicenseKey <key>]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  --ForceLicense  Force license check without overwriting a valid ticket" -ForegroundColor White
-    Write-Host "  --LicenseKey    Specify the license key to certify" -ForegroundColor White
+    Write-Host "  -ForceLicense  Force license check without overwriting a valid ticket" -ForegroundColor White
+    Write-Host "  -LicenseKey    Specify the license key to certify" -ForegroundColor White
     return
 }
 

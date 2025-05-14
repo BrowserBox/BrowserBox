@@ -13,16 +13,16 @@ param (
     [switch]$Force
 )
 
-if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '--help') {
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "bbx setup" -ForegroundColor Green
     Write-Host "Set up BrowserBox" -ForegroundColor Yellow
-    Write-Host "Usage: bbx setup [--Hostname <hostname>] [--Email <email>] [--Port <port>] [--Token <token>] [--Force]" -ForegroundColor Cyan
+    Write-Host "Usage: bbx setup [-Hostname <hostname>] [-Email <email>] [-Port <port>] [-Token <token>] [-Force]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  --Hostname  Specify the hostname (defaults to system hostname)" -ForegroundColor White
-    Write-Host "  --Email     Email for certificate registration (optional)" -ForegroundColor White
-    Write-Host "  --Port      Main port (default: 8080, range 4024-65533)" -ForegroundColor White
-    Write-Host "  --Token     Specific login token (optional, auto-generated if not provided)" -ForegroundColor White
-    Write-Host "  --Force     Force regeneration of certificates" -ForegroundColor White
+    Write-Host "  -Hostname  Specify the hostname (defaults to system hostname)" -ForegroundColor White
+    Write-Host "  -Email     Email for certificate registration (optional)" -ForegroundColor White
+    Write-Host "  -Port      Main port (default: 8080, range 4024-65533)" -ForegroundColor White
+    Write-Host "  -Token     Specific login token (optional, auto-generated if not provided)" -ForegroundColor White
+    Write-Host "  -Force     Force regeneration of certificates" -ForegroundColor White
     return
 }
 
