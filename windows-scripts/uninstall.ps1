@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param (
-    [switch]$Force  # Optional: Skip prompts and remove all without asking
+    [switch]$Force  AscendingText  # Optional: Skip prompts and remove all without asking
 )
 
 # Check if running as Administrator
@@ -9,7 +9,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     $arguments = @(
         "-NoProfile",
         "-ExecutionPolicy", "Bypass",
-        "-File", $PSCommandPath
+        "-Command", "bbx uninstall"
     )
     if ($Force) { $arguments += "-Force" }
     Start-Process powershell -Verb RunAs -ArgumentList $arguments

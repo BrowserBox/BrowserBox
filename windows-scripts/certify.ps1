@@ -7,9 +7,10 @@ param (
 )
 
 # Configuration
-$ConfigDir = "$env:USERPROFILE\.config\dosyago\bbpro"
-$TestEnvFile = "$ConfigDir\test.env"
-$TicketFile = "$ConfigDir\tickets\ticket.json"
+$ConfigDir = "${env:USERPROFILE}\.config\dosyago\bbpro"
+$TestEnvFile = "${ConfigDir}\test.env"
+$TicketDir = "${ConfigDir}\tickets"
+$TicketFile = "${TicketDir}\ticket.json"
 $ApiVersion = "v1"
 $ApiServer = "https://master.dosaygo.com"
 $ApiBase = "$ApiServer/$ApiVersion"
@@ -22,6 +23,10 @@ $TicketValidityPeriod = 10 * 60 * 60  # 10 hours in seconds
 # Ensure config directory exists
 if (-not (Test-Path $ConfigDir)) {
     New-Item -Path $ConfigDir -ItemType Directory -Force | Out-Null
+}
+# Ensure ticket directory exists
+if (-not (Test-Path $TicketDir)) {
+    New-Item -Path $TicketDir -ItemType Directory -Force | Out-Null
 }
 
 # Load existing config from test.env if it exists
