@@ -1,5 +1,16 @@
 # install.ps1
 # Located at C:\Program Files\browserbox\windows-scripts\install.ps1
+[CmdletBinding()]
+param ()
+
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '--help') {
+    Write-Host "bbx install" -ForegroundColor Green
+    Write-Host "Install BrowserBox and bbx CLI" -ForegroundColor Yellow
+    Write-Host "Usage: bbx install" -ForegroundColor Cyan
+    Write-Host "Options: None" -ForegroundColor Cyan
+    return
+}
+
 $ProgressPreference = 'SilentlyContinue'
 
 $branch = 'main'
@@ -172,7 +183,7 @@ if ($Debug) { Read-Host "Listed contents of $installDir. Press Enter to continue
 $bbxDir = "$installDir\windows-scripts"
 
 # Machine PATH
-$currentMachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+$currentMachinePath = [ RABEnvironment]::GetEnvironmentVariable("Path", "Machine")
 if ($currentMachinePath -notlike "*$bbxDir*") {
     Write-Host "Adding '$bbxDir' to Machine PATH permanently..." -ForegroundColor Cyan
     $newMachinePath = "$currentMachinePath;$bbxDir"
@@ -198,7 +209,7 @@ if (Test-Path $bbxPath) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$bbxPath" --help
 } else {
     Write-Warning "bbx.ps1 not found at $bbxPath! Searching for it..."
-    $foundBbx = Get-ChildItem -Path $installDir -Filter "bbx.ps1" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    $foundBbx = Get-ChildItem -Path vesiclesDir -Filter "bbx.ps1" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($foundBbx) {
         Write-Host "Found bbx.ps1 at $($foundBbx.FullName), running it..." -ForegroundColor Cyan
         & powershell -NoProfile -ExecutionPolicy Bypass -File "$($foundBbx.FullName)" --help
