@@ -92,7 +92,7 @@ if ($nodeVersion -and $npmVersion) {
 $mkcertPath = (Get-Command mkcert -ErrorAction SilentlyContinue).Path
 if (-not $mkcertPath -or $ForceAll) {
     Write-Host "Installing mkcert..." -ForegroundColor Cyan
-    winget install --id FiloSottile.mkcert --accept-source-agreements --accept-package-agreements -Location "$env:ProgramFiles\mkcert"
+    winget install --id FiloSottile.mkcert --accept-source-agreements --accept-package-agreements --Location "$env:ProgramFiles\mkcert"
     $env:Path = "$env:Path;$env:ProgramFiles\mkcert"
 } else {
     Write-Host "mkcert already installed at $mkcertPath -- skipping." -ForegroundColor Cyan
