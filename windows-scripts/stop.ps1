@@ -1,18 +1,33 @@
 [CmdletBinding()]
 param (
+    [Parameter(Mandatory = $false, HelpMessage = "Specify the hostname (unused).")]
     [string]$Hostname,
+    [Parameter(Mandatory = $false, HelpMessage = "Provide an email address (unused).")]
     [string]$Email,
+    [Parameter(Mandatory = $false, HelpMessage = "Specify the main port (unused).")]
     [int]$Port,
+    [Parameter(Mandatory = $false, HelpMessage = "Provide a specific login token (unused).")]
     [string]$Token,
-    [int]$GraceSeconds = 5  # Default wait time for graceful shutdown
+    [Parameter(Mandatory = $false, HelpMessage = "Wait time in seconds for graceful shutdown (default: 5).")]
+    [int]$GraceSeconds = 5
 )
+
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '--help') {
+    Write-Host "bbx stop" -ForegroundColor Green
+    Write-Host "Stop BrowserBox services" -ForegroundColor Yellow
+    Write-Host "Usage: bbx stop [--GraceSeconds <seconds>]" -ForegroundColor Cyan
+    Write-Host "Options:" -ForegroundColor Cyan
+    Write-Host "  --GraceSeconds  Wait time in seconds for graceful shutdown (default: 5)" -ForegroundColor White
+    Write-Host "Note: --Hostname, --Email, --Port, --Token are accepted but unused" -ForegroundColor Gray
+    return
+}
 
 # Define paths
 $configDir = "$env:USERPROFILE\.config\dosyago\bbpro"
 $logDir = "$configDir\logs"
 $mainPidFile = "$logDir\browserbox-main.pid"
 $devtoolsPidFile = "$logDir\browserbox-devtools.pid"
-$chromeBaseDir = "$configDir"  # Base directory for Chrome PID files
+$chromeBaseDir = "$configDir"
 
 # Function to kill process by PID file with graceful shutdown
 function Stop-ProcessByPidFile {
@@ -20,14 +35,9 @@ function Stop-ProcessByPidFile {
     if (Test-Path $PidFile) {
         $processId = Get-Content $PidFile -ErrorAction SilentlyContinue
         if ($processId -and (Get-Process -Id $processId -ErrorAction SilentlyContinue)) {
-            # Step 1: Attempt graceful shutdown with SIGINT
             Write-Host "Attempting graceful shutdown of $ServiceName service (PID: $processId)..." -ForegroundColor Cyan
-
-            node -e "process.kill($processId, 'SIGINT')" 
-
-            Start-Sleep -Seconds $GraceSeconds # Wait for specified grace period
-
-            # Step 2: Check if process is still running, force stop if needed
+            node -e "process.kill($processId, 'SIGINT')"
+            Start-Sleep -Seconds $GraceSeconds
             if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
                 Write-Host "$ServiceName service did not exit gracefully, forcing shutdown..." -ForegroundColor Yellow
                 Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
@@ -35,10 +45,10 @@ function Stop-ProcessByPidFile {
             } else {
                 Write-Host "$ServiceName service shut down gracefully (PID: $processId)." -ForegroundColor Cyan
             }
-            Remove-Item $PidFile -Force  # Clean up PID file
+            Remove-Item $PidFile -Force
         } else {
             Write-Host "$ServiceName service not running (PID: $processId)." -ForegroundColor Yellow
-            Remove-Item $PidFile -Force  # Clean up stale PID file
+            Remove-Item $PidFile -Force
         }
     } else {
         Write-Host "No PID file found for $ServiceName service." -ForegroundColor Yellow
@@ -47,7 +57,6 @@ function Stop-ProcessByPidFile {
 
 # Function to stop all Chrome processes by enumerating chrome-* subdirectories
 function Stop-Chrome {
-    # Enumerate all chrome-* subdirectories and stop processes
     $chromeDirs = Get-ChildItem -Path $chromeBaseDir -Directory | Where-Object { $_.Name -like "chrome-*" }
     foreach ($chromeDir in $chromeDirs) {
         $chromePidFile = "$chromeDir\pid"
@@ -55,11 +64,8 @@ function Stop-Chrome {
             $chromePid = Get-Content $chromePidFile -ErrorAction SilentlyContinue
             if ($chromePid -and (Get-Process -Id $chromePid -ErrorAction SilentlyContinue)) {
                 Write-Host "Attempting graceful shutdown of Chrome (PID: $chromePid)..." -ForegroundColor Cyan
-                node -e "process.kill($chromePid, 'SIGINT')"  # Graceful shutdown via SIGINT
-
-                Start-Sleep -Seconds $GraceSeconds # Wait for specified grace period
-
-                # Check and force kill if still running
+                node -e "process.kill($chromePid, 'SIGINT')"
+                Start-Sleep -Seconds $GraceSeconds
                 $remainingChromeProcs = Get-Process -Id $chromePid -ErrorAction SilentlyContinue
                 if ($remainingChromeProcs) {
                     Stop-Process -Id $chromePid -Force
@@ -67,11 +73,10 @@ function Stop-Chrome {
                 } else {
                     Write-Host "Chrome process shut down gracefully (PID: $chromePid)." -ForegroundColor Cyan
                 }
-
-                Remove-Item $chromePidFile -Force  # Clean up PID file
+                Remove-Item $chromePidFile -Force
             } else {
                 Write-Host "Chrome process not running (PID: $chromePid)." -ForegroundColor Yellow
-                Remove-Item $chromePidFile -Force  # Clean up stale PID file
+                Remove-Item $chromePidFile -Force
             }
         } else {
             Write-Host "No PID file found for Chrome in $chromeDir." -ForegroundColor Yellow
@@ -88,18 +93,14 @@ Stop-Chrome
 
 # Backup: Kill any lingering node processes with graceful shutdown attempt
 $nodeProcs = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
-    $_.CommandLine -like "*server.js*" -or $_.CommandLine -like "*index.js*" 
+    $_.CommandLine -like "*server.js*" -or $_.CommandLine -like "*index.js*"
 }
 if ($nodeProcs) {
     foreach ($proc in $nodeProcs) {
         Write-Host "Attempting graceful shutdown of additional Node.js process (PID: $($proc.Id))..." -ForegroundColor Cyan
-
         node -e "process.kill($($proc.Id), 'SIGINT')"
-
     }
-    Start-Sleep -Seconds $GraceSeconds # Wait for specified grace period
-
-    # Check and force kill any remaining processes
+    Start-Sleep -Seconds $GraceSeconds
     $remainingProcs = $nodeProcs | Where-Object { Get-Process -Id $_.Id -ErrorAction SilentlyContinue }
     if ($remainingProcs) {
         $remainingProcs | Stop-Process -Force
@@ -112,4 +113,3 @@ if ($nodeProcs) {
 }
 
 Write-Host "BrowserBox services stopped successfully." -ForegroundColor Green
-

@@ -29,10 +29,10 @@ function Show-Help {
     $commandDescriptions = @{
         "install"   = "Install BrowserBox and bbx CLI`n    bbx install"
         "uninstall" = "Remove BrowserBox and related files`n    bbx uninstall [--Force]"
-        "setup"     = "Set up BrowserBox`n    bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]"
-        "run"       = "Run BrowserBox`n    bbx run [--port|-p <port>] [--hostname|-h <hostname>]"
-        "certify"   = "Certify your license`n    bbx certify"
-        "stop"      = "Stop BrowserBox`n    bbx stop"
+        "setup"     = "Set up BrowserBox`n    bbx setup [--Hostname <hostname>] [--Email <email>] [--Port <port>] [--Token <token>] [--Force]"
+        "run"       = "Run BrowserBox`n    bbx run [--Hostname <hostname>] [--Port <port>] [--Token <token>] [--Email <email>]"
+        "certify"   = "Certify your license`n    bbx certify [--ForceLicense] [--LicenseKey <key>]"
+        "stop"      = "Stop BrowserBox`n    bbx stop [--GraceSeconds <seconds>]"
         "revalidate" = "Clears ticket and revalidates`n    bbx revalidate"
     }
     $commands.Keys + "revalidate" | Sort-Object | ForEach-Object {
@@ -48,30 +48,36 @@ if (-not $Command -or $Command -eq "--help") {
     return
 }
 
-if ($Command -eq "revalidate") {
-    $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
-    Write-Verbose "Ticket path: $ticketPath"
-    if (-not (Test-Path (Split-Path $ticketPath))) {
-        Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
-        return
-    }
-    if (Test-Path $ticketPath) {
-        Write-Host "Removing ticket.json..." -ForegroundColor Cyan
-        if ($PSCmdlet.ShouldProcess($ticketPath, "Remove file")) {
-            Remove-Item $ticketPath -Force
-            Write-Host "ticket.json removed." -ForegroundColor Green
-        }
-    } else {
-        Write-Verbose "ticket.json does not exist at $ticketPath"
-    }
-    return
-}
-
 if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
     Write-Verbose "Script path: $scriptPath"
-    if (Test-Path $scriptPath) {
+    if (Test-Path $scriptPath -or $Command -eq "revalidate") {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
+        if ($Command -eq "revalidate") {
+            $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
+            Write-Verbose "Ticket path: $ticketPath"
+            if ($Args -contains "--help") {
+                Write-Host "bbx revalidate" -ForegroundColor Green
+                Write-Host "Clears ticket and revalidates license" -ForegroundColor Yellow
+                Write-Host "Usage: bbx revalidate" -ForegroundColor Cyan
+                Write-Host "Options: None" -ForegroundColor Cyan
+                return
+            }
+            if (-not (Test-Path (Split-Path $ticketPath))) {
+                Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
+                return
+            }
+            if (Test-Path $ticketPath) {
+                Write-Host "Removing ticket.json..." -ForegroundColor Cyan
+                if ($PSCmdlet.ShouldProcess($ticketPath, "Remove file")) {
+                    Remove-Item $ticketPath -Force
+                    Write-Host "ticket.json removed." -ForegroundColor Green
+                }
+            } else {
+                Write-Verbose "ticket.json does not exist at $ticketPath"
+            }
+            return
+        }
         if ($Args -and $Args.Count -gt 0) {
             Write-Verbose "Parsing args: $($Args -join ', ')"
             if ($Args -contains "--help") {
