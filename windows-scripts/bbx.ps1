@@ -15,7 +15,6 @@ $commands = @{
     "run"       = "start.ps1"
     "certify"   = "certify.ps1"
     "stop"      = "stop.ps1"
-    "revalidate" = "certify.ps1"
 }
 
 Write-Verbose "Script dir: $scriptDir"
@@ -25,9 +24,21 @@ Write-Verbose "Args: $($Args -join ', ')"
 
 function Show-Help {
     Write-Host "bbx CLI (Windows)" -ForegroundColor Green
-    Write-Host "Usage: bbx <command> [args]" -ForegroundColor Yellow
+    Write-Host "Usage: bbx <command> [options]" -ForegroundColor Yellow
     Write-Host "Commands:" -ForegroundColor Cyan
-    $commands.Keys | Sort-Object | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
+    $commandDescriptions = @{
+        "install"   = "Install BrowserBox and bbx CLI`n    bbx install"
+        "uninstall" = "Remove BrowserBox and related files`n    bbx uninstall [--Force]"
+        "setup"     = "Set up BrowserBox`n    bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]"
+        "run"       = "Run BrowserBox`n    bbx run [--port|-p <port>] [--hostname|-h <hostname>]"
+        "certify"   = "Certify your license`n    bbx certify"
+        "stop"      = "Stop BrowserBox`n    bbx stop"
+        "revalidate" = "Clears ticket and revalidates`n    bbx revalidate"
+    }
+    $commands.Keys + "revalidate" | Sort-Object | ForEach-Object {
+        Write-Host "  $_" -ForegroundColor White
+        Write-Host "    $($commandDescriptions[$_])" -ForegroundColor Gray
+    }
     Write-Host "Run 'bbx <command> --help' for command-specific options." -ForegroundColor Gray
 }
 
@@ -37,26 +48,37 @@ if (-not $Command -or $Command -eq "--help") {
     return
 }
 
+if ($Command -eq "revalidate") {
+    $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
+    Write-Verbose "Ticket path: $ticketPath"
+    if (-not (Test-Path (Split-Path $ticketPath))) {
+        Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
+        return
+    }
+    if (Test-Path $ticketPath) {
+        Write-Host "Removing ticket.json..." -ForegroundColor Cyan
+        if ($PSCmdlet.ShouldProcess($ticketPath, "Remove file")) {
+            Remove-Item $ticketPath -Force
+            Write-Host "ticket.json removed." -ForegroundColor Green
+        }
+    } else {
+        Write-Verbose "ticket.json does not exist at $ticketPath"
+    }
+    return
+}
+
 if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
     Write-Verbose "Script path: $scriptPath"
-    if ($Command -eq "revalidate" -or (Test-Path $scriptPath)) {
+    if (Test-Path $scriptPath) {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
-        if ($Command -eq "revalidate") {
-            $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
-            Write-Verbose "Ticket path: $ticketPath"
-            if (Test-Path $ticketPath) {
-                Write-Host "Removing ticket.json..." -ForegroundColor Cyan
-                if ($PSCmdlet.ShouldProcess($ticketPath, "Remove file")) {
-                    Remove-Item $ticketPath -Force
-                    Write-Host "ticket.json removed." -ForegroundColor Green
-                }
-            } else {
-                Write-Verbose "ticket.json does not exist at $ticketPath"
-            }
-        }
         if ($Args -and $Args.Count -gt 0) {
             Write-Verbose "Parsing args: $($Args -join ', ')"
+            if ($Args -contains "--help") {
+                Write-Verbose "Passing --help to $scriptPath"
+                & $scriptPath --help
+                return
+            }
             $params = @{}
             for ($i = 0; $i -lt $Args.Length; $i++) {
                 Write-Verbose "Processing arg ${i}: $($Args[$i])"
@@ -86,10 +108,10 @@ if ($commands.ContainsKey($Command)) {
             Write-Host "Try running 'irm bbx.dosaygo.com | iex' first." -ForegroundColor Yellow 
         }
         Show-Help
-        throw "BBX Error"
+        throw "bbx: $Command failed"
     }
 } else {
     Write-Error "Unknown command: $Command"
     Show-Help
-    throw "COMMAND Error"
+    throw "bbx: $Command failed"
 }
