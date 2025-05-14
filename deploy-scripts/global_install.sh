@@ -365,6 +365,9 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
           if [ "$arch" = "x86_64" ]; then
             arch="amd64"  # Normalize to mkcert naming
           fi
+          if [ "$arch" = "aarch64" ]; then
+            arch="arm64"
+          fi
         fi
         # Install NSS tools based on package manager
         if command -v apt &>/dev/null; then
