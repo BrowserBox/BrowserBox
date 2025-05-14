@@ -183,7 +183,7 @@ if ($Debug) { Read-Host "Listed contents of $installDir. Press Enter to continue
 $bbxDir = "$installDir\windows-scripts"
 
 # Machine PATH
-$currentMachinePath = [ RABEnvironment]::GetEnvironmentVariable("Path", "Machine")
+$currentMachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 if ($currentMachinePath -notlike "*$bbxDir*") {
     Write-Host "Adding '$bbxDir' to Machine PATH permanently..." -ForegroundColor Cyan
     $newMachinePath = "$currentMachinePath;$bbxDir"
