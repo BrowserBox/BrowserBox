@@ -2,20 +2,29 @@
 param (
     [Parameter(Mandatory = $false, HelpMessage = "Specify the hostname for BrowserBox (defaults to system hostname).")]
     [string]$Hostname,
-
     [Parameter(Mandatory = $false, HelpMessage = "Provide an email address for certificate registration (optional).")]
     [string]$Email,
-
     [Parameter(Mandatory = $false, HelpMessage = "Specify the main port for BrowserBox (default: 8080).")]
     [ValidateRange(4024, 65533)]
     [int]$Port = 8080,
-
     [Parameter(Mandatory = $false, HelpMessage = "Provide a specific login token (optional).")]
     [string]$Token,
-
     [Parameter(Mandatory = $false, HelpMessage = "Force regeneration of certificates even if they exist.")]
     [switch]$Force
 )
+
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
+    Write-Host "bbx setup" -ForegroundColor Green
+    Write-Host "Set up BrowserBox" -ForegroundColor Yellow
+    Write-Host "Usage: bbx setup [-Hostname <hostname>] [-Email <email>] [-Port <port>] [-Token <token>] [-Force]" -ForegroundColor Cyan
+    Write-Host "Options:" -ForegroundColor Cyan
+    Write-Host "  -Hostname  Specify the hostname (defaults to system hostname)" -ForegroundColor White
+    Write-Host "  -Email     Email for certificate registration (optional)" -ForegroundColor White
+    Write-Host "  -Port      Main port (default: 8080, range 4024-65533)" -ForegroundColor White
+    Write-Host "  -Token     Specific login token (optional, auto-generated if not provided)" -ForegroundColor White
+    Write-Host "  -Force     Force regeneration of certificates" -ForegroundColor White
+    return
+}
 
 # Helper Functions
 function Is-LocalHostname {
@@ -228,7 +237,7 @@ if (-not $Token) {
     Write-Host "Generated token: $Token" -ForegroundColor Cyan
 }
 
-Ensure-OpenSSL  # Add this line
+Ensure-OpenSSL
 
 $CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro"
 New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
@@ -268,7 +277,7 @@ LOGIN_TOKEN=$Token
 COOKIE_VALUE=$COOKIE_VALUE
 DEVTOOLS_PORT=$DEVTOOLS_PORT
 DOCS_PORT=$DOCS_PORT
-SSLCERTS_DIR="$env:USERPROFILE\sslcerts"
+SSLCERTS_DIR="${env:USERPROFILE}\sslcerts"
 DOMAIN="$Hostname"
 "@
 $envContent | Out-File "${CONFIG_DIR}\test.env" -Encoding utf8

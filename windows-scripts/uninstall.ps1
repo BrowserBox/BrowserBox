@@ -1,7 +1,17 @@
 [CmdletBinding()]
 param (
-    [switch]$Force  # Optional: Skip prompts and remove all without asking
+    [Parameter(Mandatory = $false, HelpMessage = "Skip confirmation prompts during uninstall")]
+    [switch]$Force
 )
+
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
+    Write-Host "bbx uninstall" -ForegroundColor Green
+    Write-Host "Remove BrowserBox and related files" -ForegroundColor Yellow
+    Write-Host "Usage: bbx uninstall [-Force]" -ForegroundColor Cyan
+    Write-Host "Options:" -ForegroundColor Cyan
+    Write-Host "  -Force  Skip confirmation prompts during uninstall" -ForegroundColor White
+    return
+}
 
 # Check if running as Administrator
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -9,7 +19,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     $arguments = @(
         "-NoProfile",
         "-ExecutionPolicy", "Bypass",
-        "-File", $PSCommandPath
+        "-Command", "bbx uninstall"
     )
     if ($Force) { $arguments += "-Force" }
     Start-Process powershell -Verb RunAs -ArgumentList $arguments

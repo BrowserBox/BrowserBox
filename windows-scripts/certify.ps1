@@ -6,10 +6,21 @@ param (
     [string]$LicenseKey
 )
 
+if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
+    Write-Host "bbx certify" -ForegroundColor Green
+    Write-Host "Certify your BrowserBox license" -ForegroundColor Yellow
+    Write-Host "Usage: bbx certify [-ForceLicense] [-LicenseKey <key>]" -ForegroundColor Cyan
+    Write-Host "Options:" -ForegroundColor Cyan
+    Write-Host "  -ForceLicense  Force license check without overwriting a valid ticket" -ForegroundColor White
+    Write-Host "  -LicenseKey    Specify the license key to certify" -ForegroundColor White
+    return
+}
+
 # Configuration
-$ConfigDir = "$env:USERPROFILE\.config\dosyago\bbpro"
-$TestEnvFile = "$ConfigDir\test.env"
-$TicketFile = "$ConfigDir\tickets\ticket.json"
+$ConfigDir = "${env:USERPROFILE}\.config\dosyago\bbpro"
+$TestEnvFile = "${ConfigDir}\test.env"
+$TicketDir = "${ConfigDir}\tickets"
+$TicketFile = "${TicketDir}\ticket.json"
 $ApiVersion = "v1"
 $ApiServer = "https://master.dosaygo.com"
 $ApiBase = "$ApiServer/$ApiVersion"
@@ -23,6 +34,10 @@ $TicketValidityPeriod = 10 * 60 * 60  # 10 hours in seconds
 if (-not (Test-Path $ConfigDir)) {
     New-Item -Path $ConfigDir -ItemType Directory -Force | Out-Null
 }
+# Ensure ticket directory exists
+if (-not (Test-Path $TicketDir)) {
+    New-Item -Path $TicketDir -ItemType Directory -Force | Out-Null
+}
 
 # Load existing config from test.env if it exists
 $Config = @{}
@@ -32,21 +47,6 @@ if (Test-Path $TestEnvFile) {
             $Config[$Matches[1]] = $Matches[2]
         }
     }
-}
-
-# Check for required license key (parameter > env var > config)
-if ($LicenseKey) {
-    $LICENSE_KEY = $LicenseKey
-    # Save the provided license key to test.env
-    $Config["LICENSE_KEY"] = $LICENSE_KEY
-    Save-Config
-} elseif ($env:LICENSE_KEY) {
-    $LICENSE_KEY = $env:LICENSE_KEY
-} elseif ($Config["LICENSE_KEY"]) {
-    $LICENSE_KEY = $Config["LICENSE_KEY"]
-} else {
-    Write-Error "No LICENSE_KEY provided. Purchase a license key at: http://getbrowserbox.com or email sales@dosaygo.com for help. Then run 'bbx certify <LicenseKey>' to install."
-    throw "LICENSE Error"
 }
 
 # Function to save config to test.env
@@ -173,6 +173,30 @@ try {
     Write-Host "Certifying BrowserBox license..." -ForegroundColor Cyan
     $ticketValid = Test-TicketValidity
 
+    # Track whether the key came from config to avoid redundant saves
+    $keyFromConfig = $false
+    $LICENSE_KEY = $null
+
+    # Select license key (parameter > env var > config > prompt)
+    if ($LicenseKey) {
+        $LICENSE_KEY = $LicenseKey
+    } elseif ($env:LICENSE_KEY) {
+        $LICENSE_KEY = $env:LICENSE_KEY
+    } elseif ($Config["LICENSE_KEY"]) {
+        $LICENSE_KEY = $Config["LICENSE_KEY"]
+        $keyFromConfig = $true
+    } elseif (-not $ticketValid) {
+        Write-Host "No LICENSE_KEY provided. Please enter a license key (purchase at http://getbrowserbox.com or email sales@dosaygo.com for help):" -ForegroundColor Yellow
+        $LICENSE_KEY = Read-Host "License Key"
+        if (-not $LICENSE_KEY) {
+            Write-Error "No license key entered. Run 'bbx certify -LicenseKey <key>' or set LICENSE_KEY environment variable."
+            throw "LICENSE Error"
+        }
+    } else {
+        Write-Host "Using existing valid ticket without requiring a new license key" -ForegroundColor Green
+        return
+    }
+
     if ($ForceLicense) {
         Write-Host "Force license mode: Checking license validity without overwriting valid ticket" -ForegroundColor Yellow
         $seatId = Get-VacantSeat
@@ -181,6 +205,9 @@ try {
             $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
             Register-Certificate -Ticket $fullTicket
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
+            if (-not $keyFromConfig) {
+                Save-Config
+            }
         } else {
             Write-Host "License is valid, keeping existing valid ticket" -ForegroundColor Green
         }
@@ -193,10 +220,12 @@ try {
             $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
             Register-Certificate -Ticket $fullTicket
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
+            if (-not $keyFromConfig) {
+                Save-Config
+            }
         }
     }
 
-    Save-Config
     Write-Host "Certification complete." -ForegroundColor Green
 } catch {
     Write-Error "An error occurred during certification: $_"
