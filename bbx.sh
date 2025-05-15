@@ -26,14 +26,23 @@ PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
+OGARGS=("$@")
+
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 BBX_NEW_DIR="${BBX_HOME}/new"
 COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
-
-OGARGS=("$@")
+if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+  COMMAND_DIR="/usr/local/bin"
+elif $SUDO test -w /usr/bin; then
+  COMMAND_DIR="/usr/bin"
+else
+  COMMAND_DIR="$HOME/.local/bin"
+  mkdir -p "$COMMAND_DIR"
+fi
+BBX_BIN="${COMMAND_DIR}/bbx"
 
 # Config file (secondary to test.env and login.link)
 BB_CONFIG_DIR="${HOME}/.config/dosyago/bbpro"
@@ -634,15 +643,6 @@ install() {
     npm i -g pm2@latest
     timeout 5s pm2 update
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
-    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
-      COMMAND_DIR="/usr/local/bin"
-    elif $SUDO test -w /usr/bin; then
-      COMMAND_DIR="/usr/bin"
-    else
-      COMMAND_DIR="$HOME/.local/bin"
-      mkdir -p "$COMMAND_DIR"
-    fi
-    BBX_BIN="${COMMAND_DIR}/bbx"
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
@@ -1347,7 +1347,6 @@ pre_install() {
     fi
 }
 
-
 uninstall() {
     printf "${YELLOW}Uninstalling BrowserBox...${NC}\n"
     printf "${BLUE}This will remove all BrowserBox files, including config and installation directories.${NC}\n"
@@ -1388,12 +1387,13 @@ uninstall() {
         printf "${YELLOW}Removing bbx binary: $BBX_BIN...${NC}\n"
         read -r -p "Confirm removal of $BBX_BIN? (yes/no): " CONFIRM_BIN
         if [ "$CONFIRM_BIN" = "yes" ]; then
-            $SUDO rm -f "$BBX_BIN" && printf "${GREEN}Removed $BBX_BIN${NC}\n" || printf "${RED}Failed to remove $BBX_BIN${NC}\n"
+            $SUDO bash -c "(sleep 5; rm -f \"$(command -v bbx)\") &"
         else
             printf "${YELLOW}Skipping $BBX_BIN removal${NC}\n"
         fi
     fi
-    printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
+    printf "${GREEN}Uninstall complete.${NC}\n"
+    exit 0
 }
 
 certify() {
