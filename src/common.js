@@ -215,6 +215,7 @@ export const DEBUG = Object.freeze({
   enableClientsToSetURL: true,
   debugSendResult: false,
   metaDebug: false,
+  logMeta: true,
   channelDebug: false,
   debugCookie: false,
   waitLonger: true,

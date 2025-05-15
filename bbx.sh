@@ -26,14 +26,23 @@ PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
+OGARGS=("$@")
+
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 BBX_NEW_DIR="${BBX_HOME}/new"
 COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
-
-OGARGS=("$@")
+if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+  COMMAND_DIR="/usr/local/bin"
+elif $SUDO test -w /usr/bin; then
+  COMMAND_DIR="/usr/bin"
+else
+  COMMAND_DIR="$HOME/.local/bin"
+  mkdir -p "$COMMAND_DIR"
+fi
+BBX_BIN="${COMMAND_DIR}/bbx"
 
 # Config file (secondary to test.env and login.link)
 BB_CONFIG_DIR="${HOME}/.config/dosyago/bbpro"
@@ -602,14 +611,21 @@ install() {
       fi
     fi
     BBX_HOSTNAME="${BBX_HOSTNAME:-$default_hostname}"
+    STRICTNESS="mandatory";
     if is_local_hostname "$BBX_HOSTNAME"; then
+        STRICTNESS="optional"
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
     if [ -z "$EMAIL" ]; then
       if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
         EMAIL=""
       else
-        read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+        read -r -p "Enter your email for Let's Encrypt ($STRICTNESS for $BBX_HOSTNAME): " EMAIL
+      fi
+      if [[ "$STRICTNESS" == "mandatory" ]] && [[ -z "$EMAIL" ]]; then
+        echo "An email is required for a public DNS hostname in order to provision the TLS certificate from Let's Encrypt." >&2
+        echo "Exiting..." >&2
+        exit 1
       fi
     fi
     
@@ -627,15 +643,6 @@ install() {
     npm i -g pm2@latest
     timeout 5s pm2 update
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
-    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
-      COMMAND_DIR="/usr/local/bin"
-    elif $SUDO test -w /usr/bin; then
-      COMMAND_DIR="/usr/bin"
-    else
-      COMMAND_DIR="$HOME/.local/bin"
-      mkdir -p "$COMMAND_DIR"
-    fi
-    BBX_BIN="${COMMAND_DIR}/bbx"
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
@@ -702,12 +709,11 @@ setup() {
   TOKEN="${BB_TOKEN}"
 
   pkill ncat
-  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
   for i in {-2..2}; do
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  setup_bbpro --port "$port" --token "$TOKEN" > "$BB_CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
@@ -1340,7 +1346,6 @@ pre_install() {
     fi
 }
 
-
 uninstall() {
     printf "${YELLOW}Uninstalling BrowserBox...${NC}\n"
     printf "${BLUE}This will remove all BrowserBox files, including config and installation directories.${NC}\n"
@@ -1381,12 +1386,13 @@ uninstall() {
         printf "${YELLOW}Removing bbx binary: $BBX_BIN...${NC}\n"
         read -r -p "Confirm removal of $BBX_BIN? (yes/no): " CONFIRM_BIN
         if [ "$CONFIRM_BIN" = "yes" ]; then
-            $SUDO rm -f "$BBX_BIN" && printf "${GREEN}Removed $BBX_BIN${NC}\n" || printf "${RED}Failed to remove $BBX_BIN${NC}\n"
+            $SUDO bash -c "(sleep 5; rm -f \"$(command -v bbx)\") &"
         else
             printf "${YELLOW}Skipping $BBX_BIN removal${NC}\n"
         fi
     fi
-    printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
+    printf "${GREEN}Uninstall complete.${NC}\n"
+    exit 0
 }
 
 certify() {
