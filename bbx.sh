@@ -602,14 +602,21 @@ install() {
       fi
     fi
     BBX_HOSTNAME="${BBX_HOSTNAME:-$default_hostname}"
+    STRICTNESS="mandatory";
     if is_local_hostname "$BBX_HOSTNAME"; then
+        STRICTNESS="optional"
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
     if [ -z "$EMAIL" ]; then
       if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
         EMAIL=""
       else
-        read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+        read -r -p "Enter your email for Let's Encrypt ($STRICTNESS for $BBX_HOSTNAME): " EMAIL
+      fi
+      if [[ "$STRICTNESS" == "mandatory" ]] && [[ -z "$EMAIL" ]]; then
+        echo "An email is required for a public DNS hostname in order to provision the TLS certificate from Let's Encrypt." >&2
+        echo "Exiting..." >&2
+        exit 1
       fi
     fi
     
