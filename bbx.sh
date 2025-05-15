@@ -709,12 +709,11 @@ setup() {
   TOKEN="${BB_TOKEN}"
 
   pkill ncat
-  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
   for i in {-2..2}; do
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  setup_bbpro --port "$port" --token "$TOKEN" > "$BB_CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
