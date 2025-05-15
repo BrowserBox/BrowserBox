@@ -14,6 +14,9 @@
   <a href="https://dosaygo.com/nist800-53.html"><img src="https://img.shields.io/badge/NIST%20800--53-Compliant-green" alt="NIST 800-53 Compliant"></a>
   <a href="https://dosaygo.com/hipaa.html"><img src="https://img.shields.io/badge/HIPAA-Ready-purple" alt="HIPAA Ready"></a>
   <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Enabled-pink" alt="DLP Enabled"></a>
+  <br>
+  <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml/badge.svg" alt="bbx Saga Test Suite"></a>
+  <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/basic-install.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/basic-install.yaml/badge.svg" alt="BrowserBox Basic Install Test"></a>
 </p>
 
 <p align="center">
