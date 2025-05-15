@@ -50,6 +50,7 @@ export class HardenedApplication {
       privateKeyPath = null,
       privateKeyPem = null,
       ignorePatterns = [
+        'my_custom_policy_module',
         'version.json',
         'package.json',
         '.bang.html.snapshot',
