@@ -1409,6 +1409,28 @@ uninstall() {
 certify() {
   load_config
   printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
+
+  # Check if a license key was provided as an argument
+  if [ -n "$1" ]; then
+    LICENSE_KEY="$1"
+    if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+      export LICENSE_KEY
+      if eval "bbcertify --force-license $REDIRECT 2>&1"; then
+        printf "${GREEN}License key validated with server.${NC}\n"
+        save_config
+        printf "${GREEN}Certification complete.${NC}\n"
+        return 0
+      else
+        printf "${RED}ERROR: License key invalid or server unreachable.${NC}\n"
+        exit 1
+      fi
+    else
+      printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+      exit 1
+    fi
+  fi
+
+  # No argument provided, proceed with existing logic
   if [ -n "$LICENSE_KEY" ]; then
     printf "${BLUE}Current key: $LICENSE_KEY${NC}\n"
     if [[ -z "$BBX_TEST_AGREEMENT" ]]; then
