@@ -48,7 +48,7 @@
     <li><strong>Activate and Run</strong><br>
         Activate your license:
         <pre><code>
-        bbx apply YOUR_LICENSE_KEY
+        bbx certify YOUR_LICENSE_KEY
         </code></pre>
         Run BrowserBox in Docker:
         <pre><code>
