@@ -133,7 +133,6 @@ jobs:
           export BB_QUICK_EXIT="whatever"
           export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
           bbcertify
-          export LICENSE_KEY=""
           bbpro &
           sleep 5
           ngrok http https://localhost:8080 &
