@@ -77,7 +77,7 @@ BrowserBox requires a license for all use. Choose the option that's right for yo
 
 *   🚀 **[Get a Commercial License](https://browse.cloudtabs.net/l)** - Starting at $99/user/year. Volume discounts available.
 *   🌍 **[Get a Non-Commercial License](https://browse.cloudtabs.net/M/jl)** - $39/user/year for individuals, non-profits, and government.
-*   🧪 **[Request a Free 14-Day Trial](https://tally.so/r/wkv4aM)** - Experience the full power of BrowserBox.
+*   🧪 **[Request a Demo](mailto:sales@dosaygo.com?subject=Demo)** - Experience the full power of BrowserBox.
 *   🛡️ **[Explore Solutions for Regulated Industries](https://dosaygo.com/regulated-enterprise.html)** - HIPAA, NIST 800-53, DLP, and more.
 
 >[!CAUTION]
@@ -167,8 +167,7 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
 A product key is required.
 *   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://browse.cloudtabs.net/l).
 *   **Non-Commercial Use:** $39/user/year (for individuals, non-profits, government). [Purchase Non-Commercial License](https://browse.cloudtabs.net/M/jl).
-*   **Evaluation:** [Request a 14-Day Free Trial](https://tally.so/r/wkv4aM).
-*   *Limited Time Offer: Sign up by April 30, 2025, for 10% off your first year!*
+*   **Evaluation:** [Request a Demo](mailto:sales@dosaygo.com?subject=Demo).
 
 You can also purchase directly via the `bbx` CLI on Linux/macOS:
 ```console
@@ -312,5 +311,5 @@ The `bbx` CLI tool and other specified components are open source under the [LIC
 
 <p align="center">
   <strong>Ready to secure your browsing?</strong><br>
-  <a href="https://browse.cloudtabs.net/l">Get Your Commercial License</a> | <a href="https://browse.cloudtabs.net/M/jl">Get Your Non-Commercial License</a> | <a href="https://tally.so/r/wkv4aM">Request a Free Trial</a>
+  <a href="https://browse.cloudtabs.net/l">Get Your Commercial License</a> | <a href="https://browse.cloudtabs.net/M/jl">Get Your Non-Commercial License</a> | <a href="mailto:sales@dosaygo.com?subject=Demo">Request a Demo</a>
 </p>

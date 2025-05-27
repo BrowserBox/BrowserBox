@@ -28,8 +28,30 @@ fi
 echo "BrowserBox v11 Terms: https://dosaygo.com/terms.txt | License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md | Privacy: https://dosaygo.com/privacy.txt"
 [ "${AGREE:-no}" = "yes" ] || read -p " Agree? (yes/no): " AGREE
 [ "$AGREE" = "yes" ] || { echo "ERROR: Must agree to terms!" >&2; exit 1; }
-[ -n "$LICENSE_KEY" ] || read -p "Enter License Key (sales@dosaygo.com): " LICENSE_KEY
-[ -n "$LICENSE_KEY" ] || { echo "ERROR: License key required!" >&2; exit 1; }
+
+# Source the config file if it exists
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$CONFIG_DIR/config"
+if [[ -f "$CONFIG_FILE" ]]; then
+  echo "Sourcing $CONFIG_FILE..." >&2
+  source "$CONFIG_FILE"
+else
+  echo "No config file found at $CONFIG_FILE. Proceeding without it." >&2
+fi
+
+# Check for LICENSE_KEY and prompt if not set
+if [[ -z "$LICENSE_KEY" ]]; then
+  echo "LICENSE_KEY is required to proceed." >&2
+  while [[ -z "$LICENSE_KEY" ]]; do
+    read -p "Please enter your LICENSE_KEY (contact sales@dosaygo.com): " LICENSE_KEY
+    if [[ -z "$LICENSE_KEY" ]]; then
+      echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
+    fi
+  done
+  echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+else
+  echo "LICENSE_KEY is already set." >&2
+fi
 
 # Args Check
 [ -z "$PORT" ] || [ -z "$HOSTNAME" ] || [ -z "$EMAIL" ] && {
@@ -41,21 +63,42 @@ echo "BrowserBox v11 Terms: https://dosaygo.com/terms.txt | License: https://git
   exit 1
 }
 
-# Check if hostname is local (copied from bbx.sh)
+# Check if hostname is local
 is_local_hostname() {
-    local hostname="$1"
-    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
-    if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
-        return 0  # Local
-    else
-        if command -v getent >/dev/null; then
-            resolved_ip=$(getent hosts "$hostname" | tail -n1)
-            if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
-                return 0
-            fi
+  local hostname="$1"
+  local resolved_ips ip
+  local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
+  local has_valid_result=0
+  local all_private=1
+
+  for dns in "${public_dns_servers[@]}"; do
+    resolved_ips=$(dig +short "$hostname" A @"$dns")
+    if [[ -n "$resolved_ips" ]]; then
+      has_valid_result=1
+      while IFS= read -r ip; do
+        ip="${ip%.}"
+        # Public if NOT in known private ranges
+        if [[ ! "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
+          return 1  # Public
         fi
-        return 1  # Not local
+      done <<< "$resolved_ips"
     fi
+  done
+
+  # If all results were private or none resolved, treat as local
+  if [[ "$has_valid_result" -eq 1 ]]; then
+    return 0  # All IPs private => local
+  fi
+
+  # Fallback: check /etc/hosts (or similar)
+  if command -v getent &>/dev/null; then
+    ip=$(getent hosts "$hostname" | awk '{print $1}' | head -n1)
+    if [[ "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
+      return 0  # Local
+    fi
+  fi
+
+  return 0  # Unresolvable or garbage → treat as local
 }
 
 # Port Availability (Cross-Platform)

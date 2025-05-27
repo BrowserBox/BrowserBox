@@ -48,19 +48,40 @@ fi
 
 # Check if hostname is local
 is_local_hostname() {
-    local hostname="$1"
-    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
-    if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
-        return 0  # Local
-    else
-      if command -v getent &>/dev/null; then
-        resolved_ip=$(getent hosts "$hostname" | tail -n1)
-        if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
-          return 0
+  local hostname="$1"
+  local resolved_ips ip
+  local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
+  local has_valid_result=0
+  local all_private=1
+
+  for dns in "${public_dns_servers[@]}"; do
+    resolved_ips=$(dig +short "$hostname" A @"$dns")
+    if [[ -n "$resolved_ips" ]]; then
+      has_valid_result=1
+      while IFS= read -r ip; do
+        ip="${ip%.}"
+        # Public if NOT in known private ranges
+        if [[ ! "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
+          return 1  # Public
         fi
-      fi
-      return 1  # Not local
+      done <<< "$resolved_ips"
     fi
+  done
+
+  # If all results were private or none resolved, treat as local
+  if [[ "$has_valid_result" -eq 1 ]]; then
+    return 0  # All IPs private => local
+  fi
+
+  # Fallback: check /etc/hosts (or similar)
+  if command -v getent &>/dev/null; then
+    ip=$(getent hosts "$hostname" | awk '{print $1}' | head -n1)
+    if [[ "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
+      return 0  # Local
+    fi
+  fi
+
+  return 0  # Unresolvable or garbage → treat as local
 }
 
 # Ensure hostname is in /etc/hosts, allowing whitespace but not comments

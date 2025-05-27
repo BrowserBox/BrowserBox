@@ -5,7 +5,7 @@
 
 if [[ -z "$STATUS_MODE" ]]; then
   echo "Set status mode env" >&2
-  exit 1
+  STATUS_MODE="quick exit"
 fi
 
 export STATUS_MODE="${STATUS_MODE}"

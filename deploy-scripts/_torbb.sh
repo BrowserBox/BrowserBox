@@ -393,9 +393,33 @@ manage_firewall() {
   else
     install_tor
   fi
+
   source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
   [ -z "$CONFIG_DIR" ] && { echo "CONFIG_DIR not set. Run setup_bbpro again." >&2; exit 1; }
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
+
+  # Source the config file if it exists
+  CONFIG_FILE="$CONFIG_DIR/config"
+  if [[ -f "$CONFIG_FILE" ]]; then
+    echo "Sourcing $CONFIG_FILE..." >&2
+    source "$CONFIG_FILE"
+  else
+    echo "No config file found at $CONFIG_FILE. Proceeding without it." >&2
+  fi
+
+  # Check for LICENSE_KEY and prompt if not set
+  if [[ -z "$LICENSE_KEY" ]]; then
+    echo "LICENSE_KEY is required to proceed." >&2
+    while [[ -z "$LICENSE_KEY" ]]; do
+      read -p "Please enter your LICENSE_KEY: " LICENSE_KEY
+      if [[ -z "$LICENSE_KEY" ]]; then
+        echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
+      fi
+    done
+    echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+  else
+    echo "LICENSE_KEY is already set." >&2
+  fi
 
   echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
   ensure_shutdown &>/dev/null

@@ -10,6 +10,8 @@ Next
 
 - don't accept connection.closeModal if the handleJavaScriptDialog failed (ie still a modal)
 
+- resolve weird race where metas need to be printed in logs in order to be consistently sent
+
 - UNBLOCK drive. Mitigations to unblock sites like WSJ/Bloomberg. 
 
 - fix pointer alignment when using page zoom (pinch/spread)

@@ -16,6 +16,7 @@ export const scratchState = {
   cameFromTOR: false,
   slowConnection: false,
 };
+process.env.BB_QUICK_EXIT = process.env.STATUS_MODE == "quick exit" ? "true" : "";
 export const KILL_TIME = process.env.BB_QUICK_EXIT ? 18_222 : 422_222;
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
