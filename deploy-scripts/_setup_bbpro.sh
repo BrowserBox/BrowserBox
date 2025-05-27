@@ -517,6 +517,29 @@ mkdir -p $CONFIG_DIR
 
 echo $(date) > $CONFIG_DIR/.bbpro_config_dir
 
+# Source the config file if it exists
+CONFIG_FILE="$CONFIG_DIR/config"
+if [[ -f "$CONFIG_FILE" ]]; then
+  echo "Sourcing $CONFIG_FILE..." >&2
+  source "$CONFIG_FILE"
+else
+  echo "No config file found at $CONFIG_FILE. Proceeding without it." >&2
+fi
+
+# Check for LICENSE_KEY and prompt if not set
+if [[ -z "$LICENSE_KEY" ]]; then
+  echo "LICENSE_KEY is required to proceed." >&2
+  while [[ -z "$LICENSE_KEY" ]]; do
+    read -p "Please enter your LICENSE_KEY: " LICENSE_KEY
+    if [[ -z "$LICENSE_KEY" ]]; then
+      echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
+    fi
+  done
+  echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+else
+  echo "LICENSE_KEY is already set." >&2
+fi
+
 echo "Done!">&2
 
 echo -n "Creating test.env...">&2
