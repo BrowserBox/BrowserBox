@@ -171,7 +171,7 @@ A product key is required.
 
 You can also purchase directly via the `bbx` CLI on Linux/macOS:
 ```console
-bbx activate [seats]
+bbx activate [number of people]
 ```
 
 >[!IMPORTANT]
@@ -204,7 +204,7 @@ Access BrowserBox using the **Login Link** provided in your console. For public 
 The `bbx` CLI simplifies every aspect of BrowserBox management:
 
 *   ✅ **Easy Installation & Updates:** `bbx install`, `bbx update`
-*   💳 **License Management:** `bbx activate [seats]`, `bbx certify <key>`
+*   💳 **License Management:** `bbx activate [number of seats]`, `bbx certify [product key]`
 *   👩‍💻 **Multi-User Support:** Run BrowserBox for multiple users on a single machine.
 *   🐳 **Docker Integration:** `bbx docker-run`
 *   🧅 **Tor Anonymity:** `bbx tor-run`
@@ -263,7 +263,7 @@ A: Yes, for enterprise clients with an Annual Contract Value (ACV) of $150K+. Pl
 A: BrowserBox uniquely combines enterprise-grade security, extensive cross-platform compatibility (including Docker and multiple OS), an easy-to-use embedding API, and a powerful CLI, all in one package.
 
 **Q: What do I receive when I purchase a license?**
-A: You'll get an email with a secure, one-time link to view your product key. This key is valid for the number of seats purchased (adjustable during checkout).
+A: You'll get an email with a secure, one-time link to view your product key. This key is valid for the number of seats purchased (adjustable during checkout). This is the same as the number of people who will use BrowserBox in your product or organization.
 
 **Q: How can I purchase more licenses or get volume discounts?**
 A: Volume discounts are available for commercial licenses and are automatically applied on our payment page. For custom packages or questions, contact [sales@dosaygo.com](mailto:sales@dosaygo.com). Non-commercial licenses have a flat rate.
