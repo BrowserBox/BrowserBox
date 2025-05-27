@@ -28,6 +28,29 @@ BOLD='\033[1m'
 
 OGARGS=("$@")
 
+protecc_win_sysadmins() {
+    # Check for Windows environments
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" || -n "$WINDIR" || "$(uname -s)" =~ ^MINGW || "$(uname -s)" =~ ^CYGWIN || -n "$WSL_DISTRO_NAME" ]]; then
+        echo -e "\033[1;31m⚠️ WARNING: You're on Windows! ⚠️\033[0m"
+        echo -e "\033[1;33mThis Bash script (bbx) isn't meant for Windows sysadmins.\033[0m"
+        echo -e "Please use the native PowerShell install method instead:"
+        echo -e "\033[1;32mirm dosaygo.com/browserbox | iex\033[0m"
+        echo -e "Run this in PowerShell to get a Windows-friendly bbx setup."
+        exit 1
+    fi
+}
+
+# Call the function right away
+protecc_win_sysadmins
+
+# Sudo check
+SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
+    banner
+    printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
+    exit 1
+fi
+
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 BBX_NEW_DIR="${BBX_HOME}/new"
@@ -231,28 +254,6 @@ EOF
     printf "${NC}\n"
 }
 
-protecc_win_sysadmins() {
-    # Check for Windows environments
-    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" || -n "$WINDIR" || "$(uname -s)" =~ ^MINGW || "$(uname -s)" =~ ^CYGWIN || -n "$WSL_DISTRO_NAME" ]]; then
-        echo -e "\033[1;31m⚠️ WARNING: You're on Windows! ⚠️\033[0m"
-        echo -e "\033[1;33mThis Bash script (bbx) isn't meant for Windows sysadmins.\033[0m"
-        echo -e "Please use the native PowerShell install method instead:"
-        echo -e "\033[1;32mirm dosaygo.com/browserbox | iex\033[0m"
-        echo -e "Run this in PowerShell to get a Windows-friendly bbx setup."
-        exit 1
-    fi
-}
-
-# Call the function right away
-protecc_win_sysadmins
-
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
-    banner
-    printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
-    exit 1
-fi
 
 
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
