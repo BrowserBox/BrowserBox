@@ -263,7 +263,7 @@ A: Yes, for enterprise clients with an Annual Contract Value (ACV) of $150K+. Pl
 A: BrowserBox uniquely combines enterprise-grade security, extensive cross-platform compatibility (including Docker and multiple OS), an easy-to-use embedding API, and a powerful CLI, all in one package.
 
 **Q: What do I receive when I purchase a license?**
-A: You'll get an email with a secure, one-time link to view your product key. This key is valid for the number of seats purchased (adjustable during checkout). This is the same as the number of people who will use BrowserBox in your product or organization.
+A: You'll get an email with a secure, one-time link to view your product key. This key is valid for the number of seats purchased (adjustable during checkout). This is the same as the number of people who will use BrowserBox in your product or organization. For high volume or to negotiate custom pricing reach out to us. 
 
 **Q: How can I purchase more licenses or get volume discounts?**
 A: Volume discounts are available for commercial licenses and are automatically applied on our payment page. For custom packages or questions, contact [sales@dosaygo.com](mailto:sales@dosaygo.com). Non-commercial licenses have a flat rate.
