@@ -121,6 +121,8 @@ jobs:
         run: |
           output=$(setup_bbpro --port 8080)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
+        env:
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
 
       # Start server & ngrok tunnel
       - name: Start server & ngrok tunnel
@@ -179,6 +181,8 @@ jobs:
             exit 1
           fi
           echo "Application check succeeded"
+        env:
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
 
       # Print ngrok URL
       - name: Print ngrok URL
@@ -223,6 +227,8 @@ jobs:
           stop_bbpro
           sleep 10
           exit 0
+        env:
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
 
       # Cleanup
       - name: Cleanup
