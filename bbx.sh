@@ -731,10 +731,6 @@ run() {
     load_config
   fi
 
-  if [ -z "$LICENSE_KEY" ]; then
-    LICENSE_KEY="AAAA-BBBB-CCCC-DDDD-EEEE-FFFF-GGGG-HHHH"
-  fi
-
   # Default values (should be set by setup, but fallback for safety)
   local port="${PORT}"
   local hostname="${BBX_HOSTNAME}"
@@ -1035,11 +1031,6 @@ docker_run() {
     setup
     load_config
   fi
-
-  if [ -z "$LICENSE_KEY" ]; then
-    LICENSE_KEY="AAAA-BBBB-CCCC-DDDD-EEEE-FFFF-GGGG-HHHH"
-  fi
-
 
   PORT="$port"  # Override PORT if specified
   BBX_HOSTNAME="$hostname"
