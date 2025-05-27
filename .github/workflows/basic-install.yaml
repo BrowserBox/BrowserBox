@@ -106,6 +106,7 @@ jobs:
           source $HOME/.nvm/nvm.sh
           ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
         env:
+          BBX_NO_UPDATE: "true"
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       # Install application
@@ -122,6 +123,7 @@ jobs:
           output=$(setup_bbpro --port 8080)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
         env:
+          BBX_NO_UPDATE: "true"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
 
       # Start server & ngrok tunnel
@@ -181,6 +183,7 @@ jobs:
           fi
           echo "Application check succeeded"
         env:
+          BBX_NO_UPDATE: "true"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
 
       # Print ngrok URL
@@ -227,6 +230,7 @@ jobs:
           sleep 10
           exit 0
         env:
+          BBX_NO_UPDATE: "true"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
 
       # Cleanup
