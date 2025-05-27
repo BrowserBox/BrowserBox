@@ -1518,6 +1518,9 @@ is_lock_file_recent() {
 }
 
 check_and_prepare_update() {
+  if [[ -n "$BBX_NO_UPDATE" ]]; then
+    return 0
+  fi
   # Skip for uninstall to avoid unnecessary checks
   ([ "$1" = "uninstall" ] || [ "$1" = "update" ] || [ "$1" = "install" ] || [ "$1" = "update-background" ]) && return 0
 
@@ -1560,6 +1563,9 @@ check_and_prepare_update() {
 }
 
 check_prepare_and_install() {
+  if [[ -n "$BBX_NO_UPDATE" ]]; then
+    return 0
+  fi
   repo_tag="$1"
   # Check if BBX_NEW_DIR has a prepared version
   if [ -f "$PREPARED_FILE" ]; then
@@ -1592,6 +1598,10 @@ check_prepare_and_install() {
 
 # Modified update function
 update() {
+  if [[ -n "$BBX_NO_UPDATE" ]]; then
+    return 0
+  fi
+
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
@@ -1606,11 +1616,15 @@ update() {
   
   update_background
   local repo_tag=$(get_latest_repo_version)
-  check_prepare_and_install "$repo_tag"
+  [ -n "$BBX_NO_UPDATE" ] || check_prepare_and_install "$repo_tag"
 }
 
 # Background update function
 update_background() {
+  if [[ -n "$BBX_NO_UPDATE" ]]; then
+    return 0
+  fi
+
   load_config
   local repo_tag="$(get_latest_repo_version)"
   local tagdoo="${repo_tag#v}"
@@ -1975,22 +1989,22 @@ usage() {
 }
 
 check_agreement() {
-    if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
-      if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-        echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
-      fi
-      return 0
-    fi
+  if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
     if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-        printf "${BLUE}BrowserBox v11 Terms:${NC} https://dosaygo.com/terms.txt\n"
-        printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
-        printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
-        read -r -p " Agree? (yes/no): " AGREE
-        [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
-        mkdir -p "$BB_CONFIG_DIR"
-        touch "$BB_CONFIG_DIR/.agreed"
-        echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
+      echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
     fi
+    return 0
+  fi
+  if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
+      printf "${BLUE}BrowserBox v11 Terms:${NC} https://dosaygo.com/terms.txt\n"
+      printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
+      printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
+      read -r -p " Agree? (yes/no): " AGREE
+      [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
+      mkdir -p "$BB_CONFIG_DIR"
+      touch "$BB_CONFIG_DIR/.agreed"
+      echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
+  fi
 }
 
 activate() {
@@ -2082,7 +2096,7 @@ activate() {
 
 [ "$1" != "uninstall" ] && check_agreement
 # Call check_and_prepare_update with the first argument
-check_and_prepare_update "$1"
+[ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
 case "$1" in
     install) shift 1; install "$@";;
     uninstall) shift 1; uninstall "$@";;
