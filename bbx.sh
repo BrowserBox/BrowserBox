@@ -733,7 +733,7 @@ setup() {
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
@@ -866,7 +866,7 @@ tor_run() {
     elif ! $onion; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+    LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
     source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
     # Validate existing product key
     export LICENSE_KEY
@@ -1919,7 +1919,7 @@ run_as() {
     TOKEN=$(openssl rand -hex 16)
 
     # Run setup_bbpro with explicit PATH and fresh token, redirecting output as the target user
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
