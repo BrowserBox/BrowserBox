@@ -12,7 +12,7 @@
     <li><strong>Developer-Friendly</strong>: Embed secure browsing in your apps with our API or automate with Puppeteer/Playwright (coming soon).</li>
 </ul>
 
-<p><strong>Caution</strong>: Unlicensed instances display a warning and shut down after 2 minutes. Get your license today!</p>
+<p><strong>Caution</strong>: Unlicensed instances display a warning and shut down after a few minutes. Get your license today!</p>
 
 <h2>Quick Solutions</h2>
 <ul>
