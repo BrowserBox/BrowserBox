@@ -47,6 +47,8 @@ Of course, you'd need to adjust layouting to account for actual fonts, not just 
 
 Potential inspirings
 
+- Opera Neon - agentic browser that incorporates AI to understand your intent and assist with tasks. https://www.operaneon.com/
+
 - Simple social sharing protocol over TCP - https://www.robinsloan.com/lab/specifying-spring-83/
   - Maybe connecting via dialup.sh is not the only way
   - A "follow" thing like this could be cool
