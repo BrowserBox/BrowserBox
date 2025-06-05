@@ -75,8 +75,8 @@ In today's threat landscape, standard browsing is a significant risk. BrowserBox
 
 BrowserBox requires a license for all use. Choose the option that's right for you:
 
-*   🚀 **[Get a Commercial License](https://browse.cloudtabs.net/l)** - Starting at $99/user/year. Volume discounts available.
-*   🌍 **[Get a Non-Commercial License](https://browse.cloudtabs.net/M/jl)** - $39/user/year for individuals, non-profits, and government.
+*   🚀 **[Get a Commercial License](https://dosaygo.com/commerce)** - Starting at $99/user/year. Volume discounts available.
+*   🌍 **[Get a Non-Commercial License](https://dosaygo.com/noncommercial)** - $39/user/year for individuals, non-profits, and government.
 *   🧪 **[Request a Demo](mailto:sales@dosaygo.com?subject=Demo)** - Experience the full power of BrowserBox.
 *   🛡️ **[Explore Solutions for Regulated Industries](https://dosaygo.com/regulated-enterprise.html)** - HIPAA, NIST 800-53, DLP, and more.
 
@@ -165,8 +165,8 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
 ### 2. Purchase & Obtain Your Product Key
 
 A product key is required.
-*   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://browse.cloudtabs.net/l).
-*   **Non-Commercial Use:** $39/user/year (for individuals, non-profits, government). [Purchase Non-Commercial License](https://browse.cloudtabs.net/M/jl).
+*   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://dosaygo.com/commerce).
+*   **Non-Commercial Use:** $39/user/year (for individuals, non-profits, government). [Purchase Non-Commercial License](https://dosaygo.com/noncommercial).
 *   **Evaluation:** [Request a Demo](mailto:sales@dosaygo.com?subject=Demo).
 
 You can also purchase directly via the `bbx` CLI on Linux/macOS:
@@ -289,7 +289,6 @@ Need help? Our team is ready to assist.
 
 DOSAYGO (also known, due to an early incorporation typo, as DOSYAGO) is committed to building innovative and secure technology solutions. Our products include:
 *   **BrowserBox:** Secure Remote Browser Isolation.
-*   **CloudTabs:** Our managed BrowserBox™ SaaS offering ([browse.cloudtabs.net](https://browse.cloudtabs.net)).
 *   **DiskerNet:** Technology for creating offline archives of web content.
 
 Visit us at [dosaygo.com](https://dosaygo.com).
@@ -311,5 +310,5 @@ The `bbx` CLI tool and other specified components are open source under the [LIC
 
 <p align="center">
   <strong>Ready to secure your browsing?</strong><br>
-  <a href="https://browse.cloudtabs.net/l">Get Your Commercial License</a> | <a href="https://browse.cloudtabs.net/M/jl">Get Your Non-Commercial License</a> | <a href="mailto:sales@dosaygo.com?subject=Demo">Request a Demo</a>
+  <a href="https://dosaygo.com/commerce">Get Your Commercial License</a> | <a href="https://dosaygo.com/noncommercial">Get Your Non-Commercial License</a> | <a href="mailto:sales@dosaygo.com?subject=Demo">Request a Demo</a>
 </p>
