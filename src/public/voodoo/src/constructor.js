@@ -1741,6 +1741,7 @@
           activateTab,
           createTab,
           closeTab,
+          getTabs
         };
 
         const embedComms = new IframeCommunicator('*', browserSurface);
@@ -2690,6 +2691,10 @@
                 state.viewState.omniBoxInput.focus();
               }
             }, SHORT_DELAY);
+        }
+
+        async function getTabs() {
+          return state.tabs || return rawUpdateTabs().then(() => state.tabs);
         }
 
         async function closeTab(click, tab, index) {
