@@ -36,6 +36,7 @@
     } from './common.js';
     import {component, subviews, saveCanvas, audio_login_url} from './view.js';
     import InternetChecker from './connectivity.js';
+    import {IframeCommunicator} from './frame-api.js';
 
     //import installDemoPlugin from '../../plugins/demo/installPlugin.js';
     //import installAppminifierPlugin from '../../plugins/appminifier/installPlugin.js';
@@ -1734,6 +1735,15 @@
       }
 
       refreshViews();
+
+      // embed api hook in
+        const browserSurface = {
+          activateTab,
+          createTab,
+          closeTab,
+        };
+
+        const embedComms = new IframeCommunicator('*', browserSurface);
 
       return poppetView;
 

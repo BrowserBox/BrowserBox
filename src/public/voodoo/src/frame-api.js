@@ -1,10 +1,10 @@
 // frame-api.js
 
-class IframeCommunicator {
+export class IframeCommunicator {
     // privates
 
     #parentOrigin;
-    #logPrefix = "[IFRAME]";
+    #logPrefix = "[EMBED-API]";
     #handlers = new Map();
     #sessionId = null;
 
@@ -15,28 +15,12 @@ class IframeCommunicator {
     // that loads and displays the content of the active tab.
     #contentHostIframe;
 
-    constructor(parentOrigin = '*') {
+    constructor(parentOrigin = '*', browserSurface = null) {
         this.#parentOrigin = parentOrigin;
         window.addEventListener('message', this.#handleParentMessage.bind(this));
 
-        // IMPLEMENTATION NEEDED: Create and append the #contentHostIframe to the document.
-        // This iframe will be used to load the actual web content for the active tab.
-        this.#contentHostIframe = document.createElement('iframe');
-        this.#contentHostIframe.style.width = '100%';
-        this.#contentHostIframe.style.height = 'calc(100vh - 100px)'; // Example height, adjust as needed
-        this.#contentHostIframe.style.border = '1px solid #007bff';
-        this.#contentHostIframe.style.display = 'none'; // Initially hidden
-        // Add appropriate sandbox attributes for security if loading third-party content
-        this.#contentHostIframe.sandbox = "allow-scripts allow-same-origin allow-popups allow-forms allow-downloads allow-modals allow-pointer-lock allow-popups-to-escape-sandbox";
-        document.body.appendChild(this.#contentHostIframe);
-
-        // IMPLEMENTATION NEEDED: Attach event listeners to #contentHostIframe
-        // - To detect when content starts loading (e.g., beforeunload on old, or other signals)
-        // - To detect when content finishes loading (e.g., 'load' event)
-        // - To detect navigation errors
-        // - To detect title changes (might need a MutationObserver on contentHostIframe.contentDocument.title)
-        this.#contentHostIframe.addEventListener('load', this.#handleContentHostLoad.bind(this));
         // Note: 'error' on iframe itself is for src loading failure, not page errors within.
+        this.browserSurface = browserSurface;
 
         this.registerHandler('init', (payload) => {
             this.#sessionId = payload.data.sessionId;
@@ -392,21 +376,3 @@ class IframeCommunicator {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const PARENT_EXPECTED_ORIGIN = '*';
-    window.iframeComm = new IframeCommunicator(PARENT_EXPECTED_ORIGIN);
-
-    // Simple UI inside the iframe for visual feedback (optional)
-    const header = document.createElement('div');
-    header.innerHTML = `<h1>Iframe Browser Controller</h1><p>Manages the content iframe below.</p>`;
-    header.style.padding = "10px";
-    header.style.backgroundColor = "#e9ecef";
-    document.body.insertBefore(header, document.body.firstChild);
-    document.body.style.margin = "0";
-    document.body.style.display = "flex";
-    document.body.style.flexDirection = "column";
-    document.body.style.height = "100vh";
-
-    // The #contentHostIframe is added by the constructor now.
-    // Ensure its container (body) allows it to take space.
-});
