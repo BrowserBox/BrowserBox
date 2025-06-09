@@ -351,6 +351,14 @@ const controller_api = {
     return sessionId;
   },
 
+  getFrameFromBuffer(port, targetId) {
+    const connection = connections.get(port);
+    if (connection && connection.win9xCompatibilityBuffer) {
+      return connection.win9xCompatibilityBuffer.get(targetId);
+    }
+    return null;
+  },
+
   getHiddenTarget(port) {
     const connection = connections.get(port);
     if ( ! connection ) return;

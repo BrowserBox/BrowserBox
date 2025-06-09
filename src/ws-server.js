@@ -1094,7 +1094,6 @@
 
     function addHandlers() {
       // Legacy API Handlers (Win9x compatibility mode, etc)
-
         // =================================================================
         // == START: ROUTES FOR WIN9X LEGACY HTTP CLIENT
         // =================================================================
@@ -1153,12 +1152,10 @@
         }));
 
         /**
-         * /api/v1/frame
-         * Returns a JPEG screenshot of the currently active tab.
-         * Used by the legacy client's <img> tag to display the remote browser.
+         * /api/v1/frame (UPDATED)
+         * Returns a JPEG screenshot of the currently active tab from a server-side buffer.
          */
         app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
-          console.log('frame request', req.cookies, req.query, req.headers);
           if (!legacyAuth(req, res)) return;
 
           try {
@@ -1167,83 +1164,79 @@
               throw new Error("No active target to capture.");
             }
 
-            const sessionId = zl.act.getSessionId(activeTargetId, zombie_port);
-            if (!sessionId) {
-              throw new Error(`No session found for active target ${activeTargetId}`);
+            // Get the latest frame from the compatibility buffer
+            const imageBuffer = zl.act.getFrameFromBuffer(zombie_port, activeTargetId);
+
+            if (imageBuffer && imageBuffer.length > 0) {
+              res.set({
+                'Content-Type': 'image/jpeg',
+                'Content-Length': imageBuffer.length,
+                'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+              });
+              res.send(imageBuffer);
+            } else {
+              // If buffer is empty for this tab, send fallback
+              throw new Error("Frame buffer is empty for this target.");
             }
-
-            const screenshot = await timedSend({
-              name: "Page.captureScreenshot",
-              params: {
-                format: "jpeg",
-                quality: 80 // Good balance of quality and size for legacy networks
-              },
-              sessionId: sessionId
-            }, zombie_port);
-
-            const imageBuffer = Buffer.from(screenshot.data.data, 'base64');
-
-            res.set({
-              'Content-Type': 'image/jpeg',
-              'Content-Length': imageBuffer.length,
-              'Cache-Control': 'no-store, no-cache, must-revalidate, private'
-            });
-            res.send(imageBuffer);
-
           } catch (e) {
-            console.warn('Legacy API: Could not get frame from Chrome.', e);
             // Return a 1x1 transparent GIF as a fallback to prevent broken image icons
             const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-            res.set('Content-Type', 'image/gif');
+            res.set({ 'Content-Type': 'image/gif' });
             res.send(fallbackPixel);
           }
         }));
 
         /**
-         * /api/v1/event
-         * Receives user actions (clicks, navigation, etc.) from the legacy client
-         * and dispatches them to the remote browser.
+         * /api/v1/event (UPDATED)
+         * Receives user actions and dispatches them to the remote browser.
          */
         app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
-          console.log('event request', req.cookies, req.query, req.headers);
           if (!legacyAuth(req, res)) return;
 
-          const { type, targetId, url, x, y, key } = req.query;
+          const { type, targetId, url, x, y, key, width, height } = req.query;
 
           try {
-            const sessionId = zl.act.getSessionId(targetId, zombie_port);
-            if (!sessionId && type !== 'switch') { // switch doesn't need a session
-               throw new Error(`No session found for target ${targetId}`);
-            }
+            // Use the main controller send function for consistent behavior
+            const command = { name: '', params: {} };
 
             switch (type) {
               case 'mousedown':
-                await timedSend({
-                  name: "Input.dispatchMouseEvent",
-                  params: { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
-                  sessionId
-                }, zombie_port);
-                await timedSend({
-                  name: "Input.dispatchMouseEvent",
-                  params: { type: 'mouseReleased', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
-                  sessionId
-                }, zombie_port);
+                command.name = "Input.dispatchMouseEvent";
+                command.params = { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 };
+                await zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
+                command.params.type = 'mouseReleased';
+                await zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
                 break;
 
               case 'navigate':
-                await timedSend({ name: "Page.navigate", params: { url }, sessionId }, zombie_port);
+                command.name = "Page.navigate";
+                command.params = { url, sessionId: zl.act.getSessionId(targetId, zombie_port) };
+                await zl.act.send(command, zombie_port);
                 break;
 
               case 'back':
-                await timedSend({ name: "Page.goBack", params: {}, sessionId }, zombie_port);
+                command.name = "Page.goBack";
+                command.params = { sessionId: zl.act.getSessionId(targetId, zombie_port) };
+                await zl.act.send(command, zombie_port);
                 break;
 
               case 'forward':
-                await timedSend({ name: "Page.goForward", params: {}, sessionId }, zombie_port);
+                command.name = "Page.goForward";
+                command.params = { sessionId: zl.act.getSessionId(targetId, zombie_port) };
+                await zl.act.send(command, zombie_port);
                 break;
 
               case 'switch':
-                await timedSend({ name: "Target.activateTarget", params: { targetId } }, zombie_port);
+                command.name = "Target.activateTarget";
+                command.params = { targetId };
+                await zl.act.send(command, zombie_port);
+                break;
+
+              case 'resize':
+                // This plugs the legacy client into the main viewport logic
+                const viewport = { width: parseInt(width), height: parseInt(height), mobile: false };
+                // Use session_token as a unique ID for the legacy client's viewport
+                zl.act.setViewport(req.query.session_token, viewport, zombie_port);
                 break;
 
               default:

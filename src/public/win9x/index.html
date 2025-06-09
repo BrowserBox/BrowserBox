@@ -142,8 +142,9 @@
   if ( location && location.origin ) {
     API_BASE_PATH = location.origin + API_BASE_PATH;
   }
-  var FRAME_REFRESH_RATE_MS = 1000; // Refresh screen every 1 second
-  var TAB_REFRESH_RATE_MS = 3000;   // Refresh tab list every 3 seconds
+  var FRAME_REFRESH_RATE_MS = 1000;
+  var TAB_REFRESH_RATE_MS = 3000;
+  var RESIZE_THROTTLE_MS = 250;
 
   // --- State Variables ---
   var sessionToken = null;
@@ -151,8 +152,11 @@
   var isPolling = false;
   var framePollingInterval = null;
   var tabPollingInterval = null;
+  var tabFrameCache = {}; // For fast tab switching
+  var resizeTimeout = null;
 
   // --- Element References ---
+  var contentPane = document.getElementById('content-pane');
   var connectButton = document.getElementById('connect-button');
   var tokenInput = document.getElementById('token-input');
   var tabBar = document.getElementById('tab-bar');
@@ -165,17 +169,12 @@
 
   // --- Core Functions ---
 
-  /**
-   * Creates a cross-browser XMLHttpRequest object. Essential for AJAX on old IE.
-   */
   function createXmlHttpRequestObject() {
     var xhr;
     try {
-      // For modern browsers (and IE7+)
       xhr = new XMLHttpRequest();
     } catch (e) {
       try {
-        // For IE5, IE6
         xhr = new ActiveXObject("Microsoft.XMLHTTP");
       } catch (e) {
         alert("Your browser does not support AJAX, which is required for this application.");
@@ -185,11 +184,6 @@
     return xhr;
   }
   
-  /**
-   * A simple JSON parser using eval. This is safe in this context because
-   * the data is coming from our own trusted server on a private network.
-   * Avoid using this with untrusted, public APIs.
-   */
   function parseJSON(jsonString) {
     try {
       return eval('(' + jsonString + ')');
@@ -199,9 +193,6 @@
     }
   }
 
-  /**
-   * Starts/stops the connection to the remote browser.
-   */
   function toggleConnection() {
     if (isPolling) {
       // --- Disconnect ---
@@ -210,6 +201,7 @@
       isPolling = false;
       sessionToken = null;
       activeTabId = null;
+      tabFrameCache = {};
       
       connectButton.innerHTML = 'Connect';
       updateStatus('Disconnected.');
@@ -228,9 +220,12 @@
       updateStatus('Connecting...');
       isPolling = true;
       
+      // Send initial viewport size
+      sendViewportSize();
+
       // Start polling loops
-      updateTabs(); // Initial call
-      refreshScreen(); // Initial call
+      updateTabs();
+      refreshScreen();
       tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
       framePollingInterval = setInterval(refreshScreen, FRAME_REFRESH_RATE_MS);
 
@@ -239,9 +234,6 @@
     }
   }
 
-  /**
-   * Fetches the latest tab information from the server.
-   */
   function updateTabs() {
     if (!isPolling) return;
     var xhr = createXmlHttpRequestObject();
@@ -254,7 +246,6 @@
         if (data) {
           renderTabs(data.tabs, data.activeTarget);
           activeTabId = data.activeTarget;
-          // Update the URL bar with the active tab's URL
           for (var i = 0; i < data.tabs.length; i++) {
             if (data.tabs[i].targetId === activeTabId) {
               urlInput.value = data.tabs[i].url;
@@ -267,11 +258,8 @@
     xhr.send(null);
   }
 
-  /**
-   * Renders the tab elements in the tab bar.
-   */
   function renderTabs(tabs, currentActiveId) {
-    tabBar.innerHTML = ''; // Clear existing tabs
+    tabBar.innerHTML = '';
     for (var i = 0; i < tabs.length; i++) {
       var tab = tabs[i];
       var tabEl = document.createElement('span');
@@ -279,21 +267,22 @@
       if (tab.targetId === currentActiveId) {
         tabEl.className += ' tab-active';
       }
-      // Use innerText for compatibility, fallback to textContent
       if (typeof tabEl.innerText !== 'undefined') {
-        tabEl.innerText = tab.title.substring(0, 20) || 'New Tab'; // Truncate title
+        tabEl.innerText = tab.title.substring(0, 20) || 'New Tab';
       } else {
         tabEl.textContent = tab.title.substring(0, 20) || 'New Tab';
       }
       
-      // Store the targetId on the element for the click handler
       tabEl.setAttribute('data-targetId', tab.targetId);
       
       tabEl.onclick = function() {
         var targetId = this.getAttribute('data-targetId');
         if (targetId !== activeTabId) {
+          // **FAST TAB SWITCH**: Load cached image immediately
+          if (tabFrameCache[targetId]) {
+            remoteScreen.src = tabFrameCache[targetId];
+          }
           sendEvent('type=switch&targetId=' + targetId);
-          // Immediately update the UI for a snappier feel
           activeTabId = targetId;
           updateTabs();
           refreshScreen();
@@ -304,32 +293,29 @@
     }
   }
 
-  /**
-   * Fetches a new frame from the server.
-   */
   function refreshScreen() {
     if (!isPolling || !activeTabId) return;
     var imageUrl = API_BASE_PATH + '/frame?session_token=' + encodeURIComponent(sessionToken);
-    imageUrl += '&ran=' + Math.random(); // Prevent caching
+    imageUrl += '&ran=' + Math.random();
     remoteScreen.src = imageUrl;
+
+    // **CACHE FRAME**: Store the new image URL in our cache
+    tabFrameCache[activeTabId] = imageUrl;
+
     updateStatus('Connected. Viewing tab: ' + activeTabId);
   }
 
-  /**
-   * Sends an event to the server via a fire-and-forget image request.
-   */
   function sendEvent(params) {
-    if (!isPolling || !activeTabId) return;
+    if (!isPolling) return;
+    // For resize events, activeTabId might be null, but that's okay.
     var eventUrl = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) 
-                 + '&targetId=' + encodeURIComponent(activeTabId) + '&' + params;
+                 + (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') 
+                 + '&' + params;
     
     var tempImage = new Image();
     tempImage.src = eventUrl;
   }
   
-  /**
-   * Enables or disables the main UI controls.
-   */
   function setControlsEnabled(isEnabled) {
     backButton.disabled = !isEnabled;
     forwardButton.disabled = !isEnabled;
@@ -337,11 +323,30 @@
     goButton.disabled = !isEnabled;
   }
 
-  /**
-   * Updates the text in the status bar.
-   */
   function updateStatus(text) {
     statusBar.innerHTML = 'Status: ' + text;
+  }
+
+  // --- NEW: Viewport Sizing Logic ---
+  function sendViewportSize() {
+    var width = contentPane.clientWidth;
+    var height = contentPane.clientHeight;
+
+    // Set the image tag size to prevent scrollbars
+    remoteScreen.width = width;
+    remoteScreen.height = height;
+
+    sendEvent('type=resize&width=' + width + '&height=' + height);
+    updateStatus('Sent viewport dimensions: ' + width + 'x' + height);
+  }
+
+  function throttledResizeHandler() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      if (isPolling) {
+        sendViewportSize();
+      }
+    }, RESIZE_THROTTLE_MS);
   }
 
   // --- Event Handlers ---
@@ -375,6 +380,7 @@
   goButton.onclick = handleNavigate;
   backButton.onclick = handleBack;
   forwardButton.onclick = handleForward;
+  window.onresize = throttledResizeHandler; // Attach resize handler
 
 </script>
 
