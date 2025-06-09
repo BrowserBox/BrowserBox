@@ -195,36 +195,36 @@
       mediaSrc: [
         "data:",
         "'self'",
-        "https://localhost:*",
-        "https://*.dosaygo.com:*",
-        "https://browse.cloudtabs.net:*",
+        `${GO_SECURE ? 'https:' : 'http:'}//localhost:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
         ...(process.env.TORBB ? [
-          `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
-          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
-          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
         ...(process.env.DOMAIN?.startsWith?.('*.') ? [
-          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
         ] : [
-          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
       ],
       frameSrc: [
         "'self'",
-        "https://localhost:*",
-        "https://link.local:*",
-        "https://browse.cloudtabs.net:*",
-        "https://*.dosaygo.com:*",
+        `${GO_SECURE ? 'https:' : 'http:'}//localhost:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//link.local:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`,
         ...(process.env.TORBB ? [
-          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
-          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
         ...(process.env.DOMAIN?.startsWith?.('*.') ? [
-          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
         ] : [
-          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
       ],
       connectSrc: [
@@ -232,30 +232,30 @@
         "wss://*.dosaygo.com:*",
         "wss://localhost:*",
         "wss://link.local:*",
-        `https://*.dosaygo.com:${server_port-1}`,
-        `https://*.dosaygo.com:${server_port+1}`,
-        "https://browse.cloudtabs.net:*",
-        "https://browse.cloudtabs.net",
+        `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:${server_port-1}`,
+        `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:${server_port+1}`,
+        `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net`,
         "wss://browse.cloudtabs.net:*",
-        `https://localhost:${server_port-1}`,
-        `https://localhost:${server_port+1}`,
-        `https://link.local:${server_port-1}`,
-        `https://link.local:${server_port+1}`,
+        `${GO_SECURE ? 'https:' : 'http:'}//localhost:${server_port-1}`,
+        `${GO_SECURE ? 'https:' : 'http:'}//localhost:${server_port+1}`,
+        `${GO_SECURE ? 'https:' : 'http:'}//link.local:${server_port-1}`,
+        `${GO_SECURE ? 'https:' : 'http:'}//link.local:${server_port+1}`,
         ...CONFIG.connectivityTests,
         ...(process.env.TORBB ? [
-          `https://${process.env[`ADDR_${server_port}`]}:*`, // main service 
-          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
-          `https://${process.env[`ADDR_${server_port + 1}`]}:*`, // devtools
-          `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}:*`, // main service 
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 1}`]}:*`, // devtools
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
         ] : [
-          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
         ...(process.env.DOMAIN?.startsWith?.('*.') ? [
-          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
         ] : [
-          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `${GO_SECURE ? 'https:' : 'http:'}//*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
         // for checking if access via TOR
@@ -264,21 +264,21 @@
       fontSrc: [
         "'self'", 
         "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://fonts.gstatic.com"
+        `${GO_SECURE ? 'https:' : 'http:'}//fonts.googleapis.com`,
+        `${GO_SECURE ? 'https:' : 'http:'}//fonts.gstatic.com`
       ],
       styleSrc: [
         "'self'", 
         "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://fonts.gstatic.com"
+        `${GO_SECURE ? 'https:' : 'http:'}//fonts.googleapis.com`,
+        `${GO_SECURE ? 'https:' : 'http:'}//fonts.gstatic.com`
       ],
       scriptSrc: [
         "'self'", 
         "'unsafe-eval'",
         "'unsafe-inline'",
-        "https://browse.cloudtabs.net:*",
-        "https://*.dosaygo.com:*"
+        `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`
       ],
       scriptSrcAttr: [
         "'self'",
@@ -286,8 +286,8 @@
       ],
       frameAncestors: [
         "'self'",
-        "https://browse.cloudtabs.net:*",
-        "https://*.dosaygo.com:*",
+        `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
+        `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`,
         ...ALLOWED_3RD_PARTY_EMBEDDERS
       ],
       objectSrc: ["'none'"],
@@ -310,40 +310,40 @@
             ],
             mediaSrc: [
               "'self'",
-              "https://*.dosaygo.com:*"
+              `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`
             ],
             frameSrc: [
               "'self'",
-              "https://*.dosaygo.com:*"
+              `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`
             ],
             connectSrc: [
               "'self'",
               "wss://*.dosaygo.com:*",
               "wss://localhost:*",
-              "https://browse.cloudtabs.net",
-              `https://*.dosaygo.com:${server_port-1}`,
-              `https://*.dosaygo.com:${server_port+1}`,
-              `https://localhost:${server_port-1}`,
-              `https://localhost:${server_port+1}`,
+              `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net`,
+              `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:${server_port-1}`,
+              `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:${server_port+1}`,
+              `${GO_SECURE ? 'https:' : 'http:'}//localhost:${server_port-1}`,
+              `${GO_SECURE ? 'https:' : 'http:'}//localhost:${server_port+1}`,
               ...CONFIG.connectivityTests
             ],
             fontSrc: [
               "'self'", 
               "'unsafe-inline'",
-              "https://fonts.googleapis.com",
-              "https://fonts.gstatic.com"
+              `${GO_SECURE ? 'https:' : 'http:'}//fonts.googleapis.com`,
+              `${GO_SECURE ? 'https:' : 'http:'}//fonts.gstatic.com`
             ],
             styleSrc: [
               "'self'", 
               "'unsafe-inline'",
-              "https://fonts.googleapis.com",
-              "https://fonts.gstatic.com"
+              `${GO_SECURE ? 'https:' : 'http:'}//fonts.googleapis.com`,
+              `${GO_SECURE ? 'https:' : 'http:'}//fonts.gstatic.com`
             ],
             scriptSrc: [
               "'self'", 
               "'unsafe-eval'",
               "'unsafe-inline'",
-              "https://*.dosaygo.com:*"
+              `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`
             ],
             scriptSrcAttr: [
               "'self'",
@@ -351,7 +351,7 @@
             ],
             frameAncestors: [
               "'self'",
-              "https://*.dosaygo.com:*",
+              `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`,
               ...ALLOWED_3RD_PARTY_EMBEDDERS
             ],
             objectSrc: ["'none'"],
@@ -640,7 +640,7 @@
       try {
         query = new URL(req.url).searchParams;
       } catch(e) {
-        query = new URL(`https://localhost${req.url}`).searchParams;
+        query = new URL(`${GO_SECURE ? 'https:' : 'http:'}//localhost${req.url}`).searchParams;
       }
       const localCookie = url.searchParams.get(COOKIENAME+port) || req.headers['x-browserbox-local-auth'] || query.get('localCookie');
       const IP = req.connection.remoteAddress;
@@ -1085,170 +1085,169 @@
     function addHandlers() {
       // Legacy API Handlers (Win9x compatibility mode, etc)
 
-    function addHandlers() {
-      // =================================================================
-      // == START: ROUTES FOR WIN9X LEGACY HTTP CLIENT
-      // =================================================================
+        // =================================================================
+        // == START: ROUTES FOR WIN9X LEGACY HTTP CLIENT
+        // =================================================================
 
-      // A shared authentication function for all legacy API routes
-      const legacyAuth = (req, res) => {
-        const cookie = req.cookies[COOKIENAME + port] || req.query[COOKIENAME + port] || req.headers['x-browserbox-local-auth'];
-        const st = req.query.session_token; // The legacy client sends this
+        // A shared authentication function for all legacy API routes
+        const legacyAuth = (req, res) => {
+          const cookie = req.cookies[COOKIENAME + port] || req.query[COOKIENAME + port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.session_token; // The legacy client sends this
 
-        if ((cookie === allowed_user_cookie) || (st === session_token)) {
-          return true;
-        }
+          if ((cookie === allowed_user_cookie) || (st === session_token)) {
+            return true;
+          }
 
-        res.status(401).send('{"error":"forbidden"}');
-        return false;
-      };
+          res.status(401).send('{"error":"forbidden"}');
+          return false;
+        };
 
-      /**
-       * /api/v1/tabs
-       * Returns a list of open tabs and the active target ID.
-       * Used by the legacy client to render its tab bar.
-       */
-      app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
-        if (!legacyAuth(req, res)) return;
+        /**
+         * /api/v1/tabs
+         * Returns a list of open tabs and the active target ID.
+         * Used by the legacy client to render its tab bar.
+         */
+        app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
+          if (!legacyAuth(req, res)) return;
 
-        res.type('json');
+          res.type('json');
 
-        try {
-          const { data: { targetInfos: targets } } = await timedSend({
-            name: "Target.getTargets",
-            params: { filter: [{ type: 'page' }] },
-          }, zombie_port);
+          try {
+            const { data: { targetInfos: targets } } = await timedSend({
+              name: "Target.getTargets",
+              params: { filter: [{ type: 'page' }] },
+            }, zombie_port);
 
-          if (targets) {
-            const filteredTargets = targets.filter(({ targetId, type, url }) => {
-              return AttachmentTypes.has(type) && zl.act.hasSession(targetId, zombie_port) && !zl.act.isOffscreen(targetId, zombie_port);
+            if (targets) {
+              const filteredTargets = targets.filter(({ targetId, type, url }) => {
+                return AttachmentTypes.has(type) && zl.act.hasSession(targetId, zombie_port) && !zl.act.isOffscreen(targetId, zombie_port);
+              });
+
+              const activeTarget = zl.act.getActiveTarget(zombie_port);
+
+              // Format the response for the simple legacy client
+              const responsePayload = {
+                tabs: filteredTargets.map(({ targetId, title, url }) => ({ targetId, title, url })),
+                activeTarget: activeTarget,
+              };
+
+              res.json(responsePayload);
+            } else {
+              res.json({ tabs: [], activeTarget: null });
+            }
+          } catch (e) {
+            console.warn('Legacy API: Could not get tabs from Chrome.', e);
+            res.status(500).json({ error: "Could not get tabs from remote browser." });
+          }
+        }));
+
+        /**
+         * /api/v1/frame
+         * Returns a JPEG screenshot of the currently active tab.
+         * Used by the legacy client's <img> tag to display the remote browser.
+         */
+        app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
+          if (!legacyAuth(req, res)) return;
+
+          try {
+            const activeTargetId = zl.act.getActiveTarget(zombie_port);
+            if (!activeTargetId) {
+              throw new Error("No active target to capture.");
+            }
+
+            const sessionId = zl.act.getSessionId(activeTargetId, zombie_port);
+            if (!sessionId) {
+              throw new Error(`No session found for active target ${activeTargetId}`);
+            }
+
+            const screenshot = await timedSend({
+              name: "Page.captureScreenshot",
+              params: {
+                format: "jpeg",
+                quality: 80 // Good balance of quality and size for legacy networks
+              },
+              sessionId: sessionId
+            }, zombie_port);
+
+            const imageBuffer = Buffer.from(screenshot.data.data, 'base64');
+
+            res.set({
+              'Content-Type': 'image/jpeg',
+              'Content-Length': imageBuffer.length,
+              'Cache-Control': 'no-store, no-cache, must-revalidate, private'
             });
+            res.send(imageBuffer);
 
-            const activeTarget = zl.act.getActiveTarget(zombie_port);
-
-            // Format the response for the simple legacy client
-            const responsePayload = {
-              tabs: filteredTargets.map(({ targetId, title, url }) => ({ targetId, title, url })),
-              activeTarget: activeTarget,
-            };
-
-            res.json(responsePayload);
-          } else {
-            res.json({ tabs: [], activeTarget: null });
+          } catch (e) {
+            console.warn('Legacy API: Could not get frame from Chrome.', e);
+            // Return a 1x1 transparent GIF as a fallback to prevent broken image icons
+            const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+            res.set('Content-Type', 'image/gif');
+            res.send(fallbackPixel);
           }
-        } catch (e) {
-          console.warn('Legacy API: Could not get tabs from Chrome.', e);
-          res.status(500).json({ error: "Could not get tabs from remote browser." });
-        }
-      }));
+        }));
 
-      /**
-       * /api/v1/frame
-       * Returns a JPEG screenshot of the currently active tab.
-       * Used by the legacy client's <img> tag to display the remote browser.
-       */
-      app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
-        if (!legacyAuth(req, res)) return;
+        /**
+         * /api/v1/event
+         * Receives user actions (clicks, navigation, etc.) from the legacy client
+         * and dispatches them to the remote browser.
+         */
+        app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
+          if (!legacyAuth(req, res)) return;
 
-        try {
-          const activeTargetId = zl.act.getActiveTarget(zombie_port);
-          if (!activeTargetId) {
-            throw new Error("No active target to capture.");
+          const { type, targetId, url, x, y, key } = req.query;
+
+          try {
+            const sessionId = zl.act.getSessionId(targetId, zombie_port);
+            if (!sessionId && type !== 'switch') { // switch doesn't need a session
+               throw new Error(`No session found for target ${targetId}`);
+            }
+
+            switch (type) {
+              case 'mousedown':
+                await timedSend({
+                  name: "Input.dispatchMouseEvent",
+                  params: { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
+                  sessionId
+                }, zombie_port);
+                await timedSend({
+                  name: "Input.dispatchMouseEvent",
+                  params: { type: 'mouseReleased', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
+                  sessionId
+                }, zombie_port);
+                break;
+
+              case 'navigate':
+                await timedSend({ name: "Page.navigate", params: { url }, sessionId }, zombie_port);
+                break;
+
+              case 'back':
+                await timedSend({ name: "Page.goBack", params: {}, sessionId }, zombie_port);
+                break;
+
+              case 'forward':
+                await timedSend({ name: "Page.goForward", params: {}, sessionId }, zombie_port);
+                break;
+
+              case 'switch':
+                await timedSend({ name: "Target.activateTarget", params: { targetId } }, zombie_port);
+                break;
+
+              default:
+                throw new Error(`Unsupported legacy event type: ${type}`);
+            }
+
+            res.status(200).send('OK');
+
+          } catch (e) {
+            console.warn(`Legacy API: Failed to handle event '${type}'.`, e);
+            res.status(500).send(`{"error":"Failed to handle event: ${e.message}"}`);
           }
+        }));
 
-          const sessionId = zl.act.getSessionId(activeTargetId, zombie_port);
-          if (!sessionId) {
-            throw new Error(`No session found for active target ${activeTargetId}`);
-          }
-
-          const screenshot = await timedSend({
-            name: "Page.captureScreenshot",
-            params: {
-              format: "jpeg",
-              quality: 80 // Good balance of quality and size for legacy networks
-            },
-            sessionId: sessionId
-          }, zombie_port);
-
-          const imageBuffer = Buffer.from(screenshot.data.data, 'base64');
-
-          res.set({
-            'Content-Type': 'image/jpeg',
-            'Content-Length': imageBuffer.length,
-            'Cache-Control': 'no-store, no-cache, must-revalidate, private'
-          });
-          res.send(imageBuffer);
-
-        } catch (e) {
-          console.warn('Legacy API: Could not get frame from Chrome.', e);
-          // Return a 1x1 transparent GIF as a fallback to prevent broken image icons
-          const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-          res.set('Content-Type', 'image/gif');
-          res.send(fallbackPixel);
-        }
-      }));
-
-      /**
-       * /api/v1/event
-       * Receives user actions (clicks, navigation, etc.) from the legacy client
-       * and dispatches them to the remote browser.
-       */
-      app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
-        if (!legacyAuth(req, res)) return;
-
-        const { type, targetId, url, x, y, key } = req.query;
-
-        try {
-          const sessionId = zl.act.getSessionId(targetId, zombie_port);
-          if (!sessionId && type !== 'switch') { // switch doesn't need a session
-             throw new Error(`No session found for target ${targetId}`);
-          }
-
-          switch (type) {
-            case 'mousedown':
-              await timedSend({
-                name: "Input.dispatchMouseEvent",
-                params: { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
-                sessionId
-              }, zombie_port);
-              await timedSend({
-                name: "Input.dispatchMouseEvent",
-                params: { type: 'mouseReleased', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
-                sessionId
-              }, zombie_port);
-              break;
-
-            case 'navigate':
-              await timedSend({ name: "Page.navigate", params: { url }, sessionId }, zombie_port);
-              break;
-
-            case 'back':
-              await timedSend({ name: "Page.goBack", params: {}, sessionId }, zombie_port);
-              break;
-
-            case 'forward':
-              await timedSend({ name: "Page.goForward", params: {}, sessionId }, zombie_port);
-              break;
-
-            case 'switch':
-              await timedSend({ name: "Target.activateTarget", params: { targetId } }, zombie_port);
-              break;
-
-            default:
-              throw new Error(`Unsupported legacy event type: ${type}`);
-          }
-
-          res.status(200).send('OK');
-
-        } catch (e) {
-          console.warn(`Legacy API: Failed to handle event '${type}'.`, e);
-          res.status(500).send(`{"error":"Failed to handle event: ${e.message}"}`);
-        }
-      }));
-
-      // =================================================================
-      // == END: ROUTES FOR WIN9X LEGACY HTTP CLIENT
-      // =================================================================
+        // =================================================================
+        // == END: ROUTES FOR WIN9X LEGACY HTTP CLIENT
+        // =================================================================
       // Legacy END
       const CACHE_EXPIRY = 3 * 60 * 1000;
       let torExitList;
