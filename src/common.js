@@ -462,7 +462,7 @@ if ( DEBUG.noSecurityHeaders ) {
 }
 //export const APP_ROOT = APP_ROOT;
 
-export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
+export const GO_SECURE = !process.env.WIN9X_COMPATIBILITY_MODE && fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 

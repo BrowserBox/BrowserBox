@@ -2694,7 +2694,7 @@
         }
 
         async function getTabs() {
-          return state.tabs || return rawUpdateTabs().then(() => state.tabs);
+          return state.tabs || rawUpdateTabs().then(() => state.tabs);
         }
 
         async function closeTab(click, tab, index) {
