@@ -135,7 +135,7 @@
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4 && xhr.status === 200) {
         var data = parseJSON(xhr.responseText);
-        if (data && data.new) {
+        if (data && data.fresh) {
           // New frame is available! Update the timestamp and set the image src.
           // The 'onload' event of the image will trigger the next poll.
           lastKnownFrameTimestamp = data.timestamp;
