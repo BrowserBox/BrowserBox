@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
+source ~/.nvm/nvm.sh
+
 #set -x
 
-source ~/.nvm/nvm.sh
 #nvm install stable
 
 touch .bbpro_install_dir
@@ -46,7 +47,10 @@ start_bbpro() {
   pkill -u $(whoami) parec
   pkill -u $(whoami) pulseaudio
 
-  bash -c "source $envFile; echo "CWD: $(pwd)"; ./scripts/control/basic/run-pm2.sh $envFile"
+  export CWD="$(pwd)";
+  echo "CWD: $CWD"
+
+  bash -c "source $envFile; echo \"CWD: $CWD\"; ./scripts/control/basic/run-pm2.sh $envFile"
 }
 
 echo "Finding bbpro config..."
