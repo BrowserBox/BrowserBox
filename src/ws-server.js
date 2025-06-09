@@ -1152,36 +1152,53 @@
         }));
 
         /**
-         * /api/v1/frame (UPDATED)
-         * Returns a JPEG screenshot of the currently active tab from a server-side buffer.
+         * NEW: /api/vwin/frame-status
+         * Lightweight endpoint for the client to poll if a new frame is available.
          */
-        app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
+        app.get(`/api/${LEGACY_API_NAMESPACE}/frame-status`, wrap(async (req, res) => {
+          if (!legacyAuth(req, res)) return;
+
+          res.type('json');
+          const lastKnownTimestamp = parseInt(req.query.last_known_ts) || 0;
+          const activeTargetId = zl.act.getActiveTarget(zombie_port);
+
+          if (!activeTargetId) {
+            return res.json({ new: false });
+          }
+
+          const frameData = zl.act.getFrameFromBuffer(zombie_port, activeTargetId);
+
+          if (frameData && frameData.timestamp > lastKnownTimestamp) {
+            res.json({ new: true, timestamp: frameData.timestamp });
+          } else {
+            res.json({ new: false });
+          }
+        }));
+
+        /**
+         * UPDATED: /api/vwin/frame
+         * Simplified endpoint that just serves the latest frame from the buffer.
+         */
+        app.get(`/api/${LEGACY_API_NAMESPACE}/frame`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
 
           try {
             const activeTargetId = zl.act.getActiveTarget(zombie_port);
-            if (!activeTargetId) {
-              throw new Error("No active target to capture.");
-            }
+            const frameData = activeTargetId ? zl.act.getFrameFromBuffer(zombie_port, activeTargetId) : null;
 
-            // Get the latest frame from the compatibility buffer
-            const imageBuffer = zl.act.getFrameFromBuffer(zombie_port, activeTargetId);
-
-            if (imageBuffer && imageBuffer.length > 0) {
+            if (frameData && frameData.buffer && frameData.buffer.length > 0) {
               res.set({
                 'Content-Type': 'image/jpeg',
-                'Content-Length': imageBuffer.length,
+                'Content-Length': frameData.buffer.length,
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private'
               });
-              res.send(imageBuffer);
+              res.send(frameData.buffer);
             } else {
-              // If buffer is empty for this tab, send fallback
-              throw new Error("Frame buffer is empty for this target.");
+              throw new Error("Frame buffer is empty or unavailable.");
             }
           } catch (e) {
-            // Return a 1x1 transparent GIF as a fallback to prevent broken image icons
             const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-            res.set({ 'Content-Type': 'image/gif' });
+            res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' });
             res.send(fallbackPixel);
           }
         }));

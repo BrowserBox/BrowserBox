@@ -464,6 +464,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     latestCastId: null,
     activeTarget: null,
     lastCommonViewport: '{}',
+    win9xCompatibilityBuffer,
     // modals related
     OpenModals,
     // helpers
@@ -892,8 +893,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     latestTimestamp = timestamp;
 
     const targetId = sessions.get(sessionId);
-    win9xCompatibilityBuffer.set(targetId, Buffer.from(data, 'base64'));
-    const frame = Buffer.from(data, 'base64');
+    const frameBuffer = Buffer.from(data, 'base64');
+
+    win9xCompatibilityBuffer.set(targetId, {
+      buffer: frameBuffer,
+      timestamp: Date.now()
+    });
+
+    const frame = frameBuffer; // Use the buffer we already created
     const header = Buffer.alloc(28);
     //DEBUG.debugCast && console.log({writing:{castSessionId,frameId}});
     header.writeUInt32LE(castSessionId, 0);
