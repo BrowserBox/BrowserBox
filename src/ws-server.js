@@ -67,6 +67,8 @@
     if ( GO_SECURE ) {
       // same site only allowed with secure 
       COOKIE_OPTS.sameSite = ALLOWED_3RD_PARTY_EMBEDDERS.length > 0 ? 'None' : 'Strict';
+    } else {
+      COOKIE_OPTS.sameSite = 'Lax';
     }
     Object.freeze(COOKIE_OPTS);
 
@@ -291,7 +293,11 @@
         ...ALLOWED_3RD_PARTY_EMBEDDERS
       ],
       objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
+      ...(GO_SECURE ? {
+        upgradeInsecureRequests: [],
+      } : {
+        upgradeInsecureRequests: null,
+      })
     };
     const sockets = new Set();
     const peers = new Set();
@@ -355,7 +361,11 @@
               ...ALLOWED_3RD_PARTY_EMBEDDERS
             ],
             objectSrc: ["'none'"],
-            upgradeInsecureRequests: [],
+            ...(GO_SECURE ? {
+              upgradeInsecureRequests: [],
+            } : {
+              upgradeInsecureRequests: null,
+            })
           },
           reportOnly: false,  
         },
@@ -1108,6 +1118,7 @@
          * Used by the legacy client to render its tab bar.
          */
         app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
+          console.log('tabs request', req.cookies, req.query, req.headers);
           if (!legacyAuth(req, res)) return;
 
           res.type('json');
@@ -1147,6 +1158,7 @@
          * Used by the legacy client's <img> tag to display the remote browser.
          */
         app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
+          console.log('frame request', req.cookies, req.query, req.headers);
           if (!legacyAuth(req, res)) return;
 
           try {
@@ -1193,6 +1205,7 @@
          * and dispatches them to the remote browser.
          */
         app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
+          console.log('event request', req.cookies, req.query, req.headers);
           if (!legacyAuth(req, res)) return;
 
           const { type, targetId, url, x, y, key } = req.query;

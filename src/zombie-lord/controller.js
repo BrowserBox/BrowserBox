@@ -344,6 +344,13 @@ const controller_api = {
     return activeTargetId;
   },
 
+  getSessionId(targetId, port) {
+    const connection = connections.get(port);
+    if ( ! connection ) return;
+    const sessionId = connection.sessions.get(targetId);
+    return sessionId;
+  },
+
   getHiddenTarget(port) {
     const connection = connections.get(port);
     if ( ! connection ) return;

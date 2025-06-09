@@ -138,7 +138,10 @@
 
 <script type="text/javascript">
   // --- Configuration ---
-  var API_BASE_PATH = '/api/v1';
+  var API_BASE_PATH = '/api/vwin';
+  if ( location && location.origin ) {
+    API_BASE_PATH = location.origin + API_BASE_PATH;
+  }
   var FRAME_REFRESH_RATE_MS = 1000; // Refresh screen every 1 second
   var TAB_REFRESH_RATE_MS = 3000;   // Refresh tab list every 3 seconds
 
