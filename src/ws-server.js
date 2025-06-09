@@ -1117,7 +1117,6 @@
          * Used by the legacy client to render its tab bar.
          */
         app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
-          console.log('tabs request', req.cookies, req.query, req.headers);
           if (!legacyAuth(req, res)) return;
 
           res.type('json');
@@ -1163,15 +1162,18 @@
           const activeTargetId = zl.act.getActiveTarget(zombie_port);
 
           if (!activeTargetId) {
-            return res.json({ new: false });
+            console.log('sending not fresh frame because no target id');
+            return res.json({ fresh: false });
           }
 
           const frameData = zl.act.getFrameFromBuffer(zombie_port, activeTargetId);
 
           if (frameData && frameData.timestamp > lastKnownTimestamp) {
-            res.json({ new: true, timestamp: frameData.timestamp });
+            console.log('sending frame fresh');
+            res.json({ fresh: true, timestamp: frameData.timestamp });
           } else {
-            res.json({ new: false });
+            console.log('sending frame not fresh');
+            res.json({ fresh: false });
           }
         }));
 
@@ -1187,6 +1189,7 @@
             const frameData = activeTargetId ? zl.act.getFrameFromBuffer(zombie_port, activeTargetId) : null;
 
             if (frameData && frameData.buffer && frameData.buffer.length > 0) {
+              console.log('Sending frame data', req.query);
               res.set({
                 'Content-Type': 'image/jpeg',
                 'Content-Length': frameData.buffer.length,
