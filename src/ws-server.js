@@ -1041,7 +1041,7 @@
       if ( shuttingDown ) return;
       const targets = zl.act.getTargets(zombie_port);
       const licenseValid = await validityCheck({targets});
-      if ( false && ! licenseValid ) {
+      if ( ! licenseValid ) {
         forceMeta({
           applicationCheck: {
             licenseValid

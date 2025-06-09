@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <strong>NEWS: COMING SOON - WireGuard&reg; and NGINX&reg; support!</strong>
+  <strong>NEWS: COMING SOON - Windows 9x support! Bring safe modern browsing to legacy Win 9x systems.</strong>
 </p>
 
 BrowserBox delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
