@@ -47,7 +47,7 @@
     console.warn(`Application check error:`, e);
     licenseValid = false;
   }
-  if ( ! licenseValid ) {
+  if ( false && ! licenseValid ) {
     console.log(`Queueing stop srv`, {licenseValid});
     try {
       if ( ! globalThis.megaKiller ) {
