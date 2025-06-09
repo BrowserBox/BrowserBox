@@ -43,6 +43,7 @@
 
   const { exec, execSync } = child_process;
 
+  const LEGACY_API_VERSION = 'vwin';
   let WRTC;
   let cacheExpired = true;
   globalThis.xCheckers = null;
@@ -1082,6 +1083,173 @@
     return server;
 
     function addHandlers() {
+      // Legacy API Handlers (Win9x compatibility mode, etc)
+
+    function addHandlers() {
+      // =================================================================
+      // == START: ROUTES FOR WIN9X LEGACY HTTP CLIENT
+      // =================================================================
+
+      // A shared authentication function for all legacy API routes
+      const legacyAuth = (req, res) => {
+        const cookie = req.cookies[COOKIENAME + port] || req.query[COOKIENAME + port] || req.headers['x-browserbox-local-auth'];
+        const st = req.query.session_token; // The legacy client sends this
+
+        if ((cookie === allowed_user_cookie) || (st === session_token)) {
+          return true;
+        }
+
+        res.status(401).send('{"error":"forbidden"}');
+        return false;
+      };
+
+      /**
+       * /api/v1/tabs
+       * Returns a list of open tabs and the active target ID.
+       * Used by the legacy client to render its tab bar.
+       */
+      app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
+        if (!legacyAuth(req, res)) return;
+
+        res.type('json');
+
+        try {
+          const { data: { targetInfos: targets } } = await timedSend({
+            name: "Target.getTargets",
+            params: { filter: [{ type: 'page' }] },
+          }, zombie_port);
+
+          if (targets) {
+            const filteredTargets = targets.filter(({ targetId, type, url }) => {
+              return AttachmentTypes.has(type) && zl.act.hasSession(targetId, zombie_port) && !zl.act.isOffscreen(targetId, zombie_port);
+            });
+
+            const activeTarget = zl.act.getActiveTarget(zombie_port);
+
+            // Format the response for the simple legacy client
+            const responsePayload = {
+              tabs: filteredTargets.map(({ targetId, title, url }) => ({ targetId, title, url })),
+              activeTarget: activeTarget,
+            };
+
+            res.json(responsePayload);
+          } else {
+            res.json({ tabs: [], activeTarget: null });
+          }
+        } catch (e) {
+          console.warn('Legacy API: Could not get tabs from Chrome.', e);
+          res.status(500).json({ error: "Could not get tabs from remote browser." });
+        }
+      }));
+
+      /**
+       * /api/v1/frame
+       * Returns a JPEG screenshot of the currently active tab.
+       * Used by the legacy client's <img> tag to display the remote browser.
+       */
+      app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
+        if (!legacyAuth(req, res)) return;
+
+        try {
+          const activeTargetId = zl.act.getActiveTarget(zombie_port);
+          if (!activeTargetId) {
+            throw new Error("No active target to capture.");
+          }
+
+          const sessionId = zl.act.getSessionId(activeTargetId, zombie_port);
+          if (!sessionId) {
+            throw new Error(`No session found for active target ${activeTargetId}`);
+          }
+
+          const screenshot = await timedSend({
+            name: "Page.captureScreenshot",
+            params: {
+              format: "jpeg",
+              quality: 80 // Good balance of quality and size for legacy networks
+            },
+            sessionId: sessionId
+          }, zombie_port);
+
+          const imageBuffer = Buffer.from(screenshot.data.data, 'base64');
+
+          res.set({
+            'Content-Type': 'image/jpeg',
+            'Content-Length': imageBuffer.length,
+            'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+          });
+          res.send(imageBuffer);
+
+        } catch (e) {
+          console.warn('Legacy API: Could not get frame from Chrome.', e);
+          // Return a 1x1 transparent GIF as a fallback to prevent broken image icons
+          const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+          res.set('Content-Type', 'image/gif');
+          res.send(fallbackPixel);
+        }
+      }));
+
+      /**
+       * /api/v1/event
+       * Receives user actions (clicks, navigation, etc.) from the legacy client
+       * and dispatches them to the remote browser.
+       */
+      app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
+        if (!legacyAuth(req, res)) return;
+
+        const { type, targetId, url, x, y, key } = req.query;
+
+        try {
+          const sessionId = zl.act.getSessionId(targetId, zombie_port);
+          if (!sessionId && type !== 'switch') { // switch doesn't need a session
+             throw new Error(`No session found for target ${targetId}`);
+          }
+
+          switch (type) {
+            case 'mousedown':
+              await timedSend({
+                name: "Input.dispatchMouseEvent",
+                params: { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
+                sessionId
+              }, zombie_port);
+              await timedSend({
+                name: "Input.dispatchMouseEvent",
+                params: { type: 'mouseReleased', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 },
+                sessionId
+              }, zombie_port);
+              break;
+
+            case 'navigate':
+              await timedSend({ name: "Page.navigate", params: { url }, sessionId }, zombie_port);
+              break;
+
+            case 'back':
+              await timedSend({ name: "Page.goBack", params: {}, sessionId }, zombie_port);
+              break;
+
+            case 'forward':
+              await timedSend({ name: "Page.goForward", params: {}, sessionId }, zombie_port);
+              break;
+
+            case 'switch':
+              await timedSend({ name: "Target.activateTarget", params: { targetId } }, zombie_port);
+              break;
+
+            default:
+              throw new Error(`Unsupported legacy event type: ${type}`);
+          }
+
+          res.status(200).send('OK');
+
+        } catch (e) {
+          console.warn(`Legacy API: Failed to handle event '${type}'.`, e);
+          res.status(500).send(`{"error":"Failed to handle event: ${e.message}"}`);
+        }
+      }));
+
+      // =================================================================
+      // == END: ROUTES FOR WIN9X LEGACY HTTP CLIENT
+      // =================================================================
+      // Legacy END
       const CACHE_EXPIRY = 3 * 60 * 1000;
       let torExitList;
       let cachExpired = true;
