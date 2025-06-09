@@ -370,7 +370,7 @@ export const CONFIG = Object.freeze({
   useLayerTreeDomain: false,
   tailShots: false,
   alwaysRestartCast: true,
-  blockAllCaptureScreenshots: !process.env.WIN9X_COMPATIBILITY_MODE && true,
+  blockAllCaptureScreenshots: true,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
   baseDir: BASE_PATH,
