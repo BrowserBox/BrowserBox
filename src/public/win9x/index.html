@@ -35,7 +35,7 @@
   if ( location && location.origin ) {
     API_BASE_PATH = location.origin + API_BASE_PATH;
   }
-  var POLLING_INTERVAL_MS = 1000; // How often to check for a new frame
+  var POLLING_INTERVAL_MS = 1000; // How often to check for a new frame when idle
   var TAB_REFRESH_RATE_MS = 3000;
   var RESIZE_THROTTLE_MS = 250;
 
@@ -60,8 +60,29 @@
   var statusBar = document.getElementById('status-bar');
 
   // --- Core Functions ---
-  function createXmlHttpRequestObject() { /* ... (same as before) ... */ }
-  function parseJSON(jsonString) { /* ... (same as before) ... */ }
+  function createXmlHttpRequestObject() {
+    var xhr;
+    try {
+      xhr = new XMLHttpRequest();
+    } catch (e) {
+      try {
+        xhr = new ActiveXObject("Microsoft.XMLHTTP");
+      } catch (e) {
+        alert("Your browser does not support AJAX, which is required for this application.");
+        return null;
+      }
+    }
+    return xhr;
+  }
+  
+  function parseJSON(jsonString) {
+    try {
+      return eval('(' + jsonString + ')');
+    } catch (e) {
+      updateStatus("Error: Could not parse server response.");
+      return null;
+    }
+  }
 
   function toggleConnection() {
     if (isConnected) {
@@ -131,7 +152,30 @@
     xhr.send(null);
   }
 
-  function updateTabs() { /* ... (same as before) ... */ }
+  function updateTabs() {
+    if (!isConnected) return;
+    var xhr = createXmlHttpRequestObject();
+    var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+    
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        var data = parseJSON(xhr.responseText);
+        if (data) {
+          renderTabs(data.tabs, data.activeTarget);
+          activeTabId = data.activeTarget;
+          for (var i = 0; i < data.tabs.length; i++) {
+            if (data.tabs[i].targetId === activeTabId) {
+              urlInput.value = data.tabs[i].url;
+              break;
+            }
+          }
+        }
+      }
+    };
+    xhr.send(null);
+  }
+
   function renderTabs(tabs, currentActiveId) {
     var previousActiveTab = activeTabId;
     tabBar.innerHTML = '';
@@ -162,15 +206,68 @@
     }
   }
 
-  function sendEvent(params) { /* ... (same as before) ... */ }
-  function setControlsEnabled(isEnabled) { /* ... (same as before) ... */ }
-  function updateStatus(text) { /* ... (same as before) ... */ }
-  function sendViewportSize() { /* ... (same as before) ... */ }
-  function throttledResizeHandler() { /* ... (same as before) ... */ }
-  function handleScreenClick(e) { /* ... (same as before) ... */ }
-  function handleNavigate() { /* ... (same as before) ... */ }
-  function handleBack() { /* ... (same as before) ... */ }
-  function handleForward() { /* ... (same as before) ... */ }
+  function sendEvent(params) {
+    if (!isConnected) return;
+    var eventUrl = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) 
+                 + (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') 
+                 + '&' + params;
+    
+    var tempImage = new Image();
+    tempImage.src = eventUrl;
+  }
+  
+  function setControlsEnabled(isEnabled) {
+    backButton.disabled = !isEnabled;
+    forwardButton.disabled = !isEnabled;
+    urlInput.disabled = !isEnabled;
+    goButton.disabled = !isEnabled;
+  }
+
+  function updateStatus(text) {
+    statusBar.innerHTML = 'Status: ' + text;
+  }
+
+  function sendViewportSize() {
+    var width = contentPane.clientWidth;
+    var height = contentPane.clientHeight;
+    remoteScreen.width = width;
+    remoteScreen.height = height;
+    sendEvent('type=resize&width=' + width + '&height=' + height);
+    updateStatus('Sent viewport dimensions: ' + width + 'x' + height);
+  }
+
+  function throttledResizeHandler() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      if (isConnected) {
+        sendViewportSize();
+      }
+    }, RESIZE_THROTTLE_MS);
+  }
+
+  function handleScreenClick(e) {
+    e = e || window.event;
+    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
+    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
+    sendEvent('type=mousedown&x=' + x + '&y=' + y);
+  }
+
+  function handleNavigate() {
+    var url = urlInput.value;
+    if (!url) return;
+    if (url.indexOf('://') === -1) {
+      url = 'http://' + url;
+    }
+    sendEvent('type=navigate&url=' + encodeURIComponent(url));
+  }
+
+  function handleBack() {
+    sendEvent('type=back');
+  }
+
+  function handleForward() {
+    sendEvent('type=forward');
+  }
 
   // --- Attach Events ---
   connectButton.onclick = toggleConnection;

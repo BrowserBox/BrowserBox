@@ -1155,7 +1155,7 @@
          * NEW: /api/vwin/frame-status
          * Lightweight endpoint for the client to poll if a new frame is available.
          */
-        app.get(`/api/${LEGACY_API_NAMESPACE}/frame-status`, wrap(async (req, res) => {
+        app.get(`/api/${LEGACY_API_VERSION}/frame-status`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
 
           res.type('json');
@@ -1179,7 +1179,7 @@
          * UPDATED: /api/vwin/frame
          * Simplified endpoint that just serves the latest frame from the buffer.
          */
-        app.get(`/api/${LEGACY_API_NAMESPACE}/frame`, wrap(async (req, res) => {
+        app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
 
           try {
