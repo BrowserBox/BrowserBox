@@ -1213,7 +1213,7 @@
         app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
 
-          const { type, targetId, url, x, y, key, width, height } = req.query;
+          const { type, targetId, url, x, y, deltaY, deltaX, key, width, height } = req.query;
 
           try {
             // Use the main controller send function for consistent behavior
@@ -1257,6 +1257,19 @@
                 const viewport = { width: parseInt(width), height: parseInt(height), mobile: false };
                 // Use session_token as a unique ID for the legacy client's viewport
                 zl.act.setViewport(req.query.session_token, viewport, zombie_port);
+                break;
+
+              case 'mousewheel':
+                command.name = "Input.dispatchMouseEvent";
+                command.params = {
+                  type: 'mouseWheel',
+                  x: parseInt(x),
+                  y: parseInt(y),
+                  deltaX: 0,
+                  deltaY: parseInt(deltaY),
+                };
+                command.params.sessionId = zl.act.getSessionId(targetId, zombie_port);
+                await zl.act.send(command, zombie_port);
                 break;
 
               default:

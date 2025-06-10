@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=5">
 <meta http-equiv="imagetoolbar" content="no" />
 <style type="text/css">
-  html, body { height: 100%; overflow: hidden; }
+  html, body { height: 100%; overflow: auto; }
   body { font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif; font-size: 12px; margin: 0; padding: 0; background-color: ButtonFace; color: ButtonText; overflow: hidden; }
   #main-layout { width: 100%; height: 100%; border-spacing: 0; }
   #tab-bar { background-color: ButtonFace; padding: 3px 2px 0 2px; border-bottom: 2px solid ThreeDShadow; white-space: nowrap; overflow: hidden; }
@@ -253,6 +253,30 @@
     sendEvent('type=mousedown&x=' + x + '&y=' + y);
   }
 
+  function handleMouseWheel(e) {
+    alert('hi');
+    e = e || window.event; // Cross-browser event object
+    if (!isConnected) return;
+
+    // Get the current mouse position over the image
+    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
+    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
+
+    // Determine the scroll delta (standard is +/- 120 for IE/Chrome)
+    // e.wheelDelta is for IE/WebKit, e.detail is for older Firefox
+    var delta = e.wheelDelta || -e.detail;
+
+    // Send the event to the server. The remote browser needs the coordinates
+    // to know *where* the scroll event originated.
+    sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
+
+    // IMPORTANT: Prevent the main browser window from scrolling
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    e.returnValue = false;
+  }
+
   function handleNavigate() {
     var url = urlInput.value;
     if (!url) return;
@@ -270,13 +294,57 @@
     sendEvent('type=forward');
   }
 
+  // This function handles both printable characters and special keys like arrows.
+  function handleKeyboardInput(e) {
+    if (!isConnected) return;
+    e = e || window.event;
+
+    var keyCode = e.keyCode || e.which;
+
+    // --- NEW LOGIC FOR ARROW KEYS ---
+    if (keyCode === 38) { // Up Arrow Key
+      // Simulate scrolling up. We'll invent a standard delta value.
+      // We also need coordinates; the center of the screen is a sensible default.
+      var x = remoteScreen.clientWidth / 2;
+      var y = remoteScreen.clientHeight / 2;
+      sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=-46'); // Positive delta scrolls up
+
+      // Prevent the browser from scrolling the main page
+      e.returnValue = false;
+      if (e.preventDefault) e.preventDefault();
+      return false;
+
+    } else if (keyCode === 40) { // Down Arrow Key
+      // Simulate scrolling down.
+      var x = remoteScreen.clientWidth / 2;
+      var y = remoteScreen.clientHeight / 2;
+      sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=46'); // Negative delta scrolls down
+
+      // Prevent the browser from scrolling the main page
+      e.returnValue = false;
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    }
+    // --- END OF NEW LOGIC ---
+
+    // (Optional) Logic for printable characters, if you need it.
+    // If you don't need to type into forms yet, you can remove this part.
+    if (keyCode >= 32) {
+      var charStr = String.fromCharCode(keyCode);
+      // This is where you would send a 'keydown' or 'char' event type
+      // sendEvent('type=keydown&key=' + encodeURIComponent(charStr));
+    }
+  }
+
   // --- Attach Events ---
   connectButton.onclick = toggleConnection;
   remoteScreen.onclick = handleScreenClick;
+  remoteScreen.onwheel = handleMouseWheel;
   goButton.onclick = handleNavigate;
   backButton.onclick = handleBack;
   forwardButton.onclick = handleForward;
   window.onresize = throttledResizeHandler;
+  document.onkeydown = handleKeyboardInput;
 
   // This is the key to the new event-driven loop.
   // When an image successfully loads, we immediately check for the next one.
