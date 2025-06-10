@@ -12,6 +12,9 @@ const KEYS = {
         return null;
       }
 
+      if ( def.key.length == 1 ) {
+        def.text = def.key;
+      }
       // Determine event type
       const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
 

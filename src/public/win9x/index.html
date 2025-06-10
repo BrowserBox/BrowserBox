@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=5">
 <meta http-equiv="imagetoolbar" content="no" />
 <style type="text/css">
-  html, body { height: 100%; overflow: auto; }
+  html, body { height: 100%; overflow: hidden; }
   body { font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif; font-size: 12px; margin: 0; padding: 0; background-color: ButtonFace; color: ButtonText; overflow: hidden; }
   #main-layout { width: 100%; height: 100%; border-spacing: 0; }
   #tab-bar { background-color: ButtonFace; padding: 3px 2px 0 2px; border-bottom: 2px solid ThreeDShadow; white-space: nowrap; overflow: hidden; }
@@ -25,7 +25,7 @@
 <table id="main-layout" cellpadding="0" cellspacing="0">
   <tr style="height: 1px; display: none;"><td><div style="padding: 5px;">Session Token: <input type="text" id="token-input" size="20" value="8723e327ccfe57f8803e0f1dd1d780e6"><button id="connect-button">Connect</button></div></td></tr>
   <tr style="height: 25px;"><td><div id="tab-bar"></div></td></tr>
-  <tr style="height: 35px;"><td><div id="omni-box"><button id="back-button" class="omni-button" disabled>Back</button><button id="forward-button" class="omni-button" disabled>Forward</button><input type="text" id="url-input" disabled><button id="go-button" class="omni-button" disabled>Go</button></div></td></tr>
+  <tr style="height: 35px;"><td><div id="omni-box"><button id="back-button" class="omni-button" disabled>Back</button><button id="forward-button" class="omni-button" disabled>Forward</button><input type="text" id="url-input" disabled onfocus="isUrlBarFocused = true;" onblur="isUrlBarFocused = false;"><button id="go-button" class="omni-button" disabled>Go</button></div></td></tr>
   <tr style="height: 100%;"><td id="content-pane"><img id="remote-screen" src="placeholder.gif" alt="Remote Browser View" style="width: 100%; height: 100%;"></td></tr>
   <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
 </table>
@@ -47,6 +47,7 @@
   var tabPollingInterval = null;
   var resizeTimeout = null;
   var lastKnownFrameTimestamp = 0; // Tracks the timestamp of the last received frame
+  var isUrlBarFocused = false;
 
   // --- Element References ---
   var contentPane = document.getElementById('content-pane');
@@ -85,6 +86,12 @@
     }
   }
 
+  function safeClearChildNodes(element) {
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+  }
+
   function toggleConnection() {
     if (isConnected) {
       // --- Disconnect ---
@@ -97,7 +104,7 @@
       connectButton.innerHTML = 'Connect';
       updateStatus('Disconnected.');
       setControlsEnabled(false);
-      tabBar.innerHTML = '';
+      safeClearChildNodes(tabBar);
       urlInput.value = '';
     } else {
       // --- Connect ---
@@ -120,10 +127,8 @@
     }
   }
 
-  // --- NEW POLLING LOGIC ---
   function pollForNextFrame() {
     if (!isConnected || !activeTabId) {
-      // If we're disconnected or have no active tab, wait and try again.
       setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
       return;
     }
@@ -137,16 +142,12 @@
       if (xhr.readyState === 4 && xhr.status === 200) {
         var data = parseJSON(xhr.responseText);
         if (data && data.fresh) {
-          // New frame is available! Update the timestamp and set the image src.
-          // The 'onload' event of the image will trigger the next poll.
           lastKnownFrameTimestamp = data.timestamp;
           remoteScreen.src = API_BASE_PATH + '/frame?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
         } else {
-          // No new frame. Wait for the polling interval and check again.
           setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
         }
       } else if (xhr.readyState === 4) {
-        // An error occurred (e.g., server down). Wait and try again.
         setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
       }
     };
@@ -165,10 +166,12 @@
         if (data) {
           renderTabs(data.tabs, data.activeTarget);
           activeTabId = data.activeTarget;
-          for (var i = 0; i < data.tabs.length; i++) {
-            if (data.tabs[i].targetId === activeTabId) {
-              urlInput.value = data.tabs[i].url;
-              break;
+          if (!isUrlBarFocused) {
+            for (var i = 0; i < data.tabs.length; i++) {
+              if (data.tabs[i].targetId === activeTabId) {
+                urlInput.value = data.tabs[i].url;
+                break;
+              }
             }
           }
         }
@@ -179,7 +182,7 @@
 
   function renderTabs(tabs, currentActiveId) {
     var previousActiveTab = activeTabId;
-    tabBar.innerHTML = '';
+    safeClearChildNodes(tabBar);
     for (var i = 0; i < tabs.length; i++) {
       var tab = tabs[i];
       var tabEl = document.createElement('span');
@@ -201,7 +204,6 @@
       };
       tabBar.appendChild(tabEl);
     }
-    // If the active tab changed, reset the timestamp to force an immediate frame fetch
     if (currentActiveId && currentActiveId !== previousActiveTab) {
         lastKnownFrameTimestamp = 0;
     }
@@ -254,26 +256,19 @@
   }
 
   function handleMouseWheel(e) {
-    alert('hi');
-    e = e || window.event; // Cross-browser event object
+    e = e || window.event;
+    var targetElement = e.target || e.srcElement;
+    if (targetElement.id !== 'remote-screen') {
+      return;
+    }
     if (!isConnected) return;
 
-    // Get the current mouse position over the image
     var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
     var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
-
-    // Determine the scroll delta (standard is +/- 120 for IE/Chrome)
-    // e.wheelDelta is for IE/WebKit, e.detail is for older Firefox
     var delta = e.wheelDelta || -e.detail;
-
-    // Send the event to the server. The remote browser needs the coordinates
-    // to know *where* the scroll event originated.
     sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
 
-    // IMPORTANT: Prevent the main browser window from scrolling
-    if (e.preventDefault) {
-      e.preventDefault();
-    }
+    if (e.preventDefault) e.preventDefault();
     e.returnValue = false;
   }
 
@@ -294,65 +289,76 @@
     sendEvent('type=forward');
   }
 
-  // This function handles both printable characters and special keys like arrows.
-  function handleKeyboardInput(e) {
+  function handleKeyDown(e) {
     if (!isConnected) return;
     e = e || window.event;
-
     var keyCode = e.keyCode || e.which;
 
-    // --- NEW LOGIC FOR ARROW KEYS ---
-    if (keyCode === 38) { // Up Arrow Key
-      // Simulate scrolling up. We'll invent a standard delta value.
-      // We also need coordinates; the center of the screen is a sensible default.
+    // Handle special keys that we don't want to pass through as characters
+    if (keyCode === 38 || keyCode === 40) { // Up/Down arrows for scrolling
       var x = remoteScreen.clientWidth / 2;
       var y = remoteScreen.clientHeight / 2;
-      sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=-46'); // Positive delta scrolls up
+      var delta = (keyCode === 38) ? -46 : 46; // Up is positive, Down is negative
+      sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
 
-      // Prevent the browser from scrolling the main page
-      e.returnValue = false;
-      if (e.preventDefault) e.preventDefault();
-      return false;
-
-    } else if (keyCode === 40) { // Down Arrow Key
-      // Simulate scrolling down.
-      var x = remoteScreen.clientWidth / 2;
-      var y = remoteScreen.clientHeight / 2;
-      sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=46'); // Negative delta scrolls down
-
-      // Prevent the browser from scrolling the main page
       e.returnValue = false;
       if (e.preventDefault) e.preventDefault();
       return false;
     }
-    // --- END OF NEW LOGIC ---
 
-    // (Optional) Logic for printable characters, if you need it.
-    // If you don't need to type into forms yet, you can remove this part.
-    if (keyCode >= 32) {
-      var charStr = String.fromCharCode(keyCode);
-      // This is where you would send a 'keydown' or 'char' event type
-      // sendEvent('type=keydown&key=' + encodeURIComponent(charStr));
+    if (isUrlBarFocused && keyCode === 13) { // Enter key in URL bar
+      handleNavigate();
+      e.returnValue = false;
+      if (e.preventDefault) e.preventDefault();
+      return false;
     }
+
+    // Send the full key event to the server for translation
+    if (!isUrlBarFocused) {
+      sendKeyEvent(e, 'keydown');
+      // Prevent default browser actions (e.g., page search on '/')
+      e.returnValue = false;
+      if (e.preventDefault) e.preventDefault();
+      return false;
+    }
+  }
+
+  function handleKeyUp(e) {
+    if (!isConnected || isUrlBarFocused) return;
+    e = e || window.event;
+    sendKeyEvent(e, 'keyup');
+    e.returnValue = false;
+    if (e.preventDefault) e.preventDefault();
+    return false;
+  }
+
+  function sendKeyEvent(e, eventType) {
+    var keyCode = e.keyCode || e.which;
+
+    var params = 'type=key_event'
+               + '&eventType=' + eventType
+               + '&keyCode=' + keyCode
+               + '&shiftKey=' + e.shiftKey
+               + '&ctrlKey=' + e.ctrlKey
+               + '&altKey=' + e.altKey;
+
+    sendEvent(params);
   }
 
   // --- Attach Events ---
   connectButton.onclick = toggleConnection;
   remoteScreen.onclick = handleScreenClick;
-  remoteScreen.onwheel = handleMouseWheel;
+  document.onmousewheel = handleMouseWheel; // Attach to document for IE6
   goButton.onclick = handleNavigate;
   backButton.onclick = handleBack;
   forwardButton.onclick = handleForward;
   window.onresize = throttledResizeHandler;
-  document.onkeydown = handleKeyboardInput;
+  document.onkeydown = handleKeyDown;
 
-  // This is the key to the new event-driven loop.
-  // When an image successfully loads, we immediately check for the next one.
   remoteScreen.onload = function() {
     updateStatus('Frame ' + lastKnownFrameTimestamp + ' loaded.');
     pollForNextFrame();
   };
-  // If an image fails to load, we wait a bit then try again.
   remoteScreen.onerror = function() {
     updateStatus('Error loading frame. Retrying...');
     setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);

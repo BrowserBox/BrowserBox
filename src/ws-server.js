@@ -41,6 +41,9 @@
   import {validityCheck} from './hard/application.js'
   import {stop} from '../branch-bbx-stop.js';
 
+  // legacy route import
+  import KEYS from '../client/kbd.js';
+
   const { exec, execSync } = child_process;
 
   const LEGACY_API_VERSION = 'vwin';
@@ -1213,53 +1216,55 @@
         app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
 
-          const { type, targetId, url, x, y, deltaY, deltaX, key, width, height } = req.query;
+          const { type, targetId, url, x, y, deltaY, deltaX, key, width, height,
+            eventType, keyCode, shiftKey, ctrlKey, altKey 
+          } = req.query;
 
           try {
             // Use the main controller send function for consistent behavior
             const command = { name: '', params: {} };
 
             switch (type) {
-              case 'mousedown':
+              case 'mousedown': {
                 command.name = "Input.dispatchMouseEvent";
                 command.params = { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 };
                 await zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
                 command.params.type = 'mouseReleased';
-                await zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
-                break;
+                zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
+              }; break;
 
-              case 'navigate':
+              case 'navigate': {
                 command.name = "Page.navigate";
                 command.params = { url, sessionId: zl.act.getSessionId(targetId, zombie_port) };
-                await zl.act.send(command, zombie_port);
-                break;
+                zl.act.send(command, zombie_port);
+              }; break;
 
-              case 'back':
+              case 'back': {
                 command.name = "Page.goBack";
                 command.params = { sessionId: zl.act.getSessionId(targetId, zombie_port) };
-                await zl.act.send(command, zombie_port);
-                break;
+                zl.act.send(command, zombie_port);
+              }; break;
 
-              case 'forward':
+              case 'forward': {
                 command.name = "Page.goForward";
                 command.params = { sessionId: zl.act.getSessionId(targetId, zombie_port) };
-                await zl.act.send(command, zombie_port);
-                break;
+                zl.act.send(command, zombie_port);
+              }; break;
 
-              case 'switch':
+              case 'switch': {
                 command.name = "Target.activateTarget";
                 command.params = { targetId };
                 await zl.act.send(command, zombie_port);
-                break;
+              }; break;
 
-              case 'resize':
+              case 'resize': {
                 // This plugs the legacy client into the main viewport logic
                 const viewport = { width: parseInt(width), height: parseInt(height), mobile: false };
                 // Use session_token as a unique ID for the legacy client's viewport
                 zl.act.setViewport(req.query.session_token, viewport, zombie_port);
-                break;
+              }; break;
 
-              case 'mousewheel':
+              case 'mousewheel': {
                 command.name = "Input.dispatchMouseEvent";
                 command.params = {
                   type: 'mouseWheel',
@@ -1269,8 +1274,35 @@
                   deltaY: parseInt(deltaY),
                 };
                 command.params.sessionId = zl.act.getSessionId(targetId, zombie_port);
-                await zl.act.send(command, zombie_port);
-                break;
+                zl.act.send(command, zombie_port);
+              }; break;
+
+              case 'key_event': {
+                const definition = findKeyDefinition(parseInt(keyCode));
+                if (!definition) {
+                  console.warn(`Legacy API: Unknown keyCode received: ${keyCode}`);
+                  return res.status(200).send('OK'); // Acknowledge but do nothing
+                }
+
+                const key = definition.key;
+                const [Down, Up] = KEYS.keyEvent(key);
+
+                // Build the modifiers bitmask (Alt=1, Ctrl=2, Meta=4, Shift=8)
+                let modifiers = 0;
+                if (altKey === 'true') modifiers |= 1;
+                if (ctrlKey === 'true') modifiers |= 2;
+                // No metaKey in legacy events, but we'll respect it if sent
+                if (shiftKey === 'true') modifiers |= 8;
+
+                Down.command.params.modifiers = modifiers;
+
+                Down.command.sessionId = zl.act.getSessionId(targetId, zombie_port);
+                Up.command.sessionId = zl.act.getSessionId(targetId, zombie_port);
+
+                zl.act.send(Down.command, zombie_port);
+                await sleep(Math.round(Math.random(100)+50));
+                zl.act.send(Up.command, zombie_port);
+              }; break;
 
               default:
                 throw new Error(`Unsupported legacy event type: ${type}`);
@@ -1284,9 +1316,16 @@
           }
         }));
 
-        // =================================================================
-        // == END: ROUTES FOR WIN9X LEGACY HTTP CLIENT
-        // =================================================================
+
+        // helpers for legacy routes
+          function findKeyDefinition(keyCode) {
+            for (const key in KEYS) {
+              if (KEYS[key].keyCode === keyCode) {
+                return KEYS[key];
+              }
+            }
+            return null; // Return null if no key is found
+          }
       // Legacy END
       const CACHE_EXPIRY = 3 * 60 * 1000;
       let torExitList;
