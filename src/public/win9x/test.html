@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Key Event Debugger (IE6/IE8 Compatible)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <style type="text/css">
+    body {
+      font-family: "MS Sans Serif", "Tahoma", "Arial", sans-serif;
+      padding: 20px;
+    }
+    ul {
+      margin-top: 10px;
+      padding-left: 20px; /* IE6 needs explicit padding */
+    }
+    li {
+      font-family: "Courier New", monospace;
+      margin-bottom: 3px; /* Add some spacing */
+    }
+  </style>
+  <script type="text/javascript">
+    function initKeyLogger() {
+      var log = document.getElementById('log');
+
+      function logEvent(e, type) {
+        // Ensure cross-browser event object (for IE < 9)
+        e = e || window.event;
+
+        var keyCode = e.keyCode || '';
+        // charCode is not reliable in old IE, but we check for it anyway
+        var charCode = typeof e.charCode !== 'undefined' ? e.charCode : '';
+        // which is also not reliable in old IE
+        var which = typeof e.which !== 'undefined' ? e.which : '';
+
+        // --- COMPATIBILITY CHANGE: Replaced Array.filter ---
+        var modsArray = [];
+        if (e.ctrlKey) { modsArray.push('CTRL'); }
+        if (e.altKey) { modsArray.push('ALT'); }
+        if (e.shiftKey) { modsArray.push('SHIFT'); }
+        // metaKey is not supported in IE8 and below, but this check is safe
+        if (e.metaKey) { modsArray.push('META'); }
+
+        var mods = '';
+        if (modsArray.length > 0) {
+          // Array.join is supported in IE 5.5+
+          mods = '[' + modsArray.join('+') + '] ';
+        }
+        // --- END COMPATIBILITY CHANGE ---
+
+        var li = document.createElement('li');
+        li.innerHTML = mods + type + ': keyCode=' + keyCode + ' charCode=' + charCode + ' which=' + which;
+        log.appendChild(li);
+
+        // Keep only last 100 entries
+        if (log.childNodes.length > 100) {
+          log.removeChild(log.firstChild);
+        }
+      }
+
+      // Attach events using the reliable DOM Level 0 model
+      document.onkeydown = function(e) { logEvent(e, 'keydown'); };
+      document.onkeypress = function(e) { logEvent(e, 'keypress'); };
+      document.onkeyup = function(e) { logEvent(e, 'keyup'); };
+    }
+  </script>
+</head>
+<body onload="initKeyLogger()">
+  <h2>Key Event Debugger</h2>
+  <p>Type or press any key. Event data will appear below:</p>
+  <ul id="log"></ul>
+</body>
+</html>

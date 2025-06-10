@@ -1095,10 +1095,9 @@
 
     return server;
 
-    function addHandlers() {
-      // Legacy API Handlers (Win9x compatibility mode, etc)
+    function addLegacyHandlers() {
         // =================================================================
-        // == START: ROUTES FOR WIN9X LEGACY HTTP CLIENT
+        // == START: REWRITTEN ROUTES FOR WIN9X LEGACY HTTP CLIENT
         // =================================================================
 
         // A shared authentication function for all legacy API routes
@@ -1107,51 +1106,13 @@
           const st = req.query.session_token; // The legacy client sends this
 
           if ((cookie === allowed_user_cookie) || (st === session_token)) {
+            req.authAs = `${cookie}:${st}`;
             return true;
           }
 
           res.status(401).send('{"error":"forbidden"}');
           return false;
         };
-
-        /**
-         * /api/v1/tabs
-         * Returns a list of open tabs and the active target ID.
-         * Used by the legacy client to render its tab bar.
-         */
-        app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
-          if (!legacyAuth(req, res)) return;
-
-          res.type('json');
-
-          try {
-            const { data: { targetInfos: targets } } = await timedSend({
-              name: "Target.getTargets",
-              params: { filter: [{ type: 'page' }] },
-            }, zombie_port);
-
-            if (targets) {
-              const filteredTargets = targets.filter(({ targetId, type, url }) => {
-                return AttachmentTypes.has(type) && zl.act.hasSession(targetId, zombie_port) && !zl.act.isOffscreen(targetId, zombie_port);
-              });
-
-              const activeTarget = zl.act.getActiveTarget(zombie_port);
-
-              // Format the response for the simple legacy client
-              const responsePayload = {
-                tabs: filteredTargets.map(({ targetId, title, url }) => ({ targetId, title, url })),
-                activeTarget: activeTarget,
-              };
-
-              res.json(responsePayload);
-            } else {
-              res.json({ tabs: [], activeTarget: null });
-            }
-          } catch (e) {
-            console.warn('Legacy API: Could not get tabs from Chrome.', e);
-            res.status(500).json({ error: "Could not get tabs from remote browser." });
-          }
-        }));
 
         /**
          * NEW: /api/vwin/frame-status
@@ -1181,151 +1142,220 @@
         }));
 
         /**
-         * UPDATED: /api/vwin/frame
-         * Simplified endpoint that just serves the latest frame from the buffer.
+         * Helper functions inspired by the modern example, adapted for the legacy controller.
+         * These provide more robust history navigation than the simple Page.goBack/goForward.
          */
-        app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
-          if (!legacyAuth(req, res)) return;
+        async function getNavigationHistory(sessionId, zombie_port) {
+            const { data } = await timedSend({
+                name: 'Page.getNavigationHistory',
+                params: {},
+                sessionId,
+            }, zombie_port);
+            return data;
+        }
 
-          try {
-            const activeTargetId = zl.act.getActiveTarget(zombie_port);
-            const frameData = activeTargetId ? zl.act.getFrameFromBuffer(zombie_port, activeTargetId) : null;
+        async function navigateHistory(sessionId, direction, zombie_port) {
+            const { currentIndex, entries } = await getNavigationHistory(sessionId, zombie_port);
+            const newIndex = currentIndex + direction;
 
-            if (frameData && frameData.buffer && frameData.buffer.length > 0) {
-              console.log('Sending frame data', req.query);
-              res.set({
-                'Content-Type': 'image/jpeg',
-                'Content-Length': frameData.buffer.length,
-                'Cache-Control': 'no-store, no-cache, must-revalidate, private'
-              });
-              res.send(frameData.buffer);
-            } else {
-              throw new Error("Frame buffer is empty or unavailable.");
+            if (newIndex >= 0 && newIndex < entries.length) {
+                await timedSend({
+                    name: 'Page.navigateToHistoryEntry',
+                    params: { entryId: entries[newIndex].id },
+                    sessionId,
+                }, zombie_port);
+                return true;
             }
-          } catch (e) {
-            const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-            res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' });
-            res.send(fallbackPixel);
-          }
+            // If there's no history entry, do nothing.
+            return false;
+        }
+
+        /**
+         * /api/vwin/tabs
+         * Returns a list of open tabs and the active target ID.
+         * The legacy client polls this endpoint to update its tab bar.
+         */
+        app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
+            if (!legacyAuth(req, res)) return;
+
+            res.type('json');
+
+            try {
+                const { data: { targetInfos: targets } } = await timedSend({
+                    name: "Target.getTargets",
+                    params: { filter: [{ type: 'page' }] },
+                }, zombie_port);
+
+                if (targets) {
+                    const filteredTargets = targets.filter(({ targetId, type }) => {
+                        return AttachmentTypes.has(type) && zl.act.hasSession(targetId, zombie_port) && !zl.act.isOffscreen(targetId, zombie_port);
+                    });
+
+                    const activeTarget = zl.act.getActiveTarget(zombie_port);
+                    res.json({
+                        tabs: filteredTargets.map(({ targetId, title, url }) => ({ targetId, title, url })),
+                        activeTarget: activeTarget,
+                    });
+                } else {
+                    res.json({ tabs: [], activeTarget: null });
+                }
+            } catch (e) {
+                console.warn('Legacy API: Could not get tabs from Chrome.', e);
+                res.status(500).json({ error: "Could not get tabs from remote browser." });
+            }
         }));
 
         /**
-         * /api/v1/event (UPDATED)
-         * Receives user actions and dispatches them to the remote browser.
+         * /api/vwin/frame
+         * This endpoint is polled by the legacy client to get the latest visual frame.
+         * It serves the most recent screenshot from the buffer for the active tab.
          */
-        app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
-          if (!legacyAuth(req, res)) return;
+        app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
+            if (!legacyAuth(req, res)) return;
 
-          const { type, targetId, url, x, y, deltaY, deltaX, key, width, height,
-            eventType, keyCode, shiftKey, ctrlKey, altKey 
-          } = req.query;
-
-          try {
-            // Use the main controller send function for consistent behavior
-            const command = { name: '', params: {} };
-
-            switch (type) {
-              case 'mousedown': {
-                command.name = "Input.dispatchMouseEvent";
-                command.params = { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 };
-                await zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
-                command.params.type = 'mouseReleased';
-                zl.act.send({ ...command, params: { ...command.params, sessionId: zl.act.getSessionId(targetId, zombie_port) } }, zombie_port);
-              }; break;
-
-              case 'navigate': {
-                command.name = "Page.navigate";
-                command.params = { url, sessionId: zl.act.getSessionId(targetId, zombie_port) };
-                zl.act.send(command, zombie_port);
-              }; break;
-
-              case 'back': {
-                command.name = "Page.goBack";
-                command.params = { sessionId: zl.act.getSessionId(targetId, zombie_port) };
-                zl.act.send(command, zombie_port);
-              }; break;
-
-              case 'forward': {
-                command.name = "Page.goForward";
-                command.params = { sessionId: zl.act.getSessionId(targetId, zombie_port) };
-                zl.act.send(command, zombie_port);
-              }; break;
-
-              case 'switch': {
-                command.name = "Target.activateTarget";
-                command.params = { targetId };
-                await zl.act.send(command, zombie_port);
-              }; break;
-
-              case 'resize': {
-                // This plugs the legacy client into the main viewport logic
-                const viewport = { width: parseInt(width), height: parseInt(height), mobile: false };
-                // Use session_token as a unique ID for the legacy client's viewport
-                zl.act.setViewport(req.query.session_token, viewport, zombie_port);
-              }; break;
-
-              case 'mousewheel': {
-                command.name = "Input.dispatchMouseEvent";
-                command.params = {
-                  type: 'mouseWheel',
-                  x: parseInt(x),
-                  y: parseInt(y),
-                  deltaX: 0,
-                  deltaY: parseInt(deltaY),
-                };
-                command.params.sessionId = zl.act.getSessionId(targetId, zombie_port);
-                zl.act.send(command, zombie_port);
-              }; break;
-
-              case 'key_event': {
-                const definition = findKeyDefinition(parseInt(keyCode));
-                if (!definition) {
-                  console.warn(`Legacy API: Unknown keyCode received: ${keyCode}`);
-                  return res.status(200).send('OK'); // Acknowledge but do nothing
+            try {
+                const activeTargetId = zl.act.getActiveTarget(zombie_port);
+                // Force a screenshot for the legacy client on each poll.
+                // This is inefficient but necessary for a simple HTTP-based client.
+                if (activeTargetId) {
+                    await zl.act.send({
+                        name: "Page.captureScreenshot",
+                        params: { format: 'jpeg', quality: 85 },
+                        sessionId: zl.act.getSessionId(activeTargetId, zombie_port)
+                    }, zombie_port);
                 }
 
-                const key = definition.key;
-                const [Down, Up] = KEYS.keyEvent(key);
+                const frameData = activeTargetId ? zl.act.getFrameFromBuffer(zombie_port, activeTargetId) : null;
 
-                // Build the modifiers bitmask (Alt=1, Ctrl=2, Meta=4, Shift=8)
-                let modifiers = 0;
-                if (altKey === 'true') modifiers |= 1;
-                if (ctrlKey === 'true') modifiers |= 2;
-                // No metaKey in legacy events, but we'll respect it if sent
-                if (shiftKey === 'true') modifiers |= 8;
-
-                Down.command.params.modifiers = modifiers;
-
-                Down.command.sessionId = zl.act.getSessionId(targetId, zombie_port);
-                Up.command.sessionId = zl.act.getSessionId(targetId, zombie_port);
-
-                zl.act.send(Down.command, zombie_port);
-                await sleep(Math.round(Math.random(100)+50));
-                zl.act.send(Up.command, zombie_port);
-              }; break;
-
-              default:
-                throw new Error(`Unsupported legacy event type: ${type}`);
+                if (frameData && frameData.buffer && frameData.buffer.length > 0) {
+                    res.set({
+                        'Content-Type': 'image/jpeg',
+                        'Content-Length': frameData.buffer.length,
+                        'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+                    });
+                    res.send(frameData.buffer);
+                } else {
+                    throw new Error("Frame buffer is empty or unavailable.");
+                }
+            } catch (e) {
+                // Send a 1x1 transparent pixel as a fallback if no frame is available.
+                const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+                res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' });
+                res.send(fallbackPixel);
             }
-
-            res.status(200).send('OK');
-
-          } catch (e) {
-            console.warn(`Legacy API: Failed to handle event '${type}'.`, e);
-            res.status(500).send(`{"error":"Failed to handle event: ${e.message}"}`);
-          }
         }));
 
+        app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
+            if (!legacyAuth(req, res)) return;
 
-        // helpers for legacy routes
-          function findKeyDefinition(keyCode) {
-            for (const key in KEYS) {
-              if (KEYS[key].keyCode === keyCode) {
-                return KEYS[key];
-              }
+            const mySource = req.authAs;
+
+            const { type, targetId, url, x, y, deltaY, width, height, events, targetIdToClose } = req.query;
+            const sessionId = zl.act.getSessionId(targetId, zombie_port);
+
+            try {
+                if (!sessionId && !['switch', 'resize', 'new_tab', 'close_tab', 'key_batch'].includes(type)) {
+                    throw new Error("No active session for the given targetId.");
+                }
+
+                switch (type) {
+                    case 'mousedown':
+                        await zl.act.send({ name: "Input.dispatchMouseEvent", params: { type: 'mousePressed', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 }, sessionId }, zombie_port);
+                        await zl.act.send({ name: "Input.dispatchMouseEvent", params: { type: 'mouseReleased', button: 'left', x: parseInt(x), y: parseInt(y), clickCount: 1 }, sessionId }, zombie_port);
+                        break;
+                    case 'navigate':
+                        await zl.act.send({ name: "Page.navigate", params: { url }, sessionId }, zombie_port);
+                        break;
+                    case 'back':
+                        await navigateHistory(sessionId, -1, zombie_port);
+                        break;
+                    case 'forward':
+                        await navigateHistory(sessionId, 1, zombie_port);
+                        break;
+                    case 'switch':
+                        await zl.act.send({ name: "Target.activateTarget", params: { targetId } }, zombie_port);
+                        await zl.act.send({ isZombieLordCommand: true, name: "Connection.activateTarget", params: { targetId, source: mySource } }, zombie_port);
+                        break;
+                    case 'resize':
+                        const viewport = { width: parseInt(width), height: parseInt(height), mobile: false };
+                        zl.act.setViewport(req.query.session_token, viewport, zombie_port);
+                        break;
+                    case 'mousewheel':
+                        await zl.act.send({ name: "Input.dispatchMouseEvent", params: { type: 'mouseWheel', x: parseInt(x), y: parseInt(y), deltaX: 0, deltaY: parseInt(deltaY) }, sessionId }, zombie_port);
+                        break;
+                    case 'new_tab':
+                        await zl.act.send({ name: "Target.createTarget", params: { url: 'about:blank' } }, zombie_port);
+                        break;
+                    case 'close_tab':
+                        if (targetIdToClose) {
+                            await zl.act.send({ name: "Target.closeTarget", params: { targetId: targetIdToClose } }, zombie_port);
+                        }
+                        break;
+
+                    // --- NEW BATCHING LOGIC ---
+                    case 'key_batch':
+                        const batch = JSON.parse(events);
+                        // Call the helper function but DON'T await it.
+                        // This immediately sends the 200 OK response to the client.
+                        processKeyBatch(batch, sessionId, zombie_port);
+                        break;
+
+                    default:
+                        throw new Error(`Unsupported legacy event type: ${type}`);
+                }
+
+                res.status(200).send('OK');
+
+            } catch (e) {
+                console.warn(`Legacy API: Failed to handle event '${type}'.`, e.message);
+                res.status(500).send(`{"error":"Failed to handle event: ${e.message}"}`);
             }
-            return null; // Return null if no key is found
+        }));
+
+        // Helper for legacy key events
+        function findKeyDefinition(keyCode) {
+            for (const key in KEYS) {
+                if (KEYS[key].keyCode === keyCode) {
+                    return KEYS[key];
+                }
+            }
+            return null;
+        }
+
+            // Add this helper function inside addLegacyHandlers, before the /event route
+        async function processKeyBatch(batch, sessionId, zombie_port) {
+          if (!batch || !Array.isArray(batch)) return;
+
+          for (const keyEvent of batch) {
+            let definition;
+            if ( keyEvent.p ) {
+              definition = KEYS[keyEvent.p];
+            } else { 
+              definition = findKeyDefinition(keyEvent.k);
+            }
+            console.log(keyEvent, definition);
+            if (definition) {
+              const [Down, Up] = KEYS.keyEvent(definition.key);
+              let modifiers = 0;
+              if (keyEvent.a) modifiers |= 1; // a = altKey
+              if (keyEvent.c) modifiers |= 2; // c = ctrlKey
+              if (keyEvent.s) modifiers |= 8; // s = shiftKey
+
+              Down.command.params.modifiers = modifiers;
+              Down.command.sessionId = sessionId;
+              Up.command.params.modifiers = modifiers;
+              Up.command.sessionId = sessionId;
+
+              // Fire-and-forget each key press (down and up) to maximize throughput
+              zl.act.send(Down.command, zombie_port);
+              zl.act.send(Up.command, zombie_port);
+            }
           }
+        }
+    }
+    function addHandlers() {
+      // Legacy API Handlers (Win9x compatibility mode, etc)
+      addLegacyHandlers();
       // Legacy END
       const CACHE_EXPIRY = 3 * 60 * 1000;
       let torExitList;

@@ -1,0 +1,3 @@
+- the way we send key events causes overlay of down up so the same character cannot be typed twice in quick succession, making backspacing or words like "wow" error prone or utter slow. Fix this
+
+

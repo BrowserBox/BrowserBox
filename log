@@ -1,0 +1,940 @@
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 833
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 844
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 857
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 860
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 871
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 875
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 891
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Backspace',
+1|basic-bb-main-service  |     key: 'Backspace',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 8,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 896
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: 'g',
+1|basic-bb-main-service  |     code: 'KeyG',
+1|basic-bb-main-service  |     key: 'g',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 71,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: 'g',
+1|basic-bb-main-service  |     code: 'KeyG',
+1|basic-bb-main-service  |     key: 'g',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 71,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 918
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'KeyG',
+1|basic-bb-main-service  |     key: 'g',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 71,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'KeyG',
+1|basic-bb-main-service  |     key: 'g',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 71,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 924
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: 'a',
+1|basic-bb-main-service  |     code: 'KeyA',
+1|basic-bb-main-service  |     key: 'a',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 65,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: 'a',
+1|basic-bb-main-service  |     code: 'KeyA',
+1|basic-bb-main-service  |     key: 'a',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 65,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 926
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'KeyA',
+1|basic-bb-main-service  |     key: 'a',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 65,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'KeyA',
+1|basic-bb-main-service  |     key: 'a',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 65,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 929
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: 'y',
+1|basic-bb-main-service  |     code: 'KeyY',
+1|basic-bb-main-service  |     key: 'y',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 89,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: 'y',
+1|basic-bb-main-service  |     code: 'KeyY',
+1|basic-bb-main-service  |     key: 'y',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 89,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 931
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'KeyY',
+1|basic-bb-main-service  |     key: 'y',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 89,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'KeyY',
+1|basic-bb-main-service  |     key: 'y',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 89,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 932
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'ShiftLeft',
+1|basic-bb-main-service  |     key: 'Shift',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 16,
+1|basic-bb-main-service  |     modifiers: 8,
+1|basic-bb-main-service  |     location: 1
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'rawKeyDown',
+1|basic-bb-main-service  |     text: undefined,
+1|basic-bb-main-service  |     code: 'ShiftLeft',
+1|basic-bb-main-service  |     key: 'Shift',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 16,
+1|basic-bb-main-service  |     modifiers: 8,
+1|basic-bb-main-service  |     location: 1
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 953
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: '/',
+1|basic-bb-main-service  |     code: 'NumpadDivide',
+1|basic-bb-main-service  |     key: '/',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 111,
+1|basic-bb-main-service  |     modifiers: 8,
+1|basic-bb-main-service  |     location: 3
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: '/',
+1|basic-bb-main-service  |     code: 'NumpadDivide',
+1|basic-bb-main-service  |     key: '/',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 111,
+1|basic-bb-main-service  |     modifiers: 8,
+1|basic-bb-main-service  |     location: 3
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 954
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'ShiftLeft',
+1|basic-bb-main-service  |     key: 'Shift',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 16,
+1|basic-bb-main-service  |     modifiers: 0,
+1|basic-bb-main-service  |     location: 1
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'ShiftLeft',
+1|basic-bb-main-service  |     key: 'Shift',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 16,
+1|basic-bb-main-service  |     modifiers: 0,
+1|basic-bb-main-service  |     location: 1
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 958
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'NumpadDivide',
+1|basic-bb-main-service  |     key: '/',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 111,
+1|basic-bb-main-service  |     modifiers: 8,
+1|basic-bb-main-service  |     location: 3
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: false,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'NumpadDivide',
+1|basic-bb-main-service  |     key: '/',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 111,
+1|basic-bb-main-service  |     modifiers: 8,
+1|basic-bb-main-service  |     location: 3
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 959
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | sending frame fresh
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: '\r',
+1|basic-bb-main-service  |     code: 'Enter',
+1|basic-bb-main-service  |     key: 'Enter',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 13,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyDown',
+1|basic-bb-main-service  |     text: '\r',
+1|basic-bb-main-service  |     code: 'Enter',
+1|basic-bb-main-service  |     key: 'Enter',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 13,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 968
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:3531:20)
+1|basic-bb-main-service  |     at Object.sessionSend (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/connection.js:2718:25)
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:677:24)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1328:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  | meta {
+1|basic-bb-main-service  |   keyInput: {
+1|basic-bb-main-service  |     keysCanInput: false,
+1|basic-bb-main-service  |     isTextareaOrContenteditable: false,
+1|basic-bb-main-service  |     type: 'text'
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   executionContextId: 7
+1|basic-bb-main-service  | }
+1|basic-bb-main-service  | { targetId: '6D093596E0A5F698D611B61E2E91C56D' }
+1|basic-bb-main-service  | Logging {
+1|basic-bb-main-service  |   name: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Enter',
+1|basic-bb-main-service  |     key: 'Enter',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 13,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   requiresShot: true,
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236'
+1|basic-bb-main-service  | } Error
+1|basic-bb-main-service  |     at Object.send (file:///Users/cris/Creative/BrowserBox/src/zombie-lord/controller.js:427:20)
+1|basic-bb-main-service  |     at file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1330:44
+1|basic-bb-main-service  |     at handler (file:///Users/cris/Creative/BrowserBox/src/ws-server.js:1779:19)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at next (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:157:13)
+1|basic-bb-main-service  |     at Route.dispatch (/Users/cris/Creative/BrowserBox/node_modules/router/lib/route.js:117:3)
+1|basic-bb-main-service  |     at handle (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:435:11)
+1|basic-bb-main-service  |     at Layer.handleRequest (/Users/cris/Creative/BrowserBox/node_modules/router/lib/layer.js:152:17)
+1|basic-bb-main-service  |     at /Users/cris/Creative/BrowserBox/node_modules/router/index.js:295:15
+1|basic-bb-main-service  |     at processParams (/Users/cris/Creative/BrowserBox/node_modules/router/index.js:582:12)
+1|basic-bb-main-service  | Logging 2 {
+1|basic-bb-main-service  |   method: 'Input.dispatchKeyEvent',
+1|basic-bb-main-service  |   params: {
+1|basic-bb-main-service  |     type: 'keyUp',
+1|basic-bb-main-service  |     code: 'Enter',
+1|basic-bb-main-service  |     key: 'Enter',
+1|basic-bb-main-service  |     windowsVirtualKeyCode: 13,
+1|basic-bb-main-service  |     modifiers: 0
+1|basic-bb-main-service  |   },
+1|basic-bb-main-service  |   sessionId: 'E0A2B2FE8C51749B904AB362E95F5236',
+1|basic-bb-main-service  |   id: 974
+
