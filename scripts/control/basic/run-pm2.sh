@@ -8,16 +8,16 @@ echo "Starting viewfinder service cluster as $username"
 get_install_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
-  install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
-  current_version=$(jq -r '.version' ./package.json)
+  install_path1="$(find "$pwd" -name .bbpro_install_dir -print 2>/dev/null)"
+  current_version="$(jq -r '.version' ./package.json)"
 
   # Loop through each found path to check if node_modules also exists in the same directory
   IFS=$'\n'  # Change Internal Field Separator to newline for iteration
   for path in $install_path1; do
-    dir=$(dirname $path)
+    dir="$(dirname $path)"
     if [ -d "$dir/node_modules" ]; then
       # Get the version of the found directory's package.json
-      found_version=$(jq -r '.version' "${dir}/package.json")
+      found_version="$(jq -r '.version' "${dir}/package.json")"
 
       # Check if the found version is the same or later than the current version
       if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then

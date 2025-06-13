@@ -49,6 +49,16 @@ import {Document} from './api/document.js';
 import {websockets, extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js';
 import {validityCheck} from './../hard/application.js';
 
+import {
+  deskUA_Mac_Chrome,
+  mobUA_iOSSafari,
+  deskPlat_Mac,
+  mobPlat_iOS,
+  DeskVend,
+  MobVend,
+  LANG,
+} from './navigator.js';
+
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
@@ -185,16 +195,6 @@ const RECONNECT_MS = 2500;
 const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
 const WAIT_FOR_COALESCED_NETWORK_EVENTS = 1000
 
-import {
-  deskUA_Mac_Chrome,
-  mobUA_iOSSafari,
-  deskPlat_Mac,
-  mobPlat_iOS,
-  DeskVend,
-  MobVend,
-  LANG,
-} from './navigator.js';
-
 const GrantedPermissions = [
   "geolocation", 
   "notifications", 
@@ -227,6 +227,9 @@ const ROOT_SESSION = 'root';
 // for fun
 const Area51Lat = 37.234332396;
 const Area51Long = -115.80666344;
+
+// win9x compat
+export const win9xCompatibilityBuffer = new Map();
 
 // throttling 'open in external app' requests
 const INTENT_PROMPT_THRESHOLD = 30000;
@@ -461,6 +464,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     latestCastId: null,
     activeTarget: null,
     lastCommonViewport: '{}',
+    win9xCompatibilityBuffer,
     // modals related
     OpenModals,
     // helpers
@@ -889,7 +893,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     latestTimestamp = timestamp;
 
     const targetId = sessions.get(sessionId);
-    const frame = Buffer.from(data, 'base64');
+    const frameBuffer = Buffer.from(data, 'base64');
+
+    win9xCompatibilityBuffer.set(targetId, {
+      buffer: frameBuffer,
+      timestamp: Date.now()
+    });
+
+    const frame = frameBuffer; // Use the buffer we already created
     const header = Buffer.alloc(28);
     //DEBUG.debugCast && console.log({writing:{castSessionId,frameId}});
     header.writeUInt32LE(castSessionId, 0);

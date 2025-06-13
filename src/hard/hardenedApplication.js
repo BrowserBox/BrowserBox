@@ -315,7 +315,7 @@ export class HardenedApplication {
    * Checks the license by performing local PKI validation and communicating with the license server.
    * @throws Will throw an error if license validation fails.
    */
-  async checkLicense({targets, integrity} = {}) {
+  async checkLicense({targets, integrity, attempt = 0} = {}) {
     try {
       if (!this.#certificatePath || !this.#licenseServerUrl) {
         throw new Error('License validation configuration is incomplete.');

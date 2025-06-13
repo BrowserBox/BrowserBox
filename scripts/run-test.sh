@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
+source ~/.nvm/nvm.sh
+
 #set -x
 
-source ~/.nvm/nvm.sh
 #nvm install stable
+
+touch .bbpro_install_dir
 
 if ! command -v pm2 &>/dev/null; then
   . /etc/os-release
@@ -19,9 +22,13 @@ envFile=""
 CONFIG_DIR=""
 
 get_install_dir() {
-  install_path="$(find "$HOME/.bbx" -name .bbpro_install_dir -print -quit 2>/dev/null)"
-  install_dir="$(dirname $install_path)"
-  echo $install_dir
+  if [ -f "$(pwd)/.bbpro_install_dir" ]; then
+    install_dir="$(pwd)"
+  else
+    install_path="$(find "$HOME/.bbx" -name .bbpro_install_dir -print -quit 2>/dev/null)"
+    install_dir="$(dirname "$install_path")"
+  fi
+  echo "$install_dir"
 }
 
 get_config_dir() {
@@ -40,7 +47,10 @@ start_bbpro() {
   pkill -u $(whoami) parec
   pkill -u $(whoami) pulseaudio
 
-  bash -c "source $envFile; ./scripts/control/basic/run-pm2.sh $envFile"
+  export CWD="$(pwd)";
+  echo "CWD: $CWD"
+
+  bash -c "source $envFile; echo \"CWD: $CWD\"; ./scripts/control/basic/run-pm2.sh $envFile"
 }
 
 echo "Finding bbpro config..."
@@ -54,7 +64,6 @@ if [[ -n "$TORBB" ]]; then
   envFile="${CONFIG_DIR}/torbb.env"
   . $envFile
 fi
-
 
 if [ -f "$envFile" ]; then
   echo "bbpro has been setup. Starting..."

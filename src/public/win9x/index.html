@@ -1,0 +1,615 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>BrowserBox - Legacy Client</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=5">
+<meta http-equiv="imagetoolbar" content="no" />
+<style type="text/css">
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif; font-size: 12px; margin: 0; padding: 0; background-color: ButtonFace; color: ButtonText; overflow: hidden; }
+  #main-layout { width: 100%; height: 100%; border-spacing: 0; }
+  #tab-bar { background-color: ButtonFace; padding: 3px 2px 0 2px; border-bottom: 2px solid ThreeDShadow; white-space: nowrap; overflow: hidden; }
+  .tab { display: inline-block; padding: 4px 8px; border: 1px solid ButtonFace; border-bottom: none; margin-right: 2px; cursor: pointer; background-color: ThreeDLightShadow; position: relative; top: 1px; }
+  .tab-active { background-color: ButtonFace; border: 1px solid ThreeDShadow; border-bottom: 1px solid ButtonFace; font-weight: bold; }
+  #omni-box { background-color: ButtonFace; padding: 5px; border-bottom: 2px outset ThreeDFace; }
+  .omni-button { font-size: 12px; width: 60px; margin-right: 5px; }
+  #url-input { font-size: 12px; width: 60%; }
+  #status-bar { padding: 3px; border-top: 1px solid ThreeDShadow; font-size: 10px; color: ThreeDDarkShadow; }
+  #content-pane {
+    position: relative; /* This is the key change to allow layering */
+    background-color: #000000;
+    overflow: hidden; /* Ensure images don't spill out */
+    padding: 0;
+    border-top: 1px solid ThreeDLightShadow;
+  }
+  #remote-screen {
+    position: absolute; /* Position images relative to the container */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #FFFFFF;
+    cursor: crosshair;
+  }
+    #new-tab-button { display: inline-block; padding: 4px 6px; margin-right: 4px; border: 1px solid ThreeDShadow; background-color: ThreeDLightShadow; cursor: pointer; font-weight: bold; position: relative; top: 1px; }
+  .close-tab-button { font-family: "Webdings", sans-serif; font-size: 12px; padding-left: 10px; color: ThreeDDarkShadow; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<table id="main-layout" cellpadding="0" cellspacing="0">
+  <tr style="height: 1px; display: none;"><td><div style="padding: 5px;">Session Token: <input type="text" id="token-input" size="20" value="8723e327ccfe57f8803e0f1dd1d780e6"><button id="connect-button">Connect</button></div></td></tr>
+  <tr style="height: 25px;"><td><div id="tab-bar"></div></td></tr>
+  <tr style="height: 35px;"><td><div id="omni-box"><button id="back-button" class="omni-button" disabled>Back</button><button id="forward-button" class="omni-button" disabled>Forward</button><input type="text" id="url-input" disabled onfocus="isUrlBarFocused = true;" onblur="isUrlBarFocused = false;"><button id="go-button" class="omni-button" disabled>Go</button></div></td></tr>
+  <tr style="height: 100%;"><td id="content-pane"><img id="remote-screen" src="placeholder.gif" alt="Loading Remote Browser View ..." style="width: 100%; height: 100%;"></td></tr>
+  <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
+</table>
+
+<script type="text/javascript">
+  // --- Configuration ---
+  var KEY_BATCH_INTERVAL_MS = 1000; // Send key events every 1 second
+  var keyBuffer = []; // Buffer for keyboard events
+  var keyBatchInterval = null; // To hold the ID of our setInterval
+  var VIEWPORT_SYNC_DELAY_MS = 750; // Delay for viewport sync on reconnect
+  var isNetworkError = false; // <-- ADD THIS LINE
+  var tabPollingInterval = null;
+  var nonPrintableKeys = [
+    8,  // Backspace
+    9,  // Tab
+    13, // Enter
+    27, // Escape
+    33, 34, 35, 36, // PageUp, PageDown, End, Home
+    37, 38, 39, 40, // Arrow keys
+    45, 46         // Insert, Delete
+  ];
+
+
+  // --- Configuration ---
+  var API_BASE_PATH = '/api/vwin';
+  if ( location && location.origin ) {
+    API_BASE_PATH = location.origin + API_BASE_PATH;
+  }
+  var POLLING_INTERVAL_MS = 1000; // How often to check for a new frame when idle
+  var TAB_REFRESH_RATE_MS = 3000;
+  var RESIZE_THROTTLE_MS = 250;
+
+  // --- State Variables ---
+  var activeTabId = null;
+  var isConnected = false;
+  var modifierState = { shift: false, ctrl: false, alt: false }; // <-- ADD THIS LINE
+  var tabPollingInterval = null;
+  var resizeTimeout = null;
+  var lastKnownFrameTimestamp = 0; // Tracks the timestamp of the last received frame
+  var isUrlBarFocused = false;
+
+  // --- Element References ---
+  var contentPane = document.getElementById('content-pane');
+  var connectButton = document.getElementById('connect-button');
+  var tokenInput = document.getElementById('token-input');
+  var tabBar = document.getElementById('tab-bar');
+  var backButton = document.getElementById('back-button');
+  var forwardButton = document.getElementById('forward-button');
+  var urlInput = document.getElementById('url-input');
+  var goButton = document.getElementById('go-button');
+  var remoteScreen = document.getElementById('remote-screen');
+  var statusBar = document.getElementById('status-bar');
+
+  var sessionToken = '';
+  if ( location.search ) {
+    sessionToken = location.search.replace('?token=', '');
+    tokenInput.value = sessionToken;
+  }
+
+  // --- Core Functions ---
+  function handleReconnection() {
+    if (isNetworkError) {
+      isNetworkError = false; // Mark as reconnected
+      updateStatus('Connection re-established. Syncing viewport...');
+      // Delay sending viewport size to ensure the DOM has rendered correctly
+      setTimeout(sendViewportSize, VIEWPORT_SYNC_DELAY_MS);
+    }
+  }
+
+  function handleNewTab() {
+    sendEvent('type=new_tab');
+  }
+
+  function handleCloseTab(targetIdToClose) {
+    // We pass the specific target to close, which may not be the active one
+    sendEvent('type=close_tab&targetIdToClose=' + targetIdToClose);
+  }
+
+  function updateScreenImage() {
+    var parent = contentPane;
+    if (!parent) return;
+
+    var newImage = document.createElement('img');
+
+    newImage.onload = function() {
+      var oldImage = document.getElementById('remote-screen');
+      newImage.id = 'remote-screen';
+      newImage.alt = oldImage.alt;
+      newImage.style.cssText = oldImage.style.cssText;
+      newImage.onclick = handleScreenClick;
+      parent.appendChild(newImage);
+      if (oldImage) {
+        parent.removeChild(oldImage);
+      }
+      remoteScreen = newImage;
+      remoteScreen.alt = "BrowserBox View";
+      updateStatus('Frame ' + lastKnownFrameTimestamp + ' loaded.');
+      pollForNextFrame();
+    };
+
+    newImage.onerror = function() {
+      // If the image fails, it's a network error.
+      if (!isNetworkError) {
+        isNetworkError = true;
+        updateStatus('Connection error. Retrying...');
+      }
+      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+      newImage = null;
+    };
+
+    var newSrc = API_BASE_PATH + '/frame?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+    newImage.src = newSrc;
+  }
+
+  function createXmlHttpRequestObject() {
+    var xhr;
+    try {
+      xhr = new XMLHttpRequest();
+    } catch (e) {
+      try {
+        xhr = new ActiveXObject("Microsoft.XMLHTTP");
+      } catch (e) {
+        alert("Your browser does not support AJAX, which is required for this application.");
+        return null;
+      }
+    }
+    return xhr;
+  }
+  
+  function parseJSON(jsonString) {
+    try {
+      return eval('(' + jsonString + ')');
+    } catch (e) {
+      updateStatus("Error: Could not parse server response.");
+      return null;
+    }
+  }
+
+  function safeClearChildNodes(element) {
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+  }
+
+  function toggleConnection() {
+    if (isConnected) {
+      // --- Disconnect ---
+      isConnected = false;
+      stopKeyBatching(); // Stop sending key batches
+      clearInterval(tabPollingInterval);
+      sessionToken = null;
+      activeTabId = null;
+      lastKnownFrameTimestamp = 0;
+
+      connectButton.innerHTML = 'Connect';
+      updateStatus('Disconnected.');
+      setControlsEnabled(false);
+      safeClearChildNodes(tabBar);
+      urlInput.value = '';
+    } else {
+      // --- Connect ---
+      sessionToken = tokenInput.value;
+      if (!sessionToken) {
+        alert('Please enter a session token.');
+        return;
+      }
+
+      updateStatus('Connecting...');
+      isConnected = true;
+
+      sendViewportSize();
+      updateTabs(); // Initial tab update
+      pollForNextFrame(); // Start the first frame poll
+      startKeyBatching(); // Start sending key batches
+
+      tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
+      connectButton.innerHTML = 'Disconnect';
+      setControlsEnabled(true);
+    }
+  }
+
+  function pollForNextFrame() {
+    if (!isConnected || !activeTabId) {
+      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+      return;
+    }
+
+    var xhr = createXmlHttpRequestObject();
+    var url = API_BASE_PATH + '/frame-status?session_token=' + encodeURIComponent(sessionToken)
+            + '&last_known_ts=' + lastKnownFrameTimestamp + '&ran=' + Math.random();
+
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        handleReconnection(); // Check if we have just reconnected
+        var data = parseJSON(xhr.responseText);
+        if (data && data.fresh) {
+          lastKnownFrameTimestamp = data.timestamp;
+          updateScreenImage();
+        } else {
+          setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+        }
+      } else if (xhr.readyState === 4) {
+        // A non-200 status indicates a connection problem
+        if (!isNetworkError) {
+          isNetworkError = true;
+          updateStatus('Connection error. Attempting to reconnect...');
+        }
+        setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
+      }
+    };
+    xhr.send(null);
+  }
+
+  function updateTabs() {
+    if (!isConnected) return;
+    var xhr = createXmlHttpRequestObject();
+    var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        handleReconnection(); // Check if we have just reconnected
+        var data = parseJSON(xhr.responseText);
+        if (data) {
+          renderTabs(data.tabs, data.activeTarget);
+          activeTabId = data.activeTarget;
+          if (!isUrlBarFocused) {
+            for (var i = 0; i < data.tabs.length; i++) {
+              if (data.tabs[i].targetId === activeTabId) {
+                urlInput.value = data.tabs[i].url;
+                break;
+              }
+            }
+          }
+        }
+      } else if (xhr.readyState === 4) {
+        // A non-200 status indicates a connection problem
+        if (!isNetworkError) {
+          isNetworkError = true;
+          updateStatus('Connection error. Attempting to reconnect...');
+        }
+      }
+    };
+    xhr.send(null);
+  }
+
+  function renderTabs(tabs, currentActiveId) {
+    var previousActiveTab = activeTabId;
+    safeClearChildNodes(tabBar);
+
+    // Add the "New Tab" button
+    var newTabBtn = document.createElement('span');
+    newTabBtn.id = 'new-tab-button';
+    newTabBtn.innerHTML = '+';
+    newTabBtn.onclick = handleNewTab;
+    tabBar.appendChild(newTabBtn);
+
+    for (var i = 0; i < tabs.length; i++) {
+      var tab = tabs[i];
+      var tabEl = document.createElement('span');
+      tabEl.className = 'tab';
+      if (tab.targetId === currentActiveId) {
+        tabEl.className += ' tab-active';
+      }
+
+      var titleText = tab.title.substring(0, 20) || 'New Tab';
+      if (typeof tabEl.innerText !== 'undefined') {
+        tabEl.innerText = titleText;
+      } else {
+        tabEl.textContent = titleText;
+      }
+
+      tabEl.setAttribute('data-targetId', tab.targetId);
+      // This is your original, working tab switch logic. It is unchanged.
+      tabEl.onclick = function() {
+        var targetId = this.getAttribute('data-targetId');
+        if (targetId !== activeTabId) {
+          activeTabId = targetId;
+          sendEvent('type=switch');
+        }
+      };
+
+      // Add the "Close Tab" button to each tab
+      var closeBtn = document.createElement('span');
+      closeBtn.className = 'close-tab-button';
+      closeBtn.innerHTML = 'r'; // 'r' in Webdings font is the 'x' symbol
+      closeBtn.setAttribute('data-targetId', tab.targetId);
+      closeBtn.onclick = function(e) {
+          // Stop the event from bubbling up to the tab's onclick handler
+          e = e || window.event;
+          if (e.stopPropagation) { e.stopPropagation(); } else { e.cancelBubble = true; }
+          // Call the close tab handler
+          handleCloseTab(this.getAttribute('data-targetId'));
+      };
+      tabEl.appendChild(closeBtn);
+      tabBar.appendChild(tabEl);
+    }
+    if (currentActiveId && currentActiveId !== previousActiveTab) {
+        lastKnownFrameTimestamp = 0;
+    }
+  }
+
+  function sendEvent(params) {
+    if (!isConnected) return;
+    var eventUrl = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) 
+                 + (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') 
+                 + '&' + params;
+    
+    var tempImage = new Image();
+    tempImage.src = eventUrl;
+  }
+  
+  function setControlsEnabled(isEnabled) {
+    backButton.disabled = !isEnabled;
+    forwardButton.disabled = !isEnabled;
+    urlInput.disabled = !isEnabled;
+    goButton.disabled = !isEnabled;
+  }
+
+  function updateStatus(text) {
+    statusBar.innerHTML = 'Status: ' + text;
+  }
+
+  function sendViewportSize() {
+    var width = contentPane.clientWidth;
+    var height = contentPane.clientHeight;
+    remoteScreen.width = width;
+    remoteScreen.height = height;
+    sendEvent('type=resize&width=' + width + '&height=' + height);
+    updateStatus('Sent viewport dimensions: ' + width + 'x' + height);
+  }
+
+  function throttledResizeHandler() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+      if (isConnected) {
+        sendViewportSize();
+      }
+    }, RESIZE_THROTTLE_MS);
+  }
+
+  function handleScreenClick(e) {
+    e = e || window.event;
+    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
+    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
+    sendEvent('type=mousedown&x=' + x + '&y=' + y);
+  }
+
+  function handleMouseWheel(e) {
+    e = e || window.event;
+    var targetElement = e.target || e.srcElement;
+    if (targetElement.id !== 'remote-screen') {
+      return;
+    }
+    if (!isConnected) return;
+
+    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
+    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
+    var delta = e.wheelDelta || -e.detail;
+    sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
+
+    if (e.preventDefault) e.preventDefault();
+    e.returnValue = false;
+  }
+
+  function parseURL(url) {
+    if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(url)) {
+      url = "https://" + url;
+    } else {
+      throw new Error("Invalid URL format: " + url);
+    }
+
+    var a = document.createElement('a');
+    a.href = url;
+
+    // Ensure it resolved to something usable
+    if (!/^https?:$/.test(a.protocol) || !a.hostname) {
+      throw new Error("Invalid or unsupported URL: " + url);
+    }
+
+    return {
+      href: a.href,
+      protocol: a.protocol,
+      host: a.host,
+      hostname: a.hostname,
+      port: a.port,
+      pathname: a.pathname,
+      search: a.search,
+      hash: a.hash
+    };
+  }
+
+  function handleNavigate() {
+    var url = urlInput.value;
+    if (!url) return;
+    try {
+      url = parseURL(url);
+      sendEvent('type=navigate&url=' + encodeURIComponent(url.href));
+    } catch(e) {
+      try {
+        url = parseURL('https://' + url);
+        sendEvent('type=navigate&url=' + encodeURIComponent(url.href));
+      } catch(e) {
+        sendEvent('type=navigate&url=' + encodeURIComponent('https://duckduckgo.com/?q=') + encodeURIComponent(url));
+      }
+    }
+  }
+
+  function handleBack() {
+    sendEvent('type=back');
+  }
+
+  function handleForward() {
+    sendEvent('type=forward');
+  }
+
+  // --- NEW KEYBOARD HANDLING LOGIC ---
+  function startKeyBatching() {
+    // Clear any existing interval to be safe
+    if (keyBatchInterval) {
+      clearInterval(keyBatchInterval);
+    }
+    // Set up an interval to send the key buffer periodically
+    keyBatchInterval = setInterval(sendKeyBatch, KEY_BATCH_INTERVAL_MS);
+  }
+
+  function stopKeyBatching() {
+    if (keyBatchInterval) {
+      clearInterval(keyBatchInterval);
+      keyBatchInterval = null;
+    }
+    // Clear any leftover keys in the buffer
+    keyBuffer = [];
+  }
+
+  function sendKeyBatch() {
+    // If there are no keys to send, do nothing
+    if (keyBuffer.length === 0) {
+      return;
+    }
+
+    // Immediately copy the buffer and clear the global one.
+    // This prevents race conditions if new keys are typed while this function runs.
+    var batch = keyBuffer;
+    keyBuffer = [];
+
+    // Manually build a JSON string for maximum IE6/8 compatibility.
+    // This avoids needing a JSON.stringify polyfill.
+    var eventsJson = '[';
+    for (var i = 0; i < batch.length; i++) {
+      var keyEvent = batch[i];
+      eventsJson += '{'
+                 + '"p":"' + (keyEvent.press||'') + '",'
+                 + '"k":' + (keyEvent.keyCode||'""') + ','
+                 + '"s":' + (keyEvent.shiftKey ? 1 : 0) + ','
+                 + '"c":' + (keyEvent.ctrlKey ? 1 : 0) + ','
+                 + '"a":' + (keyEvent.altKey ? 1 : 0)
+                 + '}';
+      if (i < batch.length - 1) {
+        eventsJson += ',';
+      }
+    }
+    eventsJson += ']';
+
+    // Send the entire batch in a single request
+    sendEvent('type=key_batch&events=' + encodeURIComponent(eventsJson));
+  }
+
+  function sendKeyEvent(eventType, e) {
+    var keyCode = e.keyCode || e.which;
+
+    // For keypress, the keyCode is the character code itself.
+    // For others, it's the key identifier.
+    var codeToSend = (eventType === 'keyDown') ? (e.charCode || e.keyCode) : keyCode;
+
+    var params = 'type=key_event'
+               + '&eventType=' + eventType // Will be 'rawKeyDown', 'keyDown', or 'keyUp'
+               + '&keyCode=' + codeToSend
+               + '&shiftKey=' + modifierState.shift
+               + '&ctrlKey=' + modifierState.ctrl
+               + '&altKey=' + modifierState.alt;
+
+    sendEvent(params);
+  }
+
+  // --- REVISED KEYBOARD HANDLING LOGIC ---
+
+  // handleKeyDown is now ONLY for non-printable keys (Backspace, Enter, Arrows, etc.)
+  function handleKeyDown(e) {
+    if (!isConnected) return;
+    e = e || window.event;
+    var keyCode = e.keyCode || e.which;
+
+    if (isUrlBarFocused) {
+      if (keyCode === 13) { // Enter key in URL bar
+        handleNavigate();
+        e.returnValue = false; if (e.preventDefault) e.preventDefault();
+      }
+      return;
+    }
+
+    // Check if the key is in our list of non-printable "action" keys.
+    // Your indexOf helper function is perfect for this.
+    if (indexOf(nonPrintableKeys, keyCode) !== -1) {
+      // It's a special key, so we buffer it here.
+      keyBuffer.push({
+        keyCode: keyCode,
+        shiftKey: e.shiftKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey
+      });
+
+      // Prevent the browser's default action (e.g., Backspace navigating back).
+      e.returnValue = false; if (e.preventDefault) e.preventDefault();
+    }
+    // If it's a printable key, we do NOTHING here and wait for handleKeyPress.
+  }
+
+  // handleKeyPress is ONLY for printable characters. This is where we get the correct code for '?'.
+  function handleKeyPress(e) {
+    if (!isConnected || isUrlBarFocused) return;
+    e = e || window.event;
+
+    // The keyCode/charCode from keypress is the actual character code we want.
+    var charCode = e.charCode || e.keyCode;
+
+    // Buffer the correct character code.
+    keyBuffer.push({
+      press: String.fromCharCode(charCode),
+      shiftKey: e.shiftKey,
+      ctrlKey: e.ctrlKey,
+      altKey: e.altKey
+    });
+
+    // Prevent the character from being typed into the parent page.
+    //e.returnValue = false; if (e.preventDefault) e.preventDefault();
+  }
+
+  // Helper function for IE compatibility (you already have this)
+  function indexOf(arr, val) {
+    for( var i = 0; i < arr.length; i++ ) {
+      if ( arr[i] == val ) return i;
+    }
+    return -1;
+  }
+
+  // --- Attach Events ---
+  connectButton.onclick = toggleConnection;
+  remoteScreen.onclick = handleScreenClick;
+  goButton.onclick = handleNavigate;
+  backButton.onclick = handleBack;
+  forwardButton.onclick = handleForward;
+  window.onresize = throttledResizeHandler;
+  document.onkeydown = handleKeyDown;
+  document.onkeypress = handleKeyPress;
+  if (document.addEventListener) {
+    // Standard for modern browsers and Firefox
+    document.addEventListener('mousewheel', handleMouseWheel, false); // For Chrome, etc.
+    document.addEventListener('DOMMouseScroll', handleMouseWheel, false); // For older Firefox
+  } else {
+    // Legacy IE
+    document.onmousewheel = handleMouseWheel;
+  }
+
+  connectButton.click();
+
+</script>
+
+</body>
+</html>
