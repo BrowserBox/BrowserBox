@@ -76,7 +76,7 @@ In today's threat landscape, standard browsing is a significant risk. BrowserBox
 BrowserBox requires a license for all use. Choose the option that's right for you:
 
 *   🚀 **[Get a Commercial License](https://dosaygo.com/commerce)** - Starting at $99/user/year. Volume discounts available.
-*   🌍 **[Get a Non-Commercial License](https://dosaygo.com/noncommercial)** - $39/user/year for individuals, non-profits, and government.
+*   🌍 **[Get a Non-Commercial License](https://dosaygo.com/noncommercial)** - $39/user/year for non-profits, and government.
 *   🧪 **[Request a Demo](mailto:sales@dosaygo.com?subject=Demo)** - Experience the full power of BrowserBox.
 *   🛡️ **[Explore Solutions for Regulated Industries](https://dosaygo.com/regulated-enterprise.html)** - HIPAA, NIST 800-53, DLP, and more.
 
@@ -166,7 +166,7 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
 
 A product key is required.
 *   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://dosaygo.com/commerce).
-*   **Non-Commercial Use:** $39/user/year (for individuals, non-profits, government). [Purchase Non-Commercial License](https://dosaygo.com/noncommercial).
+*   **Non-Commercial Use:** $39/user/year (for non-profits, government). [Purchase Non-Commercial License](https://dosaygo.com/noncommercial).
 *   **Evaluation:** [Request a Demo](mailto:sales@dosaygo.com?subject=Demo).
 
 You can also purchase directly via the `bbx` CLI on Linux/macOS:
