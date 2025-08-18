@@ -165,7 +165,7 @@ get_ip() {
 # Certs Fetch (Cross-Platform)
 fetch_certs() {
     mkdir -p "$CERT_DIR"
-    if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ] || [ "$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
+    if ! $SUDO test -f "$CERT_DIR/fullchain.pem" || ! $SUDO test -f "$CERT_DIR/privkey.pem" || [ "$($SUDO openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
         if ! is_local_hostname "$HOSTNAME"; then
           echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
           bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/wait_for_hostname.sh") "$HOSTNAME" || {
