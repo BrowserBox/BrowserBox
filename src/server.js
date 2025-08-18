@@ -4,7 +4,7 @@
   import fs from 'fs';
   import path from 'path';
   import {exec,spawn} from 'child_process';
-  import exitOnExpipe from 'exit-on-epipe';
+  import exitOnEpipe from 'exit-on-epipe';
   import express from 'express';
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';

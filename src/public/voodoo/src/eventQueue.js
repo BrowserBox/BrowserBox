@@ -928,18 +928,10 @@
               latestFrameId = -1;
               this.publics.state.clearBrowser();
               this.publics.state.setTopState();
-              this.publics.state.throttledWriteCanvas("No connection to server");
+              this.publics.state.throttledWriteCanvas("Browser unavailable");
               this.senders = null;
               connecting = false;
               (DEBUG.cnx || DEBUG.debugConnect) && console.info("Socket disconnected. Will attempt reconnect if online", e, this.websockets);
-              // prefer no modals
-                /*
-                  globalThis.addEventListener('click', () => {
-                    setTimeout(() => {
-                      alert("No connection to server. Reload to try again");
-                    });
-                  }, {once:true});
-                */
               if ( onLine() ) {
                 return privates.connectSocket(url);
               }

@@ -50,7 +50,7 @@ if (Test-Path "package.json") {
         return
     }
     & npm audit fix
-    & npm i --save-exact esbuild@latest
+    # & npm i --save-exact esbuild@latest
 } else {
     Write-Warning "No package.json found in $installDir -- skipping root npm install."
 }
