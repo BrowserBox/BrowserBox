@@ -1,12 +1,13 @@
 // better-fetch.js
 import http from 'http';
+import https from 'https'; // Import the 'https' module for the fallback
 import http2 from 'http2';
 import { Readable } from 'stream';
-import { Buffer } from 'buffer'; // Explicit import for Blob
+import { Buffer } from 'buffer';
 
 // Imports, constants, then state
 const DEFAULT_TIMEOUT = 10000; // 10s
-const DEFAULT_USER_AGENT = 'UnleashFetch/1.0 (Custom)'; // Updated User Agent
+const DEFAULT_USER_AGENT = 'UnleashFetch/1.0 (Custom)';
 const MAX_REDIRECTS = 11;
 
 // A simple AbortError class for consistency
@@ -17,8 +18,8 @@ class AbortError extends Error {
   }
 }
 
-
 const STATUS_TEXT = {
+  // ... (status text mapping remains unchanged)
   100: 'Continue',
   101: 'Switching Protocols',
   102: 'Processing',
@@ -81,6 +82,7 @@ const STATUS_TEXT = {
 };
 
 class CustomHeaders {
+  // ... (CustomHeaders class remains unchanged)
   constructor(init = {}) {
     this._headers = new Map();
     if (init) {
@@ -117,20 +119,13 @@ class CustomHeaders {
     if (!values || values.length === 0) {
       return null;
     }
-    // For 'set-cookie', multiple headers are not combined.
-    // However, the standard Headers.get() for other headers returns a comma-separated string.
     if (key === 'set-cookie') {
-      return values.join('\n'); // Or just values[0] if only one is expected by `get`
-                                 // The spec for Headers.get() is actually to return a byte string,
-                                 // which for multiple values (other than Set-Cookie) means comma-separated.
-                                 // But getSetCookie() is more appropriate for Set-Cookie.
-                                 // Let's stick to comma-separated for general 'get'.
+      return values.join('\n');
     }
     return values.join(', ');
   }
 
   getSetCookie() {
-    // This is a non-standard but common helper. Returns an array of cookie strings.
     return this._headers.get('set-cookie') || [];
   }
 
@@ -144,14 +139,12 @@ class CustomHeaders {
 
   forEach(callback, thisArg) {
     for (const [key, values] of this._headers) {
-      // Standard forEach iterates once per header name, with the combined value
       callback.call(thisArg, values.join(', '), key, this);
     }
   }
 
   *entries() {
     for (const [key, values] of this._headers) {
-      // Yields each key-value pair. If a header has multiple values, it yields them individually.
       for (const value of values) {
         yield [key, value];
       }
@@ -177,9 +170,8 @@ class CustomHeaders {
   }
 }
 
-// In better-fetch.js
-// In better-fetch.js
 class CustomResponse {
+  // ... (CustomResponse class remains unchanged)
   constructor({ stream, status, headers, url, redirected = false, type = 'basic', protocol, _sharedStateOverride = null }) {
     this.status = Number(status);
     this.headers = headers instanceof CustomHeaders ? headers : new CustomHeaders(headers);
@@ -192,11 +184,10 @@ class CustomResponse {
 
     if (_sharedStateOverride) {
       this._sharedState = _sharedStateOverride;
-      // this._stream on a clone is conceptually null, data comes via _sharedState
-      this._stream = null; // Clones don't "own" the primary stream directly
+      this._stream = null;
     } else {
       this._sharedState = {
-        originalNodeStream: stream, // Store the actual Node.js stream here
+        originalNodeStream: stream,
         bufferPromise: null,
         buffer: null,
         buffered: !stream,
@@ -205,7 +196,6 @@ class CustomResponse {
       if (!stream) {
         this._sharedState.bufferPromise = Promise.resolve();
       }
-      // The original response instance can keep a direct _stream ref until it's consumed
       this._stream = stream;
     }
   }
@@ -216,11 +206,7 @@ class CustomResponse {
     if (state.buffered && state.buffer) {
         return Readable.toWeb(Readable.from(state.buffer));
     }
-    // This part is tricky if state.originalNodeStream is the single source
-    // and Readable.toWeb consumes it.
-    // For now, assume .text() etc. are the primary consumption paths.
     if (state.originalNodeStream && !state.bufferPromise && !Readable.isDisturbed?.(state.originalNodeStream)) {
-        // console.warn("Accessing .body directly on an unconsumed response. This might interfere with cloning if not handled carefully.");
         return Readable.toWeb(state.originalNodeStream);
     }
     return null;
@@ -230,22 +216,16 @@ class CustomResponse {
     const state = this._sharedState;
 
     if (state.bufferPromise) {
-      return state.bufferPromise; // Buffering already initiated or completed
+      return state.bufferPromise;
     }
 
-    // If there's no original stream to process in the shared state
     if (!state.originalNodeStream) {
-      // This means either it was null initially, or it has already been processed by a previous call.
-      // Ensure 'buffered' is true and resolve.
       state.buffered = true;
       state.bufferPromise = Promise.resolve();
       return state.bufferPromise;
     }
 
-    // Capture the stream from shared state to ensure we use the one true source.
     const streamToBuffer = state.originalNodeStream;
-    // Mark the originalNodeStream in shared state as "taken" for processing by nulling it.
-    // This prevents any other instance from trying to re-process it.
     state.originalNodeStream = null;
 
     state.bufferPromise = (async () => {
@@ -260,12 +240,8 @@ class CustomResponse {
         throw err;
       } finally {
         state.buffered = true;
-        // The streamToBuffer is now fully consumed.
-        // No need to destroy it here usually, as 'end' should have been emitted.
       }
     })();
-    // Also nullify the instance's _stream if it was the one initiating this.
-    // This instance's _stream was just a temporary holder for the original response.
     this._stream = null;
     return state.bufferPromise;
   }
@@ -276,18 +252,21 @@ class CustomResponse {
     }
 
     if (this._sharedState.originalNodeStream && !this._sharedState.buffered) {
+        // Improvement Comment: Cloning streams is complex. This implementation buffers the entire
+        // stream on the first read from any clone. For very large responses, this could be memory-intensive.
+        // A more advanced implementation might use Tee-ing the stream, but that adds significant complexity.
         console.warn("Cloning a response with an unconsumed stream. Original and clone will share the buffering process. First read triggers buffering for all.");
     }
 
     return new CustomResponse({
-      stream: null, // Clone does not get a direct initial _stream reference; uses shared state.
+      stream: null,
       status: this.status,
       headers: new CustomHeaders(this.headers),
       url: this.url,
       redirected: this.redirected,
       type: this.type,
       protocol: this.protocol,
-      _sharedStateOverride: this._sharedState, // Key: Pass the shared state
+      _sharedStateOverride: this._sharedState,
     });
   }
 
@@ -304,9 +283,6 @@ class CustomResponse {
   async json() {
     const bodyText = await this.text();
     if (bodyText === '') {
-        // For httpbin.org/headers, an empty body would mean no headers echoed.
-        // This would cause the assertion to fail.
-        console.warn(`[DEBUG] json() received empty text to parse for URL: ${this.url}`);
         throw new SyntaxError('Unexpected end of JSON input');
     }
     try {
@@ -351,11 +327,13 @@ class CustomResponse {
   async formData() {
     if (this.bodyUsed) throw new TypeError('Body already used');
     this.bodyUsed = true;
+    // Improvement Comment: Supporting formData would require parsing 'multipart/form-data' or
+    // 'application/x-www-form-urlencoded' response bodies. This is a non-trivial task that
+    // would likely involve bringing in a dedicated parsing library.
     throw new Error('formData() is not yet supported in this fetch implementation.');
   }
 
   static error() {
-    // Error responses have no body stream
     return new CustomResponse({ stream: null, status: 0, headers: new CustomHeaders(), url: '', type: 'error' });
   }
 
@@ -363,7 +341,6 @@ class CustomResponse {
     if (![301, 302, 303, 307, 308].includes(status)) {
       throw new RangeError('Invalid status code for redirect');
     }
-    // Redirect responses have no body stream
     return new CustomResponse({ stream: null, status: status, headers: new CustomHeaders({ Location: url }), url: '', type: 'default' });
   }
 }
@@ -380,10 +357,10 @@ async function fetch(url, options = {}) {
     method = 'GET',
     headers: optionHeaders,
     body,
-    redirect = 'follow', // 'follow', 'error', 'manual'
+    redirect = 'follow',
     signal,
-    agent, // User can pass a custom agent
-    timeout = DEFAULT_TIMEOUT, // Timeout for the entire fetch operation including redirects
+    agent,
+    timeout = DEFAULT_TIMEOUT,
   } = options;
 
   if (signal?.aborted) {
@@ -393,217 +370,102 @@ async function fetch(url, options = {}) {
   let redirectCount = 0;
   const effectiveMaxRedirects = options.maxRedirects ?? MAX_REDIRECTS;
 
-  // Prepare initial request headers
   const requestHeaders = new CustomHeaders({ 'User-Agent': DEFAULT_USER_AGENT });
   if (optionHeaders) {
-    // If optionHeaders is a Headers instance or object
-    if (optionHeaders instanceof CustomHeaders || optionHeaders instanceof Headers || typeof optionHeaders === 'object') {
-        for (const [key, value] of (optionHeaders.entries ? optionHeaders.entries() : Object.entries(optionHeaders))) {
-            requestHeaders.set(key, value); // Use set to ensure overrides
-        }
+    for (const [key, value] of (optionHeaders.entries ? optionHeaders.entries() : Object.entries(optionHeaders))) {
+        requestHeaders.set(key, value);
     }
   }
+
+  // Improvement Comment: Body handling could be more robust. It currently only handles string
+  // and doesn't explicitly set Content-Length for Buffers or streams, though Node often handles this.
+  // Properly supporting Blob, FormData, etc., as a request body would require serialization logic.
   if (body && !requestHeaders.has('Content-Type')) {
     if (typeof body === 'string') {
       requestHeaders.set('Content-Type', 'text/plain;charset=UTF-8');
     }
-    // Add more auto-detection or let user specify
   }
-  // Content-Length is usually handled by Node's http/http2 modules for strings/buffers
 
+  // This is the core request execution function.
   async function executeFetch(currentUrlString, currentMethod, currentHeaders, currentBody, isRedirected = false) {
     const parsedUrl = new URL(currentUrlString);
     const protocol = parsedUrl.protocol;
+    
+    // Create a single AbortController for the overall timeout of this specific request execution.
+    const timeoutController = new AbortController();
+    const overallTimeoutSignal = timeoutController.signal;
 
-    let clientRequest; // To store http.ClientRequest or http2.Http2Session
-    let responseStream; // To store the incoming message / http2 stream
-
-    const promise = new Promise((resolve, reject) => {
-      const abortHandler = () => {
-        const error = new AbortError('Fetch aborted.');
-        if (clientRequest) {
-          clientRequest.destroy?.(error); // For http.ClientRequest
-          // For http2.Http2Session, clientRequest might be the session or the stream
-          if (responseStream && typeof responseStream.destroy === 'function') responseStream.destroy(error);
-          else if (clientRequest.destroy && typeof clientRequest.destroy === 'function' && !clientRequest.destroyed) clientRequest.destroy(error);
-
-        }
-        reject(error);
-      };
-
-      if (signal) {
-        if (signal.aborted) {
-          return reject(new AbortError('Fetch aborted.'));
-        }
-        signal.addEventListener('abort', abortHandler, { once: true });
-      }
-
-      const requestOptions = {
-        hostname: parsedUrl.hostname,
-        port: parsedUrl.port || (protocol === 'https:' ? 443 : 80),
-        path: parsedUrl.pathname + parsedUrl.search,
-        method: currentMethod,
-        headers: {},
-        agent: agent, // Pass user-provided agent
-        // timeout: timeout, // Node's http.request timeout is per-request, not total. We handle total timeout differently.
-      };
-      for (const [key, value] of currentHeaders.entries()) {
-        requestOptions.headers[key] = value; // Node wants plain object for headers
-      }
-
-      let moduleToUse;
-      if (protocol === 'http:') {
-        moduleToUse = http;
-        clientRequest = moduleToUse.request(requestOptions, (res) => {
-          responseStream = res;
-          if (signal) signal.removeEventListener('abort', abortHandler);
-          resolve(new CustomResponse({
-            stream: res,
-            status: res.statusCode,
-            headers: res.headers, // Node's headers are plain objects
-            url: currentUrlString,
-            redirected: isRedirected,
-            protocol: `http/${res.httpVersion}`,
-          }));
-        });
-      } else if (protocol === 'https:') {
-        moduleToUse = http2; // Using http2 for https for simplicity, could also use 'https' module
-        const h2Session = moduleToUse.connect(parsedUrl.origin, {
-            // settings for http2 if needed
-            // timeout: perRequestTimeout, // http2 session timeout
-        });
-        clientRequest = h2Session; // Store session for potential destroy on abort
-
-        h2Session.on('error', (err) => {
-            if (signal) signal.removeEventListener('abort', abortHandler);
-            if (!h2Session.destroyed) h2Session.destroy();
-            reject(err);
-        });
-        // h2Session.setTimeout(perRequestTimeout, () => { ... }); // If using session timeout
-
-        const h2Headers = {
-          ':method': currentMethod,
-          ':path': requestOptions.path,
-          ':scheme': 'https',
-          ':authority': requestOptions.hostname,
-          ...requestOptions.headers,
-        };
-
-        const h2Stream = h2Session.request(h2Headers);
-        responseStream = h2Stream; // Store stream for potential destroy
-
-        h2Stream.on('response', (h2ResponseHeaders, flags) => {
-          if (signal) signal.removeEventListener('abort', abortHandler);
-          const status = h2ResponseHeaders[':status'];
-          delete h2ResponseHeaders[':status']; // Remove pseudo-header
-          const resp = new CustomResponse({
-            stream: h2Stream,
-            status: status,
-            headers: h2ResponseHeaders,
-            url: currentUrlString,
-            redirected: isRedirected,
-            protocol: h2Session.alpnProtocol || 'h2', // or check negotiated protocol
-          });
-          // h2Stream.on('end', () => { if (!h2Session.destroyed) h2Session.close(); }); // Close session after stream ends
-          // Let's not close session immediately, could be reused for keep-alive
-          // Instead, ensure it's closed if an error occurs or when fetch is done with it.
-          // For simplicity, we'll close it after this request.
-          // A more robust pool would manage sessions.
-          h2Stream.on('close', () => { // Or 'end' and check if session should be closed
-            if (!h2Session.destroyed) {
-                h2Session.close();
-            }
-          });
-          resolve(resp);
-        });
-        h2Stream.on('error', (err) => {
-            if (signal) signal.removeEventListener('abort', abortHandler);
-            if (!h2Session.destroyed) h2Session.destroy();
-            reject(err);
-        });
-        // h2Stream.setTimeout(perRequestTimeout, () => { ... }); // If using stream timeout
-
-        if (currentBody) {
-          if (currentBody instanceof Readable) {
-            currentBody.pipe(h2Stream);
-          } else {
-            h2Stream.end(currentBody);
-          }
-        } else {
-          h2Stream.end();
-        }
-        return; // Return because http2 request setup is async with events
-
-      } else {
-        if (signal) signal.removeEventListener('abort', abortHandler);
-        return reject(new TypeError(`Unsupported protocol: ${protocol}`));
-      }
-
-      clientRequest.on('error', (err) => {
-        if (signal) signal.removeEventListener('abort', abortHandler);
-        reject(err);
-      });
-
-      clientRequest.on('timeout', () => { // This is Node's per-request timeout
-        if (signal) signal.removeEventListener('abort', abortHandler);
-        clientRequest.destroy(new Error(`Request to ${currentUrlString} timed out.`)); // Node's timeout error
-      });
-      // Set Node's per-request timeout if a general timeout is also desired for each leg
-      // clientRequest.setTimeout(timeout); // This would apply to each request individually
-
-      if (currentBody) {
-        if (currentBody instanceof Readable) {
-          currentBody.pipe(clientRequest);
-        } else {
-          clientRequest.write(currentBody);
-          clientRequest.end();
-        }
-      } else {
-        clientRequest.end();
-      }
-    });
-
-    // Apply overall timeout for this single fetch execution (including connection, request, response headers)
-    if (timeout > 0) {
-        let timeoutId;
-        const timeoutPromise = new Promise((_, reject) => {
-            timeoutId = setTimeout(() => {
-                const error = new AbortError(`Fetch to ${currentUrlString} timed out after ${timeout}ms (overall).`);
-                if (clientRequest) {
-                    clientRequest.destroy?.(error);
-                    if (responseStream && typeof responseStream.destroy === 'function') responseStream.destroy(error);
-                    else if (clientRequest.destroy && typeof clientRequest.destroy === 'function' && !clientRequest.destroyed) clientRequest.destroy(error);
-                }
+    // Link the user's signal with our timeout signal if applicable.
+    const abortHandler = () => timeoutController.abort();
+    signal?.addEventListener('abort', abortHandler, { once: true });
+    
+    const timeoutPromise = new Promise((_, reject) => {
+        if (timeout > 0) {
+            setTimeout(() => {
+                const error = new AbortError(`Fetch to ${currentUrlString} timed out after ${timeout}ms.`);
+                timeoutController.abort(error);
                 reject(error);
             }, timeout);
-        });
-        return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+        }
+    });
+
+    const fetchPromise = (async () => {
+        if (protocol === 'http:') {
+            return makeHttpRequest(parsedUrl, currentMethod, currentHeaders, currentBody, isRedirected, overallTimeoutSignal);
+        }
+        if (protocol === 'https:') {
+            try {
+                // **MODIFICATION**: First, attempt the request with HTTP/2.
+                return await makeHttp2Request(parsedUrl, currentMethod, currentHeaders, currentBody, isRedirected, overallTimeoutSignal);
+            } catch (h2Error) {
+                // **MODIFICATION**: If HTTP/2 fails, log the error and fall back to HTTPS (HTTP/1.1).
+                // This is a common scenario for servers that don't support h2.
+                console.warn(`HTTP/2 request to ${currentUrlString} failed (Error: ${h2Error.code || h2Error.message}). Falling back to HTTPS/1.1.`);
+                
+                // Ensure the signal hasn't already been aborted before retrying.
+                if (overallTimeoutSignal.aborted) {
+                    throw new AbortError('Fetch aborted before fallback attempt.');
+                }
+                
+                return makeHttpsRequest(parsedUrl, currentMethod, currentHeaders, currentBody, isRedirected, overallTimeoutSignal);
+            }
+        }
+        throw new TypeError(`Unsupported protocol: ${protocol}`);
+    })();
+
+    try {
+        return await Promise.race([fetchPromise, timeoutPromise]);
+    } finally {
+        signal?.removeEventListener('abort', abortHandler);
     }
-    return promise;
   }
 
+  // Main fetch loop for handling redirects
   let currentMethod = method;
   let currentHeaders = requestHeaders;
   let currentBody = body;
 
-  // Main fetch loop for handling redirects
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const response = await executeFetch(currentUrl.toString(), currentMethod, currentHeaders, currentBody, redirectCount > 0);
 
     if (redirect === 'follow' && [301, 302, 303, 307, 308].includes(response.status)) {
       const locationHeader = response.headers.get('location');
       if (!locationHeader) {
-        return response; // No location header, cannot follow
+        return response;
       }
       if (redirectCount >= effectiveMaxRedirects) {
         return Promise.reject(new TypeError(`Maximum redirects (${effectiveMaxRedirects}) exceeded at ${currentUrl.toString()}`));
       }
       redirectCount++;
 
-      const newUrl = new URL(locationHeader, currentUrl.toString()); // Resolve relative URLs
+      const newUrl = new URL(locationHeader, currentUrl.toString());
 
-      // Change method to GET for 303, or if original was POST for 301/302 (common browser behavior)
+      // Improvement Comment: On cross-origin redirects, sensitive headers like 'Authorization'
+      // should be stripped. This implementation currently preserves them, which might not be desirable.
+      if (newUrl.origin !== currentUrl.origin) {
+          // Example: currentHeaders.delete('authorization');
+      }
+
       if (response.status === 303 || ((response.status === 301 || response.status === 302) && currentMethod === 'POST')) {
         currentMethod = 'GET';
         currentBody = undefined;
@@ -611,29 +473,161 @@ async function fetch(url, options = {}) {
         currentHeaders.delete('content-type');
       }
       currentUrl = newUrl;
-      // Note: Headers like Authorization are typically stripped on cross-origin redirects.
-      // This implementation doesn't currently handle that complexity.
       continue;
     }
 
-    if (redirect === 'error' && response.redirected) { // Or check status codes directly
+    if (redirect === 'error' && response.redirected) {
       return Promise.reject(new TypeError(`URL redirected to ${response.url}, but redirect: 'error' was specified.`));
     }
 
     if (redirect === 'manual' && [301, 302, 303, 307, 308].includes(response.status)) {
-      // For manual redirect, the response type should be 'opaqueredirect' if it's a true redirect
-      // This is a simplification. True opaque responses have status 0, empty headers etc.
-      // We return the redirect response as is, but mark its type.
       return new CustomResponse({
-          ...response, // Spread existing properties
-          type: 'opaqueredirect', // Indicate it's a redirect response that wasn't followed
-          stream: response._stream, // Pass the original stream
-          headers: response.headers, // Pass original headers
+          ...response,
+          type: 'opaqueredirect',
+          stream: response._stream,
+          headers: response.headers,
       });
     }
     return response;
   }
 }
+
+// **NEW**: Extracted request logic into separate functions for clarity and to support the fallback.
+
+function makeHttpRequest(parsedUrl, method, headers, body, isRedirected, signal) {
+  return new Promise((resolve, reject) => {
+    const requestOptions = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 80,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: method,
+      headers: Object.fromEntries(headers.entries()),
+    };
+    
+    const clientRequest = http.request(requestOptions, (res) => {
+      resolve(new CustomResponse({
+        stream: res,
+        status: res.statusCode,
+        headers: res.headers,
+        url: parsedUrl.toString(),
+        redirected: isRedirected,
+        protocol: `http/${res.httpVersion}`,
+      }));
+    });
+
+    signal.addEventListener('abort', () => clientRequest.destroy(new AbortError()), { once: true });
+    clientRequest.on('error', reject);
+
+    if (body) {
+      if (body instanceof Readable) body.pipe(clientRequest);
+      else clientRequest.end(body);
+    } else {
+      clientRequest.end();
+    }
+  });
+}
+
+function makeHttpsRequest(parsedUrl, method, headers, body, isRedirected, signal) {
+  return new Promise((resolve, reject) => {
+    const requestOptions = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 443,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: method,
+      headers: Object.fromEntries(headers.entries()),
+    };
+
+    const clientRequest = https.request(requestOptions, (res) => {
+      resolve(new CustomResponse({
+        stream: res,
+        status: res.statusCode,
+        headers: res.headers,
+        url: parsedUrl.toString(),
+        redirected: isRedirected,
+        protocol: `https/${res.httpVersion}`,
+      }));
+    });
+
+    signal.addEventListener('abort', () => clientRequest.destroy(new AbortError()), { once: true });
+    clientRequest.on('error', reject);
+
+    if (body) {
+      if (body instanceof Readable) body.pipe(clientRequest);
+      else clientRequest.end(body);
+    } else {
+      clientRequest.end();
+    }
+  });
+}
+
+function makeHttp2Request(parsedUrl, method, headers, body, isRedirected, signal) {
+    return new Promise((resolve, reject) => {
+        let h2Session;
+        const connectOptions = {
+            // Improvement Comment: For high-throughput applications, managing and reusing http2 sessions
+            // via a pool would be more performant than creating a new one for every request.
+        };
+
+        try {
+            h2Session = http2.connect(parsedUrl.origin, connectOptions);
+        } catch(err) {
+            // Catch synchronous errors from connect, e.g., invalid URL parts
+            return reject(err);
+        }
+
+        const abortSession = () => {
+            if (h2Session && !h2Session.destroyed) {
+                h2Session.destroy(new AbortError());
+            }
+        };
+        signal.addEventListener('abort', abortSession, { once: true });
+
+        h2Session.on('error', reject); // Connection-level errors
+        h2Session.on('goaway', () => reject(new Error('HTTP/2 server sent GOAWAY.')));
+
+        const h2Headers = {
+            ':method': method,
+            ':path': parsedUrl.pathname + parsedUrl.search,
+            ':scheme': 'https',
+            ':authority': parsedUrl.hostname,
+            ...Object.fromEntries(headers.entries()),
+        };
+
+        const h2Stream = h2Session.request(h2Headers);
+
+        h2Stream.on('response', (h2ResponseHeaders) => {
+            const status = h2ResponseHeaders[':status'];
+            delete h2ResponseHeaders[':status'];
+
+            const resp = new CustomResponse({
+                stream: h2Stream,
+                status: status,
+                headers: h2ResponseHeaders,
+                url: parsedUrl.toString(),
+                redirected: isRedirected,
+                protocol: h2Session.alpnProtocol || 'h2',
+            });
+            resolve(resp);
+        });
+
+        h2Stream.on('error', reject); // Stream-level errors
+        h2Stream.on('close', () => {
+            // Clean up signal listener and session once the stream is fully closed
+            signal.removeEventListener('abort', abortSession);
+            if (h2Session && !h2Session.destroyed) {
+                h2Session.close();
+            }
+        });
+
+        if (body) {
+            if (body instanceof Readable) body.pipe(h2Stream);
+            else h2Stream.end(body);
+        } else {
+            h2Stream.end();
+        }
+    });
+}
+
 
 export { fetch, CustomResponse, CustomHeaders, AbortError };
 

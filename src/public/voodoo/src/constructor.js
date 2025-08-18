@@ -1712,7 +1712,7 @@
       window.addEventListener('offline', () => {
         setTimeout(() => {
           globalThis.setState('bbpro', state);
-          writeCanvas("No connection to server");
+          writeCanvas("Browser unavailable");
         },0);
       });
 
@@ -1738,17 +1738,134 @@
 
       // embed api hook in
         const browserSurface = {
+          handlers: new Map(),
+          emit(event, data) {
+            let handlers = this.handlers.get(event); 
+            if ( ! handlers ) {
+              return;
+            }
+            handlers.forEach(async handler => {
+              try {
+                await handler(data);
+              } catch(e) {
+                console.warn(`Error on ${event} handler ${handler}`, e);
+              }
+            });
+          },
+          on(event, handler) {
+            let handlers = this.handlers.get(event); 
+            if ( ! handlers ) {
+              handlers = new Set();
+              this.handlers.set(event, handlers);
+            }
+            handlers.add(handler);
+          },
+          off(event, handler) {
+            let handlers = this.handlers.get(event); 
+            if ( ! handlers ) {
+              return;
+            }
+            handlers.delete(handler);
+          },
           activateTab,
           createTab,
           closeTab,
-          getTabs
+          getTabs,
         };
 
         const embedComms = new IframeCommunicator('*', browserSurface);
 
+      setupEmbeddingInterface();
+
       return poppetView;
 
       // closures
+        function setupEmbeddingInterface() {
+          console.log("Setting up embedding interface...");
+
+          // 1. Define the API surface that will be exposed to the parent frame.
+          // These methods are closures over the voodoo scope, so they have access
+          // to all necessary functions and state (`state`, `queue`, `findTab`, etc.).
+          const browserSurface = {
+              createTab: (click, url, opts) => createTab(click, url, opts),
+              closeTab: async (click, tabId) => {
+                  const tab = findTab(tabId);
+                  const index = state.tabs.findIndex(t => t.targetId === tabId);
+                  if (tab && index > -1) {
+                      return closeTab(click, tab, index);
+                  }
+              },
+              activateTab: async (click, tabId) => {
+                  const tab = findTab(tabId);
+                  if (tab) {
+                      return activateTab(click, { targetId: tab.targetId, hello: 'from-embed-api' });
+                  }
+              },
+              getTabs: async () => {
+                  await rawUpdateTabs();
+                  return (state.tabs || []).map(tab => ({ ...tab, id: tab.targetId }));
+              },
+              getActiveTab: async () => {
+                  await rawUpdateTabs();
+                  const tab = findTab(state.activeTarget);
+                  return tab ? { ...tab, id: tab.targetId } : null;
+              },
+              goBack: (tabId) => queue.send({ command: { name: 'Page.goBack', params: {}, sessionId: findTab(tabId)?.sessionId } }),
+              goForward: (tabId) => queue.send({ command: { name: 'Page.goForward', params: {}, sessionId: findTab(tabId)?.sessionId } }),
+              reload: (tabId) => queue.send({ command: { name: 'Page.reload', params: {}, sessionId: findTab(tabId)?.sessionId } }),
+              stop: (tabId) => queue.send({ command: { name: 'Page.stopLoading', params: {}, sessionId: findTab(tabId)?.sessionId } }),
+              loadURL: (tabId, url) => {
+                  const tab = findTab(tabId);
+                  if (tab) {
+                      return go({ target: { address: { value: url } } }, state, tab.sessionId);
+                  }
+              },
+          };
+
+          // 2. Instantiate the communicator which bridges to the parent frame.
+          const embedComms = new IframeCommunicator('*', browserSurface);
+
+          // 3. Add new, dedicated meta-listeners that push events to the parent.
+          // This is cleaner than modifying existing listeners.
+          queue.addMetaListener('created', async (meta) => {
+              const url = meta.created.url ? new URL(meta.created.url) : '';
+              if (AttachmentTypes.has(meta.created.type) && !HIDDEN_DOMAINS.has(url.hostname)) {
+                  await rawUpdateTabs();
+                  const newTab = findTab(meta.created.targetId);
+                  if (newTab) {
+                      embedComms.sendMessageToParent('tab-created', { ...newTab, id: newTab.targetId });
+                  }
+              }
+          });
+
+          queue.addMetaListener('destroyed', ({ destroyed }) => {
+              embedComms.sendMessageToParent('tab-closed', { tabId: destroyed.targetId });
+          });
+
+          queue.addMetaListener('activateTarget', ({ activateTarget }) => {
+              embedComms.sendMessageToParent('active-tab-changed', { tabId: activateTarget.targetId });
+          });
+
+          queue.addMetaListener('resource', ({ resource }) => {
+              embedComms.sendMessageToParent('did-start-loading', { tabId: resource.targetInfo.targetId, url: resource.params.request.url });
+          });
+
+          queue.addMetaListener('navigated', ({ navigated }) => {
+              const tab = findTab(navigated.targetId);
+              if (tab) {
+                  Object.assign(tab, navigated);
+                  embedComms.sendMessageToParent('did-stop-loading', { tabId: navigated.targetId });
+                  embedComms.sendMessageToParent('did-navigate', { ...tab, id: tab.targetId });
+              }
+          });
+
+          queue.addMetaListener('failed', ({ failed }) => {
+              if (failed.params.type == "Document") {
+                  embedComms.sendMessageToParent('did-stop-loading', { tabId: failed.targetId });
+              }
+          });
+        }
+
         function downloadFile(url) {
           const a = document.createElement('a');
           a.href = url;
