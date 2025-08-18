@@ -63,6 +63,30 @@ fi
   exit 1
 }
 
+detect_platform() {
+    local os arch
+    os=$(uname -s | tr '[:upper:]' '[:lower:]')
+    arch=$(uname -m)
+
+    case "$arch" in
+        x86_64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+        armv7l) arch="arm/v7" ;;
+        armv6l) arch="arm/v6" ;;
+        *) echo "WARNING: Unknown arch $arch, defaulting to amd64" >&2; arch="amd64" ;;
+    esac
+
+    # macOS always uses Linux images via Docker Desktop
+    if [[ "$os" = "darwin" ]]; then
+        os="linux"
+    fi
+
+    echo "$os/$arch"
+}
+
+PLATFORM=$(detect_platform)
+
+
 # Check if hostname is local
 is_local_hostname() {
   local hostname="$1"
@@ -155,7 +179,8 @@ fetch_certs() {
         }
     fi
     $SUDO chmod 600 "$CERT_DIR"/*.pem
-    $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$CERT_DIR"/*.pem
+    GUSER="$(gid -g)"
+    $SUDO chown "${SUDO_USER:-$GUSER}:${SUDO_USER:-$GUSER}" "$CERT_DIR"/*.pem
 }
 
 fetch_certs
@@ -170,9 +195,11 @@ elif $SUDO docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER
     echo "Found $DOCKER_IMAGE locally—using it!" >&2
 else
     echo "Pulling latest $DOCKER_IMAGE_DOSAYGO..." >&2
-    $SUDO docker pull "$DOCKER_IMAGE_DOSAYGO" && DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO" || {
+    $SUDO docker pull --platform "$PLATFORM" "$DOCKER_IMAGE_DOSAYGO" \
+      && DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO" || {
         echo "Falling back to $DOCKER_IMAGE_GHCR..." >&2
-        $SUDO docker pull "$DOCKER_IMAGE_GHCR" || { echo "ERROR: Failed to pull image!" >&2; exit 1; }
+        $SUDO docker pull --platform "$PLATFORM" "$DOCKER_IMAGE_GHCR" || {
+          echo "ERROR: Failed to pull image!" >&2; exit 1; }
         DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
     }
 fi
