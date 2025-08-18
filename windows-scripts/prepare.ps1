@@ -23,7 +23,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 # # Install pm2 globally if missing
 # if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
 #     Write-Host "Installing pm2 globally..." -ForegroundColor Cyan
-#     & npm i -g pm2@latest
+#     npm i -g pm2@latest
 #     if ($LASTEXITCODE -ne 0) {
 #         Write-Warning "Failed to install pm2 globally -- continuing anyway."
 #     }
@@ -44,13 +44,12 @@ if (Test-Path $bindingSrc) {
 Set-Location $installDir
 if (Test-Path "package.json") {
     Write-Host "Running npm install in $installDir..." -ForegroundColor Cyan
-    & npm i
+    npm install
     if ($LASTEXITCODE -ne 0) {
         Write-Error "npm install failed in $installDir!"
         return
     }
-    & npm audit fix
-    # & npm i --save-exact esbuild@latest
+    npm audit fix
 } else {
     Write-Warning "No package.json found in $installDir -- skipping root npm install."
 }
@@ -70,11 +69,11 @@ foreach ($subDir in $subDirs) {
         Set-Location $dirPath
         if (Test-Path "package.json") {
             Write-Host "Running npm install in $dirPath..." -ForegroundColor Cyan
-            & npm i
+            npm install
             if ($LASTEXITCODE -ne 0) {
                 Write-Warning "npm install failed in $dirPath -- continuing."
             }
-            & npm audit fix
+            npm audit fix
 
             # Voodoo-specific prep
             if ($subDir -eq "src/public/voodoo") {
