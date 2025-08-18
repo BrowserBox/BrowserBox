@@ -154,7 +154,7 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
     ```
 *   **Linux (Debian, Ubuntu, CentOS, RHEL, NixOS) & macOS & Docker:**
     ```bash
-    bash <(curl -sSL bbx.sh.dosaygo.com) install
+    bash <(curl -sSL https://bbx.sh.dosaygo.com) install
     ```
 *   **Via NPM (@browserbox/browserbox):**
     ```bash
