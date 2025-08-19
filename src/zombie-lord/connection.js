@@ -3555,6 +3555,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
     }
 
     async function handle(message) {
+      console.log(message);
       if ( typeof message != "string" ) {
         message = message.toString();
       }
