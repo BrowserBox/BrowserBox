@@ -1636,6 +1636,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
 
       await send(
+        "WebAuthn.enable",
+        {},
+        sessionId
+      );
+      await send(
         "Emulation.setGeolocationOverride",
         {
           latitude: Area51Lat, longitude: Area51Long, accuracy: 5

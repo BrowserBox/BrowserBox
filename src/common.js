@@ -151,6 +151,7 @@ export const DEBUG = Object.freeze({
   debugKeyEvents: false,
   debugBinding: false,
   events: false,
+  errors: false,
   commands: false,
   blockList: new Set([
     //"Emulation.setDeviceMetricsOverride",
