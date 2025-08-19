@@ -179,7 +179,7 @@ fetch_certs() {
         }
     fi
     $SUDO chmod 600 "$CERT_DIR"/*.pem
-    GUSER="$(gid -g)"
+    GUSER="$(id -g)"
     $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$GUSER}" "$CERT_DIR"/*.pem
 }
 
