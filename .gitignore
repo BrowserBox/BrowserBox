@@ -1,5 +1,6 @@
 .bbpro_install_dir
 login_link.txt
+log
 calculated-manifest.txt
 .DS_Store
 .parcel-cache
