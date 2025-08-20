@@ -31,7 +31,8 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
 const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET;
 const SAML_ENTRY_POINT = process.env.SAML_ENTRY_POINT;
-const SAML_CALLBACK = `http://your-vps-domain:${PORT}/auth/saml/callback`;
+const SAML_IDP_CERT = process.env.SAML_IDP_CERT; // New: Required for SAML
+const SAML_CALLBACK = `http://localhost:${PORT}/auth/saml/callback`; // Updated for local testing
 const ISSUER = 'browserbox-portal';
 const HOSTNAME = process.env.HOSTNAME || 'localhost';
 const BASE_PORT = 8080;
@@ -48,7 +49,7 @@ app.use(session({
   secret: 'portal-secret',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: true, httpOnly: true, sameSite: 'strict' }
+  cookie: { secure: false, httpOnly: true, sameSite: 'strict' } // Secure false for local HTTP testing
 }));
 
 app.use(passport.initialize());
@@ -100,11 +101,14 @@ passport.use(new MicrosoftStrategy({
   scope: ['openid', 'profile', 'email']
 }, verifyCallback));
 
-passport.use(new SamlStrategy({
-  entryPoint: SAML_ENTRY_POINT,
-  issuer: ISSUER,
-  callbackUrl: SAML_CALLBACK
-}, verifyCallback));
+if (SAML_ENTRY_POINT && SAML_ENTRY_POINT !== 'dummy' && SAML_IDP_CERT) { // Conditional init to avoid error with dummies
+  passport.use(new SamlStrategy({
+    entryPoint: SAML_ENTRY_POINT,
+    issuer: ISSUER,
+    callbackUrl: SAML_CALLBACK,
+    cert: SAML_IDP_CERT // Added required cert
+  }, verifyCallback));
+}
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
@@ -114,11 +118,13 @@ passport.deserializeUser(async (id, done) => {
 // Routes
 app.get('/', (req, res) => res.send(`<style>${STYLE}</style>BrowserBox Portal: <a href="/login">Login</a>`));
 app.get('/login', (req, res) => {
-  res.send(`<style>${STYLE}</style>
+  let html = `<style>${STYLE}</style>
     <a href="/auth/google">Google SSO</a><br>
-    <a href="/auth/microsoft">Microsoft SSO</a><br>
-    <a href="/auth/saml">Okta/Azure SSO</a>
-  `);
+    <a href="/auth/microsoft">Microsoft SSO</a><br>`;
+  if (SAML_ENTRY_POINT && SAML_ENTRY_POINT !== 'dummy') {
+    html += `<a href="/auth/saml">Okta/Azure SSO</a>`;
+  }
+  res.send(html);
 });
 
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
@@ -127,8 +133,10 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
 app.get('/auth/microsoft', passport.authenticate('microsoft'));
 app.get('/auth/microsoft/callback', passport.authenticate('microsoft', { failureRedirect: '/login' }), handleProvision);
 
-app.get('/auth/saml', passport.authenticate('saml'));
-app.post('/auth/saml/callback', passport.authenticate('saml', { failureRedirect: '/login' }), handleProvision);
+if (SAML_ENTRY_POINT && SAML_ENTRY_POINT !== 'dummy') {
+  app.get('/auth/saml', passport.authenticate('saml'));
+  app.post('/auth/saml/callback', passport.authenticate('saml', { failureRedirect: '/login' }), handleProvision);
+}
 
 app.get('/admin', requireAuth, isAdmin, handleAdminList);
 app.post('/admin/approve', requireAuth, isAdmin, handleAdminApprove);
@@ -141,17 +149,20 @@ app.listen(PORT, () => console.log(`Portal running on port ${PORT}`));
 // 3) Functions, then Helper functions
 function validateEnv() {
   const required = {
-    GOOGLE_CLIENT_ID: 'Register at https://console.cloud.google.com/apis/credentials and add your OAuth Client ID. See Google docs: https://developers.google.com/identity/protocols/oauth2.',
-    GOOGLE_CLIENT_SECRET: 'Add the matching secret from Google Cloud Console.',
-    MICROSOFT_CLIENT_ID: 'Register at https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade and add your App ID. Entra tips: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/tutorial-manage-certificates-for-federated-single-sign-on.',
-    MICROSOFT_CLIENT_SECRET: 'Add the client secret from Azure.',
-    SAML_ENTRY_POINT: 'For Okta/Entra, get from your IdP dashboard (e.g., https://your-okta.com/app/sso/saml/metadata). Okta guide: https://developer.okta.com/docs/guides/build-sso-integration/saml2/main/.',
-    BOOTSTRAP_ADMIN: 'Set your initial admin email in .env.',
-    JWT_SECRET: 'Generate a strong secret for JWT fallback (e.g., via openssl rand -hex 32).'
+    GOOGLE_CLIENT_ID: 'Register at https://console.cloud.google.com/apis/credentials and add your OAuth Client ID. See Google docs: https://developers.google.com/identity/protocols/oauth2. If issues persist, check IdP logs—common with Entra misconfigs.',
+    GOOGLE_CLIENT_SECRET: 'Add the matching secret from Google Cloud Console. If issues persist, check IdP logs—common with Entra misconfigs.',
+    MICROSOFT_CLIENT_ID: 'Register at https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade and add your App ID. Entra tips: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/tutorial-manage-certificates-for-federated-single-sign-on. If issues persist, check IdP logs—common with Entra misconfigs.',
+    MICROSOFT_CLIENT_SECRET: 'Add the client secret from Azure. If issues persist, check IdP logs—common with Entra misconfigs.',
+    BOOTSTRAP_ADMIN: 'Set your initial admin email in .env. If issues persist, check IdP logs—common with Entra misconfigs.',
+    JWT_SECRET: 'Generate a strong secret for JWT fallback (e.g., via openssl rand -hex 32). If issues persist, check IdP logs—common with Entra misconfigs.'
   };
+  if (SAML_ENTRY_POINT && SAML_ENTRY_POINT !== 'dummy') {
+    required.SAML_ENTRY_POINT = 'For Okta/Entra, get from your IdP dashboard (e.g., https://your-okta.com/app/sso/saml/metadata). Okta guide: https://developer.okta.com/docs/guides/build-sso-integration/saml2/main/. If issues persist, check IdP logs—common with Entra misconfigs.';
+    required.SAML_IDP_CERT = 'The Identity Provider certificate (public key) from your SAML IdP metadata. Required for signature validation. Get from IdP dashboard or metadata XML.';
+  }
   let errors = [];
   Object.entries(required).forEach(([key, fix]) => {
-    if (!process.env[key]) errors.push(`Missing ${key} in .env. Fix: ${fix} If issues persist, check IdP logs—common with Entra misconfigs.`);
+    if (!process.env[key]) errors.push(`Missing ${key} in .env. Fix: ${fix}`);
   });
   if (errors.length) {
     console.error('Env validation failed:\n' + errors.join('\n'));
@@ -303,6 +314,7 @@ function handleAdminConfig(req, res) {
       Microsoft Client ID: <input name="MICROSOFT_CLIENT_ID" placeholder="${MICROSOFT_CLIENT_ID ? 'Set' : ''}"><br>
       Microsoft Secret: <input name="MICROSOFT_CLIENT_SECRET" placeholder="${MICROSOFT_CLIENT_SECRET ? 'Set' : ''}"><br>
       SAML Entry Point: <input name="SAML_ENTRY_POINT" placeholder="${SAML_ENTRY_POINT ? 'Set' : ''}"><br>
+      SAML IDP Cert: <input name="SAML_IDP_CERT" placeholder="${SAML_IDP_CERT ? 'Set' : ''}"><br> <!-- New input -->
       JWT Secret: <input name="JWT_SECRET" placeholder="${JWT_SECRET ? 'Set' : ''}"><br>
       <button>Save & Restart</button>
     </form>
