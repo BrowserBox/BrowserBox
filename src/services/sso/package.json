@@ -1,0 +1,30 @@
+{
+  "name": "@browserbox/sso",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "BrowserBox SSO layer",
+  "main": "service.js",
+  "scripts": {
+    "test": "node service.js",
+    "start": "node exec.js \"./run.sh\""
+  },
+  "keywords": [
+    "sso",
+    "browserbox"
+  ],
+  "author": "@browserbox",
+  "license": "Dosyago-Commercial-License-1.1.1-or-later",
+  "dependencies": {
+    "@node-saml/passport-saml": "^5.1.0",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-microsoft": "^2.1.0",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -879,7 +879,7 @@
                   }
                   */
                   if ( ! zl.act.hasSession(targetId, zombie_port) ) {
-                    if ( DEBUG.restoreSessions ) { 
+                    if ( DEBUG.restoreSessions && ! StartupTabs.has(targetId) ) { 
                       DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
                       StartupTabs.add(targetId);
                       zl.act.send({
@@ -1400,7 +1400,7 @@
                 }
                 */
                 if ( ! zl.act.hasSession(targetId, zombie_port) ) {
-                  if ( DEBUG.restoreSessions ) { 
+                  if ( DEBUG.restoreSessions && ! StartupTabs.has(targetId) ) { 
                     DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
                     StartupTabs.add(targetId);
                     zl.act.send({

@@ -80,7 +80,7 @@ export const DEBUG = Object.freeze({
   debugPdf: false,
   debugOffscreenPages: false,
   debugStartupTargets: false,
-  debugSetupTab: false,
+  debugSetupTab: true,
   debugBrowserWindow: false,
   allowPuter: false,
   revealChromeJSIntercepts: false,
