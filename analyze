@@ -1,0 +1,254 @@
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   created: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: false,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   targetInfo: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: false,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   }
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Setup called for {
+0|basic-bb-main-service  |   sessionId: 'AEF5C7C678C544C3080BEE176B7A00BE',
+0|basic-bb-main-service  |   targetInfo: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: true,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   waitingForDebugger: true
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Setup called for {
+0|basic-bb-main-service  |   sessionId: '0A8F08BA42D34112FA340CB08474C641',
+0|basic-bb-main-service  |   targetInfo: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: true,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   waitingForDebugger: false
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Called setup for  {
+0|basic-bb-main-service  |   sessionId: 'AEF5C7C678C544C3080BEE176B7A00BE',
+0|basic-bb-main-service  |   targetInfo: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: true,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   waitingForDebugger: true
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Running setup for  {
+0|basic-bb-main-service  |   sessionId: 'AEF5C7C678C544C3080BEE176B7A00BE',
+0|basic-bb-main-service  |   targetInfo: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: true,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   waitingForDebugger: true
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Called setup for  {
+0|basic-bb-main-service  |   sessionId: '0A8F0P1+r6B32=1B4F51\P1+r6B33=1B4F52\P1+r6B34=1B4F53\P1+r6B35=1B5B31357E\P1+r6B36=1B5B31377E\P1+r6B37=1B5B31387E\P1+r6B38=1B5B31397E\8BA42D34112FA340CB08474C641',
+0|basic-bb-main-service  |   targetInfo: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     type: 'page',
+0|basic-bb-main-service  |     title: '',
+0|basic-bb-main-service  |     url: 'about:blank',
+0|basic-bb-main-service  |     attached: true,
+0|basic-bb-main-service  |     canAccessOpener: false,
+0|basic-bb-main-service  |     browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   waitingForDebugger: false
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { installedShowMouse: true, executionContextId: 1 }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   install: 'Installed zombieDosyLP1+r6B39=1B5B32307E\P1+r6B3B=1B5B32317E\P1+r4631=1B5B32337E\astClicked with isFileInput support',
+0|basic-bb-main-service  |   executionContextId: 2
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   message: 'Defined canKeysInput',
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   executionContextId: 2
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { install: { selectDropDownEvents: true }, executionContextId: 2 }
+0|basic-bb-main-service  | Reloading after setup {
+0|basic-bb-main-service  |   attached: {
+0|basic-bb-main-service  |     sessionId: 'AEF5C7C678C544C3080BEE176B7A00BE',
+0|basic-bb-main-service  |     targetInfo: {
+0|basic-bb-main-service  |       targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |       type: 'page',
+0|basic-bb-main-service  |       title: '',
+0|basic-bb-main-service  |       url: 'about:blank',
+0|basic-bb-main-service  |       attached: true,
+0|basic-bb-main-service  |       canAccessOpener: false,
+0|basic-bb-main-service  |       browserContextId: '1BD71376D950C97E2859A18CD73C1538'
+0|basic-bb-main-service  |     },
+0|basic-bb-main-service  |     waitingForDebugger: true
+0|basic-bb-main-service  |   }
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Reloading AEF5C7C678C544C3080BEE176B7A00BE
+0|basic-bb-main-service  | meta { favicon: { useDefaultFavicon: true } }
+0|basic-bb-main-service  | meta { installedShowMouse: true, executionContextId: 3 }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   install: 'Installed zombieDosyLastClicked with isFileInput support',
+0|basic-bb-main-service  |   executionContextId: 4
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   message: 'Defined canKeysInput',
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   executionContextId: 4
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { install: { selectDropDownEvents: true }, executionContextId: 4 }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   resetFavicon: { reset: true, targetId: '79475326FE900B810A1E48FC7108E6C2' },
+0|basic-bb-main-service  |   executionContextId: 4
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Reloading because no isolated worlds 0A8F08BA42D34112FA340CB08474C641 Error
+0|basic-bb-main-service  |     at Object.sessionSend (file:///home/pro/BrowserBox/src/zombie-lord/connection.js:2549:100)
+0|basic-bb-main-service  | Reload target targetInfo:  {
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   type: 'page',
+0|basic-bb-main-service  |   title: 'about:blank',
+0|basic-bb-main-service  |   url: 'about:blank',
+0|basic-bb-main-service  |   attached: true,
+0|basic-bb-main-service  |   canAccessOpener: false,
+0|basic-bb-main-service  |   browserContextId: '1BD71376D950C97E2859A18CD73C1538',
+0|basic-bb-main-service  |   number: 3
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Reloading because no isolated worlds 0A8F08BA42D34112FA340CB08474C641 Error
+0|basic-bb-main-service  |     at Object.sessionSend (file:///home/pro/BrowserBox/src/zombie-lord/connection.js:2549:100)
+0|basic-bb-main-service  | Reload target targetInfo:  {
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   type: 'page',
+0|basic-bb-main-service  |   title: 'about:blank',
+0|basic-bb-main-service  |   url: 'about:blank',
+0|basic-bb-main-service  |   attached: true,
+0|basic-bb-main-service  |   canAccessOpener: false,
+0|basic-bb-main-service  |   browserContextId: '1BD71376D950C97E2859A18CD73C1538',
+0|basic-bb-main-service  |   number: 3
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Reloading because no isolated worlds 0A8F08BA42D34112FA340CB08474C641 Error
+0|basic-bb-main-service  |     at Object.sessionSend (file:///home/pro/BrowserBox/src/zombie-lord/connection.js:2549:100)
+0|basic-bb-main-service  | Reload target targetInfo:  {
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   type: 'page',
+0|basic-bb-main-service  |   title: 'about:blank',
+0|basic-bb-main-service  |   url: 'about:blank',
+0|basic-bb-main-service  |   attached: true,
+0|basic-bb-main-service  |   canAccessOpener: false,
+0|basic-bb-main-service  |   browserContextId: '1BD71376D950C97E2859A18CD73C1538',
+0|basic-bb-main-service  |   number: 3
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { favicon: { useDefaultFavicon: true } }
+0|basic-bb-main-service  | meta { installedShowMouse: true, executionContextId: 5 }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   install: 'Installed zombieDosyLastClicked with isFileInput support',
+0|basic-bb-main-service  |   executionContextId: 6
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   message: 'Defined canKeysInput',
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   executionContextId: 6
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { install: { selectDropDownEvents: true }, executionContextId: 6 }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   resetFavicon: { reset: true, targetId: '79475326FE900B810A1E48FC7108E6C2' },
+0|basic-bb-main-service  |   executionContextId: 6
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   favicon: {
+0|basic-bb-main-service  |     faviconDataUrl: 'data:image/png;base64,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',
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2'
+0|basic-bb-main-service  |   },
+0|basic-bb-main-service  |   executionContextId: 6
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   install: 'Installed zombieDosyLastClicked with isFileInput support',
+0|basic-bb-main-service  |   executionContextId: 8
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   message: 'Defined canKeysInput',
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   executionContextId: 8
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { install: { selectDropDownEvents: true }, executionContextId: 8 }
+0|basic-bb-main-service  | Validity Check {
+0|basic-bb-main-service  |   dn: '/home/pro/BrowserBox/src/hard',
+0|basic-bb-main-service  |   fn: '/home/pro/BrowserBox/src/hard/hardenedApplication.js',
+0|basic-bb-main-service  |   stack: 'Error\n' +
+0|basic-bb-main-service  |     '    at validityCheck (file:///home/pro/BrowserBox/src/hard/application.js:55:77)\n' +
+0|basic-bb-main-service  |     '    at Timeout.checkers [as _onTimeout] (file:///home/pro/BrowserBox/src/ws-server.js:1046:34)\n' +
+0|basic-bb-main-service  |     '    at listOnTimeout (node:internal/timers:588:17)\n' +
+0|basic-bb-main-service  |     '    at process.processTimers (node:internal/timers:523:7)'
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | [2025-08-21T04:25:35.169Z] [Application] Application integrity check failed.Error: Current file hashes do not match the manifest.
+0|basic-bb-main-service  | Writing Node.js report to file: /home/pro/report-1755750335169.json
+0|basic-bb-main-service  | Node.js report completed
+0|basic-bb-main-service  | { certPath: '/home/pro/.config/dosyago/bbpro/tickets/ticket.json' }
+0|basic-bb-main-service  | [2025-08-21T04:25:35.340Z] [PKI] Seat certificate is valid (both root and stadium signatures checked).
+0|basic-bb-main-service  | [2025-08-21T04:25:35.341Z] [PKI] Ticket is valid (both issuer and seat signatures checked).
+0|basic-bb-main-service  | [2025-08-21T04:25:35.341Z] [PKI] Full chain of trust validated successfully.
+0|basic-bb-main-service  | License validation succeeded.
+0|basic-bb-main-service  | meta { applicationCheck: { licenseValid: false } }
+0|basic-bb-main-service  | [2025-08-21T04:25:35.640Z] [Application] License validation succeeded.
+0|basic-bb-main-service  | [2025-08-21T04:25:35.640Z] [Application] Application started.
+
+
+
+
+0|basic-bb-main-service  | Sent userAgent request to DF2568172BC585AE55B5BA09EEA5953D
+0|basic-bb-main-service  | Sent userAgent request to 549548903D4E99FDBECABB7D92AAF414
+0|basic-bb-main-service  | Sent userAgent request to 0A8F08BA42D34112FA340CB08474C641
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   resize: {
+0|basic-bb-main-service  |     width: 971,
+0|basic-bb-main-service  |     height: 643,
+0|basic-bb-main-service  |     everyNth: 1,
+0|basic-bb-main-service  |     deviceScaleFactor: 1,
+0|basic-bb-main-service  |     mobile: false,
+0|basic-bb-main-service  |     dontSetVisibleSize: true
+0|basic-bb-main-service  |   }
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta {
+0|basic-bb-main-service  |   activateTarget: {
+0|basic-bb-main-service  |     targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |     source: '31zhj2q.w1sy'
+0|basic-bb-main-service  |   }
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | Reloading because no isolated worlds 0A8F08BA42D34112FA340CB08474C641 Error
+0|basic-bb-main-service  |     at Object.sessionSend (file:///home/pro/BrowserBox/src/zombie-lord/connection.js:2549:100)
+0|basic-bb-main-service  | Reload target targetInfo:  {
+0|basic-bb-main-service  |   targetId: '79475326FE900B810A1E48FC7108E6C2',
+0|basic-bb-main-service  |   type: 'page',
+0|basic-bb-main-service  |   title: 'hello at DuckDuckGo',
+0|basic-bb-main-service  |   url: 'https://duckduckgo.com/?q=hello&ia=web',
+0|basic-bb-main-service  |   attached: true,
+0|basic-bb-main-service  |   canAccessOpener: false,
+0|basic-bb-main-service  |   browserContextId: '1BD71376D950C97E2859A18CD73C1538',
+0|basic-bb-main-service  |   number: 3
+0|basic-bb-main-service  | }
+0|basic-bb-main-service  | meta { scroll: { didScroll: true }, executionContextId: 6 }
+
