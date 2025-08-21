@@ -617,6 +617,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     connection.forceMeta({created:targetInfo,targetInfo});
     if ( AttachmentTypes.has(targetInfo.type) && !attaching.has(targetId) && ! settingUp.has(targetId) ) {
       attaching.add(targetId);
+      DEBUG.debugSetupTab && console.log(`Attaching to target ${targetID}`);
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
     DEBUG.val && consolelog('create 2', targetInfo);
@@ -692,10 +693,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   on("Target.attachedToTarget", async ({sessionId,targetInfo,waitingForDebugger}) => {
     try {
+      const {targetId,url} = targetInfo;
+      DEBUG.debugSetupTab && console.log(`Attached now to target ${targetId}`);
       DEBUG.worldDebug && consolelog('attached 1', targetInfo);
       DEBUG.val && consolelog('attached 1', targetInfo);
       const attached = {sessionId,targetInfo,waitingForDebugger};
-      const {targetId,url} = targetInfo;
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
         send("Target.closeTarget", {targetId});
         return;
@@ -840,13 +842,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         send("Target.closeTarget", {targetId});
       } else if ( ! attaching.has(targetId) ){
         DEBUG.debugStartupTargets && console.log('Starting tab', {target});
-        attaching.add(targetId);
         if ( target.attached ) {
           await sleep(40);
-          if ( !(settingUp.has(targetId) || setupComplete.has(targetId) || sessions.has(targetId)) ) {
+          if ( !attaching.has(targetId) && !(settingUp.has(targetId) || setupComplete.has(targetId) || sessions.has(targetId)) ) {
+            attaching.add(targetId);
+            DEBUG.debugSetupTab && console.log(`Attaching to target ${targetID}`);
             await send("Target.attachToTarget", {targetId, flatten: true});
           }
-        } else {
+        } else if ( ! attaching.has(targetId) ) {
+          attaching.add(targetId);
           await send("Target.attachToTarget", {targetId, flatten: true});
         }
       }
