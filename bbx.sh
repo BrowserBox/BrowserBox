@@ -1056,27 +1056,37 @@ docker_run() {
   PORT="$port"  # Override PORT if specified
   BBX_HOSTNAME="$hostname"
 
+  # Ensure Docker is available
   if ! command -v docker >/dev/null 2>&1; then
     printf "${YELLOW}Installing Docker...${NC}\n"
-    if ! command -v docker >/dev/null 2>&1; then
-      printf "${YELLOW}Installing Docker...${NC}\n"
-      if [ -f /etc/debian_version ]; then
-        $SUDO apt-get update && $SUDO apt-get install -y docker.io
-        $SUDO systemctl start docker
-        $SUDO systemctl enable docker
-      elif [ -f /etc/redhat-release ]; then
-        $SUDO yum install -y docker || $SUDO dnf install -y docker
-        $SUDO systemctl start docker
-        $SUDO systemctl enable docker
-      elif [ "$(uname -s)" = "Darwin" ]; then
-        printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
-        exit 1
-      else
-        printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
-        exit 1
-      fi
-      command -v docker >/dev/null 2>&1 || { printf "${RED}Docker installation failed${NC}\n"; exit 1; }
+    if [ -f /etc/debian_version ]; then
+      $SUDO apt-get update && $SUDO apt-get install -y docker.io
+      $SUDO systemctl start docker
+      $SUDO systemctl enable docker
+      $SUDO usermod -aG docker "${USER:-$(id -un)}"
+      printf "${BLUE}Docker installed. Please re-run your previous command, or log out and back in for group changes to take effect.${NC}\n"
+      newgrp docker <<EOF
+echo "${GREEN}Docker group applied to this session. Please re-run: bbx docker-run $nickname${NC}"
+EOF
+      exit 0
+    elif [ -f /etc/redhat-release ]; then
+      $SUDO yum install -y docker || $SUDO dnf install -y docker
+      $SUDO systemctl start docker
+      $SUDO systemctl enable docker
+      $SUDO usermod -aG docker "${USER:-$(id -un)}"
+      printf "${BLUE}Docker installed. Please re-run your previous command, or log out and back in for group changes to take effect.${NC}\n"
+      newgrp docker <<EOF
+echo "${GREEN}Docker group applied to this session. Please re-run: bbx docker-run $nickname${NC}"
+EOF
+      exit 0
+    elif [ "$(uname -s)" = "Darwin" ]; then
+      printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
+      exit 1
+    else
+      printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
+      exit 1
     fi
+    command -v docker >/dev/null 2>&1 || { printf "${RED}Docker installation failed${NC}\n"; exit 1; }
   fi
 
   # Validate existing product key
@@ -1116,7 +1126,7 @@ docker_run() {
     set -x
   fi
   cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
-  if yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1; then 
+  if yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1; then
     echo "success" > "$drun_file"
   else
     :
@@ -1155,59 +1165,56 @@ EOF
 }
 
 docker_stop() {
-    banner
-    load_config
+  banner
+  load_config
 
-    local nickname="$1"
-    if [ -z "$nickname" ]; then
-        printf "${RED}Usage: bbx docker-stop <nickname>${NC}\n"
-        exit 1
-    fi
+  local nickname="$1"
+  if [ -z "$nickname" ]; then
+    printf "${RED}Usage: bbx docker-stop <nickname>${NC}\n"
+    exit 1
+  fi
 
-    # Check if nickname exists
-    local container_id=$(jq -r --arg nick "$nickname" '.[$nick].container_id // ""' "$DOCKER_CONTAINERS_FILE")
-    local port=$(jq -r --arg nick "$nickname" '.[$nick].port // ""' "$DOCKER_CONTAINERS_FILE")
-    if [ -z "$container_id" ]; then
-        printf "${RED}No container found with nickname: $nickname${NC}\n"
-        printf "${YELLOW}If you used a raw container ID, run: docker stop <container_id>${NC}\n"
-        exit 1
-    fi
+  local container_id=$(jq -r --arg nick "$nickname" '.[$nick].container_id // ""' "$DOCKER_CONTAINERS_FILE")
+  local port=$(jq -r --arg nick "$nickname" '.[$nick].port // ""' "$DOCKER_CONTAINERS_FILE")
+  if [ -z "$container_id" ]; then
+    printf "${RED}No container found with nickname: $nickname${NC}\n"
+    printf "${YELLOW}If you used a raw container ID, run: docker stop <container_id>${NC}\n"
+    exit 1
+  fi
 
-    # Check if container is running
-    if ! $SUDO docker ps -q --filter "id=$container_id" | grep -q .; then
-        printf "${YELLOW}Container $nickname ($container_id) is not running.${NC}\n"
-        # Remove from config anyway
-        local tmp_file=$(mktemp)
-        jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
-            mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
-        printf "${GREEN}Removed $nickname from tracking.${NC}\n"
-        exit 0
-    fi
-
-    printf "${YELLOW}Stopping BrowserBox for $nickname ($container_id)...${NC}\n"
-    # Run stop_bbpro inside the container
-    $SUDO docker exec "$container_id" bash -c "stop_bbpro" || {
-        printf "${RED}Warning: Failed to run stop_bbpro in container${NC}\n"
-    }
-    printf "${YELLOW}Waiting 1 second for license release...${NC}\n"
-    sleep 1
-
-    # Stop the container
-    $SUDO docker stop --timeout 3 "$container_id" || $SUDO docker stop --time 3 "$container_id" || {
-        printf "${RED}Failed to stop container $container_id${NC}\n"
-        exit 1
-    }
-
-    # Remove from config
+  if ! docker ps -q --filter "id=$container_id" | grep -q . && ! $SUDO docker ps -q --filter "id=$container_id" | grep -q .; then
+    printf "${YELLOW}Container $nickname ($container_id) is not running.${NC}\n"
     local tmp_file=$(mktemp)
     jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
-        mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+      mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+    printf "${GREEN}Removed $nickname from tracking.${NC}\n"
+    exit 0
+  fi
 
-    printf "${GREEN}Dockerized BrowserBox ($nickname) stopped and removed from tracking.${NC}\n"
-    draw_box "Nickname: $nickname"
-    draw_box "Container ID: $container_id"
-    draw_box "Port: $port"
+  printf "${YELLOW}Stopping BrowserBox for $nickname ($container_id)...${NC}\n"
+  docker exec "$container_id" bash -c "stop_bbpro" ||
+  $SUDO docker exec "$container_id" bash -c "stop_bbpro" || {
+    printf "${RED}Warning: Failed to run stop_bbpro in container${NC}\n"
+  }
+  printf "${YELLOW}Waiting 1 second for license release...${NC}\n"
+  sleep 1
+
+  docker stop --timeout 3 "$container_id" &>/dev/null || docker stop --time 3 "$container_id" &>/dev/null ||
+  $SUDO docker stop --timeout 3 "$container_id" || $SUDO docker stop --time 3 "$container_id" || {
+    printf "${RED}Failed to stop container $container_id${NC}\n"
+    exit 1
+  }
+
+  local tmp_file=$(mktemp)
+  jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+    mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+
+  printf "${GREEN}Dockerized BrowserBox ($nickname) stopped and removed from tracking.${NC}\n"
+  draw_box "Nickname: $nickname"
+  draw_box "Container ID: $container_id"
+  draw_box "Port: $port"
 }
+
 
 # Helper: Create a master user with passwordless sudo and BB groups
 create_master_user() {
