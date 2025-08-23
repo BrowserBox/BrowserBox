@@ -12,7 +12,6 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
           - macos-latest
 
     steps:
@@ -24,7 +23,7 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         # Optional: Set a timeout for the session (e.g., 15 minutes)
-        timeout-minutes: 15
+        timeout-minutes: 25
 
       # Add your custom steps here (this is a blank template)
       # Example:
