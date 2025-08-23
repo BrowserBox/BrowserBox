@@ -103,7 +103,7 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
-    "patch-package": "^8.0.0",
+    "patch-package": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
     "spdy": "latest",
