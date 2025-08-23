@@ -183,7 +183,7 @@ open_ports $((PORT-2)) $((PORT+2))
 # External IP (OG)
 get_ip() {
   curl -4s --connect-timeout 5 "https://icanhazip.com" || curl -4s --connect-timeout 5 "https://ifconfig.me" || {
-    echo "ERROR: Can’t fetch IP—check network!" >&2
+    echo "ERROR: Can't fetch IP—check network!" >&2
     exit 1
   }
 }
@@ -225,6 +225,9 @@ fetch_certs() {
   fi
 }
 fetch_certs
+# Encode certs for injection (avoids mount/perms issues)
+FULLCHAIN_PEM=$(base64 -w 0 "$CERT_DIR/fullchain.pem")
+PRIVKEY_PEM=$(base64 -w 0 "$CERT_DIR/privkey.pem")
 # Docker command (prefer sudo first to preserve OG behavior)
 DOCKER_CMD="$(pick_docker_cmd || true)"
 if [[ -z "$DOCKER_CMD" ]]; then
@@ -250,12 +253,7 @@ else
     DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
   fi
 fi
-# Adjust cert permissions in a temporary privileged container
-echo "Adjusting cert permissions..." >&2
-${DOCKER_CMD} run --rm --user root \
-  -v "$CERT_DIR:/home/bbpro/sslcerts" \
-  "$DOCKER_IMAGE" chown bbpro:bbpro /home/bbpro/sslcerts/*.pem 2>/dev/null || true
-# Docker Run (main container as default non-root user)
+# Docker Run (main container as default non-root user; inject certs via env)
 echo "Starting BrowserBox on $HOSTNAME:$PORT..." >&2
 CONTAINER_ID="$(
   ${DOCKER_CMD} run --cap-add=SYS_NICE -d \
@@ -264,8 +262,8 @@ CONTAINER_ID="$(
     -p "$((PORT-1)):$((PORT-1))" \
     -p "$((PORT+1)):$((PORT+1))" \
     -p "$((PORT+2)):$((PORT+2))" \
-    -v "$CERT_DIR:/home/bbpro/sslcerts" -e "LICENSE_KEY=$LICENSE_KEY" \
-    "$DOCKER_IMAGE" bash -c "cd ~/bbpro && setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh"
+    -e "LICENSE_KEY=$LICENSE_KEY" -e "FULLCHAIN_PEM=$FULLCHAIN_PEM" -e "PRIVKEY_PEM=$PRIVKEY_PEM" \
+    "$DOCKER_IMAGE" bash -c "mkdir -p ~/sslcerts; echo \"\$FULLCHAIN_PEM\" | base64 -d > ~/sslcerts/fullchain.pem; echo \"\$PRIVKEY_PEM\" | base64 -d > ~/sslcerts/privkey.pem; chmod 600 ~/sslcerts/*.pem; cd ~/bbpro && setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh"
 )" || {
   echo "ERROR: Docker run failed!" >&2
   exit 1
