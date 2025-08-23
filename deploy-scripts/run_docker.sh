@@ -158,24 +158,24 @@ open_ports() {
   local start=$1 end=$2
   if [[ "$OS" = "Darwin" ]]; then
     if have_sudo; then
-      echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed‚Äîopen $start-$end/tcp manually!" >&2
+      echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed—open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust macOS pf. Open $start-$end/tcp manually if needed." >&2
     fi
   elif command -v firewall-cmd >/dev/null 2>&1; then
     if have_sudo; then
-      $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed‚Äîopen $start-$end/tcp manually!" >&2
+      $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed—open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust firewalld. Open $start-$end/tcp manually if needed." >&2
     fi
   elif command -v ufw >/dev/null 2>&1; then
     if have_sudo; then
-      $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed‚Äîopen $start-$end/tcp manually!" >&2
+      $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed—open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust ufw. Open $start-$end/tcp manually if needed." >&2
     fi
   else
-    echo "WARNING: No firewall tool found‚Äîensure $start-$end/tcp are open if needed." >&2
+    echo "WARNING: No firewall tool found—ensure $start-$end/tcp are open if needed." >&2
   fi
 }
 ! is_local_hostname "$HOSTNAME" && open_ports 80 80
@@ -183,7 +183,7 @@ open_ports $((PORT-2)) $((PORT+2))
 # External IP (OG)
 get_ip() {
   curl -4s --connect-timeout 5 "https://icanhazip.com" || curl -4s --connect-timeout 5 "https://ifconfig.me" || {
-    echo "ERROR: Can‚Äôt fetch IP‚Äîcheck network!" >&2
+    echo "ERROR: Can’t fetch IP—check network!" >&2
     exit 1
   }
 }
@@ -235,10 +235,10 @@ fi
 DOCKER_IMAGE=""
 if ${DOCKER_CMD} images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_DOSAYGO$"; then
   DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO"
-  echo "Found $DOCKER_IMAGE locally‚Äîusing it!" >&2
+  echo "Found $DOCKER_IMAGE locally—using it!" >&2
 elif ${DOCKER_CMD} images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_GHCR$"; then
   DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
-  echo "Found $DOCKER_IMAGE locally‚Äîusing it!" >&2
+  echo "Found $DOCKER_IMAGE locally—using it!" >&2
 else
   echo "Pulling latest $DOCKER_IMAGE_DOSAYGO..." >&2
   if ${DOCKER_CMD} pull --platform "$PLATFORM" "$DOCKER_IMAGE_DOSAYGO"; then
@@ -250,17 +250,22 @@ else
     DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
   fi
 fi
-# Docker Run (remove sudo inside container; preserve OG intent)
+# Adjust cert permissions in a temporary privileged container
+echo "Adjusting cert permissions..." >&2
+${DOCKER_CMD} run --rm --user root \
+  -v "$CERT_DIR:/home/bbpro/sslcerts" \
+  "$DOCKER_IMAGE" chown bbpro:bbpro /home/bbpro/sslcerts/*.pem 2>/dev/null || true
+# Docker Run (main container as default non-root user)
 echo "Starting BrowserBox on $HOSTNAME:$PORT..." >&2
 CONTAINER_ID="$(
-  ${DOCKER_CMD} run --user root --cap-add=SYS_NICE -d \
+  ${DOCKER_CMD} run --cap-add=SYS_NICE -d \
     -p "$PORT:$PORT" \
     -p "$((PORT-2)):$((PORT-2))" \
     -p "$((PORT-1)):$((PORT-1))" \
     -p "$((PORT+1)):$((PORT+1))" \
     -p "$((PORT+2)):$((PORT+2))" \
     -v "$CERT_DIR:/home/bbpro/sslcerts" -e "LICENSE_KEY=$LICENSE_KEY" \
-    "$DOCKER_IMAGE" bash -c "chown bbpro:bbpro /home/bbpro/sslcerts/*.pem 2>/dev/null || true; su - bbpro -c 'cd ~/bbpro && setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh'"
+    "$DOCKER_IMAGE" bash -c "cd ~/bbpro && setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh"
 )" || {
   echo "ERROR: Docker run failed!" >&2
   exit 1
@@ -268,7 +273,7 @@ CONTAINER_ID="$(
 # Login Link (OG with DOCKER_CMD)
 sleep 5
 ${DOCKER_CMD} cp "$CONTAINER_ID:/home/bbpro/bbpro/login_link.txt" ./login_link.txt 2>/dev/null || {
-  echo "WARNING: Login link not ready‚Äîcheck logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
+  echo "WARNING: Login link not ready—check logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
   LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 }
 [ -f "login_link.txt" ] && LOGIN_LINK=$(cat login_link.txt | sed "s/localhost/$HOSTNAME/") || LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
@@ -283,4 +288,3 @@ echo "===========================================" >&2
 read -p "Keep running? (n/no to stop, else continues): " KEEP
 [[ "$KEEP" = "n" || "$KEEP" = "no" ]] && ${DOCKER_CMD} stop --time 3 "$CONTAINER_ID" && echo "Stopped!" >&2
 exit 0
-
