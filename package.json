@@ -1,7 +1,7 @@
 {
   "name": "@browserbox/browserbox",
   "type": "module",
-  "version": "11.5.5",
+  "version": "11.5.6",
   "description": "BrowserBox CLI - Secure, cross-platform RBI. See dosaygo.com",
   "main": "./src/server.js",
   "default": "dist/image.html",
