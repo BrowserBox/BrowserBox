@@ -299,7 +299,7 @@ ${DOCKER_CMD} cp "$CONTAINER_ID:/home/bbpro/bbpro/login_link.txt" ./login_link.t
   echo "WARNING: Login link not ready—check logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
   LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 }
-[ -f "login_link.txt" ] && LOGIN_LINK=$(sed "s/localhost/$HOSTNAME/" < login_link.txt) || LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
+[ -f "login_link.txt" ] && LOGIN_LINK=$(cat login_link.txt | sed "s/localhost/$HOSTNAME/") || LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 
 # Output (OG text; hint real command uses DOCKER_CMD)
 echo "===========================================" >&2
