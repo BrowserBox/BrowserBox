@@ -1161,6 +1161,10 @@ EOF
   draw_box "Login Link: $login_link"
   draw_box "Nickname: $nickname"
   draw_box "Stop Command: bbx docker-stop $nickname"
+  if [[ -n "$BBX_DEBUG" ]]; then
+    echo "Docker debug:"
+    echo "$docker_output"
+  fi
   save_config
 }
 
