@@ -7,6 +7,17 @@ if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
 
+# Source the config file if it exists (OG)
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$CONFIG_DIR/config"
+if [[ -f "$CONFIG_FILE" ]]; then
+  echo "Sourcing $CONFIG_FILE..." >&2
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+else
+  echo "No config file found at $CONFIG_FILE. Proceeding without it." >&2
+fi
+
 # Vars & Defaults
 PORT="${1:-}"  # Main port (e.g., 8080)
 HOSTNAME="${2:-}"  # DNS hostname
@@ -47,17 +58,6 @@ fi
 echo "BrowserBox v11 Terms: https://dosaygo.com/terms.txt | License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md | Privacy: https://dosaygo.com/privacy.txt"
 [ "${AGREE:-no}" = "yes" ] || read -r -p " Agree? (yes/no): " AGREE
 [ "$AGREE" = "yes" ] || { echo "ERROR: Must agree to terms!" >&2; exit 1; }
-
-# Source the config file if it exists (OG)
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$CONFIG_DIR/config"
-if [[ -f "$CONFIG_FILE" ]]; then
-  echo "Sourcing $CONFIG_FILE..." >&2
-  # shellcheck disable=SC1090
-  source "$CONFIG_FILE"
-else
-  echo "No config file found at $CONFIG_FILE. Proceeding without it." >&2
-fi
 
 # LICENSE_KEY (OG)
 if [[ -z "$LICENSE_KEY" ]]; then
