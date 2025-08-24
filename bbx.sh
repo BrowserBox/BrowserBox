@@ -132,94 +132,131 @@ sort_git_tags() {
     echo "$input" | awk '{print $2}' | sed 's|^refs/tags/||' | sort -V
 }
 
-get_latest_tag() {
-    # Read input from stdin or file
-    local input
-    if [ -n "$1" ]; then
-        input=$(cat "$1")
+# -------------------------
+# Pure-bash semver selector
+# -------------------------
+
+# --- in _parse_tag(), add a flag for "has explicit patch" --------------------
+_parse_tag() {
+  local s="$1" core pre a b c rcnum
+  PAR_MAJ=0 PAR_MIN=0 PAR_PAT=0 PAR_STABLE=1 PAR_RCNUM=0
+  PAR_HASPATCH=0     # <--- NEW
+
+  [[ ${s:0:1} == "v" ]] && s="${s:1}"
+
+  core="${s%%-*}"
+  if [[ "$core" == "$s" ]]; then pre=""; else pre="${s#"$core"-}"; fi
+
+  IFS='.' read -r a b c <<<"$core"
+
+  [[ "$a" =~ ^[0-9]+$ ]] || return 1
+  [[ "$b" =~ ^[0-9]+$ ]] || return 1
+  if [[ -z "$c" ]]; then
+    PAR_HASPATCH=0                  # explicit patch missing
+    PAR_PAT=0
+  else
+    [[ "$c" =~ ^[0-9]+$ ]] || return 1
+    PAR_HASPATCH=1                  # explicit patch present
+    PAR_PAT=$c
+  fi
+
+  PAR_MAJ=$a
+  PAR_MIN=$b
+
+  if [[ -n "$pre" ]]; then
+    if [[ "$pre" == rc ]]; then
+      PAR_STABLE=0; PAR_RCNUM=0
+    elif [[ "$pre" == rc.* ]]; then
+      rcnum="${pre#rc.}"
+      [[ "$rcnum" =~ ^[0-9]+$ ]] || return 1
+      PAR_STABLE=0; PAR_RCNUM=$rcnum
     else
-        input=$(cat)
+      return 1
     fi
-
-    # Debug to stderr
-    # [[ -n "$BBX_DEBUG" ]] && echo "Input tags:" >&2
-    # [[ -n "$BBX_DEBUG" ]] && echo "$input" >&2
-
-    # Get all tags and non-rc tags
-    ALL_TAGS=$(echo "$input" | sort_git_tags)
-    NON_RC_TAGS=$(echo "$input" | grep -v "\-rc" | sort_git_tags)
-
-    # Check if lists are empty
-    if [ -z "$ALL_TAGS" ]; then
-        [[ -n "$BBX_DEBUG" ]] && echo "Error: No tags found" >&2
-        return 1
-    fi
-
-    # Debug lists to stderr
-    # [[ -n "$BBX_DEBUG" ]] && echo "All tags (sorted):" >&2
-    # [[ -n "$BBX_DEBUG" ]] && echo "$ALL_TAGS" >&2
-    # [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tags (sorted):" >&2
-    # [[ -n "$BBX_DEBUG" ]] && echo "$NON_RC_TAGS" >&2
-
-    # Get tails
-    ALL_TAIL=$(echo "$ALL_TAGS" | tail -n 1)
-    NON_RC_TAIL=$(echo "$NON_RC_TAGS" | tail -n 1)
-
-    # Debug tails to stderr
-    [[ -n "$BBX_DEBUG" ]] && echo "All tags tail: $ALL_TAIL" >&2
-    [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tags tail: $NON_RC_TAIL" >&2
-
-    # Compare tails
-    if [ "$ALL_TAIL" = "$NON_RC_TAIL" ]; then
-        # Case 1: Tails match
-        [[ -n "$BBX_DEBUG" ]] && echo "Tails match, outputting: $ALL_TAIL" >&2
-        echo "$ALL_TAIL"
-        return 0
-    fi
-
-    # Case 2: Tails differ
-    if [[ "$ALL_TAIL" =~ -rc$ ]]; then
-        # Strip -rc
-        STRIPPED_TAIL=${ALL_TAIL%-rc}
-        [[ -n "$BBX_DEBUG" ]] && echo "All tail is -rc, stripped: $STRIPPED_TAIL" >&2
-
-        if [ "$STRIPPED_TAIL" = "$NON_RC_TAIL" ]; then
-            # Stripped tail matches non-rc tail
-            [[ -n "$BBX_DEBUG" ]] && echo "Stripped tail matches non-rc tail, outputting: $NON_RC_TAIL" >&2
-            echo "$NON_RC_TAIL"
-        else
-            # Compare stripped tail vs non-rc tail
-            [[ -n "$BBX_DEBUG" ]] && echo "Comparing $STRIPPED_TAIL vs $NON_RC_TAIL" >&2
-            HIGHER_VERSION=$(echo -e "$STRIPPED_TAIL\n$NON_RC_TAIL" | sort -V | tail -n 1)
-            if [ "$HIGHER_VERSION" = "$STRIPPED_TAIL" ]; then
-                # Stripped tail is more recent
-                [[ -n "$BBX_DEBUG" ]] && echo "Stripped tail is more recent, outputting: $ALL_TAIL" >&2
-                echo "$ALL_TAIL"
-            else
-                # Non-rc tail is more recent or equal
-                [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tail is more recent or equal, outputting: $NON_RC_TAIL" >&2
-                echo "$NON_RC_TAIL"
-            fi
-        fi
-    else
-        # ALL_TAIL is not -rc
-        [[ -n "$BBX_DEBUG" ]] && echo "All tail is not -rc, outputting: $NON_RC_TAIL" >&2
-        echo "$NON_RC_TAIL"
-    fi
+  fi
+  return 0
 }
 
-## Helper: Get latest tag from repo
+
+# --- in _better_than(), add a tie-break using PAR_HASPATCH -------------------
+# Args: cMaj cMin cPat cStable cRcNum cHasPatch  bMaj bMin bPat bStable bRcNum bHasPatch
+_better_than() {
+  local cMaj=$1 cMin=$2 cPat=$3 cSt=$4 cRc=$5 cHP=$6
+  local bMaj=$7 bMin=$8 bPat=$9 bSt=${10} bRc=${11} bHP=${12}
+
+  # core compare
+  if   (( cMaj > bMaj )); then return 0
+  elif (( cMaj < bMaj )); then return 1; fi
+  if   (( cMin > bMin )); then return 0
+  elif (( cMin < bMin )); then return 1; fi
+  if   (( cPat > bPat )); then return 0
+  elif (( cPat < bPat )); then return 1; fi
+
+  # same core: stable > rc
+  if (( cSt != bSt )); then
+    (( cSt > bSt )) && return 0 || return 1
+  fi
+
+  # both rc or both stable
+  if (( cSt == 0 )); then
+    if   (( cRc > bRc )); then return 0
+    elif (( cRc < bRc )); then return 1; fi
+  fi
+
+  # FINAL TIE-BREAKER: prefer explicit patch (e.g., 2.1.0 over 2.1)
+  if (( cHP != bHP )); then
+    (( cHP > bHP )) && return 0 || return 1
+  fi
+
+  # equal
+  return 1
+}
+
+
+# --- in get_latest_tag(), pass the new flag into comparator ------------------
+get_latest_tag() {
+  local best_tag=""
+  local bestMaj=0 bestMin=0 bestPat=0 bestStable=0 bestRc=0 bestHP=0
+  local _hash ref tag
+
+  while IFS=$'\t' read -r _hash ref; do
+    [[ -z "$ref" ]] && continue
+    tag="${ref#refs/tags/}"
+    [[ "$tag" == *^{} ]] && continue
+
+    if _parse_tag "$tag"; then
+      local cMaj=$PAR_MAJ cMin=$PAR_MIN cPat=$PAR_PAT cSt=$PAR_STABLE cRc=$PAR_RCNUM cHP=$PAR_HASPATCH
+      if [[ -z "$best_tag" ]] || _better_than \
+          "$cMaj" "$cMin" "$cPat" "$cSt" "$cRc" "$cHP" \
+          "$bestMaj" "$bestMin" "$bestPat" "$bestStable" "$bestRc" "$bestHP"; then
+        best_tag="$tag"
+        bestMaj=$cMaj; bestMin=$cMin; bestPat=$cPat; bestStable=$cSt; bestRc=$cRc; bestHP=$cHP
+      fi
+    fi
+  done
+
+  if [[ -n "$best_tag" ]]; then
+    echo "$best_tag"; return 0
+  else
+    echo "unknown"; return 1
+  fi
+}
+
+
+# Query remote and select latest tag. Returns 0 on success; 1 on failure/timeout/empty.
 get_latest_repo_version() {
-  local result
-  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | get_latest_tag)
-  if [ $? -ne 0 ] || [ -z "$result" ]; then
-    printf "${YELLOW}Checking for updates timed out${NC}\n"
-    echo "unknown"
+  local out
+  # --refs avoids peeled ref duplicates
+  if out=$(timeout 7s git ls-remote --tags --refs "$REPO_URL" 2>/dev/null | get_latest_tag); then
+    echo "$out"
+    return 0
+  else
+    # get_latest_tag already echoed "unknown" if nothing valid
+    echo "$out"
     return 1
   fi
-  local latest_tag=$(echo "$result")
-  [ -n "$latest_tag" ] && echo "$latest_tag" || echo "unknown"
 }
+
 
 # Version
 BBX_VERSION="$(get_latest_repo_version)"
