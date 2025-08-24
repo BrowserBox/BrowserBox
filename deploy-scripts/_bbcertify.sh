@@ -1,6 +1,6 @@
 #!/bin/bash
 # bbcertify.sh - Obtain a vacant seat, issue a ticket, and register it as a certificate
-
+ 
 if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
@@ -195,6 +195,7 @@ main() {
 
   if [[ "$FORCE_LICENSE" == "true" ]]; then
     seat_id=$(get_vacant_seat)
+    echo "Seat ID: $seat_id"
     ticket_json=$(issue_ticket "$seat_id")
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
@@ -209,6 +210,7 @@ main() {
 
   # Default case: get new ticket if none exists or it's invalid
   seat_id=$(get_vacant_seat)
+  echo "Seat ID 2: $seat_id"
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"
