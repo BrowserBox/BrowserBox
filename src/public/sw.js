@@ -1,5 +1,5 @@
 // Imports, constants then state
-const CACHE_VERSION = 'v11.2.1';
+const CACHE_VERSION = 'v12.0.0';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'bb-etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
@@ -73,6 +73,12 @@ self.addEventListener('fetch', event => {
         return fetchAndCache(event.request);
       })
     );
+  }
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
 

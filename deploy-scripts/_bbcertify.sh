@@ -1,6 +1,6 @@
 #!/bin/bash
 # bbcertify.sh - Obtain a vacant seat, issue a ticket, and register it as a certificate
-
+ 
 if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
@@ -22,7 +22,7 @@ TICKET_VALIDITY_PERIOD=$((24 * 60 * 60))  # 24 hours in seconds
 # Usage information
 usage() {
   cat <<EOF
-Usage: $0 [-h|--help] [--force-ticket] [--force-license]
+Usage: $0 [-h|--help] [--force-ticket] [--force-license] [--no-reservation]
 
 Obtains a valid ticket for BrowserBox, renewing if expired. Ticket saved to: $TICKET_FILE
 
@@ -33,6 +33,8 @@ Options:
   -h, --help       Show this help message and exit
   --force-ticket   Validate existing ticket with server; renew if invalid
   --force-license  Check license validity by attempting to issue a new ticket without overwriting valid existing ticket
+  --no-reservation Query if a seat is free without reserving (adds ?reserve=0)
+
 EOF
 }
 
@@ -62,7 +64,7 @@ check_ticket_validity() {
   if [[ $current_time -lt $expiration_time ]]; then
     local remaining_hours=$((remaining_seconds / 3600))
     local remaining_minutes=$(((remaining_seconds % 3600) / 60))
-    echo "Existing ticket is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
+    echo "Existing ticket for seat is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
     return 0
   else
     echo "Existing ticket has expired" >&2
@@ -92,7 +94,12 @@ validate_ticket_with_server() {
 # Fetch vacant seat
 get_vacant_seat() {
   echo "Requesting a vacant seat..." >&2
-  local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$VACANT_SEAT_ENDPOINT")
+  local url="$VACANT_SEAT_ENDPOINT"
+  if [[ "$NO_RESERVATION" == "true" ]]; then
+    url="${url}?reserve=0"
+    echo "Using no-reservation mode" >&2
+  fi
+  local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$url")
   local seat=$(echo "$response" | jq -r '.vacantSeat // empty')
   if [[ -z "$seat" ]]; then
     echo "Error: No vacant seat available. Response:" >&2
@@ -143,6 +150,8 @@ register_certificate() {
 # Argument parsing
 FORCE_TICKET=false
 FORCE_LICENSE=false
+NO_RESERVATION=false
+
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -h|--help)
@@ -156,6 +165,10 @@ while [[ "$#" -gt 0 ]]; do
     --force-license)
       FORCE_LICENSE=true
       shift
+      ;;
+    --no-reservation)
+      NO_RESERVATION=true; 
+      shift 
       ;;
     *)
       echo "Unknown option: $1" >&2
@@ -195,6 +208,7 @@ main() {
 
   if [[ "$FORCE_LICENSE" == "true" ]]; then
     seat_id=$(get_vacant_seat)
+    echo "Seat ID: $seat_id"
     ticket_json=$(issue_ticket "$seat_id")
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
@@ -209,6 +223,7 @@ main() {
 
   # Default case: get new ticket if none exists or it's invalid
   seat_id=$(get_vacant_seat)
+  echo "Seat ID 2: $seat_id"
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"

@@ -366,12 +366,14 @@ validate_license_key() {
       fi
       if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
         export LICENSE_KEY
-        if eval "bbcertify --force-license $REDIRECT 2>&1"; then
+        certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+        if [[ "$?" -eq 0 ]]; then
           printf "${GREEN}License key validated with server.${NC}\n"
           save_config
           return 0
         else
           printf "${RED}ERROR: License key invalid or server unreachable. Try again.${NC}\n"
+          echo "Certification output: $certout"
           LICENSE_KEY=""
         fi
       else
@@ -382,11 +384,13 @@ validate_license_key() {
   else
     # Validate existing key
     export LICENSE_KEY
-    if eval "bbcertify --force-license $REDIRECT 2>&1"; then
+    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+    if [[ "$?" -eq 0 ]]; then
       printf "${GREEN}Existing product key is valid.${NC}\n"
       return 0
     else
       printf "${RED}Current product key ($LICENSE_KEY) is invalid. Run 'bbx certify' to update it.${NC}\n"
+      echo "Certification output: $certout"
       return 1
     fi
   fi
@@ -824,11 +828,14 @@ run() {
 
   # Validate existing product key
   export LICENSE_KEY;
-  if ! bbcertify >/dev/null 2>&1; then
+  certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify 2>&1")"
+  if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
-    #exit 1
+    echo "Certification output: $certout"
+    exit 1
+  else
+    printf "${GREEN}Certification complete.${NC}\n"
   fi
-  printf "${GREEN}Certification complete.${NC}\n"
 
   bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
@@ -907,12 +914,15 @@ tor_run() {
     LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
     source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
     # Validate existing product key
-    export LICENSE_KEY
-    if ! bbcertify >/dev/null 2>&1; then
+    export LICENSE_KEY;
+    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify 2>&1")"
+    if [[ "$?" -ne 0 ]]; then
       printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
-      #exit 1
+      echo "Certification output: $certout"
+      exit 1
+    else
+      printf "${GREEN}Certification complete.${NC}\n"
     fi
-    printf "${GREEN}Certification complete.${NC}\n"
 
     local login_link=""
     if $onion; then
@@ -1464,13 +1474,15 @@ certify() {
     LICENSE_KEY="$1"
     if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
       export LICENSE_KEY
-      if eval "bbcertify --force-license $REDIRECT 2>&1"; then
+      certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+      if [[ "$?" -eq 0 ]]; then
         printf "${GREEN}License key validated with server.${NC}\n"
         save_config
         printf "${GREEN}Certification complete.${NC}\n"
         return 0
       else
         printf "${RED}ERROR: License key invalid or server unreachable.${NC}\n"
+        echo "Certification output: $certout"
         exit 1
       fi
     else
@@ -1498,11 +1510,13 @@ certify() {
         LICENSE_KEY="$new_key"
         if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
           export LICENSE_KEY
-          if eval "bbcertify --force-license $REDIRECT 2>&1"; then
+          certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+          if [[ "$?" -eq 0 ]]; then
             printf "${GREEN}License key validated with server.${NC}\n"
             save_config
           else
             printf "${RED}ERROR: License key invalid or server unreachable.${NC}\n"
+            echo "Certification output: $certout"
             validate_license_key "true"  # Fall back to full prompt loop if invalid
           fi
         else
@@ -2009,9 +2023,9 @@ run_as() {
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
         printf "${RED}No product key set in LICENSE_KEY env var. Run 'bbx activate' or go to dosaygo.com to get a valid product key.${NC}\n"
-        #exit 1
+        exit 1
     fi
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify; bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
     # Retrieve token
@@ -2067,7 +2081,7 @@ check_agreement() {
     return 0
   fi
   if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-      printf "${BLUE}BrowserBox v11 Terms:${NC} https://dosaygo.com/terms.txt\n"
+      printf "${BLUE}BrowserBox v12 Terms:${NC} https://dosaygo.com/terms.txt\n"
       printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
       printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
       read -r -p " Agree? (yes/no): " AGREE

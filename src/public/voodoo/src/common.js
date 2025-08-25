@@ -1,5 +1,5 @@
-const USW = false; // service worker
-export const VERSION = '11.2.1';
+const USW = true; // service worker
+export const VERSION = '12.0.0';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -12,7 +12,7 @@ export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const GO_SECURE = globalThis?.location?.protocol == 'https:';
-export const version = 'v11';
+export const version = 'v12';
 export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
 

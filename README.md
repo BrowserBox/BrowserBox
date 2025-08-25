@@ -141,7 +141,7 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 | LXC                      | ✅        | <img src="readme-files/LXC.png" alt="LXC" height="64" title="LXC">                                   |
 
 >[!NOTE]
->Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v11+) with all fixes and features.
+>Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v12+) with all fixes and features.
 
 \*Tails support is currently in active development and testing.
 

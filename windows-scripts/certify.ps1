@@ -86,7 +86,7 @@ function Test-TicketValidity {
     if ($currentTime -lt $expirationTime) {
         $remainingHours = [math]::Floor($remainingSeconds / 3600)
         $remainingMinutes = [math]::Floor(($remainingSeconds % 3600) / 60)
-        Write-Host "Existing ticket is valid (expires in ${remainingHours}h ${remainingMinutes}m)" -ForegroundColor Green
+        Write-Host "Existing ticket for seat is valid (expires in ${remainingHours}h ${remainingMinutes}m)" -ForegroundColor Green
         return $true
     } else {
         Write-Warning "Existing ticket has expired"
