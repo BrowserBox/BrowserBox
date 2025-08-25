@@ -23,13 +23,13 @@ sudo() {
   if $is_tails && $has_n; then
     if command -v pkexec >/dev/null 2>&1; then
       # Run pkexec with the *command*, not the flags
-      exec pkexec "${cleaned[@]}"
+      pkexec "${cleaned[@]}"
     else
       # Fall back to interactive sudo (without -n)
-      exec "$REAL_SUDO" "${cleaned[@]}"
+      "$REAL_SUDO" "${cleaned[@]}"
     fi
   else
-    exec "$REAL_SUDO" "$@"
+    "$REAL_SUDO" "$@"
   fi
 }
 
