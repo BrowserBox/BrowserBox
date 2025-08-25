@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 extend_lvm_filesystems_dynamic() {
   # Function to extend LVM filesystems for /home and /usr based on available space and file system type
 
