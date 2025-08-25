@@ -832,7 +832,7 @@ run() {
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
     echo "Certification output: $certout"
-    #exit 1
+    exit 1
   else
     printf "${GREEN}Certification complete.${NC}\n"
   fi
@@ -919,7 +919,7 @@ tor_run() {
     if [[ "$?" -ne 0 ]]; then
       printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
       echo "Certification output: $certout"
-      #exit 1
+      exit 1
     else
       printf "${GREEN}Certification complete.${NC}\n"
     fi
@@ -2023,9 +2023,9 @@ run_as() {
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
         printf "${RED}No product key set in LICENSE_KEY env var. Run 'bbx activate' or go to dosaygo.com to get a valid product key.${NC}\n"
-        #exit 1
+        exit 1
     fi
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify; bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
     # Retrieve token
