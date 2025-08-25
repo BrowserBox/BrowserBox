@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 extend_lvm_filesystems_dynamic() {
   # Sum free space across all VGs, in whole GB (floor)
   local vg_free_space_gb
