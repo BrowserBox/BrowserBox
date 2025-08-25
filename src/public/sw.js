@@ -76,6 +76,12 @@ self.addEventListener('fetch', event => {
   }
 });
 
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // Functions, then Helper functions
 function shouldCache(request) {
   const url = new URL(request.url);
