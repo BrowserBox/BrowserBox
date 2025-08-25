@@ -373,7 +373,7 @@ validate_license_key() {
           return 0
         else
           printf "${RED}ERROR: License key invalid or server unreachable. Try again.${NC}\n"
-          echo "$certout"
+          echo "Certification output: $certout"
           LICENSE_KEY=""
         fi
       else
@@ -390,7 +390,7 @@ validate_license_key() {
       return 0
     else
       printf "${RED}Current product key ($LICENSE_KEY) is invalid. Run 'bbx certify' to update it.${NC}\n"
-      echo "$certout"
+      echo "Certification output: $certout"
       return 1
     fi
   fi
@@ -828,11 +828,14 @@ run() {
 
   # Validate existing product key
   export LICENSE_KEY;
-  if ! bbcertify 2>&1; then
+  certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify 2>&1")"
+  if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+    echo "Certification output: $certout"
     #exit 1
+  else
+    printf "${GREEN}Certification complete.${NC}\n"
   fi
-  printf "${GREEN}Certification complete.${NC}\n"
 
   bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
@@ -911,12 +914,15 @@ tor_run() {
     LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
     source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
     # Validate existing product key
-    export LICENSE_KEY
-    if ! bbcertify 2>&1; then
+    export LICENSE_KEY;
+    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify 2>&1")"
+    if [[ "$?" -ne 0 ]]; then
       printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+      echo "Certification output: $certout"
       #exit 1
+    else
+      printf "${GREEN}Certification complete.${NC}\n"
     fi
-    printf "${GREEN}Certification complete.${NC}\n"
 
     local login_link=""
     if $onion; then
@@ -1476,6 +1482,7 @@ certify() {
         return 0
       else
         printf "${RED}ERROR: License key invalid or server unreachable.${NC}\n"
+        echo "Certification output: $certout"
         exit 1
       fi
     else
@@ -1509,6 +1516,7 @@ certify() {
             save_config
           else
             printf "${RED}ERROR: License key invalid or server unreachable.${NC}\n"
+            echo "Certification output: $certout"
             validate_license_key "true"  # Fall back to full prompt loop if invalid
           fi
         else
