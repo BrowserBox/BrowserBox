@@ -1,61 +1,90 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 extend_lvm_filesystems_dynamic() {
-  # Function to extend LVM filesystems for /home and /usr based on available space and file system type
+  # Sum free space across all VGs, in whole GB (floor)
+  local vg_free_space_gb
+  vg_free_space_gb="$(
+    vgs --noheadings --units g --nosuffix -o vg_free 2>/dev/null \
+    | awk '
+        { g=$1 }
+        g ~ /^-$/ { next }                   # skip unknown
+        g ~ /^[0-9.]+$/ { sum += g }        # numeric
+        END { if (sum=="") sum=0; printf "%d", int(sum) }'
+  )"
 
-  # Determine total free space in volume group in GB
-  local vg_free_space_gb=$(vgs --noheadings --nosuffix --units g -o vg_free | awk '{print int($1)}')
+  # If parsing failed, treat as 0
+  if [[ -z "${vg_free_space_gb}" || ! "${vg_free_space_gb}" =~ ^[0-9]+$ ]]; then
+    vg_free_space_gb=0
+  fi
 
-  # Cap the free space at 30GB
+  # Cap free space at 30GB
   local max_space_gb=30
-  if [ "$vg_free_space_gb" -gt "$max_space_gb" ]; then
+  if (( vg_free_space_gb > max_space_gb )); then
     vg_free_space_gb=$max_space_gb
   fi
 
-  # Calculate space allocation (2/3 to /home and 1/3 to /usr)
-  local home_space_gb=$((vg_free_space_gb * 2 / 3))
-  local usr_space_gb=$((vg_free_space_gb / 3))
-
-  # Check and Get File System Paths and Types
-  local home_fs=$(df --output=source /home | tail -1)
-  local usr_fs=$(df --output=source /usr | tail -1)
-  local home_fs_type=$(lsblk -no FSTYPE $home_fs)
-  local usr_fs_type=$(lsblk -no FSTYPE $usr_fs)
-
-  # Extend and Resize /home if it's on an LVM volume
-  if [[ $home_fs == /dev/mapper/* ]]; then
-    echo "Extending $home_fs by $home_space_gb GB..."
-    sudo lvextend -L +${home_space_gb}G $home_fs
-
-    echo "Resizing file system on $home_fs..."
-    if [[ $home_fs_type == "xfs" ]]; then
-      sudo xfs_growfs /home
-    else
-      sudo resize2fs $home_fs
-    fi
-  else
-    echo "Skipping /home as it's not on an LVM volume."
+  # Nothing to do?
+  if (( vg_free_space_gb <= 0 )); then
+    echo "No free space in VG (or could not detect). Skipping LVM extension."
+    return 0
   fi
 
-  # Extend and Resize /usr if it's on an LVM volume
-  if [[ $usr_fs == /dev/mapper/* ]]; then
-    echo "Extending $usr_fs by $usr_space_gb GB..."
-    sudo lvextend -L +${usr_space_gb}G $usr_fs
+  # 2/3 to /home, 1/3 to /usr (floor each)
+  local home_space_gb=$(( vg_free_space_gb * 2 / 3 ))
+  local usr_space_gb=$(( vg_free_space_gb / 3 ))
 
-    echo "Resizing file system on $usr_fs..."
-    if [[ $usr_fs_type == "xfs" ]]; then
-      sudo xfs_growfs /usr
-    else
-      sudo resize2fs $usr_fs
+  # Resolve backing devices and fs types (quote vars to be safe)
+  local home_fs usr_fs home_fs_type usr_fs_type
+  home_fs="$(df --output=source /home | tail -1)"
+  usr_fs="$(df --output=source /usr  | tail -1)"
+
+  # Some systems have bind/overlay/etc.; lsblk may still resolve types
+  home_fs_type="$(lsblk -no FSTYPE -- "$(readlink -f "$home_fs")" 2>/dev/null || true)"
+  usr_fs_type="$(lsblk -no FSTYPE -- "$(readlink -f "$usr_fs")"  2>/dev/null || true)"
+
+  # Helper: extend & grow
+  extend_and_resize() {
+    local dev="$1" mnt="$2" fstype="$3" add_gb="$4"
+
+    if (( add_gb <= 0 )); then
+      echo "Skipping $mnt; allocation computed as 0GB."
+      return 0
     fi
+
+    if [[ "$dev" == /dev/mapper/* || "$dev" == /dev/*/* ]] && sudo lvs --noheadings "$dev" &>/dev/null; then
+      echo "Extending $dev by ${add_gb}G for $mnt..."
+      sudo lvextend -L +"${add_gb}"G --resizefs "$dev" || {
+        # Fallback: extend then resize ourselves
+        sudo lvextend -L +"${add_gb}"G "$dev"
+        if [[ "$fstype" == "xfs" ]]; then
+          echo "Growing XFS on $mnt..."
+          sudo xfs_growfs "$mnt"
+        else
+          echo "Growing $fstype on $dev..."
+          sudo resize2fs "$dev"
+        fi
+      }
+    else
+      echo "Skipping $mnt ($dev) — not an LVM LV."
+    fi
+  }
+
+  # Do /home
+  extend_and_resize "$home_fs" "/home" "$home_fs_type" "$home_space_gb"
+
+  # Do /usr — but only if it’s a separate mount; many systems have /usr on /
+  if [[ "$(df --output=target /usr | tail -1)" == "/" ]]; then
+    echo "Skipping /usr; it’s on the root filesystem."
   else
-    echo "Skipping /usr as it's not on an LVM volume."
+    extend_and_resize "$usr_fs" "/usr" "$usr_fs_type" "$usr_space_gb"
   fi
 
   echo "Filesystem extension process complete."
 }
 
-# Call the function
+# Guard: need LVM tools to be present
 if ! command -v vgs &>/dev/null || ! command -v lvextend &>/dev/null; then
   echo "No tools to extend filesystems, likely not needed."
   exit 0
