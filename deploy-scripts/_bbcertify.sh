@@ -62,7 +62,7 @@ check_ticket_validity() {
   if [[ $current_time -lt $expiration_time ]]; then
     local remaining_hours=$((remaining_seconds / 3600))
     local remaining_minutes=$(((remaining_seconds % 3600) / 60))
-    echo "Existing ticket is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
+    echo "Existing ticket for seat is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
     return 0
   else
     echo "Existing ticket has expired" >&2
