@@ -11,7 +11,7 @@
     key: fs.readFileSync(path.join(APP_ROOT, "certs", "server.key")),
     cert: fs.readFileSync(path.join(APP_ROOT, "certs", "server.crt")),
   };
-  const version = 'v11';
+  const version = 'v12';
 
   export async function start_spdy_server(port, zombie_port) {
     console.log(`Starting SPDY server on port ${port}`);
