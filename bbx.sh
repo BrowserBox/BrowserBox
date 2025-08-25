@@ -366,7 +366,7 @@ validate_license_key() {
       fi
       if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
         export LICENSE_KEY
-        certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license 2>&1")"
+        certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
         if [[ "$?" -eq 0 ]]; then
           printf "${GREEN}License key validated with server.${NC}\n"
           save_config
@@ -384,7 +384,7 @@ validate_license_key() {
   else
     # Validate existing key
     export LICENSE_KEY
-    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license 2>&1")"
+    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
     if [[ "$?" -eq 0 ]]; then
       printf "${GREEN}Existing product key is valid.${NC}\n"
       return 0
@@ -1474,7 +1474,7 @@ certify() {
     LICENSE_KEY="$1"
     if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
       export LICENSE_KEY
-      certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license 2>&1")"
+      certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
       if [[ "$?" -eq 0 ]]; then
         printf "${GREEN}License key validated with server.${NC}\n"
         save_config
@@ -1510,7 +1510,7 @@ certify() {
         LICENSE_KEY="$new_key"
         if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
           export LICENSE_KEY
-          certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license 2>&1")"
+          certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
           if [[ "$?" -eq 0 ]]; then
             printf "${GREEN}License key validated with server.${NC}\n"
             save_config

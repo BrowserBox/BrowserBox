@@ -1,0 +1,40 @@
+@@
+-Usage: $0 [-h|--help] [--force-ticket] [--force-license]
++Usage: $0 [-h|--help] [--force-ticket] [--force-license] [--no-reservation]
+@@
+   --force-license  Check license validity by attempting to issue a new ticket without overwriting valid existing ticket
++  --no-reservation Query for a free seat without reserving it (adds ?reserve=0)
+@@
+ VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat"
+@@
+ get_vacant_seat() {
+   echo "Requesting a vacant seat..." >&2
+-  local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$VACANT_SEAT_ENDPOINT")
++  local url="$VACANT_SEAT_ENDPOINT"
++  if [[ "$NO_RESERVATION" == "true" ]]; then
++    url="${url}?reserve=0"
++    echo "Using no-reservation mode" >&2
++  fi
++  local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$url")
+@@
+ FORCE_TICKET=false
+ FORCE_LICENSE=false
++NO_RESERVATION=false
+ while [[ "$#" -gt 0 ]]; do
+   case "$1" in
+@@
+     --force-license)
+       FORCE_LICENSE=true
+       shift
+       ;;
++    --no-reservation)
++      NO_RESERVATION=true
++      shift
++      ;;
+@@
+ if [[ "$FORCE_TICKET" == "true" ]] && [[ "$FORCE_LICENSE" == "true" ]]; then
+   echo "Error: Use only --force-ticket or --force-license but not both" >&2
+   usage
+   exit 1
+ fi
+
