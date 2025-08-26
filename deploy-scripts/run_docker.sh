@@ -67,6 +67,9 @@ if [[ -z "$LICENSE_KEY" ]]; then
   fi
 else
   echo "LICENSE_KEY is already set." >&2
+  if [[ -n "$BBX_DEBUG" ]]; then
+    echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+  fi
 fi
 # Args Check (OG)
 if [[ -z "$PORT" || -z "$HOSTNAME" || -z "$EMAIL" ]]; then
