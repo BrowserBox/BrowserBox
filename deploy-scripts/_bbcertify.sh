@@ -240,7 +240,6 @@ main() {
       time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
       meta_put BBX_TICKET_ID "$ticket_id"
       meta_put BBX_TICKET_SLOT "$time_slot"
-      echo "New ticket saved to $TICKET_FILE" >&2
     else
       echo "License is valid, but keeping existing valid ticket" >&2
     fi
