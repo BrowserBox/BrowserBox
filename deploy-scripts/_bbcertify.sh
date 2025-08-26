@@ -11,9 +11,10 @@ TICKET_FILE="$CONFIG_DIR/ticket.json"
 API_VERSION="v1"
 API_SERVER="https://master.dosaygo.com"
 API_BASE="${API_SERVER}/${API_VERSION}"
-VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat"
+VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat?reserve=0" # Always no-reserve for snapshot
 ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
 REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
+RESERVE_SEAT_ENDPOINT="${API_BASE}/reserve-seat"
 VALIDATE_TICKET_ENDPOINT="${API_SERVER}/tickets/validate"
 TICKET_VALIDITY_PERIOD=$((24 * 60 * 60)) # 24 hours in seconds
 RESERVATION_FILE="$CONFIG_DIR/reservation.json"
@@ -89,37 +90,16 @@ validate_ticket_with_server() {
 get_vacant_seat() {
   echo "Requesting a vacant seat..." >&2
   local url="$VACANT_SEAT_ENDPOINT"
-  local reserve_mode="1"
-  if [[ "$NO_RESERVATION" == "true" ]]; then
-    url="${url}?reserve=0"
-    reserve_mode="0"
-    echo "Using no-reservation mode" >&2
-  fi
   local response
   response=$(curl -sS --connect-timeout 7 --max-time 15 -H "Authorization: Bearer $LICENSE_KEY" "$url")
-  local seat reservation
+  local seat
   seat=$(echo "$response" | jq -r '.vacantSeat // empty')
-  reservation=$(echo "$response" | jq -r '.reservationCode // empty')
   if [[ -z "$seat" ]]; then
     echo "Error: No vacant seat available. Response:" >&2
     echo "$response" >&2
     exit 1
   fi
   echo "Obtained seat: $seat" >&2
-  # If we actually reserved, persist the reservation sidecar
-  if [[ "$reserve_mode" == "1" && -n "$reservation" ]]; then
-    jq -n --arg seat "$seat" --arg code "$reservation" \
-      --arg when "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      '{seatId:$seat, reservationCode:$code, reservedAt:$when}' > "$RESERVATION_FILE"
-    # convenience env for downstream commands that source this file
-    echo "BBX_RESERVATION_CODE=$reservation" > "$CERT_META_FILE.tmp"
-    echo "BBX_RESERVED_SEAT_ID=$seat" >> "$CERT_META_FILE.tmp"
-    mv "$CERT_META_FILE.tmp" "$CERT_META_FILE"
-    echo "Saved reservation to $RESERVATION_FILE" >&2
-  else
-    # ensure we don’t leave stale info around in no-reserve mode
-    rm -f "$RESERVATION_FILE" "$CERT_META_FILE"
-  fi
   # print just the seat id to stdout for caller compatibility
   echo "$seat"
 }
@@ -157,35 +137,32 @@ register_certificate() {
   fi
   echo "Certificate registered successfully" >&2
 }
-# Redeem reservation if present (utilize by occupying the seat with a generated instance ID)
-redeem_reservation() {
-  if [[ ! -f "$RESERVATION_FILE" ]]; then
-    echo "No reservation to redeem" >&2
-    return 0
-  fi
-  local reservation=$(jq -r '.reservationCode // empty' "$RESERVATION_FILE")
-  if [[ -z "$reservation" ]]; then
-    echo "Empty reservation code; skipping redeem" >&2
-    rm -f "$RESERVATION_FILE"
-    return 0
-  fi
-  local instance_id=$(cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1)
-  local ticket_json=$(cat "$TICKET_FILE")
-  echo "Redeeming reservation $reservation with instance ID $instance_id..." >&2
-  local payload=$(jq -n --argjson ticket "$ticket_json" --arg inst "$instance_id" --arg res "$reservation" \
-    '{certificateJson: $ticket, instanceId: $inst, reservationCode: $res}')
+# Reserve seat
+reserve_seat() {
+  local ticket_json="$1"
+  echo "Reserving seat..." >&2
+  local payload=$(jq -n --argjson ticket "$ticket_json" '{ticketJson: $ticket}')
   local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
-    -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
-  local is_valid=$(echo "$response" | jq -r '.isValid // false')
-  if [[ "$is_valid" == "true" ]]; then
-    echo "Reservation redeemed successfully" >&2
-    meta_put BBX_INSTANCE_ID "$instance_id"
-    rm -f "$RESERVATION_FILE" # Clean up after redeem
-    return 0
-  else
-    echo "Failed to redeem reservation. Response: $response" >&2
+    -H "Authorization: Bearer $LICENSE_KEY" \
+    -d "$payload" "$RESERVE_SEAT_ENDPOINT")
+  local reservation=$(echo "$response" | jq -r '.reservationCode // empty')
+  local new_ticket=$(echo "$response" | jq -e '.ticket // empty')
+  if [[ -z "$reservation" ]]; then
+    echo "Error reserving seat. Response:" >&2
+    echo "$response" >&2
     exit 1
   fi
+  echo "Seat reserved successfully" >&2
+  # If new ticket issued, save it
+  if [[ -n "$new_ticket" ]]; then
+    echo "$new_ticket" > "$TICKET_FILE"
+    echo "New ticket saved to $TICKET_FILE" >&2
+  fi
+  jq -n --arg code "$reservation" \
+    '{reservationCode:$code}' > "$RESERVATION_FILE"
+  # convenience env for downstream commands that source this file
+  echo "BBX_RESERVATION_CODE=$reservation" > "$CERT_META_FILE"
+  return 0
 }
 # Argument parsing
 FORCE_TICKET=false
@@ -248,7 +225,7 @@ main() {
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
       register_certificate "$ticket_json"
-      #redeem_reservation  # Commented to shift redeem to app
+      reserve_seat "$ticket_json"
       # augment cert.meta.json with ticket basics
       ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
       time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
@@ -267,7 +244,7 @@ main() {
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"
-  #redeem_reservation  # Commented to shift redeem to app
+  reserve_seat "$ticket_json"
   # augment cert.meta.json with ticket basics
   ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
   time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
