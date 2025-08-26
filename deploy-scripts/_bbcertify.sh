@@ -81,6 +81,37 @@ check_ticket_validity() {
   fi
 }
 
+# Prefer server-provided expiry; else fall back to +24h
+check_ticket_validity() {
+  if [[ ! -f "$TICKET_FILE" ]]; then
+    echo "No existing ticket found" >&2; return 1
+  fi
+
+  local expiresAt timeSlot
+  expiresAt=$(jq -r '.ticket.ticketData.expiresAt // empty' "$TICKET_FILE" 2>/dev/null)
+  timeSlot=$(jq -r '.ticket.ticketData.timeSlot // empty' "$TICKET_FILE" 2>/dev/null)
+
+  local current_time expiration_time
+  if [[ -n "$expiresAt" && "$expiresAt" =~ ^[0-9]+$ ]]; then
+    expiration_time="$expiresAt"
+  elif [[ -n "$timeSlot" && "$timeSlot" =~ ^[0-9]+$ ]]; then
+    expiration_time=$(( timeSlot + TICKET_VALIDITY_PERIOD ))
+  else
+    echo "Invalid ticket times in $TICKET_FILE" >&2; return 1
+  fi
+
+  if (( $(date +%s) < expiration_time )); then
+    local remaining=$(( expiration_time - $(date +%s) ))
+    printf "Existing ticket valid (expires in %dh %dm)\n" $((remaining/3600)) $(((remaining%3600)/60)) >&2
+    return 0
+  else
+    echo "Existing ticket has expired" >&2
+    rm -f "$TICKET_FILE"
+    return 1
+  fi
+}
+
+
 # Validate ticket with server
 validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")

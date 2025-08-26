@@ -26,6 +26,20 @@ PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
+# ASCII Banner
+banner() {
+    printf "${banner_color}${BOLD}"
+    cat << 'EOF'
+   ____                                  ____
+  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
+  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
+  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
+  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
+
+EOF
+    printf "${NC}\n"
+}
+
 OGARGS=("$@")
 
 protecc_win_sysadmins() {
@@ -70,6 +84,7 @@ BBX_BIN="${COMMAND_DIR}/bbx"
 # Config file (secondary to test.env and login.link)
 BB_CONFIG_DIR="${HOME}/.config/dosyago/bbpro"
 CONFIG_FILE="${BB_CONFIG_DIR}/config"
+CERT_META_FILE="${BB_CONFIG_DIR}/tickets/cert.meta.env"
 [ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
 
 DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
@@ -117,19 +132,6 @@ self_elevate_to_temp() {
 
   echo "Elevating to temp execution at: $TEMP_SCRIPT"
   exec "$TEMP_SCRIPT" "$@"
-}
-
-sort_git_tags() {
-    # Read input from stdin or file
-    local input
-    if [ -n "$1" ]; then
-        input=$(cat "$1")
-    else
-        input=$(cat)
-    fi
-
-    # Extract tags (second column, remove refs/tags/), sort by version
-    echo "$input" | awk '{print $2}' | sed 's|^refs/tags/||' | sort -V
 }
 
 # -------------------------
@@ -260,6 +262,7 @@ get_latest_repo_version() {
 
 # Version
 BBX_VERSION="$(get_latest_repo_version)"
+[[ -z "$BBX_VERSION" ]] && BBX_VERSION="unknown"
 branch="main" # change to main for dist
 if [[ "$branch" != "main" ]]; then
   export BBX_BRANCH="$branch"
@@ -276,22 +279,6 @@ get_version_info() {
     echo "unknown"
   fi
 }
-
-# ASCII Banner
-banner() {
-    printf "${banner_color}${BOLD}"
-    cat << 'EOF'
-   ____                                  ____
-  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
-  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
-  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
-  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
-
-EOF
-    printf "${NC}\n"
-}
-
-
 
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
   if [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]] && [[ "$1" != "stop" ]] && [[ "$1" != "update-background" ]]; then
@@ -366,7 +353,7 @@ validate_license_key() {
       fi
       if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
         export LICENSE_KEY
-        certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+        certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify --force-license --no-reservation 2>&1")"
         if [[ "$?" -eq 0 ]]; then
           printf "${GREEN}License key validated with server.${NC}\n"
           save_config
@@ -384,7 +371,7 @@ validate_license_key() {
   else
     # Validate existing key
     export LICENSE_KEY
-    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+    certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify --force-license --no-reservation 2>&1")"
     if [[ "$?" -eq 0 ]]; then
       printf "${GREEN}Existing product key is valid.${NC}\n"
       return 0
@@ -481,13 +468,13 @@ is_local_hostname() {
 
 # Ensure hostname is in /etc/hosts, allowing whitespace but not comments
 ensure_hosts_entry() {
-    local hostname="$1"
-    if ! grep -v "^\s*#" /etc/hosts | grep -q "^\s*127\.0\.0\.1.*$hostname"; then
-        printf "${YELLOW}Adding $hostname to /etc/hosts...${NC}\n"
-        echo "127.0.0.1 $hostname" | $SUDO tee -a /etc/hosts > /dev/null || { printf "${RED}Failed to update /etc/hosts${NC}\n"; exit 1; }
-    else
-        printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
-    fi
+  local h="$1"
+  if ! grep -Ev '^[[:space:]]*#' /etc/hosts | grep -Eq "^[[:space:]]*127\.0\.0\.1[[:space:]].*\b$h\b"; then
+    echo "127.0.0.1 $h" | $SUDO tee -a /etc/hosts >/dev/null
+  fi
+  if ! grep -Ev '^[[:space:]]*#' /etc/hosts | grep -Eq "^[[:space:]]*::1[[:space:]].*\b$h\b"; then
+    echo "::1 $h" | $SUDO tee -a /etc/hosts >/dev/null
+  fi
 }
 
 # Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
@@ -701,7 +688,7 @@ install() {
     npm i -g pm2@latest
     timeout 5s pm2 update
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
-    $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
+    $SUDO curl --connect-timeout 7 --max-time 15 -sSL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
     printf "${GREEN}bbx $BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
@@ -824,16 +811,16 @@ run() {
 
   # Validate existing product key
   export LICENSE_KEY;
-  certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify 2>&1")"
+  certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
     echo "Certification output: $certout"
     exit 1
   else
     printf "${GREEN}Certification complete.${NC}\n"
-    if [[ -f "$CONFIG_DIR/cert.meta.json" ]]; then
+    if [[ -f "$CERT_META_FILE" ]]; then
       # shellcheck disable=SC1090
-      source "$CONFIG_DIR/cert.meta.json"
+      source "$CERT_META_FILE"
       export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
     fi
   fi
@@ -916,13 +903,18 @@ tor_run() {
     source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
     # Validate existing product key
     export LICENSE_KEY;
-    certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify 2>&1")"
+    certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
     if [[ "$?" -ne 0 ]]; then
       printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
       echo "Certification output: $certout"
       exit 1
     else
       printf "${GREEN}Certification complete.${NC}\n"
+      if [[ -f "$CERT_META_FILE" ]]; then
+        # shellcheck disable=SC1090
+        source "$CERT_META_FILE"
+        export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
+      fi
     fi
 
     local login_link=""
@@ -1475,7 +1467,7 @@ certify() {
     LICENSE_KEY="$1"
     if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
       export LICENSE_KEY
-      certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+      certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify --force-license --no-reservation 2>&1")"
       if [[ "$?" -eq 0 ]]; then
         printf "${GREEN}License key validated with server.${NC}\n"
         save_config
@@ -1511,7 +1503,7 @@ certify() {
         LICENSE_KEY="$new_key"
         if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
           export LICENSE_KEY
-          certout="$(bash -c "export LICENSE_KEY="$LICENSE_KEY"; bbcertify --force-license --no-reservation 2>&1")"
+          certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify --force-license --no-reservation 2>&1")"
           if [[ "$?" -eq 0 ]]; then
             printf "${GREEN}License key validated with server.${NC}\n"
             save_config
@@ -1665,7 +1657,8 @@ check_prepare_and_install() {
         is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
         # Move prepared version
         $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
-        mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n" >> $"$LOG_FILE"; return 1; }
+        mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
+
         # Run copy_install.sh
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n" >> "$LOG_FILE"; return 1; }
         # Clean up lock files
@@ -1864,12 +1857,12 @@ stop_user() {
 
 # Helper: Get user's home directory
 get_home_dir() {
-    local user="$1"
-    if [ "$(uname -s)" = "Darwin" ]; then
-        echo "/Users/$user"
-    else
-        echo "/home/$user"
-    fi
+  local user="$1"
+  if [ "$(uname -s)" = "Darwin" ]; then
+      echo "/Users/$user"
+  else
+    getent passwd "$1" | cut -d: -f6 2>/dev/null || echo "/home/$1";
+  fi
 }
 
 create_user() {
