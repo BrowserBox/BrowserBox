@@ -1,11 +1,9 @@
 #!/bin/bash
 # bbcertify.sh - Obtain a vacant seat, issue a ticket, and register it as a certificate
- 
 if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
 set -e
-
 # Configuration
 CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets"
 [ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
@@ -17,80 +15,41 @@ VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat"
 ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
 REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
 VALIDATE_TICKET_ENDPOINT="${API_SERVER}/tickets/validate"
-TICKET_VALIDITY_PERIOD=$((24 * 60 * 60))  # 24 hours in seconds
+TICKET_VALIDITY_PERIOD=$((24 * 60 * 60)) # 24 hours in seconds
 RESERVATION_FILE="$CONFIG_DIR/reservation.json"
-CERT_META_FILE="$CONFIG_DIR/cert.meta.env"   # it stores KEY=VALUE lines, so .env is clearer
-
+CERT_META_FILE="$CONFIG_DIR/cert.meta.env" # it stores KEY=VALUE lines, so .env is clearer
 # Usage information
 usage() {
   cat <<EOF
 Usage: $0 [-h|--help] [--force-ticket] [--force-license] [--no-reservation]
-
 Obtains a valid ticket for BrowserBox, renewing if expired. Ticket saved to: $TICKET_FILE
-
 Environment Variables:
-  LICENSE_KEY   Your API key (required)
-
+  LICENSE_KEY Your API key (required)
 Options:
-  -h, --help       Show this help message and exit
-  --force-ticket   Validate existing ticket with server; renew if invalid
-  --force-license  Check license validity by attempting to issue a new ticket without overwriting valid existing ticket
+  -h, --help Show this help message and exit
+  --force-ticket Validate existing ticket with server; renew if invalid
+  --force-license Check license validity by attempting to issue a new ticket without overwriting valid existing ticket
   --no-reservation Query if a seat is free without reserving (adds ?reserve=0)
-
 EOF
 }
-
 # Check for required environment variable
 if [[ -z "$LICENSE_KEY" ]]; then
   echo "Error: LICENSE_KEY environment variable is not set." >&2
   exit 1
 fi
-
 meta_put() {
   local k="$1" v="$2"
   (grep -v "^${k}=" "$CERT_META_FILE" 2>/dev/null; echo "${k}=${v}") \
     > "${CERT_META_FILE}.tmp" && mv "${CERT_META_FILE}.tmp" "$CERT_META_FILE"
 }
-
 # Check local ticket validity
-check_ticket_validity() {
-  if [[ ! -f "$TICKET_FILE" ]]; then
-    echo "No existing ticket found" >&2
-    return 1
-  fi
-
-  local timeslot=$(jq -r '.ticket.ticketData.timeSlot' "$TICKET_FILE" 2>/dev/null)
-  if [[ -z "$timeslot" || "$timeslot" == "null" ]]; then
-    echo "Invalid or missing timeSlot in $TICKET_FILE" >&2
-    return 1
-  fi
-
-  local current_time=$(date +%s)
-  local expiration_time=$((timeslot + TICKET_VALIDITY_PERIOD))
-  local remaining_seconds=$((expiration_time - current_time))
-
-  if [[ $current_time -lt $expiration_time ]]; then
-    local remaining_hours=$((remaining_seconds / 3600))
-    local remaining_minutes=$(((remaining_seconds % 3600) / 60))
-    echo "Existing ticket for seat is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
-    return 0
-  else
-    echo "Existing ticket has expired" >&2
-    rm -f "$TICKET_FILE"
-    return 1
-  fi
-}
-
-# Prefer server-provided expiry; else fall back to +24h
 check_ticket_validity() {
   if [[ ! -f "$TICKET_FILE" ]]; then
     echo "No existing ticket found" >&2; return 1
   fi
-
   local expiresAt timeSlot
   expiresAt=$(jq -r '.ticket.ticketData.expiresAt // empty' "$TICKET_FILE" 2>/dev/null)
   timeSlot=$(jq -r '.ticket.ticketData.timeSlot // empty' "$TICKET_FILE" 2>/dev/null)
-
   local current_time expiration_time
   if [[ -n "$expiresAt" && "$expiresAt" =~ ^[0-9]+$ ]]; then
     expiration_time="$expiresAt"
@@ -99,7 +58,6 @@ check_ticket_validity() {
   else
     echo "Invalid ticket times in $TICKET_FILE" >&2; return 1
   fi
-
   if (( $(date +%s) < expiration_time )); then
     local remaining=$(( expiration_time - $(date +%s) ))
     printf "Existing ticket valid (expires in %dh %dm)\n" $((remaining/3600)) $(((remaining%3600)/60)) >&2
@@ -110,8 +68,6 @@ check_ticket_validity() {
     return 1
   fi
 }
-
-
 # Validate ticket with server
 validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")
@@ -129,7 +85,6 @@ validate_ticket_with_server() {
     return 1
   fi
 }
-
 # Fetch vacant seat
 get_vacant_seat() {
   echo "Requesting a vacant seat..." >&2
@@ -140,22 +95,17 @@ get_vacant_seat() {
     reserve_mode="0"
     echo "Using no-reservation mode" >&2
   fi
-
   local response
   response=$(curl -sS --connect-timeout 7 --max-time 15 -H "Authorization: Bearer $LICENSE_KEY" "$url")
-
   local seat reservation
   seat=$(echo "$response" | jq -r '.vacantSeat // empty')
   reservation=$(echo "$response" | jq -r '.reservationCode // empty')
-
   if [[ -z "$seat" ]]; then
     echo "Error: No vacant seat available. Response:" >&2
     echo "$response" >&2
     exit 1
   fi
-
   echo "Obtained seat: $seat" >&2
-
   # If we actually reserved, persist the reservation sidecar
   if [[ "$reserve_mode" == "1" && -n "$reservation" ]]; then
     jq -n --arg seat "$seat" --arg code "$reservation" \
@@ -163,18 +113,16 @@ get_vacant_seat() {
       '{seatId:$seat, reservationCode:$code, reservedAt:$when}' > "$RESERVATION_FILE"
     # convenience env for downstream commands that source this file
     echo "BBX_RESERVATION_CODE=$reservation" > "$CERT_META_FILE.tmp"
-    echo "BBX_RESERVED_SEAT_ID=$seat"        >> "$CERT_META_FILE.tmp"
+    echo "BBX_RESERVED_SEAT_ID=$seat" >> "$CERT_META_FILE.tmp"
     mv "$CERT_META_FILE.tmp" "$CERT_META_FILE"
     echo "Saved reservation to $RESERVATION_FILE" >&2
   else
     # ensure we don’t leave stale info around in no-reserve mode
     rm -f "$RESERVATION_FILE" "$CERT_META_FILE"
   fi
-
   # print just the seat id to stdout for caller compatibility
   echo "$seat"
 }
-
 # Issue a ticket
 issue_ticket() {
   local seat_id="$1"
@@ -194,7 +142,6 @@ issue_ticket() {
   echo "Ticket issued successfully" >&2
   echo "$ticket"
 }
-
 # Register ticket as certificate
 register_certificate() {
   local ticket_json="$1"
@@ -210,13 +157,40 @@ register_certificate() {
   fi
   echo "Certificate registered successfully" >&2
 }
-
-
+# Redeem reservation if present (utilize by occupying the seat with a generated instance ID)
+redeem_reservation() {
+  if [[ ! -f "$RESERVATION_FILE" ]]; then
+    echo "No reservation to redeem" >&2
+    return 0
+  fi
+  local reservation=$(jq -r '.reservationCode // empty' "$RESERVATION_FILE")
+  if [[ -z "$reservation" ]]; then
+    echo "Empty reservation code; skipping redeem" >&2
+    rm -f "$RESERVATION_FILE"
+    return 0
+  fi
+  local instance_id=$(cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1)
+  local ticket_json=$(cat "$TICKET_FILE")
+  echo "Redeeming reservation $reservation with instance ID $instance_id..." >&2
+  local payload=$(jq -n --argjson ticket "$ticket_json" --arg inst "$instance_id" --arg res "$reservation" \
+    '{certificateJson: $ticket, instanceId: $inst, reservationCode: $res}')
+  local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
+    -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
+  local is_valid=$(echo "$response" | jq -r '.isValid // false')
+  if [[ "$is_valid" == "true" ]]; then
+    echo "Reservation redeemed successfully" >&2
+    meta_put BBX_INSTANCE_ID "$instance_id"
+    rm -f "$RESERVATION_FILE" # Clean up after redeem
+    return 0
+  else
+    echo "Failed to redeem reservation. Response: $response" >&2
+    exit 1
+  fi
+}
 # Argument parsing
 FORCE_TICKET=false
 FORCE_LICENSE=false
 NO_RESERVATION=false
-
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -h|--help)
@@ -232,8 +206,8 @@ while [[ "$#" -gt 0 ]]; do
       shift
       ;;
     --no-reservation)
-      NO_RESERVATION=true; 
-      shift 
+      NO_RESERVATION=true;
+      shift
       ;;
     *)
       echo "Unknown option: $1" >&2
@@ -242,20 +216,17 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
-
 if [[ "$FORCE_TICKET" == "true" ]] && [[ "$FORCE_LICENSE" == "true" ]]; then
   echo "Error: Use only --force-ticket or --force-license but not both" >&2
   usage
   exit 1
 fi
-
 # Main logic
 main() {
   local ticket_valid=false
   if check_ticket_validity; then
     ticket_valid=true
   fi
-
   if [[ "$FORCE_TICKET" == "true" && "$ticket_valid" == "true" ]]; then
     if validate_ticket_with_server; then
       echo "Ticket is valid according to server, keeping existing ticket" >&2
@@ -270,7 +241,6 @@ main() {
     echo "$TICKET_FILE"
     exit 0
   fi
-
   if [[ "$FORCE_LICENSE" == "true" ]]; then
     seat_id=$(get_vacant_seat)
     echo "Seat ID: $seat_id" >&2
@@ -278,6 +248,7 @@ main() {
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
       register_certificate "$ticket_json"
+      redeem_reservation
       # augment cert.meta.json with ticket basics
       ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
       time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
@@ -290,21 +261,19 @@ main() {
     echo "$TICKET_FILE"
     exit 0
   fi
-
   # Default case: get new ticket if none exists or it's invalid
   seat_id=$(get_vacant_seat)
   echo "Seat ID 2: $seat_id" >&2
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"
+  redeem_reservation
   # augment cert.meta.json with ticket basics
   ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
   time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
   meta_put BBX_TICKET_ID "$ticket_id"
   meta_put BBX_TICKET_SLOT "$time_slot"
-
   echo "$TICKET_FILE"
   exit 0
 }
-
 main
