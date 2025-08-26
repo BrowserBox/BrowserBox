@@ -18,6 +18,8 @@ ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
 REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
 VALIDATE_TICKET_ENDPOINT="${API_SERVER}/tickets/validate"
 TICKET_VALIDITY_PERIOD=$((24 * 60 * 60))  # 24 hours in seconds
+RESERVATION_FILE="$CONFIG_DIR/reservation.json"
+CERT_META_FILE="$CONFIG_DIR/cert.meta.env"   # it stores KEY=VALUE lines, so .env is clearer
 
 # Usage information
 usage() {
@@ -43,6 +45,12 @@ if [[ -z "$LICENSE_KEY" ]]; then
   echo "Error: LICENSE_KEY environment variable is not set." >&2
   exit 1
 fi
+
+meta_put() {
+  local k="$1" v="$2"
+  (grep -v "^${k}=" "$CERT_META_FILE" 2>/dev/null; echo "${k}=${v}") \
+    > "${CERT_META_FILE}.tmp" && mv "${CERT_META_FILE}.tmp" "$CERT_META_FILE"
+}
 
 # Check local ticket validity
 check_ticket_validity() {
@@ -78,7 +86,7 @@ validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")
   echo "Checking ticket validity with server..." >&2
   local payload=$(jq -n --argjson ticket "$ticket_json" '{"certificateJson": $ticket}')
-  local response=$(curl -s -X POST -H "Content-Type: application/json" \
+  local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
     -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
   local is_valid=$(echo "$response" | jq -r '.isValid // false')
   if [[ "$is_valid" == "true" ]]; then
@@ -103,7 +111,7 @@ get_vacant_seat() {
   fi
 
   local response
-  response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$url")
+  response=$(curl -sS --connect-timeout 7 --max-time 15 -H "Authorization: Bearer $LICENSE_KEY" "$url")
 
   local seat reservation
   seat=$(echo "$response" | jq -r '.vacantSeat // empty')
@@ -142,7 +150,7 @@ issue_ticket() {
   local time_slot=$(date +%s)
   local device_id=$(hostname)
   echo "Issuing ticket for seat $seat_id..." >&2
-  local response=$(curl -s -X POST -H "Content-Type: application/json" \
+  local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
     -H "Authorization: Bearer $LICENSE_KEY" \
     -d "{\"seatId\": \"$seat_id\", \"timeSlot\": \"$time_slot\", \"deviceId\": \"$device_id\", \"issuer\": \"master\"}" \
     "$ISSUE_TICKET_ENDPOINT")
@@ -161,7 +169,7 @@ register_certificate() {
   local ticket_json="$1"
   echo "Registering ticket as certificate..." >&2
   local payload=$(jq -n --argjson ticket "$ticket_json" '{certificates: [$ticket]}')
-  local response=$(curl -s -X POST -H "Content-Type: application/json" \
+  local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
     -H "Authorization: Bearer $LICENSE_KEY" \
     -d "$payload" "$REGISTER_CERT_ENDPOINT")
   if ! echo "$response" | jq -e '.message == "Certificates registered successfully."' >/dev/null; then
@@ -234,7 +242,7 @@ main() {
 
   if [[ "$FORCE_LICENSE" == "true" ]]; then
     seat_id=$(get_vacant_seat)
-    echo "Seat ID: $seat_id"
+    echo "Seat ID: $seat_id" >&2
     ticket_json=$(issue_ticket "$seat_id")
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
@@ -242,8 +250,8 @@ main() {
       # augment cert.meta.json with ticket basics
       ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
       time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
-      echo "BBX_TICKET_ID=${ticket_id}"   >> "$CERT_META_FILE"
-      echo "BBX_TICKET_SLOT=${time_slot}" >> "$CERT_META_FILE"
+      meta_put BBX_TICKET_ID "$ticket_id"
+      meta_put BBX_TICKET_SLOT "$time_slot"
       echo "New ticket saved to $TICKET_FILE" >&2
     else
       echo "License is valid, but keeping existing valid ticket" >&2
@@ -254,15 +262,15 @@ main() {
 
   # Default case: get new ticket if none exists or it's invalid
   seat_id=$(get_vacant_seat)
-  echo "Seat ID 2: $seat_id"
+  echo "Seat ID 2: $seat_id" >&2
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"
   # augment cert.meta.json with ticket basics
   ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
   time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
-  echo "BBX_TICKET_ID=${ticket_id}"   >> "$CERT_META_FILE"
-  echo "BBX_TICKET_SLOT=${time_slot}" >> "$CERT_META_FILE"
+  meta_put BBX_TICKET_ID "$ticket_id"
+  meta_put BBX_TICKET_SLOT "$time_slot"
 
   echo "$TICKET_FILE"
   exit 0
