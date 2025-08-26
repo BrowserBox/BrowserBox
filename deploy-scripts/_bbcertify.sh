@@ -11,7 +11,7 @@ TICKET_FILE="$CONFIG_DIR/ticket.json"
 API_VERSION="v1"
 API_SERVER="https://master.dosaygo.com"
 API_BASE="${API_SERVER}/${API_VERSION}"
-VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat?reserve=0" # Always no-reserve for snapshot
+VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat?reserve=0" # Snapshot only
 ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
 REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
 RESERVE_SEAT_ENDPOINT="${API_BASE}/reserve-seat"

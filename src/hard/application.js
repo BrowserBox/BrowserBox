@@ -32,13 +32,13 @@ export async function applicationCheck() {
   console.log('Application Check', {dn: __dirname(), fn: __filename(), stack: (new Error).stack});
 
   try {
-    // Verify application integrity
-    await hardenedApp.verifyManifest();
-    log('Application', 'Application integrity check passed.');
-
     // Validate license
     await hardenedApp.validateLicense();
     log('Application', 'License validation succeeded.');
+
+    // Verify application integrity
+    await hardenedApp.verifyManifest();
+    log('Application', 'Application integrity check passed.');
 
     // Start application logic
     log('Application', 'Application started.');
