@@ -232,12 +232,15 @@ main() {
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
       register_certificate "$ticket_json"
-      reserve_seat "$ticket_json"
+      if [[ "$NO_RESERVATION" != "true" ]]; then
+        reserve_seat "$ticket_json"
+      fi
       # augment cert.meta.json with ticket basics
       ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
       time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
       meta_put BBX_TICKET_ID "$ticket_id"
       meta_put BBX_TICKET_SLOT "$time_slot"
+      echo "New ticket saved to $TICKET_FILE" >&2
     else
       echo "License is valid, but keeping existing valid ticket" >&2
     fi
@@ -251,7 +254,9 @@ main() {
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"
-  reserve_seat "$ticket_json"
+  if [[ "$NO_RESERVATION" != "true" ]]; then
+    reserve_seat "$ticket_json"
+  fi
   # augment cert.meta.json with ticket basics
   ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
   time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
