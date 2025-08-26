@@ -57,7 +57,7 @@ if (Test-Path $TestEnvFile) {
 
 # Check for required license key (env var takes precedence over config)
 if (-not $env:LICENSE_KEY -and -not $Config["LICENSE_KEY"]) {
-    Write-Error "No LICENSE_KEY provided. Purchase a license key at: http://getbrowserbox.com or email sales@dosaygo.com for help. Then run 'bbx certify <LicenseKey>' to install."
+    Write-Error "No LICENSE_KEY provided. Purchase a license key at: http://getbrowserbox.com or email sales@dosaygo.com for help. Then run 'bbx certify -LicenseKey <LicenseKey>' to install."
     throw "LICENSE Error"
 }
 $LICENSE_KEY = if ($env:LICENSE_KEY) { $env:LICENSE_KEY } else { $Config["LICENSE_KEY"] }
