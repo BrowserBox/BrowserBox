@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -e # Exit on error
 trap 'echo "Error: Bailed! Check output..." >&2' ERR
 trap 'echo "Done!" >&2' EXIT
