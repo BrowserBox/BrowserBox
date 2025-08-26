@@ -186,7 +186,7 @@ open_ports $((PORT-2)) $((PORT+2))
 # External IP (OG)
 get_ip() {
   curl -4s --connect-timeout 5 "https://icanhazip.com" || curl -4s --connect-timeout 5 "https://ifconfig.me" || {
-    echo "ERROR: Can't fetch IP‚Äîcheck network!" >&2
+    echo "ERROR: Can't fetch IP - check network!" >&2
     exit 1
   }
 }
