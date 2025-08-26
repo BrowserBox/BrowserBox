@@ -323,7 +323,6 @@ export class HardenedApplication {
           agent: new https.Agent({ rejectUnauthorized: true }),
         }
       );
-      console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
       let result;
       try {
         result = await response.text();
@@ -332,6 +331,7 @@ export class HardenedApplication {
         console.warn({result});
         throw new Error(`License server produced in invalid response with code ${response.status}`);
       }
+      console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
       if (!response.ok) {
         if ( result.err && (result.err == 'already_in_use' || result.err == 'ticket_expired') ) {
           try {
@@ -403,7 +403,6 @@ export class HardenedApplication {
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
-    console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
     let result;
     try {
       result = await response.text();
@@ -412,6 +411,7 @@ export class HardenedApplication {
       console.warn({result});
       throw new Error(`License server produced in invalid response with code ${response.status}`);
     }
+    console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
     if (!response.ok) {
       if ( result.err && (result.err == 'already_in_use' || result.err == 'ticket_expired') ) {
         try {
