@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -e # Exit on error
 trap 'echo "Error: Bailed! Check output..." >&2' ERR
 trap 'echo "Done!" >&2' EXIT
@@ -161,19 +161,19 @@ open_ports() {
   local start=$1 end=$2
   if [[ "$OS" = "Darwin" ]]; then
     if have_sudo; then
-      echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed‚Äîopen $start-$end/tcp manually!" >&2
+      echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed - open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust macOS pf. Open $start-$end/tcp manually if needed." >&2
     fi
   elif command -v firewall-cmd >/dev/null 2>&1; then
     if have_sudo; then
-      $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed‚Äîopen $start-$end/tcp manually!" >&2
+      $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed - open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust firewalld. Open $start-$end/tcp manually if needed." >&2
     fi
   elif command -v ufw >/dev/null 2>&1; then
     if have_sudo; then
-      $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed‚Äîopen $start-$end/tcp manually!" >&2
+      $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed - open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust ufw. Open $start-$end/tcp manually if needed." >&2
     fi
