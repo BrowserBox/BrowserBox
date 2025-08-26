@@ -95,18 +95,44 @@ validate_ticket_with_server() {
 get_vacant_seat() {
   echo "Requesting a vacant seat..." >&2
   local url="$VACANT_SEAT_ENDPOINT"
+  local reserve_mode="1"
   if [[ "$NO_RESERVATION" == "true" ]]; then
     url="${url}?reserve=0"
+    reserve_mode="0"
     echo "Using no-reservation mode" >&2
   fi
-  local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$url")
-  local seat=$(echo "$response" | jq -r '.vacantSeat // empty')
+
+  local response
+  response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$url")
+
+  local seat reservation
+  seat=$(echo "$response" | jq -r '.vacantSeat // empty')
+  reservation=$(echo "$response" | jq -r '.reservationCode // empty')
+
   if [[ -z "$seat" ]]; then
     echo "Error: No vacant seat available. Response:" >&2
     echo "$response" >&2
     exit 1
   fi
+
   echo "Obtained seat: $seat" >&2
+
+  # If we actually reserved, persist the reservation sidecar
+  if [[ "$reserve_mode" == "1" && -n "$reservation" ]]; then
+    jq -n --arg seat "$seat" --arg code "$reservation" \
+      --arg when "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{seatId:$seat, reservationCode:$code, reservedAt:$when}' > "$RESERVATION_FILE"
+    # convenience env for downstream commands that source this file
+    echo "BBX_RESERVATION_CODE=$reservation" > "$CERT_META_FILE.tmp"
+    echo "BBX_RESERVED_SEAT_ID=$seat"        >> "$CERT_META_FILE.tmp"
+    mv "$CERT_META_FILE.tmp" "$CERT_META_FILE"
+    echo "Saved reservation to $RESERVATION_FILE" >&2
+  else
+    # ensure we don’t leave stale info around in no-reserve mode
+    rm -f "$RESERVATION_FILE" "$CERT_META_FILE"
+  fi
+
+  # print just the seat id to stdout for caller compatibility
   echo "$seat"
 }
 
@@ -213,6 +239,11 @@ main() {
     if [[ "$ticket_valid" == "false" ]]; then
       echo "$ticket_json" > "$TICKET_FILE"
       register_certificate "$ticket_json"
+      # augment cert.meta.json with ticket basics
+      ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
+      time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
+      echo "BBX_TICKET_ID=${ticket_id}"   >> "$CERT_META_FILE"
+      echo "BBX_TICKET_SLOT=${time_slot}" >> "$CERT_META_FILE"
       echo "New ticket saved to $TICKET_FILE" >&2
     else
       echo "License is valid, but keeping existing valid ticket" >&2
@@ -227,6 +258,12 @@ main() {
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
   register_certificate "$ticket_json"
+  # augment cert.meta.json with ticket basics
+  ticket_id=$(echo "$ticket_json" | jq -r '.ticket.ticketData.ticketId // empty')
+  time_slot=$(echo "$ticket_json" | jq -r '.ticket.ticketData.timeSlot // empty')
+  echo "BBX_TICKET_ID=${ticket_id}"   >> "$CERT_META_FILE"
+  echo "BBX_TICKET_SLOT=${time_slot}" >> "$CERT_META_FILE"
+
   echo "$TICKET_FILE"
   exit 0
 }

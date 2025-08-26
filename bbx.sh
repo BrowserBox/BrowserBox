@@ -831,6 +831,11 @@ run() {
     exit 1
   else
     printf "${GREEN}Certification complete.${NC}\n"
+    if [[ -f "$CONFIG_DIR/cert.meta.json" ]]; then
+      # shellcheck disable=SC1090
+      source "$CONFIG_DIR/cert.meta.json"
+      export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
+    fi
   fi
 
   bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
