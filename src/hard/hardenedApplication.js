@@ -15,6 +15,7 @@ import { sleep } from './../common.js';
 
 export const __filename = () => fileURLToPath(import.meta.url);
 export const __dirname = () => path.dirname(__filename());
+
 const MAX_REVALIDATE_RETRIES = 2;
 
 /**
@@ -36,7 +37,7 @@ export class HardenedApplication {
   /**
    * Constructs a new HardenedApplication instance.
    * @param {Object} options - Configuration options.
-   * @param {string} options.appDir - Directory containing application files.
+   * @param {string} options.appDir - Directory containing application files. (type: string) (required)
    * @param {string} [options.privateKeyPath] - Path to the private key for signing (if file-based).
    * @param {string} [options.privateKeyPem] - In-memory PEM string of the private key (if db-based).
    * @param {Array<string>} [options.ignorePatterns] - Patterns to ignore during file scanning.
@@ -82,20 +83,17 @@ export class HardenedApplication {
       licenseServerUrl = null,
       apiVersion = 'v1',
     } = options;
-
     if (!appDir) {
       throw new Error('appDir is required.');
     }
-
     this.#appDir = path.resolve(appDir);
-    this.#privateKeyPath = privateKeyPath;      // If file-based
-    this.#privateKeyPem = privateKeyPem;        // If in-memory
+    this.#privateKeyPath = privateKeyPath; // If file-based
+    this.#privateKeyPem = privateKeyPem; // If in-memory
     this.#ignorePatterns = ignorePatterns;
     this.#certificatePath = certificatePath;
     this.#licenseServerUrl = licenseServerUrl;
     this.#apiVersion = apiVersion;
     this.#instanceId = this.#generateInstanceId();
-
     this.#pki = new PKI();
   }
 
@@ -115,20 +113,16 @@ export class HardenedApplication {
     if (!privateKey) {
       throw new Error('No private key available for signing.');
     }
-
     const manifestPath = path.join(__dirname(), 'manifest.txt');
-
     // Gather file hashes
     const entries = await this.#hashAllFiles();
     // Write manifest
     const manifestContent = entries.map(e => `${e.hash} ${e.relativePath}`).join('\n');
     fs.writeFileSync(manifestPath, manifestContent, 'utf-8');
     console.log({manifestContent});
-
     // Sign the manifest
     const signature = this.#signData(Buffer.from(manifestContent, 'utf-8'), privateKey);
     fs.writeFileSync(manifestPath + '.sig', signature.toString('hex'), 'utf-8');
-
     console.log('Manifest created and signed successfully.');
   }
 
@@ -142,26 +136,20 @@ export class HardenedApplication {
       method: 'GET',
       agent: new https.Agent({ rejectUnauthorized: true })
     });
-
     if (!response.ok) {
       throw new Error(`Failed to fetch root public key: ${response.status}`);
     }
-
     const { key: publicKey } = await response.json();
     if (!publicKey) {
       throw new Error('Received empty public key from server');
     }
-
     const manifestPath = path.join(__dirname(), 'manifest.txt');
     const sigPath = manifestPath + '.sig';
-
     if (!fs.existsSync(manifestPath) || !fs.existsSync(sigPath)) {
       throw new Error('Manifest or signature file missing.');
     }
-
     const manifestContent = fs.readFileSync(manifestPath, 'utf-8').trim();
     const manifestSignature = Buffer.from(fs.readFileSync(sigPath, 'utf-8'), 'hex');
-
     // Verify the manifest signature first
     const isManifestValid = this.#verifySignature(
       Buffer.from(manifestContent, 'utf-8'),
@@ -171,21 +159,18 @@ export class HardenedApplication {
     if (!isManifestValid) {
       throw new Error('Manifest signature verification failed.');
     }
-
     // Now, re-hash all files and compare with manifest
     const currentEntries = await this.#hashAllFiles();
     const currentContent = currentEntries.map(e => `${e.hash} ${e.relativePath}`).join('\n');
-
     if (currentContent.trim() !== manifestContent.trim()) {
       // If they differ, either a file changed or something is tampered
-      try { 
+      try {
         fs.writeFileSync(path.resolve(TICKET_DIR, 'calculated-manifest.txt'), currentContent.trim());
       } catch(e) {
         console.warn(`Could not write calculated manifest.`, e);
       }
       throw new Error('Current file hashes do not match the manifest.');
     }
-
     console.log('Manifest verified successfully. All files match and signature is valid.');
     return true;
   }
@@ -199,7 +184,6 @@ export class HardenedApplication {
     this.#walkDir(this.#appDir, (filePath) => {
       files.push(filePath);
     });
-
     const results = [];
     for (const f of files) {
       const data = fs.readFileSync(f);
@@ -207,7 +191,6 @@ export class HardenedApplication {
       const relativePath = path.relative(this.#appDir, f).replace(/\\/g, '/');
       results.push({ relativePath, hash });
     }
-
     // Sort entries to ensure consistent ordering
     results.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
     return results;
@@ -223,16 +206,13 @@ export class HardenedApplication {
     for (const file of files) {
       const fullPath = path.join(dir, file);
       const relativePath = path.relative(this.#appDir, fullPath).replace(/\\/g, '/');
-
       // Skip ignored patterns
       if (this.#shouldIgnore(relativePath)) {
         continue;
       } else {
         process.env.BBX_VERBOSE_DEBUG && console.log(`Including ${relativePath} / (${fullPath}) in manifest.`);
       }
-
       const stat = fs.statSync(fullPath);
-
       if (stat.isDirectory()) {
         this.#walkDir(fullPath, callback);
       } else if (stat.isFile()) {
@@ -303,7 +283,7 @@ export class HardenedApplication {
    */
   #getSigningKey() {
     if (this.#privateKeyPem) {
-      return this.#privateKeyPem;       // In-memory key
+      return this.#privateKeyPem; // In-memory key
     }
     if (this.#privateKeyPath && fs.existsSync(this.#privateKeyPath)) {
       return fs.readFileSync(this.#privateKeyPath, 'utf8'); // File-based key
@@ -320,36 +300,29 @@ export class HardenedApplication {
       if (!this.#certificatePath || !this.#licenseServerUrl) {
         throw new Error('License validation configuration is incomplete.');
       }
-
       const hwfp = generateHardwareId();
       hwfp.integrity = {integrity};
-
       console.log({certPath: this.#certificatePath });
-
       const certificateJson = readFile(this.#certificatePath);
-
       // Perform local validation using PKI
       const fullChain = JSON.parse(certificateJson);
       const isValidLocal = await this.#pki.validateTicket(fullChain);
-
       if (!isValidLocal) {
         throw new Error('Local certificate validation failed.');
       }
-
       // Send the certificate to the license server for validation
       const response = await fetchWithTimeoutAndRetry(
         `${this.#licenseServerUrl}/tickets/validate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true,
             targets, hwfp
           }),
           agent: new https.Agent({ rejectUnauthorized: true }),
         }
       );
-
       let result;
       try {
         result = await response.text();
@@ -358,11 +331,10 @@ export class HardenedApplication {
         console.warn({result});
         throw new Error(`License server produced in invalid response with code ${response.status}`);
       }
-
       if (!response.ok) {
-        if ( result.err && (result.err == 'already in use' || result.err == 'ticket expired') ) {
-          try { 
-            await revalidate(); 
+        if ( result.err && (result.err == 'already_in_use' || result.err == 'ticket_expired') ) {
+          try {
+            await revalidate();
             if ( Number.isNaN(parseInt(attempt)) ) {
               attempt = MAX_REVALIDATE_RETRIES - 1;
             }
@@ -379,11 +351,9 @@ export class HardenedApplication {
           throw new Error(`License server responded with status ${response.status}`);
         }
       }
-
       if (result.message !== 'License is valid.') {
         throw new Error(`License validation failed: ${result.message}`);
       }
-
       console.log('License validation succeeded.');
     } catch(err) {
       console.warn(`Error validating license`, err);
@@ -399,30 +369,39 @@ export class HardenedApplication {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License validation configuration is incomplete.');
     }
-
     console.log({certPath: this.#certificatePath });
-
     const certificateJson = readFile(this.#certificatePath);
-
     // Perform local validation using PKI
     const fullChain = JSON.parse(certificateJson);
     const isValidLocal = await this.#pki.validateTicket(fullChain);
-
     if (!isValidLocal) {
       throw new Error('Local certificate validation failed.');
     }
-
+    // Check for pending reservation code from bbcertify and include if present
+    let reservationCode = null;
+    const reservationFile = path.join(TICKET_DIR, 'reservation.json');  // Match bbcertify's path
+    if (fs.existsSync(reservationFile)) {
+      try {
+        const resJson = JSON.parse(fs.readFileSync(reservationFile, 'utf8'));
+        reservationCode = resJson.reservationCode || null;
+      } catch (e) {
+        console.warn('Failed to load reservation file:', e);
+      }
+    }
     // Send the certificate to the license server for validation
+    const payload = { certificateJson: fullChain, instanceId: this.#instanceId };
+    if (reservationCode) {
+      payload.reservationCode = reservationCode;
+    }
     const response = await fetchWithTimeoutAndRetry(
       `${this.#licenseServerUrl}/tickets/validate`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ certificateJson: fullChain, instanceId: this.#instanceId }),
+        body: JSON.stringify(payload),
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
-
     let result;
     try {
       result = await response.text();
@@ -431,11 +410,10 @@ export class HardenedApplication {
       console.warn({result});
       throw new Error(`License server produced in invalid response with code ${response.status}`);
     }
-
     if (!response.ok) {
-      if ( result.err && (result.err == 'already in use' || result.err == 'ticket expired') ) {
-        try { 
-          await revalidate(); 
+      if ( result.err && (result.err == 'already_in_use' || result.err == 'ticket_expired') ) {
+        try {
+          await revalidate();
           if ( Number.isNaN(parseInt(attempt)) ) {
             attempt = MAX_REVALIDATE_RETRIES - 1;
           }
@@ -452,11 +430,13 @@ export class HardenedApplication {
         throw new Error(`License server responded with status ${response.status}`);
       }
     }
-
     if (result.message !== 'License is valid.') {
       throw new Error(`License validation failed: ${result.message}`);
     }
-
+    // Clean up reservation file on success
+    if (reservationCode && fs.existsSync(reservationFile)) {
+      fs.unlinkSync(reservationFile);
+    }
     console.log('License validation succeeded.');
   }
 
@@ -468,9 +448,7 @@ export class HardenedApplication {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License release configuration is incomplete.');
     }
-
     const certificateJson = readFile(this.#certificatePath);
-
     const response = await fetchWithTimeoutAndRetry(
       `${this.#licenseServerUrl}/tickets/release`,
       {
@@ -480,13 +458,11 @@ export class HardenedApplication {
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
-
     if (!response.ok) {
       throw new Error(`License server responded with status ${response.status}`);
     }
-
     console.log(`License released for instance ${this.#instanceId}.`);
-    
+   
     return await response.json();
   }
 
@@ -506,26 +482,21 @@ export class HardenedApplication {
     if (typeof callback !== 'function') {
       throw new Error('callback must be a function.');
     }
-
     const marks = 3;
-
     const {
       proofType = 'iteration',
       interval = `${Math.ceil(durationInSeconds/marks)} seconds`,
       outputFile = path.join(this.#appDir, 'timechain_proof.json'),
       useHash = 'rainstorm',
     } = options;
-
     if (!!this.#certificatePath) {
       const cert = this.#pki.getCertificate(this.#certificatePath);
       this.#pki.saveTicket(cert);
       this.#privateKeyPath = this.#pki.getTicketPrivateKeyPath();
     }
-
     if (!this.#privateKeyPath) {
       throw new Error('Private key path is required for signing.');
     }
-
     let cmd = `node ${path.resolve(DIST_DIR, 'timechain.js')} mark ` +
               `--out-file "${outputFile}" ` +
               `--proof-type "${proofType}" ` +
@@ -533,17 +504,14 @@ export class HardenedApplication {
               `--use-hash "${useHash}" ` +
               `--client-private-key "${this.#privateKeyPath}" ` +
               `--marks "${marks}" `;
-
     console.log(`Executing timechain command: ${cmd}`);
     DEBUG && fs.appendFileSync('tc.log', `\n\n${new Date}: ${cmd}`);
-
     return new Promise((resolve, reject) => {
       exec(cmd, { cwd: this.#appDir }, (error, stdout, stderr) => {
         if (error) {
           console.error('Timechain CLI error:', error);
           return reject(error);
         }
-
         try {
           callback();
           resolve({ stdout, stderr });
@@ -560,21 +528,17 @@ export class HardenedApplication {
     try {
       return await fetchWithTimeout(resource, options);
     } catch(e) {
-      console.warn(`First fetch failed`, resource, e); 
+      console.warn(`First fetch failed`, resource, e);
       console.info(`Will retry 1 time for`, resource);
       await sleep(2417);
       return fetchWithTimeout(resource, options);
     }
   }
-
   async function fetchWithTimeout(resource, options = {}) {
-    const { timeout = 12000 } = options  // default 12 seconds
-
+    const { timeout = 12000 } = options // default 12 seconds
     options.timeout = undefined;
-
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
-
     const response = await fetch(resource, {
       ...options,
       signal: controller.signal
