@@ -60,15 +60,21 @@ if [[ -z "$LICENSE_KEY" ]]; then
       echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
     fi
   done
-  echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+  if [[ -n "$BBX_DEBUG" ]]; then
+    echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+  else
+    echo "LICENSE_KEY captured." >&2
+  fi
 else
   echo "LICENSE_KEY is already set." >&2
+  if [[ -n "$BBX_DEBUG" ]]; then
+    echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+  fi
 fi
 # Args Check (OG)
-[ -z "$PORT" ] || [ -z "$HOSTNAME" ] || [ -z "$EMAIL" ] && {
-  echo "ERROR: Usage: $0 <PORT> <HOSTNAME> <EMAIL>" >&2
-  exit 1
-}
+if [[ -z "$PORT" || -z "$HOSTNAME" || -z "$EMAIL" ]]; then
+  echo "ERROR: Usage: $0 <PORT> <HOSTNAME> <EMAIL>" >&2; exit 1
+fi
 if ! ([[ "$PORT" =~ ^[0-9]+$ ]] && [ "$PORT" -ge 4024 ] && [ "$PORT" -le 65533 ]); then
   echo "ERROR: PORT must be 4024-65533 (5-port range needed)!" >&2
   exit 1
@@ -91,6 +97,7 @@ detect_platform() {
   echo "$os/$arch"
 }
 PLATFORM=$(detect_platform)
+
 # Check if hostname is local (OG)
 is_local_hostname() {
   local hostname="$1"
@@ -98,8 +105,8 @@ is_local_hostname() {
   local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
   local has_valid_result=0
   for dns in "${public_dns_servers[@]}"; do
-    resolved_ips=$(command -v dig >/dev/null 2>&1 && dig +short "$hostname" A @"$dns" || echo "")
-    if [[ -n "$resolved_ips" ]]; then
+    resolved_ips=$(command -v dig >/dev/null 2>&1 && dig +short "$hostname" A @"$dns")
+    if [[ "$?" -eq 0 ]] && [[ -n "$resolved_ips" ]]; then
       has_valid_result=1
       while IFS= read -r ip; do
         ip="${ip%.}"
@@ -123,6 +130,7 @@ is_local_hostname() {
   fi
   return 0 # Unresolvable => local
 }
+
 # Port Availability (preserve OG order: sudo path first, then non-sudo fallback)
 check_port() {
   local p=$1
@@ -158,24 +166,24 @@ open_ports() {
   local start=$1 end=$2
   if [[ "$OS" = "Darwin" ]]; then
     if have_sudo; then
-      echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed—open $start-$end/tcp manually!" >&2
+      echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed - open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust macOS pf. Open $start-$end/tcp manually if needed." >&2
     fi
   elif command -v firewall-cmd >/dev/null 2>&1; then
     if have_sudo; then
-      $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed—open $start-$end/tcp manually!" >&2
+      $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed - open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust firewalld. Open $start-$end/tcp manually if needed." >&2
     fi
   elif command -v ufw >/dev/null 2>&1; then
     if have_sudo; then
-      $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed—open $start-$end/tcp manually!" >&2
+      $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed - open $start-$end/tcp manually!" >&2
     else
       echo "WARNING: No sudo; cannot adjust ufw. Open $start-$end/tcp manually if needed." >&2
     fi
   else
-    echo "WARNING: No firewall tool found—ensure $start-$end/tcp are open if needed." >&2
+    echo "WARNING: No firewall tool found‚Äîensure $start-$end/tcp are open if needed." >&2
   fi
 }
 ! is_local_hostname "$HOSTNAME" && open_ports 80 80
@@ -183,7 +191,7 @@ open_ports $((PORT-2)) $((PORT+2))
 # External IP (OG)
 get_ip() {
   curl -4s --connect-timeout 5 "https://icanhazip.com" || curl -4s --connect-timeout 5 "https://ifconfig.me" || {
-    echo "ERROR: Can't fetch IP—check network!" >&2
+    echo "ERROR: Can't fetch IP - check network!" >&2
     exit 1
   }
 }
@@ -218,16 +226,31 @@ fetch_certs() {
   # Permissions: prefer sudo; else try without
   if have_sudo; then
     $SUDO chmod 600 "$CERT_DIR"/*.pem || true
-    GUSER="$(id -g)"
-    $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$GUSER}" "$CERT_DIR"/*.pem || true
+    # GUSER="$(id -g)"
+    # $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$GUSER}" "$CERT_DIR"/*.pem || true
+    PGROUP_NAME="$(id -gn 2>/dev/null || true)"
+    PGROUP="${PGROUP_NAME:-$(id -g)}"
+    OWNER="${SUDO_USER:-$USER}"
+    $SUDO chown "$OWNER:$PGROUP" "$CERT_DIR"/*.pem || true
   else
     chmod 600 "$CERT_DIR"/*.pem 2>/dev/null || true
   fi
 }
 fetch_certs
 # Encode certs for injection (avoids mount/perms issues)
-FULLCHAIN_PEM=$(base64 -w 0 "$CERT_DIR/fullchain.pem")
-PRIVKEY_PEM=$(base64 -w 0 "$CERT_DIR/privkey.pem")
+# robust no-wrap base64 encode of a file (GNU/BSD/OpenSSL fallbacks)
+b64_encode_nowrap() {
+  local f="$1"
+  # Try GNU: --wrap=0 / -w 0
+  base64 --wrap=0 "$f" 2>/dev/null && return 0
+  base64 -w 0 "$f" 2>/dev/null && return 0
+  # Try BSD: stdin redirect to handle file input portably
+  base64 < "$f" 2>/dev/null | tr -d '\n' && return 0
+  # Fallback: OpenSSL
+  openssl base64 -A -in "$f"
+}
+FULLCHAIN_PEM="$(b64_encode_nowrap "$CERT_DIR/fullchain.pem")"
+PRIVKEY_PEM="$(b64_encode_nowrap "$CERT_DIR/privkey.pem")"
 # Docker command (prefer sudo first to preserve OG behavior)
 DOCKER_CMD="$(pick_docker_cmd || true)"
 if [[ -z "$DOCKER_CMD" ]]; then
@@ -238,10 +261,10 @@ fi
 DOCKER_IMAGE=""
 if ${DOCKER_CMD} images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_DOSAYGO$"; then
   DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO"
-  echo "Found $DOCKER_IMAGE locally—using it!" >&2
+  echo "Found $DOCKER_IMAGE locally - using it!" >&2
 elif ${DOCKER_CMD} images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_GHCR$"; then
   DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
-  echo "Found $DOCKER_IMAGE locally—using it!" >&2
+  echo "Found $DOCKER_IMAGE locally - using it!" >&2
 else
   echo "Pulling latest $DOCKER_IMAGE_DOSAYGO..." >&2
   if ${DOCKER_CMD} pull --platform "$PLATFORM" "$DOCKER_IMAGE_DOSAYGO"; then
@@ -271,7 +294,7 @@ CONTAINER_ID="$(
 # Login Link (OG with DOCKER_CMD)
 sleep 5
 ${DOCKER_CMD} cp "$CONTAINER_ID:/home/bbpro/bbpro/login_link.txt" ./login_link.txt 2>/dev/null || {
-  echo "WARNING: Login link not ready—check logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
+  echo "WARNING: Login link not ready - check logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
   LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 }
 [ -f "login_link.txt" ] && LOGIN_LINK=$(cat login_link.txt | sed "s/localhost/$HOSTNAME/") || LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
