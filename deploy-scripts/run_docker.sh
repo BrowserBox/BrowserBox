@@ -60,15 +60,19 @@ if [[ -z "$LICENSE_KEY" ]]; then
       echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
     fi
   done
-  echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+
+  if [[ -n "$BBX_DEBUG" ]]; then
+    echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+  else 
+    echo "LICENSE_KEY captured." >&2
+  fi
 else
   echo "LICENSE_KEY is already set." >&2
 fi
 # Args Check (OG)
-[ -z "$PORT" ] || [ -z "$HOSTNAME" ] || [ -z "$EMAIL" ] && {
-  echo "ERROR: Usage: $0 <PORT> <HOSTNAME> <EMAIL>" >&2
-  exit 1
-}
+if [[ -z "$PORT" || -z "$HOSTNAME" || -z "$EMAIL" ]]; then
+  echo "ERROR: Usage: $0 <PORT> <HOSTNAME> <EMAIL>" >&2; exit 1
+fi
 if ! ([[ "$PORT" =~ ^[0-9]+$ ]] && [ "$PORT" -ge 4024 ] && [ "$PORT" -le 65533 ]); then
   echo "ERROR: PORT must be 4024-65533 (5-port range needed)!" >&2
   exit 1
@@ -218,16 +222,33 @@ fetch_certs() {
   # Permissions: prefer sudo; else try without
   if have_sudo; then
     $SUDO chmod 600 "$CERT_DIR"/*.pem || true
-    GUSER="$(id -g)"
-    $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$GUSER}" "$CERT_DIR"/*.pem || true
+    # GUSER="$(id -g)"
+    # $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$GUSER}" "$CERT_DIR"/*.pem || true
+    PGROUP_NAME="$(id -gn 2>/dev/null || true)"
+    PGROUP="${PGROUP_NAME:-$(id -g)}"
+    OWNER="${SUDO_USER:-$USER}"
+    $SUDO chown "$OWNER:$PGROUP" "$CERT_DIR"/*.pem || true
   else
     chmod 600 "$CERT_DIR"/*.pem 2>/dev/null || true
   fi
 }
 fetch_certs
 # Encode certs for injection (avoids mount/perms issues)
-FULLCHAIN_PEM=$(base64 -w 0 "$CERT_DIR/fullchain.pem")
-PRIVKEY_PEM=$(base64 -w 0 "$CERT_DIR/privkey.pem")
+# robust no-wrap base64 encode of a file (GNU/BSD/OpenSSL fallbacks)
+b64_encode_nowrap() {
+  local f="$1"
+  # Try GNU: --wrap=0 / -w 0
+  base64 --wrap=0 "$f" 2>/dev/null && return 0
+  base64 -w 0 "$f" 2>/dev/null && return 0
+  # Try BSD: strip all newlines
+  base64 "$f" 2>/dev/null | tr -d '\n' && return 0
+  # Fallback: OpenSSL
+  openssl base64 -A -in "$f"
+}
+
+FULLCHAIN_PEM="$(b64_encode_nowrap "$CERT_DIR/fullchain.pem")"
+PRIVKEY_PEM="$(b64_encode_nowrap "$CERT_DIR/privkey.pem")"
+
 # Docker command (prefer sudo first to preserve OG behavior)
 DOCKER_CMD="$(pick_docker_cmd || true)"
 if [[ -z "$DOCKER_CMD" ]]; then
