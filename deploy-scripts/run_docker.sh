@@ -256,10 +256,10 @@ fi
 DOCKER_IMAGE=""
 if ${DOCKER_CMD} images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_DOSAYGO$"; then
   DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO"
-  echo "Found $DOCKER_IMAGE locally‚Äîusing it!" >&2
+  echo "Found $DOCKER_IMAGE locally - using it!" >&2
 elif ${DOCKER_CMD} images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_GHCR$"; then
   DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
-  echo "Found $DOCKER_IMAGE locally‚Äîusing it!" >&2
+  echo "Found $DOCKER_IMAGE locally - using it!" >&2
 else
   echo "Pulling latest $DOCKER_IMAGE_DOSAYGO..." >&2
   if ${DOCKER_CMD} pull --platform "$PLATFORM" "$DOCKER_IMAGE_DOSAYGO"; then
@@ -289,7 +289,7 @@ CONTAINER_ID="$(
 # Login Link (OG with DOCKER_CMD)
 sleep 5
 ${DOCKER_CMD} cp "$CONTAINER_ID:/home/bbpro/bbpro/login_link.txt" ./login_link.txt 2>/dev/null || {
-  echo "WARNING: Login link not ready‚Äîcheck logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
+  echo "WARNING: Login link not ready - check logs with: ${DOCKER_CMD} logs $CONTAINER_ID" >&2
   LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 }
 [ -f "login_link.txt" ] && LOGIN_LINK=$(cat login_link.txt | sed "s/localhost/$HOSTNAME/") || LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
