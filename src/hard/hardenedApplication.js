@@ -323,6 +323,7 @@ export class HardenedApplication {
           agent: new https.Agent({ rejectUnauthorized: true }),
         }
       );
+      console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
       let result;
       try {
         result = await response.text();
@@ -402,6 +403,7 @@ export class HardenedApplication {
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
+    console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
     let result;
     try {
       result = await response.text();
