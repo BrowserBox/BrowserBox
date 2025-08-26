@@ -97,6 +97,7 @@ detect_platform() {
   echo "$os/$arch"
 }
 PLATFORM=$(detect_platform)
+
 # Check if hostname is local (OG)
 is_local_hostname() {
   local hostname="$1"
@@ -104,8 +105,8 @@ is_local_hostname() {
   local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
   local has_valid_result=0
   for dns in "${public_dns_servers[@]}"; do
-    resolved_ips=$(command -v dig >/dev/null 2>&1 && dig +short "$hostname" A @"$dns" || echo "")
-    if [[ -n "$resolved_ips" ]]; then
+    resolved_ips=$(command -v dig >/dev/null 2>&1 && dig +short "$hostname" A @"$dns")
+    if [[ "$?" -eq 0 ]] && [[ -n "$resolved_ips" ]]; then
       has_valid_result=1
       while IFS= read -r ip; do
         ip="${ip%.}"
@@ -129,6 +130,7 @@ is_local_hostname() {
   fi
   return 0 # Unresolvable => local
 }
+
 # Port Availability (preserve OG order: sudo path first, then non-sudo fallback)
 check_port() {
   local p=$1
