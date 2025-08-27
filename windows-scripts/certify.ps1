@@ -201,6 +201,7 @@ function Reserve-Seat {
     if ($newTicket) {
         $newTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
         Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
+        Register-Certificate -Ticket $newTicket
     }
     @{ reservationCode = $reservation } | ConvertTo-Json -Depth 10 -Compress | Set-Content $ReservationFile -Force
     "BBX_RESERVATION_CODE=$reservation" | Out-File $CertMetaFile -Encoding utf8 -Force
@@ -276,7 +277,6 @@ try {
             }
         }
     }
-    Write-Host "Certification complete." -ForegroundColor Green
 } catch {
     Write-Error "An error occurred during certification: $_"
     throw "CERTIFICATION Error"
