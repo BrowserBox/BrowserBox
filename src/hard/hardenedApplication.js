@@ -295,69 +295,104 @@ export class HardenedApplication {
    * Checks the license by performing local PKI validation and communicating with the license server.
    * @throws Will throw an error if license validation fails.
    */
-  async checkLicense({targets, integrity, attempt = 0} = {}) {
+  async checkLicense({ targets, integrity, attempt = 0 } = {}) {
     try {
       if (!this.#certificatePath || !this.#licenseServerUrl) {
         throw new Error('License validation configuration is incomplete.');
       }
+
       const hwfp = generateHardwareId();
-      hwfp.integrity = {integrity};
-      console.log({certPath: this.#certificatePath });
+      hwfp.integrity = { integrity };
+
+      // Load & locally validate cert
+      console.log({ certPath: this.#certificatePath });
       const certificateJson = readFile(this.#certificatePath);
-      // Perform local validation using PKI
       const fullChain = JSON.parse(certificateJson);
       const isValidLocal = await this.#pki.validateTicket(fullChain);
       if (!isValidLocal) {
         throw new Error('Local certificate validation failed.');
       }
-      // Send the certificate to the license server for validation
+
+      // If a reservation exists, REDEEM (no revalidateOnly). Otherwise revalidate-only.
+      let reservationCode = null;
+      try {
+        const reservationFile = path.join(TICKET_DIR, 'reservation.json');
+        if (fs.existsSync(reservationFile)) {
+          const resJson = JSON.parse(fs.readFileSync(reservationFile, 'utf8'));
+          reservationCode = resJson?.reservationCode || null;
+        }
+      } catch (e) {
+        console.warn('Failed to read reservation.json in checkLicense:', e);
+      }
+
+      const payload = reservationCode
+        ? { certificateJson: fullChain, instanceId: this.#instanceId, reservationCode } // redeem
+        : { certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true }; // revalidate-only
+
+      console.log('[checkLicense] reservationCode present?', Boolean(reservationCode));
+
       const response = await fetchWithTimeoutAndRetry(
         `${this.#licenseServerUrl}/tickets/validate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true,
-            targets, hwfp
-          }),
+          body: JSON.stringify({ ...payload, targets, hwfp }),
           agent: new https.Agent({ rejectUnauthorized: true }),
         }
       );
+
       let result;
       try {
         result = await response.text();
         result = JSON.parse(result);
       } catch {
-        console.warn({result});
-        throw new Error(`License server produced in invalid response with code ${response.status}`);
+        console.warn({ result });
+        throw new Error(`License server produced an invalid response with code ${response.status}`);
       }
-      console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
+
+      console.log('DEBUG: Server validation response details:', {
+        status: response.status,
+        err: result.err,
+        message: result.message
+      });
+
       if (!response.ok) {
-        if ( result.err && (result.err == 'already_in_use' || result.err == 'ticket_expired') ) {
+        // If the server indicates we need redemption or code, fall back to the full validate path once.
+        if (
+          (result?.err === 'reserved_during_reval' || result?.err === 'reservation_code_required') &&
+          !reservationCode
+        ) {
+          console.warn('[checkLicense] Server requested redemption; delegating to validateLicense()');
+          return this.validateLicense(typeof attempt === 'number' ? attempt + 1 : 1);
+        }
+
+        // Stale/expired: run revalidate flow once, then try validateLicense
+        if (result?.err === 'already_in_use' || result?.err === 'ticket_expired') {
           try {
             await revalidate();
-            if ( Number.isNaN(parseInt(attempt)) ) {
-              attempt = MAX_REVALIDATE_RETRIES - 1;
-            }
-            if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
+            if (Number.isNaN(parseInt(attempt))) attempt = 0;
+            if (attempt++ < 2) {
               return this.validateLicense(attempt);
             } else {
-              result.message = 'Failed to revalidate a stale ticket.';
+              throw new Error('Failed to revalidate a stale ticket.');
             }
-          } catch(err) {
-            result.message = err.message || 'Revalidate failed';
+          } catch (err) {
+            throw new Error(err.message || 'Revalidate failed');
           }
-        } else {
-          console.warn(result);
-          throw new Error(`License server responded with status ${response.status}`);
         }
+
+        // Generic non-OK
+        console.warn(result);
+        throw new Error(`License server responded with status ${response.status}`);
       }
+
       if (result.message !== 'License is valid.') {
         throw new Error(`License validation failed: ${result.message}`);
       }
-      console.log('License validation succeeded.');
-    } catch(err) {
-      console.warn(`Error validating license`, err);
+
+      console.log('License validation (checkLicense) succeeded.');
+    } catch (err) {
+      console.warn('Error validating license (checkLicense)', err);
       throw new Error(`License validation failed: ${err.message}`);
     }
   }
@@ -370,30 +405,37 @@ export class HardenedApplication {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License validation configuration is incomplete.');
     }
-    console.log({certPath: this.#certificatePath });
+
+    console.log({ certPath: this.#certificatePath });
     const certificateJson = readFile(this.#certificatePath);
-    // Perform local validation using PKI
+
+    // Local PKI check
     const fullChain = JSON.parse(certificateJson);
     const isValidLocal = await this.#pki.validateTicket(fullChain);
     if (!isValidLocal) {
       throw new Error('Local certificate validation failed.');
     }
-    // Check for pending reservation code from bbcertify and include if present
+
+    // Include reservationCode if present (bbcertify path)
     let reservationCode = null;
-    const reservationFile = path.join(TICKET_DIR, 'reservation.json');  // Match bbcertify's path
+    const reservationFile = path.join(TICKET_DIR, 'reservation.json');
     if (fs.existsSync(reservationFile)) {
       try {
         const resJson = JSON.parse(fs.readFileSync(reservationFile, 'utf8'));
-        reservationCode = resJson.reservationCode || null;
+        reservationCode = resJson?.reservationCode || null;
       } catch (e) {
         console.warn('Failed to load reservation file:', e);
       }
     }
-    // Send the certificate to the license server for validation
-    const payload = { certificateJson: fullChain, instanceId: this.#instanceId };
-    if (reservationCode) {
-      payload.reservationCode = reservationCode;
-    }
+
+    const payload = {
+      certificateJson: fullChain,
+      instanceId: this.#instanceId,
+      ...(reservationCode ? { reservationCode } : {})
+    };
+
+    console.log('[validateLicense] reservationCode present?', Boolean(reservationCode));
+
     const response = await fetchWithTimeoutAndRetry(
       `${this.#licenseServerUrl}/tickets/validate`,
       {
@@ -403,43 +445,74 @@ export class HardenedApplication {
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
+
     let result;
     try {
       result = await response.text();
       result = JSON.parse(result);
     } catch {
-      console.warn({result});
-      throw new Error(`License server produced in invalid response with code ${response.status}`);
+      console.warn({ result });
+      throw new Error(`License server produced an invalid response with code ${response.status}`);
     }
-    console.log('DEBUG: Server validation response details:', { status: response.status, err: result.err, message: result.message });
+
+    console.log('DEBUG: Server validation response details:', {
+      status: response.status,
+      err: result.err,
+      message: result.message
+    });
+
     if (!response.ok) {
-      if ( result.err && (result.err == 'already_in_use' || result.err == 'ticket_expired') ) {
+      // If the server says we need a reservation code and we didn’t include one, try once more
+      if (
+        (result?.err === 'reserved_during_reval' || result?.err === 'reservation_code_required') &&
+        !reservationCode
+      ) {
+        // Re-read just in case the reservation file was written between the start of this call and now.
+        try {
+          if (fs.existsSync(reservationFile)) {
+            const resJson = JSON.parse(fs.readFileSync(reservationFile, 'utf8'));
+            const code = resJson?.reservationCode;
+            if (code) {
+              console.warn('[validateLicense] retrying with reservationCode');
+              if (Number.isNaN(parseInt(attempt))) attempt = 0;
+              if (attempt++ < 2) {
+                // Set it so the next run includes it
+                return this.validateLicense(attempt);
+              }
+            }
+          }
+        } catch { /* noop */ }
+      }
+
+      // Stale/expired: run revalidate flow once or twice
+      if (result?.err === 'already_in_use' || result?.err === 'ticket_expired') {
         try {
           await revalidate();
-          if ( Number.isNaN(parseInt(attempt)) ) {
-            attempt = MAX_REVALIDATE_RETRIES - 1;
-          }
-          if ( attempt++ < MAX_REVALIDATE_RETRIES ) {
+          if (Number.isNaN(parseInt(attempt))) attempt = 0;
+          if (attempt++ < 2) {
             return this.validateLicense(attempt);
           } else {
-            result.message = 'Failed to revalidate a stale ticket.';
+            throw new Error('Failed to revalidate a stale ticket.');
           }
-        } catch(err) {
-          result.message = err.message || 'Revalidate failed';
+        } catch (err) {
+          throw new Error(err.message || 'Revalidate failed');
         }
-      } else {
-        console.warn(result);
-        throw new Error(`License server responded with status ${response.status}`);
       }
+
+      console.warn(result);
+      throw new Error(`License server responded with status ${response.status}`);
     }
+
     if (result.message !== 'License is valid.') {
       throw new Error(`License validation failed: ${result.message}`);
     }
+
     // Clean up reservation file on success
     if (reservationCode && fs.existsSync(reservationFile)) {
-      fs.unlinkSync(reservationFile);
+      try { fs.unlinkSync(reservationFile); } catch { /* ignore */ }
     }
-    console.log('License validation succeeded.');
+
+    console.log('License validation (validateLicense) succeeded.');
   }
 
   /**

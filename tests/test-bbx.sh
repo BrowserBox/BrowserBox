@@ -18,9 +18,11 @@ export LICENSE_KEY="${LICENSE_KEY}"
 
 # Safely handle bbcertify output
 if command -v bbcertify; then
-  cert_file=$(bbcertify)
+  cert_file=$(bbcertify --no-reservation)
+  reservation_file="${HOME}/.config/dosyago/bbpro/tickets/reservation.json"
   if [ $? -eq 0 ] && [ -n "$cert_file" ] && [ -f "$cert_file" ]; then
-    rm "$cert_file"
+    rm -f "$cert_file"
+    rm -f "$reservation_file"
   else
     echo "Warning: bbcertify failed or no file to remove" >&2
   fi
