@@ -1,3 +1,5 @@
+# start.ps1
+
 [CmdletBinding(SupportsShouldProcess=$true)]
 param (
     [Parameter(Mandatory = $false, HelpMessage = "Specify the hostname for BrowserBox.")]
@@ -15,10 +17,10 @@ if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "Run BrowserBox" -ForegroundColor Yellow
     Write-Host "Usage: bbx run [-Hostname <hostname>] [-Port <port>] [-Token <token>] [-Email <email>]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  -Hostname  Specify the hostname (loaded from test.env if not provided)" -ForegroundColor White
-    Write-Host "  -Port      Main port (loaded from test.env if not provided)" -ForegroundColor White
-    Write-Host "  -Token     Specific login token (loaded from test.env if not provided)" -ForegroundColor White
-    Write-Host "  -Email     Email address (unused)" -ForegroundColor White
+    Write-Host " -Hostname Specify the hostname (loaded from test.env if not provided)" -ForegroundColor White
+    Write-Host " -Port Main port (loaded from test.env if not provided)" -ForegroundColor White
+    Write-Host " -Token Specific login token (loaded from test.env if not provided)" -ForegroundColor White
+    Write-Host " -Email Email address (unused)" -ForegroundColor White
     return
 }
 
@@ -29,6 +31,7 @@ $installDir = "C:\Program Files\browserbox"
 $configDir = "$env:USERPROFILE\.config\dosyago\bbpro"
 $envFile = "$configDir\test.env"
 $logDir = "$configDir\logs"
+
 Write-Verbose "installDir: $installDir"
 Write-Verbose "configDir: $configDir"
 Write-Verbose "envFile: $envFile"
@@ -39,6 +42,7 @@ if (-not (Test-Path $envFile)) {
     Write-Error "Configuration file not found at $envFile. Please run 'bbx setup' first."
     throw "SETUP Error"
 }
+
 Write-Verbose "envFile exists"
 
 # Configuration
@@ -60,6 +64,7 @@ if (-not $env:LICENSE_KEY -and -not $Config["LICENSE_KEY"]) {
     Write-Error "No LICENSE_KEY provided. Purchase a license key at: http://getbrowserbox.com or email sales@dosaygo.com for help. Then run 'bbx certify -LicenseKey <LicenseKey>' to install."
     throw "LICENSE Error"
 }
+
 $LICENSE_KEY = if ($env:LICENSE_KEY) { $env:LICENSE_KEY } else { $Config["LICENSE_KEY"] }
 
 # Create logs directory
@@ -73,6 +78,7 @@ $mainPidFile = "$logDir\browserbox-main.pid"
 $devtoolsOutLog = "$logDir\browserbox-devtools-out.log"
 $devtoolsErrLog = "$logDir\browserbox-devtools-err.log"
 $devtoolsPidFile = "$logDir\browserbox-devtools.pid"
+
 Write-Verbose "mainOutLog: $mainOutLog"
 Write-Verbose "mainErrLog: $mainErrLog"
 Write-Verbose "mainPidFile: $mainPidFile"
@@ -114,35 +120,45 @@ foreach ($var in $requiredVars) {
 # Start main service (server.js)
 $mainScript = Join-Path $installDir "src\server.js"
 $chromePort = [int]$env:APP_PORT - 3000
+
 Write-Verbose "mainScript: $mainScript"
 Write-Verbose "chromePort: $chromePort"
+
 $mainArgs = @(
-    "`"$mainScript`""  # Quote the path
+    "`"$mainScript`"" # Quote the path
     $chromePort
     $env:APP_PORT
     $env:COOKIE_VALUE
     ($env:USER, "defaultUser" | Where-Object { $_ })[0]
     $env:LOGIN_TOKEN
 ) | Where-Object { $_ -ne $null -and $_ -ne "" }
+
 Write-Verbose "Initial mainArgs: $($mainArgs -join ', ')"
 Write-Host "Final mainArgs: $($mainArgs -join ', ')" -ForegroundColor Cyan
+
 Write-Host "Starting main service. stdout: $mainOutLog, stderr: $mainErrLog, PID file: $mainPidFile" -ForegroundColor Cyan
 $mainProcess = Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow -RedirectStandardOutput $mainOutLog -RedirectStandardError $mainErrLog -PassThru
+
 Write-Verbose "Main process ID: $($mainProcess.Id)"
 $mainProcess.Id | Out-File $mainPidFile -Force
 
 # Start devtools service (index.js)
 $devtoolsScript = Join-Path $installDir "src\services\pool\crdp-secure-proxy-server\index.js"
+
 Write-Verbose "devtoolsScript: $devtoolsScript"
+
 $devtoolsArgs = @(
-    "`"$devtoolsScript`""  # Quote the path
+    "`"$devtoolsScript`"" # Quote the path
     $env:DEVTOOLS_PORT
     $env:COOKIE_VALUE
     $env:LOGIN_TOKEN
 ) | Where-Object { $_ -ne $null -and $_ -ne "" }
+
 Write-Host "Devtools args: $($devtoolsArgs -join ', ')" -ForegroundColor Cyan
+
 Write-Host "Starting devtools service. stdout: $devtoolsOutLog, stderr: $devtoolsErrLog, PID file: $devtoolsPidFile" -ForegroundColor Cyan
 $devtoolsProcess = Start-Process -FilePath "node" -ArgumentList $devtoolsArgs -NoNewWindow -RedirectStandardOutput $devtoolsOutLog -RedirectStandardError $devtoolsErrLog -PassThru
+
 Write-Verbose "Devtools process ID: $($devtoolsProcess.Id)"
 $devtoolsProcess.Id | Out-File $devtoolsPidFile -Force
 

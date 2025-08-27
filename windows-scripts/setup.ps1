@@ -1,3 +1,5 @@
+# setup.ps1
+
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $false, HelpMessage = "Specify the hostname for BrowserBox (defaults to system hostname).")]
@@ -18,11 +20,11 @@ if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "Set up BrowserBox" -ForegroundColor Yellow
     Write-Host "Usage: bbx setup [-Hostname <hostname>] [-Email <email>] [-Port <port>] [-Token <token>] [-Force]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  -Hostname  Specify the hostname (defaults to system hostname)" -ForegroundColor White
-    Write-Host "  -Email     Email for certificate registration (optional)" -ForegroundColor White
-    Write-Host "  -Port      Main port (default: 8080, range 4024-65533)" -ForegroundColor White
-    Write-Host "  -Token     Specific login token (optional, auto-generated if not provided)" -ForegroundColor White
-    Write-Host "  -Force     Force regeneration of certificates" -ForegroundColor White
+    Write-Host " -Hostname Specify the hostname (defaults to system hostname)" -ForegroundColor White
+    Write-Host " -Email Email for certificate registration (optional)" -ForegroundColor White
+    Write-Host " -Port Main port (default: 8080, range 4024-65533)" -ForegroundColor White
+    Write-Host " -Token Specific login token (optional, auto-generated if not provided)" -ForegroundColor White
+    Write-Host " -Force Force regeneration of certificates" -ForegroundColor White
     return
 }
 
@@ -35,7 +37,7 @@ function Is-LocalHostname {
         $ipAddresses = [System.Net.Dns]::GetHostAddresses($Hostname)
         foreach ($ip in $ipAddresses) {
             $ipStr = $ip.ToString()
-            if ($ipStr -like "127.*" -or $ipStr -like "192.168.*" -or $ipStr -like "10.*" -or 
+            if ($ipStr -like "127.*" -or $ipStr -like "192.168.*" -or $ipStr -like "10.*" -or
                 $ipStr -like "172.16.*" -or $ipStr -like "172.31.*" -or $ipStr -eq "::1") {
                 return $true
             }
@@ -119,12 +121,11 @@ function Generate-Certificates {
     param (
         [string]$Hostname,
         [string]$Email,
-        [switch]$Force = $false  # New parameter to force regeneration
+        [switch]$Force = $false # New parameter to force regeneration
     )
     $sslcerts = "$env:USERPROFILE\sslcerts"
     $certFile = "$sslcerts\fullchain.pem"
     $keyFile = "$sslcerts\privkey.pem"
-
     # Check if certificates exist and match the hostname
     if (-not $Force -and (Test-Path $certFile) -and (Test-Path $keyFile)) {
         $certText = & openssl x509 -in $certFile -noout -text
@@ -134,17 +135,13 @@ function Generate-Certificates {
             return
         }
     }
-
     # Ensure the directory exists
     New-Item -ItemType Directory -Path $sslcerts -Force | Out-Null
-
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
-
         # Remove existing certificates if forcing regeneration
         if ($Force -and (Test-Path $certFile)) { Remove-Item $certFile -Force }
         if ($Force -and (Test-Path $keyFile)) { Remove-Item $keyFile -Force }
-
         # Run mkcert -install with timeout
         $process = Start-Process -FilePath "mkcert" -ArgumentList "-install" -NoNewWindow -PassThru
         $timeoutSeconds = 8
@@ -160,7 +157,6 @@ function Generate-Certificates {
             Start-Sleep -Seconds 1
             Write-Host "mkcert -install was terminated due to timeout."
         }
-
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
@@ -188,7 +184,6 @@ function Generate-Certificates {
         Copy-Item -Path $certbotCert -Destination $certFile -Force
         Copy-Item -Path $certbotKey -Destination $keyFile -Force
     }
-
     # Set permissions after generation
     icacls "$certFile" /inheritance:r /grant:r "${env:USERNAME}:RX"
     icacls "$keyFile" /inheritance:r /grant:r "${env:USERNAME}:RX"
@@ -206,7 +201,7 @@ if (-not $Hostname) {
 # Ensure Port is a valid integer
 try {
     [int]$PortInt = [int]::Parse($Port)
-    Write-Host "Port: $Port, PortInt: $PortInt" -ForegroundColor Cyan  # Debug output
+    Write-Host "Port: $Port, PortInt: $PortInt" -ForegroundColor Cyan # Debug output
 } catch {
     Write-Error "Failed to convert Port to integer: $_"
     throw "PORT Error"
@@ -218,7 +213,7 @@ $maxPort = 65533
 $portsToCheck = @()
 if (($PortInt - 2) -ge $minPort -and ($PortInt + 1) -le $maxPort) {
     $portsToCheck = @($PortInt, ($PortInt - 2), ($PortInt + 1), ($PortInt - 1))
-    Write-Host "Ports to check: $portsToCheck" -ForegroundColor Cyan  # Debug output
+    Write-Host "Ports to check: $portsToCheck" -ForegroundColor Cyan # Debug output
 } else {
     Write-Error "Port calculations would result in invalid ports outside range $minPort-$maxPort. Adjust the main port ($PortInt)."
     throw "PORT Error"
@@ -243,10 +238,12 @@ $CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro"
 New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
 $TICKET_DIR = "$env:USERPROFILE\.config\dosyago\bbpro\tickets"
 New-Item -ItemType Directory -Path $TICKET_DIR -Force | Out-Null
+
 Get-Date | Out-File "$CONFIG_DIR\.bbpro_config_dir" -Encoding utf8
 Write-Host "Created config directory at $CONFIG_DIR." -ForegroundColor Cyan
 
 $testEnvPath = "$CONFIG_DIR\test.env"
+
 if (Test-Path $testEnvPath) {
     $existingConfig = Get-Content $testEnvPath | ForEach-Object {
         if ($_ -match "^([^=]+)=(.*)$") { [PSCustomObject]@{ Name = $Matches[1]; Value = $Matches[2] } }
@@ -262,6 +259,7 @@ if (Test-Path $testEnvPath) {
 }
 
 Write-Host "Starting BrowserBox setup on Windows..." -ForegroundColor Cyan
+
 # Define port variables
 $APP_PORT = $PortInt
 $AUDIO_PORT = $PortInt - 2
@@ -280,7 +278,9 @@ DOCS_PORT=$DOCS_PORT
 SSLCERTS_DIR="${env:USERPROFILE}\sslcerts"
 DOMAIN="$Hostname"
 "@
+
 $envContent | Out-File "${CONFIG_DIR}\test.env" -Encoding utf8
+
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
 # Generate and display login link

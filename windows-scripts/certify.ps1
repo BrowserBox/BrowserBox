@@ -1,7 +1,11 @@
+# certify.ps1
+
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $false, HelpMessage = "Force license check without overwriting a valid ticket")]
     [switch]$ForceLicense,
+    [Parameter(Mandatory = $false, HelpMessage = "Skip seat reservation step")]
+    [switch]$NoReservation,
     [Parameter(Mandatory = $false, HelpMessage = "License key to certify")]
     [string]$LicenseKey
 )
@@ -9,10 +13,11 @@ param (
 if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "bbx certify" -ForegroundColor Green
     Write-Host "Certify your BrowserBox license" -ForegroundColor Yellow
-    Write-Host "Usage: bbx certify [-ForceLicense] [-LicenseKey <key>]" -ForegroundColor Cyan
+    Write-Host "Usage: bbx certify [-ForceLicense] [-NoReservation] [-LicenseKey <key>]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  -ForceLicense  Force license check without overwriting a valid ticket" -ForegroundColor White
-    Write-Host "  -LicenseKey    Specify the license key to certify" -ForegroundColor White
+    Write-Host " -ForceLicense Force license check without overwriting valid ticket" -ForegroundColor White
+    Write-Host " -NoReservation Skip seat reservation step" -ForegroundColor White
+    Write-Host " -LicenseKey Specify the license key to certify" -ForegroundColor White
     return
 }
 
@@ -21,19 +26,23 @@ $ConfigDir = "${env:USERPROFILE}\.config\dosyago\bbpro"
 $TestEnvFile = "${ConfigDir}\test.env"
 $TicketDir = "${ConfigDir}\tickets"
 $TicketFile = "${TicketDir}\ticket.json"
+$ReservationFile = "${TicketDir}\reservation.json"
+$CertMetaFile = "${TicketDir}\cert.meta.env"
 $ApiVersion = "v1"
 $ApiServer = "https://master.dosaygo.com"
 $ApiBase = "$ApiServer/$ApiVersion"
 $VacantSeatEndpoint = "$ApiBase/vacant-seat"
 $IssueTicketEndpoint = "$ApiBase/tickets"
 $RegisterCertEndpoint = "$ApiBase/register-certificates"
+$ReserveSeatEndpoint = "$ApiBase/reserve-seat"
 $ValidateTicketEndpoint = "$ApiServer/tickets/validate"
-$TicketValidityPeriod = 10 * 60 * 60  # 10 hours in seconds
+$TicketValidityPeriod = 10 * 60 * 60 # 10 hours in seconds
 
 # Ensure config directory exists
 if (-not (Test-Path $ConfigDir)) {
     New-Item -Path $ConfigDir -ItemType Directory -Force | Out-Null
 }
+
 # Ensure ticket directory exists
 if (-not (Test-Path $TicketDir)) {
     New-Item -Path $TicketDir -ItemType Directory -Force | Out-Null
@@ -57,32 +66,39 @@ function Save-Config {
     Write-Verbose "Saved config to $TestEnvFile"
 }
 
+# Function to append meta to cert.meta.env
+function Meta-Put {
+    param (
+        [string]$Key,
+        [string]$Value
+    )
+    $existingLines = if (Test-Path $CertMetaFile) { Get-Content $CertMetaFile } else { @() }
+    $newLines = $existingLines | Where-Object { $_ -notmatch "^$Key=" }
+    $newLines += "$Key=$Value"
+    $newLines | Out-File $CertMetaFile -Encoding utf8 -Force
+}
+
 # Function to check local ticket validity
 function Test-TicketValidity {
     if (-not (Test-Path $TicketFile)) {
         Write-Warning "No existing ticket found at $TicketFile"
         return $false
     }
-
     $ticketJson = Get-Content $TicketFile -Raw | ConvertFrom-Json
     Write-Verbose "Ticket JSON: $($ticketJson | ConvertTo-Json -Depth 10 -Compress)"
-
     $ticket = $ticketJson.ticket
     if (-not $ticket) {
         Write-Warning "Invalid ticket structure: 'ticket' property missing in $TicketFile. Ticket JSON: $($ticketJson | ConvertTo-Json -Depth 10 -Compress)"
         return $false
     }
-
     $timeSlot = $ticket.ticketData.timeSlot
     if (-not $timeSlot) {
         Write-Warning "Invalid or missing timeSlot in $TicketFile. Ticket JSON: $($ticketJson | ConvertTo-Json -Depth 10 -Compress)"
         return $false
     }
-
     $currentTime = [int](Get-Date -UFormat %s)
     $expirationTime = [int]$timeSlot + $TicketValidityPeriod
     $remainingSeconds = $expirationTime - $currentTime
-
     if ($currentTime -lt $expirationTime) {
         $remainingHours = [math]::Floor($remainingSeconds / 3600)
         $remainingMinutes = [math]::Floor(($remainingSeconds % 3600) / 60)
@@ -133,10 +149,10 @@ function New-Ticket {
     $deviceId = $env:COMPUTERNAME
     Write-Host "Issuing ticket for seat $SeatId..." -ForegroundColor Yellow
     $payload = @{
-        seatId   = $SeatId
+        seatId = $SeatId
         timeSlot = $timeSlot
         deviceId = $deviceId
-        issuer   = "master"
+        issuer = "master"
     } | ConvertTo-Json -Depth 10 -Compress
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
     $response = Invoke-RestMethod -Uri $IssueTicketEndpoint -Method Post -Headers $headers -Body $payload
@@ -168,15 +184,35 @@ function Register-Certificate {
     Write-Host "Certificate registered successfully" -ForegroundColor Green
 }
 
+# Function to reserve seat
+function Reserve-Seat {
+    param ([PSObject]$Ticket)
+    Write-Host "Reserving seat..." -ForegroundColor Yellow
+    $payload = @{ ticketJson = $Ticket } | ConvertTo-Json -Depth 10 -Compress
+    $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
+    $response = Invoke-RestMethod -Uri $ReserveSeatEndpoint -Method Post -Headers $headers -Body $payload
+    $reservation = $response.reservationCode
+    $newTicket = $response.ticket
+    if (-not $reservation) {
+        Write-Error "Error reserving seat. Response: $($response | ConvertTo-Json -Depth 10 -Compress)"
+        throw "RESERVATION Error"
+    }
+    Write-Host "Seat reserved successfully" -ForegroundColor Green
+    if ($newTicket) {
+        $newTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
+        Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
+    }
+    @{ reservationCode = $reservation } | ConvertTo-Json -Depth 10 -Compress | Set-Content $ReservationFile -Force
+    "BBX_RESERVATION_CODE=$reservation" | Out-File $CertMetaFile -Encoding utf8 -Force
+}
+
 # Main logic
 try {
     Write-Host "Certifying BrowserBox license..." -ForegroundColor Cyan
     $ticketValid = Test-TicketValidity
-
     # Track whether the key came from config to avoid redundant saves
     $keyFromConfig = $false
     $LICENSE_KEY = $null
-
     # Select license key (parameter > env var > config > prompt)
     if ($LicenseKey) {
         $LICENSE_KEY = $LicenseKey
@@ -196,7 +232,6 @@ try {
         Write-Host "Using existing valid ticket without requiring a new license key" -ForegroundColor Green
         return
     }
-
     if ($ForceLicense) {
         Write-Host "Force license mode: Checking license validity without overwriting valid ticket" -ForegroundColor Yellow
         $seatId = Get-VacantSeat
@@ -204,6 +239,14 @@ try {
         if (-not $ticketValid) {
             $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
             Register-Certificate -Ticket $fullTicket
+            if (-not $NoReservation) {
+                Reserve-Seat -Ticket $fullTicket
+            }
+            # augment cert.meta.env with ticket basics
+            $ticketId = $fullTicket.ticket.ticketData.ticketId
+            $timeSlot = $fullTicket.ticket.ticketData.timeSlot
+            Meta-Put -Key "BBX_TICKET_ID" -Value $ticketId
+            Meta-Put -Key "BBX_TICKET_SLOT" -Value $timeSlot
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
             if (-not $keyFromConfig) {
                 Save-Config
@@ -219,13 +262,20 @@ try {
             $fullTicket = New-Ticket -SeatId $seatId
             $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
             Register-Certificate -Ticket $fullTicket
+            if (-not $NoReservation) {
+                Reserve-Seat -Ticket $fullTicket
+            }
+            # augment cert.meta.env with ticket basics
+            $ticketId = $fullTicket.ticket.ticketData.ticketId
+            $timeSlot = $fullTicket.ticket.ticketData.timeSlot
+            Meta-Put -Key "BBX_TICKET_ID" -Value $ticketId
+            Meta-Put -Key "BBX_TICKET_SLOT" -Value $timeSlot
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
             if (-not $keyFromConfig) {
                 Save-Config
             }
         }
     }
-
     Write-Host "Certification complete." -ForegroundColor Green
 } catch {
     Write-Error "An error occurred during certification: $_"
