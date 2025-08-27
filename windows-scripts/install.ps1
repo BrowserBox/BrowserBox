@@ -43,7 +43,19 @@ $unzipPath = "C:\Program Files\Git\usr\bin\unzip.exe"
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
 if (-not $wingetPath -or $ForceAll) {
     Write-Host "Installing winget..." -ForegroundColor Cyan
-    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { IEX ((New-Object Net.WebClient).DownloadString('https://asheroto.com/winget')) } -Force`"" -Wait -NoNewWindow
+    try {
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+            # Prefer current PS7+ shell for reliability
+            & ([ScriptBlock]::Create((irm asheroto.com/winget))) -Force
+        } else {
+            # PS5: Set TLS explicitly in subprocess
+            Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; & { IEX ((New-Object Net.WebClient).DownloadString('https://asheroto.com/winget')) } -Force`"" -Wait -NoNewWindow
+        }
+    } catch {
+        Write-Host "Primary winget installation method failed. Trying fallback..." -ForegroundColor Yellow
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        & ([ScriptBlock]::Create((irm asheroto.com/winget))) -Force
+    }
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
     if (-not $wingetPath) {

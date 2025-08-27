@@ -91,7 +91,6 @@ jobs:
           if (-not $env:LICENSE_KEY) { Write-Host "LICENSE_KEY is not set" } else { Write-Host "LICENSE_KEY is set" }
           if (-not $env:BBX_TEST_AGREEMENT) { Write-Host "BBX_TEST_AGREEMENT is not set" } else { Write-Host "BBX_TEST_AGREEMENT is set" }
           if (-not $env:STATUS_MODE) { Write-Host "STATUS_MODE is not set" } else { Write-Host "STATUS_MODE is set" }
-
           # Install BrowserBox
           Invoke-RestMethod -Uri "https://bbx.dosaygo.com/?v=$((Get-Date).Ticks)" -OutFile "install.ps1"
           .\install.ps1
@@ -99,21 +98,18 @@ jobs:
             Write-Error "bbx not found in PATH after install"
             exit 1
           }
-          winget install cURL.cURL --silent
+          winget install cURL.cURL --silent --accept-source-agreements --accept-package-agreements
           if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
             Write-Error "curl.exe not installed"
             exit 1
           }
           Write-Host "curl.exe installed successfully"
-
           # Setup BrowserBox
           bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL"
           $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
           Write-Host "Login link: $loginLink"
-
           # Start BrowserBox
           bbx run -Verbose
-
           # Curl with retries (ignore cert errors)
           Write-Host "Testing URL: $loginLink"
           $maxRetries = 10
@@ -137,7 +133,6 @@ jobs:
             Write-Error "Failed to connect to $loginLink after $maxRetries retries."
             exit 1
           }
-
           # Wait 25 seconds and verify again
           Write-Host "Waiting 25 seconds to verify link stability..."
           Start-Sleep -Seconds 25
@@ -153,10 +148,8 @@ jobs:
             Write-Error "Second verification failed after 25s: $_"
             exit 1
           }
-
           # Stop services
           bbx stop
-
           # Check no Node processes remain
           $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools", "node" -ErrorAction SilentlyContinue
           if ($nodeProcs) {
@@ -164,6 +157,33 @@ jobs:
           } else {
             Write-Host "No Node processes remain -- cleanup successful."
           }
+      
+      - name: Print BBX Logs on Failure (Windows)
+        if: failure() && matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $logDir = "$env:USERPROFILE\.config\dosyago\bbpro\logs"
+          $logs = @("browserbox-main-out.log", "browserbox-main-err.log", "browserbox-devtools-out.log", "browserbox-devtools-err.log")
+          foreach ($log in $logs) {
+            $logPath = Join-Path $logDir $log
+            if (Test-Path $logPath) {
+              Write-Host "Contents of $log:"
+              Get-Content $logPath
+            } else {
+              Write-Host "$log not found."
+            }
+          }
+
+      - name: Cleanup (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 5
+
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5
 
       - name: Cleanup (Unix/macOS)
         if: always() && matrix.os != 'windows-latest'
