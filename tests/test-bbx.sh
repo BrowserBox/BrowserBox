@@ -16,6 +16,12 @@ if [[ -z "$LICENSE_KEY" ]]; then
 fi
 export LICENSE_KEY="${LICENSE_KEY}"
 
+if [[ -z "$INSTALL_DOC_VIEWER" ]]; then
+  echo "[ Warning ]: Install doc viewer is not set for tests. Setting..." >&2
+  INSTALL_DOC_VIEWER="false"
+fi
+export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER}"
+
 # Safely handle bbcertify output
 if command -v bbcertify; then
   cert_file=$(bbcertify --no-reservation)
