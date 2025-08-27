@@ -17,8 +17,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        container_image: 
-          - ''  # No container (native runner)
+        container_image:
+          - '' # No container (native runner)
           - 'dokken/centos-stream-9'
           - 'debian:latest'
         exclude:
@@ -33,7 +33,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     container: ${{ matrix.container_image }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -92,7 +91,7 @@ jobs:
           if (-not $env:BBX_TEST_AGREEMENT) { Write-Host "BBX_TEST_AGREEMENT is not set" } else { Write-Host "BBX_TEST_AGREEMENT is set" }
           if (-not $env:STATUS_MODE) { Write-Host "STATUS_MODE is not set" } else { Write-Host "STATUS_MODE is set" }
           # Install BrowserBox
-          Invoke-RestMethod -Uri "https://bbx.dosaygo.com/?v=$((Get-Date).Ticks)" -OutFile "install.ps1"
+          Invoke-RestMethod -Uri "https://bbx.dosaygo.com/?v=$((Get-date).Ticks)" -OutFile "install.ps1"
           .\install.ps1
           if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
             Write-Error "bbx not found in PATH after install"
@@ -157,7 +156,7 @@ jobs:
           } else {
             Write-Host "No Node processes remain -- cleanup successful."
           }
-      
+     
       - name: Print BBX Logs on Failure (Windows)
         if: failure() && matrix.os == 'windows-latest'
         shell: powershell
@@ -167,23 +166,12 @@ jobs:
           foreach ($log in $logs) {
             $logPath = Join-Path $logDir $log
             if (Test-Path $logPath) {
-              Write-Host "Contents of $log:"
+              Write-Host "Contents of ${log}:"
               Get-Content $logPath
             } else {
               Write-Host "$log not found."
             }
           }
-
-      - name: Cleanup (Windows)
-        if: always() && matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          Start-Sleep -Seconds 5
-
-      - name: Setup tmate session on failure
-        if: failure()
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 5
 
       - name: Cleanup (Unix/macOS)
         if: always() && matrix.os != 'windows-latest'
@@ -191,12 +179,6 @@ jobs:
         run: |
           bbx stop || true
           sleep 5
-
-      - name: Cleanup (Windows)
-        if: always() && matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          Start-Sleep -Seconds 5
 
       - name: Setup tmate session on failure
         if: failure()
