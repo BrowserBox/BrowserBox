@@ -1,4 +1,6 @@
-﻿[CmdletBinding(SupportsShouldProcess=$true)]
+﻿# bbx.ps1
+
+[CmdletBinding(SupportsShouldProcess=$true)]
 param (
   [Parameter(Position=0)]
   [string]$Command,
@@ -8,13 +10,14 @@ param (
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $installDir = "C:\Program Files\browserbox"
+
 $commands = @{
-  "install"   = "install.ps1"
+  "install" = "install.ps1"
   "uninstall" = "uninstall.ps1"
-  "setup"     = "setup.ps1"
-  "run"       = "start.ps1"
-  "certify"   = "certify.ps1"
-  "stop"      = "stop.ps1"
+  "setup" = "setup.ps1"
+  "run" = "start.ps1"
+  "certify" = "certify.ps1"
+  "stop" = "stop.ps1"
 }
 
 Write-Verbose "Script dir: $scriptDir"
@@ -27,23 +30,23 @@ function Show-Help {
     Write-Host "Usage: bbx <command> [options]" -ForegroundColor Yellow
     Write-Host "Commands:" -ForegroundColor Cyan
     $commandDescriptions = @{
-        "install"   = "Install BrowserBox and bbx CLI`n    bbx install"
-        "uninstall" = "Remove BrowserBox and related files`n    bbx uninstall [-Force]"
-        "setup"     = "Set up BrowserBox`n    bbx setup [-Hostname <hostname>] [-Email <email>] [-Port <port>] [-Token <token>] [-Force]"
-        "run"       = "Run BrowserBox`n    bbx run [-Hostname <hostname>] [-Port <port>] [-Token <token>] [-Email <email>]"
-        "certify"   = "Certify your license`n    bbx certify [-ForceLicense] [-LicenseKey <key>]"
-        "stop"      = "Stop BrowserBox`n    bbx stop [-GraceSeconds <seconds>]"
-        "revalidate" = "Clears ticket and revalidates`n    bbx revalidate"
+        "install" = "Install BrowserBox and bbx CLI`n bbx install"
+        "uninstall" = "Remove BrowserBox and related files`n bbx uninstall [-Force]"
+        "setup" = "Set up BrowserBox`n bbx setup [-Hostname <hostname>] [-Email <email>] [-Port <port>] [-Token <token>] [-Force]"
+        "run" = "Run BrowserBox`n bbx run [-Hostname <hostname>] [-Port <port>] [-Token <token>] [-Email <email>]"
+        "certify" = "Certify your license`n bbx certify [-ForceLicense] [-NoReservation] [-LicenseKey <key>]"
+        "stop" = "Stop BrowserBox`n bbx stop [-GraceSeconds <seconds>]"
+        "revalidate" = "Clears ticket and revalidates`n bbx revalidate"
     }
     $commands.Keys + "revalidate" | Sort-Object | ForEach-Object {
-        Write-Host "  $_" -ForegroundColor White
-        Write-Host "    $($commandDescriptions[$_])" -ForegroundColor Gray
+        Write-Host " $_" -ForegroundColor White
+        Write-Host " $($commandDescriptions[$_])" -ForegroundColor Gray
     }
     Write-Host "Run 'bbx <command> -help' for command-specific options." -ForegroundColor Gray
 }
 
 if (-not $Command -or $Command -eq "-help") {
-    Write-Verbose "No command or -help specified—showing help"
+    Write-Verbose "No command or -help specified‚Äîshowing help"
     Show-Help
     return
 }
@@ -105,13 +108,13 @@ if ($commands.ContainsKey($Command)) {
             Write-Verbose "Invoking with params: & $scriptPath @params"
             & $scriptPath @params
         } else {
-            Write-Verbose "No args provided—invoking bare: & $scriptPath"
+            Write-Verbose "No args provided‚Äîinvoking bare: & $scriptPath"
             & $scriptPath
         }
     } else {
         Write-Error "Script for '$Command' not found at $scriptPath"
-        if ($Command -eq "install") { 
-            Write-Host "Try running 'irm bbx.dosaygo.com | iex' first." -ForegroundColor Yellow 
+        if ($Command -eq "install") {
+            Write-Host "Try running 'irm bbx.dosaygo.com | iex' first." -ForegroundColor Yellow
         }
         Show-Help
         throw "bbx: $Command failed"
