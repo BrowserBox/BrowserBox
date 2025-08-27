@@ -223,9 +223,9 @@ if [[ $PLAT != win* ]]; then
       yes | ./scripts/setup.sh
     else 
       if command -v nohup &>/dev/null; then
-        nohup bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+        nohup bash -c 'yes | ./scripts/setup.sh' &> "${HOME}/docviewer-install-nohup.out" &
       else
-        bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+        bash -c 'yes | ./scripts/setup.sh' &> "${HOME}/docviewer-install-nohup.out" &
       fi
     fi
   else
