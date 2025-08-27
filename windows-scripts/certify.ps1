@@ -277,6 +277,7 @@ try {
             }
         }
     }
+    Write-Host "Certification complete." -ForegroundColor Green
 } catch {
     Write-Error "An error occurred during certification: $_"
     throw "CERTIFICATION Error"
