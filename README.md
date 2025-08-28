@@ -144,9 +144,10 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 >[!NOTE]
 >Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v12+) with all fixes and features.
 
-** Notes **
+**Notes**
+
 - \*Tails is not supported because neither Chrome nor Docker can be installed.
-- †Windows 9x is supported by going to `/win9x`. For example, if your login link is **https://server:9999/login?token=123** then go to **https://server:9999/win9x?token=123**. Windows 9x includes Windows 95, Windows 98, Windows 2000, Windows NT and Internet Explorer 4.0 and up, and other old browsers on Windows, like Netscape.
+- †Windows 9x clients are supported by going to `/win9x`. For example, if your login link is **https://server:9999/login?token=123** then go to **https://server:9999/win9x?token=123**. Windows 9x includes Windows 95, Windows 98, Windows 2000, Windows NT and Internet Explorer 4.0 and up, and other old browsers on Windows, like Netscape. Please note that the BrowserBox server must still be run on a modern system, but now you can connect to BrowserBox from legacy Windows 9x machines and browsers.
 
 
 ## Get Started in 3 Steps
