@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <strong>NEWS: COMING SOON - Windows 9x support! Bring safe modern browsing to legacy Win 9x systems.</strong>
+  <strong>AUGUST 2025 NEWS: Windows 9x support is in beta!<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
 </p>
 
 BrowserBox delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
@@ -130,7 +130,7 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 
 | Platform                 | Supported | Icon                                                                                                |
 | :----------------------- | :-------- | :-------------------------------------------------------------------------------------------------- |
-| Tails\*                  | 🚧        | <img src="readme-files/tails.png" alt="Tails" width="100" title="Tails OS">    |
+| Tails\*                  | ❌        | <img src="readme-files/tails.png" alt="Tails" width="100" title="Tails OS">    |
 | Windows & Windows Server | ✅        | <img src="readme-files/windows.png" alt="Windows" width="100" title="Windows and Windows Server">    |
 | Debian                   | ✅        | <img src="readme-files/debian.png" alt="Debian" height="64" title="Debian">                           |
 | Ubuntu                   | ✅        | <img src="readme-files/ubuntu.png" alt="Ubuntu" width="100" title="Ubuntu">                           |
@@ -139,11 +139,15 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 | NixOS                    | ✅        | <img src="readme-files/nixos.png" alt="NixOS" width="100" title="NixOS">                             |
 | Docker                   | ✅        | <img src="readme-files/docker.png" alt="Docker" width="100" title="Docker">                           |
 | LXC                      | ✅        | <img src="readme-files/LXC.png" alt="LXC" height="64" title="LXC">                                   |
+| Windows 9x†              | ✅        | <img src="readme-files/windows-9x.png" alt="Windows 9x" width="64" title="Windows 9x">              |
 
 >[!NOTE]
 >Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v12+) with all fixes and features.
 
-\*Tails support is currently in active development and testing.
+** Notes **
+- \*Tails is not supported because neither Chrome nor Docker can be installed.
+- †Windows 9x is supported by going to `/win9x`. For example, if your login link is **https://server:9999/login?token=123** then go to **https://server:9999/win9x?token=123**. Windows 9x includes Windows 95, Windows 98, Windows 2000, Windows NT and Internet Explorer 4.0 and up, and other old browsers on Windows, like Netscape.
+
 
 ## Get Started in 3 Steps
 
