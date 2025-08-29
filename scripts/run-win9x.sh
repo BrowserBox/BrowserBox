@@ -18,7 +18,8 @@ pm2 delete basic-bb-main-service >&2
 pm2 save --force >&2
 
 export WIN9X_COMPATIBILITY_MODE="true"
-npm test >&2
+bbx run
+#npm test >&2
 
 echo "Waiting for server..." >&2
 sleep 8
