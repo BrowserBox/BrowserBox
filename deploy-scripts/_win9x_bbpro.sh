@@ -7,6 +7,7 @@ export WIN9X_COMPATIBILITY_MODE="true"
 export BBX_DONT_KILL_CHROME_ON_STOP="true"
 
 #bbx run
+bbcertify
 npm test >&2
 
 echo "Waiting for server..." >&2
