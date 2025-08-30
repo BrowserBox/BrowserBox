@@ -176,18 +176,33 @@
         function addParam(u,k,v){ return u + (u.indexOf('?')>=0?'&':'?') + k + '=' + v; }
 
         // Parent dispatcher that request-specific callbacks will forward to
-        window.__jsonpDispatch = function(cbName, data){
-          var entry = __jsonpCallbacks[cbName];
-          if (!entry) return;
-          // cleanup timeout
-          if (entry.timeoutId) clearTimeout(entry.timeoutId); 
-          // cleanup iframe if any
+        if (!window.__jsonpCallbacks) window.__jsonpCallbacks = __jsonpCallbacks;
 
-          if (entry.onOK) entry.onOK(data);
-          setTimeout(function () {
-            __jsonpCallbacks[cbName] = null;
-          });
-        };
+        if (!window.__jsonpDispatch) {
+          if (window.execScript) {
+            window.execScript(
+              'function __jsonpDispatch(cbName, data) {' +
+                'var e = window.__jsonpCallbacks && window.__jsonpCallbacks[cbName];' +
+                'if (e && e.timeoutId) { clearTimeout(e.timeoutId); } ' +
+                'if (e) {' +
+                  'window.__jsonpCallbacks[cbName] = null;' +
+                  'if (e.onOK) e.onOK(data); ' +
+                '}' +
+              '}',
+              'JScript'
+            );
+          } else {
+            // Non-IE4 path (harmless elsewhere).
+            window.__jsonpDispatch = function (cbName, data) {
+              var e = window.__jsonpCallbacks && window.__jsonpCallbacks[cbName];
+              if (e && e.timeoutId) { clearTimeout(e.timeoutId); }
+              if (e) {
+                window.__jsonpCallbacks[cbName] = null;
+                if (e.onOK) e.onOK(data); 
+              }
+            };
+          }
+        }
 
         function jsonpViaIframe(fullUrl, cbName, onOK, onTimeout) {
           // Create hidden iframe
@@ -211,51 +226,22 @@
           var d = ifrWin ? ifrWin.document : (iframe.document || null);
           if (!d) { if (onTimeout) onTimeout(); return; }
 
-          // Install per-frame stub that forwards to parent dispatcher
-          /*
           var page =
             '<html><head>' +
-              '<scr'+'ipt type="text/javascript" language="JavaScript">' +
-                'function ' + cbName + '(d){ parent.__jsonpDispatch("' + cbName + '", d); }' +
-              '</scr'+'ipt>' +
-              '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
-            '</head><body></body></html>';
-          */
-          /*
-          var page =
-            '<html><head>' +
-              '<scr'+'ipt type="text/javascript" language="JavaScript">' +
-                'function ' + cbName + '(d){ ' +
-                  'alert("Callback fired in iframe"); ' +
-                  'alert("parent exists? " + (typeof parent !== "undefined" ? "yes" : "no")); ' +
-                  'alert("parent.__jsonpDispatch type: " + typeof parent.__jsonpDispatch); ' +
-                  'if (typeof parent.__jsonpDispatch === "function") { ' +
-                    'parent.__jsonpDispatch("' + cbName + '", d); ' +
-                  '} else { ' +
-                    'alert("Dispatch not callable"); ' +
-                  '} ' +
+              '<scr' + 'ipt type="text/javascript" language="JavaScript">' +
+                'function __bb_send(d){' +
+                  'var P=null; P=parent;' +
+                  'if(P && P.__jsonpDispatch){ P.__jsonpDispatch("' + cbName + '", d); return; } ' +
+                  'if(P && P.window && P.window.__jsonpDispatch){ P.window.__jsonpDispatch("' + cbName + '", d); return; } ' +
+                  'if(top && top.__jsonpDispatch){ top.__jsonpDispatch("' + cbName + '", d); return; }' +
                 '}' +
-              '</scr'+'ipt>' +
-              '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
+                'function ' + cbName + '(d){ __bb_send(d); }' +
+                // also export on window for servers that do `window.cb(...)`
+                'window["' + cbName + '"] = ' + cbName + '; ' +
+              '</scr' + 'ipt>' +
+              '<scr' + 'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr' + 'ipt>' +
             '</head><body></body></html>';
-          */
-var page =
-    '<html>' +
-    '<head>' +
-      '<scr'+'ipt type="text/javascript" language="JavaScript">' +
-        'function initialize() {' +
-          'window.' + cbName + ' = function ' + cbName + '(d) {' +
-            'if ( parent.__jsonpDispatch ) { ' + 
-            '  parent.__jsonpDispatch("' + cbName + '", d);' +
-            '} else { alert("parent has no __jsonpDispatch"); alert("parent location: " + parent.location.href); }'
-          '};' +
-        '}' +
-      '</scr'+'ipt>' +
-      '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
-    '</head>' +
-    '<body onload="initialize()">' +
-    '</body>' +
-    '</html>';
+
           //alert(page);
           d.open(); d.write(page); d.close();
 
