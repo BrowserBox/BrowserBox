@@ -361,7 +361,9 @@ const controller_api = {
   getFrameFromBuffer(port, targetId) {
     const connection = connections.get(port);
     if (connection && connection.win9xCompatibilityBuffer) {
-      return connection.win9xCompatibilityBuffer.get(targetId);
+      const fr = connection.win9xCompatibilityBuffer.get(targetId);
+      connection.win9xCompatibilityBuffer.delete(targetId);
+      return fr;
     }
     return null;
   },

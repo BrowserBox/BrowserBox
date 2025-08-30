@@ -899,10 +899,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const targetId = sessions.get(sessionId);
     const frameBuffer = Buffer.from(data, 'base64');
 
-    win9xCompatibilityBuffer.set(targetId, {
+    const framedata = {
       buffer: frameBuffer,
       timestamp: Date.now()
-    });
+    };
+    win9xCompatibilityBuffer.set(targetId, framedata);
+    DEBUG.debug9x && console.log('9x buffer updated with framedata', framedata);
 
     const frame = frameBuffer; // Use the buffer we already created
     const header = Buffer.alloc(28);

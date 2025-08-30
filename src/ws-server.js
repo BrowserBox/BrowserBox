@@ -1174,6 +1174,7 @@
 
           const frameData = readLatestFrame(zombie_port, activeTargetId);
           const serverTs = frameData?.timestamp || 0;
+          console.log({frameData, serverTs});
 
           if (serverTs > lastKnownTimestamp) {
             return res.json({ fresh: true, timestamp: serverTs });
