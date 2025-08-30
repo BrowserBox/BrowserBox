@@ -197,12 +197,11 @@
           url = addParam(url, 'callback', cb);
           url = addParam(url, 'ran', String(Math.random()));
 
-          if (document.body.insertAdjacentHTML) {
+          if (document.body && document.body.insertAdjacentHTML) {
             document.body.insertAdjacentHTML(
               'beforeEnd',
-              '<script type="text/javascript" language="JavaScript" src="' + url + '"><' + '/' + 'script>'
+              '<script type="text/javascript" language="JavaScript" src="' + url + '"></' + 'script>'
             );
-            return;
           }
           var s = document.createElement ? document.createElement('script') : null;
           if (s) {
@@ -272,37 +271,44 @@
             activeTabId = null;
             lastKnownFrameTimestamp = 0;
 
-            connectButton.innerText = 'Connect';
+            if (connectButton) connectButton.innerText = 'Connect';
             updateStatus('Disconnected.');
             setControlsEnabled(false);
             safeClearChildNodes(tabBar);
-            urlInput.value = '';
-          } else {
-            sessionToken = tokenInput.value;
-            if (!sessionToken) { alert('Please enter a session token.'); return; }
-
-            alert('connecting');
-            updateStatus('Connecting...');
-            connect(function () {
-              isConnected = true;
-
-              sendViewportSize();
-              updateTabs();
-              pollForNextFrame();
-              startKeyBatching();
-
-              if (tabPollingInterval) clearInterval(tabPollingInterval);
-              tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
-              if ( connectButton ) {
-                connectButton.textContent = 'Disconnect';
-              }
-              setControlsEnabled(true);
-            });
+            if (urlInput) urlInput.value = '';
+            return;
           }
+
+          sessionToken = tokenInput ? tokenInput.value : '';
+          if (!sessionToken) { alert('Please enter a session token.'); return; }
+
+          // Do NOT wait for the server response to proceed.
+          updateStatus('Connecting...');
+          isConnected = true;
+
+          // Kick off the connect hit (best-effort)
+          connect(); // fire-and-forget
+
+          // Start the normal flow immediately
+          sendViewportSize();
+          updateTabs();
+          pollForNextFrame();
+          startKeyBatching();
+
+          if (tabPollingInterval) clearInterval(tabPollingInterval);
+          tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
+          if (connectButton) connectButton.innerText = 'Disconnect';
+          setControlsEnabled(true);
+
+          // Optional: safety "connected" status nudge after a moment
+          setTimeout(function () { handleReconnection(); }, 500);
         }
 
         function connect(cb) {
           var url = API_BASE_PATH + '/connect?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+          if ( ! cb ) {
+            cb = function (data) { void 0; }
+          }
           getJSON(url, cb);
         }
 
@@ -311,6 +317,7 @@
           var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
 
           getJSON(url, function(data) {
+            alert(JSON.stringify(data));
             handleReconnection();
             if (!data) return;
             var tabs = data.tabs || [];
