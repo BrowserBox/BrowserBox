@@ -1183,6 +1183,7 @@
       const legacyAuth = (req, res) => {
         const cookie = req.cookies[COOKIENAME + port] || req.query[COOKIENAME + port] || req.headers['x-browserbox-local-auth'];
         const st = req.query.session_token; // The legacy client sends this
+        DEBUG.debug9x && logLegacyQuery(req, 'AUTH');
         if ((cookie === allowed_user_cookie) || (st === session_token)) {
           req.authAs = `${cookie}:${st}`;
           return true;
@@ -1190,6 +1191,12 @@
         replyErr(req, res, 401, 'forbidden');
         return false;
       };
+
+      function logLegacyQuery(req, tag) {
+        try {
+          console.log(`[LEGACY ${tag}] url=${req.originalUrl} qs=`, req.query);
+        } catch (_) {}
+      }
 
       app.get(`/api/${LEGACY_API_VERSION}/connect`, wrap(async (req, res) => {
         if (!legacyAuth(req, res)) return;

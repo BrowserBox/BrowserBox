@@ -15,7 +15,7 @@
   #omni-box { background-color: ButtonFace; padding: 5px; border-bottom: 2px outset silver; }
   .omni-button { font-size: 12px; width: 60px; margin-right: 5px; }
   #url-input { font-size: 12px; width: 60%; }
-  #status-bar { padding: 3px; border-top: 1px solid darkgray; font-size: 10px; color: darkgray; }
+  #status-bar { padding: 3px; border-top: 1px solid darkgray; font-size: 10px; color: black; }
   #content-pane {
     position: relative;
     background-color: #000000;
@@ -25,6 +25,7 @@
   }
   #remote-screen {
     position: absolute;
+    display: block;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background-color: #FFFFFF;
@@ -107,6 +108,119 @@
 </script>
 
 <script type="text/javascript" language="JavaScript">
+  // Minimal JSON + stringify for IE4–6 (debug-safe)
+  if (!window.JSON) { window.JSON = {}; }
+
+  if (!JSON.stringify) {
+    (function () {
+      function escStr(s) {
+        // Escape quotes, backslashes, and control chars < 0x20
+        var out = '', i, c, ch;
+        for (i = 0; i < s.length; i++) {
+          c = s.charCodeAt(i);
+          ch = s.charAt(i);
+          if (ch === '"' || ch === '\\') { out += '\\' + ch; }
+          else if (c < 0x20) {
+            if (ch === '\b') out += '\\b';
+            else if (ch === '\f') out += '\\f';
+            else if (ch === '\n') out += '\\n';
+            else if (ch === '\r') out += '\\r';
+            else if (ch === '\t') out += '\\t';
+            else {
+              var h = c.toString(16);
+              while (h.length < 4) h = '0' + h;
+              out += '\\u' + h;
+            }
+          } else {
+            out += ch;
+          }
+        }
+        return '"' + out + '"';
+      }
+
+      function isArray(a) {
+        return a && (a.constructor === Array || (typeof a.length === 'number' && typeof a.splice === 'function'));
+      }
+
+      function isDate(d) {
+        return d && typeof d.getUTCFullYear === 'function';
+      }
+
+      function stringify(val, stack) {
+        var t = typeof val;
+
+        if (val === null) return 'null';
+        if (t === 'string') return escStr(val);
+        if (t === 'number') return isFinite(val) ? String(val) : 'null';
+        if (t === 'boolean') return val ? 'true' : 'false';
+
+        stack = stack || [];
+        // Circular ref guard
+        for (var si = 0; si < stack.length; si++) {
+          if (stack[si] === val) return escStr('[Circular]');
+        }
+
+        if (isDate(val)) {
+          // ISO not available; use UTC string for debugging
+          return escStr(val.toUTCString ? val.toUTCString() : String(val));
+        }
+
+        if (isArray(val)) {
+          stack[stack.length] = val;
+          var arrOut = [];
+          for (var i = 0; i < val.length; i++) {
+            // JSON.stringify puts null for unsupported/undefined
+            var v = stringify(val[i], stack);
+            arrOut[arrOut.length] = (typeof val[i] === 'undefined' || typeof val[i] === 'function') ? 'null' : v;
+          }
+          stack.length = stack.length - 1;
+          return '[' + arrOut.join(',') + ']';
+        }
+
+        if (t === 'object') {
+          stack[stack.length] = val;
+          var first = true, parts = [];
+          // Prefer own props when possible
+          var hasOwn = Object.prototype.hasOwnProperty;
+          for (var k in val) {
+            if (hasOwn ? hasOwn.call(val, k) : true) {
+              var v2 = val[k];
+              var vt = typeof v2;
+              if (vt !== 'undefined' && vt !== 'function') {
+                parts[parts.length] = escStr(k) + ':' + stringify(v2, stack);
+              }
+            }
+          }
+          stack.length = stack.length - 1;
+          return '{' + parts.join(',') + '}';
+        }
+
+        // functions / undefined
+        return 'null';
+      }
+
+      JSON.stringify = function (value) {
+        return stringify(value, []);
+      };
+    })();
+  }
+
+  // Handy helpers for debugging in old IE
+  if (!window.debugAlert) {
+    window.debugAlert = function (label, value) {
+      try {
+        var s = JSON.stringify(value);
+        // Old alert boxes choke on huge strings—trim if massive
+        if (s.length > 1000) s = s.substr(0, 1000) + '…';
+        alert((label ? label + ': ' : '') + s);
+      } catch (e) {
+        alert((label ? label + ': ' : '') + '[unserializable] ' + (e && e.message ? e.message : e));
+      }
+    };
+  }
+</script>
+
+<script type="text/javascript" language="JavaScript">
   // --- Configuration ---
   var KEY_BATCH_INTERVAL_MS = 1000;
   var MAX_KEYS_PER_BATCH    = 24;
@@ -120,9 +234,9 @@
   if (location && location.origin) {
     API_BASE_PATH = location.origin + API_BASE_PATH;
   }
-  var POLLING_INTERVAL_MS = 1000;
-  var TAB_REFRESH_RATE_MS = 3000;
-  var RESIZE_THROTTLE_MS  = 300; // 300ms debounce
+  var POLLING_INTERVAL_MS = 800;
+  var TAB_REFRESH_RATE_MS = 4000;
+  var RESIZE_THROTTLE_MS  = 1000; // 1s debounce
 
   var NUDGE_MIN_MS = 400;
   var _lastNudgeAt = 0;
@@ -153,85 +267,108 @@
   var statusBar     = getEl('status-bar');
 
   var sessionToken = '';
-  if (location.search) {
-    sessionToken = location.search.replace('?token=', '');
-    tokenInput.value = sessionToken;
-  }
+
+  // Use ONLY the 'token' param
+  var sessionToken = getQueryParam('token') || '';
+  if (sessionToken) { tokenInput.value = sessionToken; }
 
   // --- JSON / Net helpers (JSONP for IE4/5) ---
-  var USE_JSONP = true || !window.XMLHttpRequest;
+    var USE_JSONP = true || !window.XMLHttpRequest;
 
-  var _jsonpSeq = 0;
+    var _jsonpSeq = 0;
 
-  function jsonp(fullUrl, onOK) {
-    // Ensure BODY exists (IE4 can run this before <body> is live)
-    if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK); }, 50); return; }
+    function jsonp(fullUrl, onOK) {
+      // Ensure BODY exists (IE4 can run this before <body> is live)
+      if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK); }, 50); return; }
 
-    var cb = '__bbcb' + (++_jsonpSeq);
-    window[cb] = function (data) { window[cb] = null; if (onOK) onOK(data); };
+      var cb = '__bbcb' + (++_jsonpSeq);
+      window[cb] = function (data) { window[cb] = null; if (onOK) onOK(data); };
 
-    var url = fullUrl + (fullUrl.indexOf('?')>=0 ? '&' : '?') +
-              'jsonp=1&callback=' + cb + '&ran=' + Math.random();
+      var url = fullUrl + (fullUrl.indexOf('?')>=0 ? '&' : '?') +
+                'jsonp=1&callback=' + cb + '&ran=' + Math.random();
 
-    // Best path first
-    if (document.createElement) {
-      var s = document.createElement('script');
-      if ( s ) {
-        s.type = 'text/javascript';
-        s.src  = url;
+      // Best path first
+      if (document.createElement) {
+        var s = document.createElement('script');
+        if ( s ) {
+          s.type = 'text/javascript';
+          s.src  = url;
 
-        if (document.body.appendChild) {
-          document.body.appendChild(s);
+          if (document.body.appendChild) {
+            document.body.appendChild(s);
+            return;
+          }
+          if (document.body.insertAdjacentElement) {
+            document.body.insertAdjacentElement('beforeEnd', s);
+            return;
+          }
+        }
+        if (document.body.insertAdjacentHTML) {
+          setTimeout(function () {
+            document.body.insertAdjacentHTML(
+              'beforeEnd',
+              '<script type="text/javascript" src="' + url + '"></' + 'script>'
+            );
+            return;
+          });
           return;
         }
-        if (document.body.insertAdjacentElement) {
-          document.body.insertAdjacentElement('beforeEnd', s);
-          return;
+      }
+
+      if (document.body && document.body.insertAdjacentHTML) {
+        document.body.insertAdjacentHTML(
+          'beforeEnd',
+          '<script type="text/javascript" src="' + url + '"></' + 'script>'
+        );
+      }
+    }
+
+    function getJSON(fullUrl, onOK, onErr) {
+      if (USE_JSONP) { jsonp(fullUrl, onOK); return; }
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', fullUrl, true);
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) { onOK(parseJSON(xhr.responseText)); }
+          else if (onErr) { onErr(); }
+        }
+      };
+      xhr.send(null);
+    }
+
+    function netErr() {
+      if (!isNetworkError) {
+        isNetworkError = true;
+        updateStatus('Connection error. Attempting to reconnect...');
+      }
+    }
+
+    function parseJSON(jsonString) {
+      return eval('(' + jsonString + ')');
+    }
+
+  // query funcs
+    function _decodeQS(s) {
+      // IE-safe decode: handle + as space, fall back to unescape
+      try { return decodeURIComponent(String(s).replace(/\+/g, '%20')); }
+      catch (e) { return unescape(String(s)); }
+    }
+
+    function getQueryParam(name) {
+      var q = (location && location.search) ? String(location.search).replace(/^\?/, '') : '';
+      if (!q) return '';
+      var parts = q.split('&');
+      for (var i = 0; i < parts.length; i++) {
+        var kv = parts[i].split('=');
+        if (_decodeQS(kv[0]) === name) {
+          // Rejoin in case value contained '='
+          var rest = kv.slice(1).join('=');
+          return _decodeQS(rest);
         }
       }
-      if (document.body.insertAdjacentHTML) {
-        setTimeout(function () {
-          document.body.insertAdjacentHTML(
-            'beforeEnd',
-            '<script type="text/javascript" src="' + url + '"></' + 'script>'
-          );
-          return;
-        });
-        return;
-      }
+      return '';
     }
 
-    if (document.body && document.body.insertAdjacentHTML) {
-      document.body.insertAdjacentHTML(
-        'beforeEnd',
-        '<script type="text/javascript" src="' + url + '"></' + 'script>'
-      );
-    }
-  }
-
-  function getJSON(fullUrl, onOK, onErr) {
-    if (USE_JSONP) { jsonp(fullUrl, onOK); return; }
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', fullUrl, true);
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4) {
-        if (xhr.status === 200) { onOK(parseJSON(xhr.responseText)); }
-        else if (onErr) { onErr(); }
-      }
-    };
-    xhr.send(null);
-  }
-
-  function netErr() {
-    if (!isNetworkError) {
-      isNetworkError = true;
-      updateStatus('Connection error. Attempting to reconnect...');
-    }
-  }
-
-  function parseJSON(jsonString) {
-    return eval('(' + jsonString + ')');
-  }
 
   function safeClearChildNodes(el) {
     if (!el) return;
@@ -241,7 +378,7 @@
 
   function updateStatus(text) {
     // Uncomment if you want the status bar to spam less:
-    // statusBar.innerHTML = 'Status: ' + text;
+    statusBar.innerHTML = 'Status: ' + text;
   }
 
   function setControlsEnabled(isEnabled) {
@@ -324,6 +461,7 @@
     getJSON(url, function(data) {
       handleReconnection();
       if (!data) return;
+      //alert(JSON.stringify(data));
       var tabs = data.tabs || [];
       renderTabs(tabs, data.activeTarget);
       activeTabId = data.activeTarget;
@@ -447,12 +585,18 @@
     sendEvent('type=resize&width=' + w + '&height=' + h);
   }
 
-  // 300ms debounce
+  // 1s debounce
   function throttledResizeHandler() {
+    remoteScreen.style.display = 'none';
     if (resizeTimeout) { clearTimeout(resizeTimeout); }
-    resizeTimeout = setTimeout(function() {
-      if (isConnected) { sendViewportSize(); }
-    }, RESIZE_THROTTLE_MS);
+    resizeTimeout = setTimeout(doResize, RESIZE_THROTTLE_MS);
+  }
+
+  function doResize() {
+    remoteScreen.style.display = 'block';
+    if (isConnected) { 
+      sendViewportSize(); 
+    }
   }
 
   // --- Mouse helpers (for old IE) ---
