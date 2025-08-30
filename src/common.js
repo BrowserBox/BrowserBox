@@ -8,7 +8,7 @@ import {fileURLToPath} from 'url';
 import isDocker from 'is-docker';
 
 import {FRAME_CONTROL} from './public/voodoo/src/common.js';
-import { rainstormHash } from '@dosaygo/rainsum';
+import { rainstormHash } from '@dosyago/rainsum';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
