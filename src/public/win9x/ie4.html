@@ -184,7 +184,7 @@
           // cleanup iframe if any
 
           if (entry.onOK) entry.onOK(data);
-          setTimeout(() => {
+          setTimeout(function () {
             __jsonpCallbacks[cbName] = null;
           });
         };
@@ -212,6 +212,7 @@
           if (!d) { if (onTimeout) onTimeout(); return; }
 
           // Install per-frame stub that forwards to parent dispatcher
+          /*
           var page =
             '<html><head>' +
               '<scr'+'ipt type="text/javascript" language="JavaScript">' +
@@ -219,6 +220,42 @@
               '</scr'+'ipt>' +
               '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
             '</head><body></body></html>';
+          */
+          /*
+          var page =
+            '<html><head>' +
+              '<scr'+'ipt type="text/javascript" language="JavaScript">' +
+                'function ' + cbName + '(d){ ' +
+                  'alert("Callback fired in iframe"); ' +
+                  'alert("parent exists? " + (typeof parent !== "undefined" ? "yes" : "no")); ' +
+                  'alert("parent.__jsonpDispatch type: " + typeof parent.__jsonpDispatch); ' +
+                  'if (typeof parent.__jsonpDispatch === "function") { ' +
+                    'parent.__jsonpDispatch("' + cbName + '", d); ' +
+                  '} else { ' +
+                    'alert("Dispatch not callable"); ' +
+                  '} ' +
+                '}' +
+              '</scr'+'ipt>' +
+              '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
+            '</head><body></body></html>';
+          */
+var page =
+    '<html>' +
+    '<head>' +
+      '<scr'+'ipt type="text/javascript" language="JavaScript">' +
+        'function initialize() {' +
+          'window.' + cbName + ' = function ' + cbName + '(d) {' +
+            'if ( parent.__jsonpDispatch ) { ' + 
+            '  parent.__jsonpDispatch("' + cbName + '", d);' +
+            '} else { alert("parent has no __jsonpDispatch"); alert("parent location: " + parent.location.href); }'
+          '};' +
+        '}' +
+      '</scr'+'ipt>' +
+      '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
+    '</head>' +
+    '<body onload="initialize()">' +
+    '</body>' +
+    '</html>';
           //alert(page);
           d.open(); d.write(page); d.close();
 
