@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>BrowserBox - Legacy Client (IE4)</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Type" content="text/html;">
 <meta http-equiv="imagetoolbar" content="no" />
 <style type="text/css">
   html, body { height: 100%; overflow: hidden; }
@@ -26,7 +26,6 @@
 </head>
 <body>
 
-<!-- Array shims (IE4–6) -->
 <script type="text/javascript" language="JavaScript">
   if (!Array.prototype.shift) {
     Array.prototype.shift = function () {
@@ -175,6 +174,8 @@
   }
 </script>
 
+
+</body>
 <script type="text/javascript" language="JavaScript">
   // --- Configuration ---
   var KEY_BATCH_INTERVAL_MS = 1000;
@@ -219,7 +220,6 @@
   var remoteScreen  = getEl('remote-screen');
   var statusBar     = getEl('status-bar');
 
-  // Session token (only ?token=…)
   var sessionToken = getQueryParam('token') || '';
   if (tokenInput) tokenInput.value = sessionToken;
 
@@ -239,16 +239,16 @@
     url = addParam(url, 'callback', cb);
     url = addParam(url, 'ran', String(Math.random()));
 
-    // IE4-friendly injection
-    if (document.body.insertAdjacentHTML) {
-      document.body.insertAdjacentHTML('beforeEnd','<script type="text/javascript" src="' + url + '"><\/script>');
-      return;
-    }
     // Fallback: createElement path (works in IE4 but keep as second choice)
     var s = document.createElement ? document.createElement('script') : null;
     if (s) {
       s.type = 'text/javascript'; s.src = url;
       if (document.body.appendChild) document.body.appendChild(s);
+    }
+    // IE4-friendly injection
+    if (document.body.insertAdjacentHTML) {
+      document.body.insertAdjacentHTML('beforeEnd','<script type="text/javascript" src="' + url + '"><\/script>');
+      return;
     }
   }
 
@@ -269,7 +269,11 @@
     while (el.firstChild) { el.removeChild(el.firstChild); }
   }
 
-  function updateStatus(text) { statusBar.innerHTML = 'Status: ' + text; }
+  function updateStatus(text) { 
+    if ( statusBar ) {
+      statusBar.textContent  = 'Status: ' + text; 
+    }
+  }
 
   function setControlsEnabled(isEnabled) {
     backButton.disabled = !isEnabled;
@@ -330,7 +334,9 @@
 
       if (tabPollingInterval) clearInterval(tabPollingInterval);
       tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
-      connectButton.innerText = 'Disconnect';
+      if ( connectButton ) {
+        connectButton.textContent = 'Disconnect';
+      }
       setControlsEnabled(true);
     }
   }
@@ -675,7 +681,5 @@
   if (sessionToken && connectButton && connectButton.click) { connectButton.click(); }
   else if (sessionToken) { toggleConnection(); }
 </script>
-
-</body>
 </html>
 
