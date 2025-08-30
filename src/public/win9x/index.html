@@ -60,6 +60,20 @@
   <tr style="height: 100%;"><td id="content-pane"><img id="remote-screen" src="placeholder.gif" alt="Loading Remote Browser View ..." style="width: 100%; height: 100%;"></td></tr>
   <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
 </table>
+<script type="text/javascript">
+  // --- IE4-5 polyfills ---
+  if (!window.encodeURIComponent) {
+    // Good enough for tokens/URLs in our app; handles ASCII + encodes '+'
+    window.encodeURIComponent = function (s) {
+      return escape(s).replace(/\+/g, '%2B');
+    };
+  }
+  if (!window.decodeURIComponent) {
+    window.decodeURIComponent = function (s) {
+      return unescape(s);
+    };
+  }
+</script>
 
 <script type="text/javascript">
   // --- Configuration ---

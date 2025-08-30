@@ -430,6 +430,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     zombie: await makeZombie({port}, {noExit}),
     // the clients ({peer, socket} objects)
     links: new Map,
+    legacyClients: new Map, // map for Win9x clients only
     viewports,
     // send to client function
     so: null,
@@ -900,7 +901,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const frameBuffer = Buffer.from(data, 'base64');
   
     // Save for Win9x route
-    if ( CONFIG.win9xCompatibility ) {
+    if ( CONFIG.win9xCompatibility || (connection.legacyClients.size > 0 && connection.links.size == 0) ) {
       DEBUG.debug9x && console.log('New frame');
       const framedata = { buffer: frameBuffer, timestamp: sourceTs };
       win9xCompatibilityBuffer.set(targetId, framedata);

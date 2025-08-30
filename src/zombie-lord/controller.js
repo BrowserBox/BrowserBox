@@ -236,9 +236,10 @@ const controller_api = {
       let channels = connection.links.get(connectionId);
       if ( legacy == 'connect' ) {
         (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Connect [legacy]. Add connection ${connectionId}`);
+        connection.legacyClients.set(connectionId, {legacy});
       } else if ( legacy == 'disconnect' ) {
         (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Disconnect [legacy]. Remove connection ${connectionId}`);
-        this.deleteLink({connectionId}, port);
+        this.deleteLink({connectionId, legacy: true}, port);
       } else {
         if ( (socket || peer) && ! channels ) {
           DEBUG.val && console.log("Links", connection.links.size, "Max", MAX_CONNECTIONS);
@@ -306,11 +307,15 @@ const controller_api = {
     }
   },
 
-  deleteLink({connectionId}, port) {
+  deleteLink({connectionId, legacy}, port) {
     const connection = connections.get(port);
     (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Remove connection ${connectionId}`);
     if ( connection ) {
-      connection.links.delete(connectionId);
+      if ( legacy ) {
+        connection.legacyClients.delete(connectionId);
+      } else {
+        connection.links.delete(connectionId);
+      }
       connection.viewports.delete(connectionId);
       updateTargetsOnCommonChanged({connection, command: "all", force: true});
     } else {
