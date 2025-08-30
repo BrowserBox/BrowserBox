@@ -200,7 +200,7 @@
           if (document.body && document.body.insertAdjacentHTML) {
             document.body.insertAdjacentHTML(
               'beforeEnd',
-              '<script type="text/javascript" language="JavaScript" src="' + url + '"></' + 'script>'
+              '<script type="text/javascript" src="' + url + '"></' + 'script>'
             );
           }
           var s = document.createElement ? document.createElement('script') : null;
@@ -317,7 +317,6 @@
           var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
 
           getJSON(url, function(data) {
-            alert(JSON.stringify(data));
             handleReconnection();
             if (!data) return;
             var tabs = data.tabs || [];
