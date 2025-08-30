@@ -1120,7 +1120,7 @@
             .set('Content-Type', 'application/javascript; charset=utf-8')
             .set('Cache-Control', 'no-store')
             .set('X-Content-Type-Options', 'nosniff')
-            .send(`/**/ ${name}(${JSON.stringify(payload)});`);
+            .send(`/* ok */ void 0; window.${name}(${JSON.stringify(payload)});`);
         } else {
           res
             .status(status)

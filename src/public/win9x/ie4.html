@@ -187,7 +187,7 @@
           if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK); }, 50); return; }
 
           var cb = '__bbcb' + (++_jsonpSeq);
-          window[cb] = function (data) { window[cb] = null; if (onOK) onOK(data); };
+          window[cb] = function (data) { if (onOK) onOK(data); setTimeout(function() { window[cb] = null; });  };
 
           var url = fullUrl;
           if (fullUrl.indexOf('session_token') == -1) {
@@ -202,6 +202,7 @@
               'beforeEnd',
               '<script type="text/javascript" src="' + url + '"></' + 'script>'
             );
+            return;
           }
           var s = document.createElement ? document.createElement('script') : null;
           if (s) {
@@ -284,6 +285,7 @@
 
           // Do NOT wait for the server response to proceed.
           updateStatus('Connecting...');
+          alert('connecting');
           isConnected = true;
 
           // Kick off the connect hit (best-effort)
@@ -307,7 +309,7 @@
         function connect(cb) {
           var url = API_BASE_PATH + '/connect?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
           if ( ! cb ) {
-            cb = function (data) { void 0; }
+            cb = function (data) { alert('connected'); }
           }
           getJSON(url, cb);
         }
