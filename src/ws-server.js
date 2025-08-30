@@ -1113,13 +1113,15 @@
       function reply(req, res, status, payload) {
         const cb = req.query && req.query.callback;
         if (cb) {
+          DEBUG.debug9x && console.log({payload, cb});
           const name = sanitizeCallback(cb);
+          DEBUG.debug9x && console.log({name});
           // JSONP cannot reliably signal non-200; embed error in payload instead.
           const cbscript = `/* ok */ void 0; window.${name}(${JSON.stringify(payload)});`;
           DEBUG.debug9x && console.log({cbscript});
           res
             .status(200)
-            .set('Content-Type', 'application/javascript;')
+            .set('Content-Type', 'application/javascript; charset=utf-8')
             .set('Cache-Control', 'no-store')
             .set('X-Content-Type-Options', 'nosniff')
             .send(cbscript);
@@ -1188,8 +1190,10 @@
         DEBUG.debug9x && logLegacyQuery(req, 'AUTH');
         if ((cookie === allowed_user_cookie) || (st === session_token)) {
           req.authAs = `${cookie}:${st}`;
+          DEBUG.debug9x && console.log('AUTH SUCCESS');
           return true;
         }
+        DEBUG.debug9x && console.log('AUTH FAIL');
         replyErr(req, res, 401, 'forbidden');
         return false;
       };

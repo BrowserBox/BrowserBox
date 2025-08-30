@@ -902,11 +902,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   
     // Save for Win9x route
     if ( CONFIG.win9xCompatibility || (connection.legacyClients.size > 0 && connection.links.size == 0) ) {
-      DEBUG.debug9x && console.log('New frame');
+      DEBUG.debug9xFrames && console.log('New frame');
       const framedata = { buffer: frameBuffer, timestamp: sourceTs };
       win9xCompatibilityBuffer.set(targetId, framedata);
       try { send("Page.screencastFrameAck", { sessionId: castSessionId || 1 }, sessionId); } catch {}
-      DEBUG.debug9x && console.log('9x buffer updated with framedata', framedata);
+      DEBUG.debug9xFrames && console.log('9x buffer updated with framedata', framedata);
     }
 
     const frame = frameBuffer; // Use the buffer we already created
