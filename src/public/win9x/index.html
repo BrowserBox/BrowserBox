@@ -60,48 +60,44 @@
   <tr style="height: 100%;"><td id="content-pane"><img id="remote-screen" src="placeholder.gif" alt="Loading Remote Browser View ..." style="width: 100%; height: 100%;"></td></tr>
   <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
 </table>
-<script type="text/javascript">
-  // --- IE4-5 polyfills ---
+
+<!-- Polyfills (IE4-5 safe) -->
+<script type="text/javascript" language="JavaScript">
   if (!window.encodeURIComponent) {
-    // Good enough for tokens/URLs in our app; handles ASCII + encodes '+'
-    window.encodeURIComponent = function (s) {
-      return escape(s).replace(/\+/g, '%2B');
-    };
+    window.encodeURIComponent = function (s) { return escape(s).split('+').join('%2B'); };
   }
   if (!window.decodeURIComponent) {
-    window.decodeURIComponent = function (s) {
-      return unescape(s);
-    };
+    window.decodeURIComponent = function (s) { return unescape(s); };
   }
 </script>
 
-<script type="text/javascript">
+<!-- DOM helper with IE4 fallback -->
+<script type="text/javascript" language="JavaScript">
   function getEl(id) {
     if (document.getElementById) return document.getElementById(id);
-    if (document.all) return document.all[id]; // IE4
+    if (document.all) return document.all[id];
     return null;
   }
 </script>
 
-<script type="text/javascript">
+<script type="text/javascript" language="JavaScript">
   // --- Configuration ---
-  var KEY_BATCH_INTERVAL_MS = 1000;      // Send key events every 1s
-  var MAX_KEYS_PER_BATCH    = 24;        // Keep URLs short for IE
+  var KEY_BATCH_INTERVAL_MS = 1000;
+  var MAX_KEYS_PER_BATCH    = 24;
   var keyBuffer = [];
   var keyBatchInterval = null;
 
-  var VIEWPORT_SYNC_DELAY_MS = 750;      // Delay viewport sync on reconnect
+  var VIEWPORT_SYNC_DELAY_MS = 750;
   var isNetworkError = false;
 
   var API_BASE_PATH = '/api/vwin';
   if (location && location.origin) {
     API_BASE_PATH = location.origin + API_BASE_PATH;
   }
-  var POLLING_INTERVAL_MS = 1000;        // Frame-status idle poll rate
+  var POLLING_INTERVAL_MS = 1000;
   var TAB_REFRESH_RATE_MS = 3000;
-  var RESIZE_THROTTLE_MS  = 300;         // 300ms debounce
+  var RESIZE_THROTTLE_MS  = 300; // 300ms debounce
 
-  // Nudge capture: gently poke /frame when status says not fresh
   var NUDGE_MIN_MS = 400;
   var _lastNudgeAt = 0;
   var _nudgeImgBusy = false;
@@ -136,17 +132,47 @@
     tokenInput.value = sessionToken;
   }
 
-  // --- Helpers ---
-  function createXmlHttpRequestObject() {
-    if (window.XMLHttpRequest) return new XMLHttpRequest();
-    if (window.ActiveXObject)  return new ActiveXObject("Msxml2.XMLHTTP");
-    if (window.ActiveXObject)  return new ActiveXObject("Microsoft.XMLHTTP");
-    alert("Your browser does not support AJAX, which is required for this application.");
-    return null;
+  // --- JSON / Net helpers (JSONP for IE4/5) ---
+  var USE_JSONP = !window.XMLHttpRequest;
+
+  var _jsonpSeq = 0;
+  function jsonp(fullUrl, onOK) {
+    var cb = '__bbcb' + (++_jsonpSeq);
+    window[cb] = function (data) { window[cb] = null; if (onOK) onOK(data); };
+    var url = fullUrl + (fullUrl.indexOf('?')>=0 ? '&' : '?') +
+              'jsonp=1&callback=' + cb + '&ran=' + Math.random();
+
+    if (document.createElement && (document.body && document.body.appendChild)) {
+      var s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.src  = url;
+      (document.body || (document.getElementsByTagName ? document.getElementsByTagName('head')[0] : document.body)).appendChild(s);
+    } else if (document.body && document.body.insertAdjacentHTML) {
+      document.body.insertAdjacentHTML('beforeEnd','<script type="text/javascript" src="' + url + '"><\/script>');
+    }
+  }
+
+  function getJSON(fullUrl, onOK, onErr) {
+    if (USE_JSONP) { jsonp(fullUrl, onOK); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', fullUrl, true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) { onOK(parseJSON(xhr.responseText)); }
+        else if (onErr) { onErr(); }
+      }
+    };
+    xhr.send(null);
+  }
+
+  function netErr() {
+    if (!isNetworkError) {
+      isNetworkError = true;
+      updateStatus('Connection error. Attempting to reconnect...');
+    }
   }
 
   function parseJSON(jsonString) {
-    // assume server sends valid JSON
     return eval('(' + jsonString + ')');
   }
 
@@ -157,7 +183,8 @@
   }
 
   function updateStatus(text) {
-    //statusBar.innerHTML = 'Status: ' + text;
+    // Uncomment if you want the status bar to spam less:
+    // statusBar.innerHTML = 'Status: ' + text;
   }
 
   function setControlsEnabled(isEnabled) {
@@ -194,7 +221,6 @@
   // --- Connection & Tabs ---
   function toggleConnection() {
     if (isConnected) {
-      // Disconnect
       isConnected = false;
       stopKeyBatching();
       if (tabPollingInterval) { clearInterval(tabPollingInterval); tabPollingInterval = null; }
@@ -208,12 +234,8 @@
       safeClearChildNodes(tabBar);
       urlInput.value = '';
     } else {
-      // Connect
       sessionToken = tokenInput.value;
-      if (!sessionToken) {
-        alert('Please enter a session token.');
-        return;
-      }
+      if (!sessionToken) { alert('Please enter a session token.'); return; }
 
       updateStatus('Connecting...');
       connect();
@@ -232,150 +254,56 @@
   }
 
   function connect() {
-    var xhr = createXmlHttpRequestObject();
-    if (!xhr) return false;
-
     var url = API_BASE_PATH + '/connect?session_token=' +
-              encodeURIComponent(sessionToken) +
-              '&ran=' + Math.random();
-    xhr.open("GET", url, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        var data = parseJSON(xhr.responseText);
-        if (data) { /* ok */ }
-      } else if (xhr.readyState === 4) {
-        if (!isNetworkError) {
-          isNetworkError = true;
-          updateStatus('Connection error. Attempting to reconnect...');
-        }
-      }
-    };
-    xhr.send(null);
+              encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+    getJSON(url, function(data){ /* ok */ }, netErr);
   }
 
   function updateTabs() {
     if (!isConnected) return;
-    var xhr = createXmlHttpRequestObject();
-    if (!xhr) return;
-    var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+    var url = API_BASE_PATH + '/tabs?session_token=' +
+              encodeURIComponent(sessionToken) + '&ran=' + Math.random();
 
-    xhr.open("GET", url, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        handleReconnection();
-        var data = parseJSON(xhr.responseText);
-        if (data) {
-          var tabs = data.tabs || [];
-          renderTabs(tabs, data.activeTarget);
-          activeTabId = data.activeTarget;
-          if (!isUrlBarFocused && tabs.length) {
-            var i;
-            for (i = 0; i < tabs.length; i++) {
-              if (tabs[i].targetId === activeTabId) {
-                urlInput.value = tabs[i].url || '';
-                break;
-              }
-            }
-          }
-        }
-      } else if (xhr.readyState === 4) {
-        if (!isNetworkError) {
-          isNetworkError = true;
-          updateStatus('Connection error. Attempting to reconnect...');
+    getJSON(url, function(data) {
+      handleReconnection();
+      if (!data) return;
+      var tabs = data.tabs || [];
+      renderTabs(tabs, data.activeTarget);
+      activeTabId = data.activeTarget;
+      if (!isUrlBarFocused && tabs.length) {
+        for (var i=0; i<tabs.length; i++) {
+          if (tabs[i].targetId === activeTabId) { urlInput.value = tabs[i].url || ''; break; }
         }
       }
-    };
-    xhr.send(null);
+    }, netErr);
   }
 
-  function renderTabs(tabs, currentActiveId) {
-    var previousActiveTab = activeTabId;
-    safeClearChildNodes(tabBar);
-
-    // New Tab button
-    var newTabBtn = document.createElement('span');
-    newTabBtn.id = 'new-tab-button';
-    newTabBtn.innerHTML = '+';
-    newTabBtn.onclick = handleNewTab;
-    tabBar.appendChild(newTabBtn);
-
-    var i;
-    for (i = 0; i < tabs.length; i++) {
-      var tab = tabs[i];
-      var tabEl = document.createElement('span');
-      tabEl.className = 'tab';
-      if (tab.targetId === currentActiveId) {
-        tabEl.className += ' tab-active';
-      }
-
-      var titleText = (tab.title || 'New Tab').substring(0, 20);
-      if (typeof tabEl.innerText !== 'undefined') { tabEl.innerText = titleText; }
-      else { tabEl.textContent = titleText; }
-
-      tabEl.setAttribute('data-targetId', tab.targetId);
-      tabEl.onclick = function() {
-        var targetId = this.getAttribute('data-targetId');
-        if (targetId !== activeTabId) {
-          activeTabId = targetId;
-          sendEvent('type=switch');
-        }
-      };
-
-      // Close button
-      var closeBtn = document.createElement('span');
-      closeBtn.className = 'close-tab-button';
-      closeBtn.innerHTML = 'r'; // Webdings 'x'
-      closeBtn.setAttribute('data-targetId', tab.targetId);
-      closeBtn.onclick = function(e) {
-        e = e || window.event;
-        if (e.stopPropagation) { e.stopPropagation(); } else { e.cancelBubble = true; }
-        handleCloseTab(this.getAttribute('data-targetId'));
-      };
-      tabEl.appendChild(closeBtn);
-      tabBar.appendChild(tabEl);
-    }
-
-    if (currentActiveId && currentActiveId !== previousActiveTab) {
-      lastKnownFrameTimestamp = 0;
-    }
-  }
-
-  // --- Frame polling ---
+  // --- Frame polling (JSONP/XHR via getJSON) ---
   function pollForNextFrame() {
     if (!isConnected || !activeTabId) {
       setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
       return;
     }
 
-    var xhr = createXmlHttpRequestObject();
-    if (!xhr) return;
     var url = API_BASE_PATH + '/frame-status?session_token=' +
               encodeURIComponent(sessionToken) +
+              '&targetId=' + encodeURIComponent(activeTabId) +
               '&last_known_ts=' + lastKnownFrameTimestamp +
               '&ran=' + Math.random();
 
-    xhr.open("GET", url, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        handleReconnection();
-        var data = parseJSON(xhr.responseText);
-        if (data && data.fresh) {
-          lastKnownFrameTimestamp = data.timestamp;
-          updateScreenImage();
-        } else {
-          // Not fresh yet — gently nudge capture on the server
-          maybeNudgeCapture();
-          setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-        }
-      } else if (xhr.readyState === 4) {
-        if (!isNetworkError) {
-          isNetworkError = true;
-          updateStatus('Connection error. Attempting to reconnect...');
-        }
-        setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
+    getJSON(url, function(data) {
+      handleReconnection();
+      if (data && data.fresh) {
+        lastKnownFrameTimestamp = data.timestamp;
+        updateScreenImage();
+      } else {
+        maybeNudgeCapture();
+        setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
       }
-    };
-    xhr.send(null);
+    }, function() {
+      netErr();
+      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
+    });
   }
 
   function updateScreenImage() {
@@ -384,6 +312,7 @@
 
     var newSrc = API_BASE_PATH + '/frame?session_token=' +
                  encodeURIComponent(sessionToken) +
+                 '&targetId=' + encodeURIComponent(activeTabId || '') +
                  (lastKnownFrameTimestamp ? '&ts=' + lastKnownFrameTimestamp : '') +
                  '&ran=' + Math.random();
 
@@ -395,7 +324,7 @@
       return;
     }
 
-    // modern-ish path (IE5+/others)
+    // IE5+/others: swap node to avoid caching artifacts
     var parent = contentPane; if (!parent) { _gettingFrame = false; return; }
     var newImage = document.createElement('img');
     newImage.onload = function () {
@@ -421,22 +350,42 @@
   }
 
   // --- Events to backend ---
+  var _evtPool = [];
+  var _evtPoolMax = 8;
+
   function sendEvent(params) {
     if (!isConnected) return;
-    var eventUrl = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) +
-                   (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') +
-                   '&' + params;
-    var tempImage = new Image();
-    tempImage.src = eventUrl;
+
+    var url = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) +
+              (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') +
+              '&' + params +
+              '&cb=' + (new Date().getTime() % 1000000000) + '&ran=' + Math.random();
+
+    if (window.Image) {
+      var img = new Image();
+      _evtPool[_evtPool.length] = img;
+      if (_evtPool.length > _evtPoolMax) _evtPool.shift();
+      img.src = url;
+    } else {
+      var f = document.getElementById ? document.getElementById('evt-iframe') :
+              (document.all ? document.all['evt-iframe'] : null);
+      if (!f && document.body) {
+        if (document.body.insertAdjacentHTML) {
+          document.body.insertAdjacentHTML('beforeEnd','<iframe id="evt-iframe" width="0" height="0" frameborder="0"></iframe>');
+          f = document.all ? document.all['evt-iframe'] : document.getElementById('evt-iframe');
+        }
+      }
+      if (f) { f.src = url; }
+    }
   }
 
+  // --- Viewport sizing (robust fallbacks) ---
   function sendViewportSize() {
-    var width = contentPane.clientWidth;
-    var height = contentPane.clientHeight;
-    remoteScreen.width = width;
-    remoteScreen.height = height;
-    sendEvent('type=resize&width=' + width + '&height=' + height);
-    updateStatus('Sent viewport dimensions: ' + width + 'x' + height);
+    var w = contentPane.clientWidth  || contentPane.offsetWidth  || remoteScreen.offsetWidth  || 0;
+    var h = contentPane.clientHeight || contentPane.offsetHeight || remoteScreen.offsetHeight || 0;
+    remoteScreen.width  = w;
+    remoteScreen.height = h;
+    sendEvent('type=resize&width=' + w + '&height=' + h);
   }
 
   // 300ms debounce
@@ -447,43 +396,48 @@
     }, RESIZE_THROTTLE_MS);
   }
 
+  // --- Mouse helpers (for old IE) ---
+  function getScroll() {
+    var d = document.documentElement, b = document.body;
+    return { x: (d && d.scrollLeft) || (b && b.scrollLeft) || 0,
+             y: (d && d.scrollTop)  || (b && b.scrollTop)  || 0 };
+  }
+  function getOffset(el) {
+    var x=0,y=0; while (el) { x += el.offsetLeft||0; y += el.offsetTop||0; el = el.offsetParent; }
+    return {x:x,y:y};
+  }
+
   // --- Mouse & keyboard ---
   function handleScreenClick(e) {
     e = e || window.event;
-    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
-    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
+    var off = getOffset(remoteScreen), scr = getScroll();
+    var cx = (e.clientX != null ? e.clientX : 0) + scr.x;
+    var cy = (e.clientY != null ? e.clientY : 0) + scr.y;
+    var x = (e.offsetX != null) ? e.offsetX : (cx - off.x);
+    var y = (e.offsetY != null) ? e.offsetY : (cy - off.y);
     sendEvent('type=mousedown&x=' + x + '&y=' + y);
   }
 
   function handleMouseWheel(e) {
     e = e || window.event;
-    var targetElement = e.target || e.srcElement;
-    if (targetElement.id !== 'remote-screen') { return; }
-    if (!isConnected) return;
-
-    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
-    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
-    var delta = e.wheelDelta || -e.detail;
+    var t = e.target || e.srcElement; if (!t || t.id !== 'remote-screen') return;
+    var off = getOffset(remoteScreen), scr = getScroll();
+    var cx = (e.clientX != null ? e.clientX : 0) + scr.x;
+    var cy = (e.clientY != null ? e.clientY : 0) + scr.y;
+    var x = (e.offsetX != null) ? e.offsetX : (cx - off.x);
+    var y = (e.offsetY != null) ? e.offsetY : (cy - off.y);
+    var delta = (typeof e.wheelDelta != 'undefined') ? e.wheelDelta : -(e.detail || 0);
     sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
-
-    //if (e.preventDefault) e.preventDefault();
-    //e.returnValue = false;
   }
 
-  var nonPrintableKeys = [
-    8, 9, 13, 27,            // Backspace, Tab, Enter, Escape
-    33,34,35,36,             // PageUp, PageDown, End, Home
-    37,38,39,40,             // Arrows
-    45,46                    // Insert, Delete
-  ];
+  var nonPrintableKeys = [8,9,13,27,33,34,35,36,37,38,39,40,45,46];
 
   function indexOf(arr, val) {
-    var i;
-    for (i = 0; i < arr.length; i++) { if (arr[i] == val) return i; }
+    for (var i = 0; i < arr.length; i++) { if (arr[i] == val) return i; }
     return -1;
   }
 
-  // Key batching (URL-size-safe)
+  // Key batching
   function startKeyBatching() {
     if (keyBatchInterval) { clearInterval(keyBatchInterval); }
     keyBatchInterval = setInterval(sendKeyBatch, KEY_BATCH_INTERVAL_MS);
@@ -499,15 +453,13 @@
     while (start < keyBuffer.length) {
       var end = start + MAX_KEYS_PER_BATCH;
       var chunk = [];
-      var i;
-      for (i = start; i < end && i < keyBuffer.length; i++) {
+      for (var i = start; i < end && i < keyBuffer.length; i++) {
         chunk[chunk.length] = keyBuffer[i];
       }
 
-      // Manual JSON for IE
       var eventsJson = '[';
-      for (i = 0; i < chunk.length; i++) {
-        var keyEvent = chunk[i];
+      for (var j = 0; j < chunk.length; j++) {
+        var keyEvent = chunk[j];
         eventsJson += '{' +
           '"p":"' + (keyEvent.press || '') + '",' +
           '"k":' + (keyEvent.keyCode != null ? keyEvent.keyCode : '""') + ',' +
@@ -515,18 +467,16 @@
           '"c":' + (keyEvent.ctrlKey ? 1 : 0) + ',' +
           '"a":' + (keyEvent.altKey ? 1 : 0) +
         '}';
-        if (i < chunk.length - 1) eventsJson += ',';
+        if (j < chunk.length - 1) eventsJson += ',';
       }
       eventsJson += ']';
 
       sendEvent('type=key_batch&events=' + encodeURIComponent(eventsJson));
       start = end;
     }
-
     keyBuffer = [];
   }
 
-  // Key handling
   function handleKeyDown(e) {
     if (!isConnected) return;
     e = e || window.event;
@@ -567,7 +517,6 @@
   function parseURL(u) {
     if (!u) return null;
     var s = '' + u;
-    // if missing scheme but looks like a host, prefix https://
     if (!/^https?:\/\//i.test(s)) {
       if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(s)) s = 'https://' + s;
       else return null;
@@ -589,6 +538,52 @@
   function handleNewTab() { sendEvent('type=new_tab'); }
   function handleCloseTab(targetIdToClose) { sendEvent('type=close_tab&targetIdToClose=' + targetIdToClose); }
 
+  function renderTabs(tabs, currentActiveId) {
+    var previousActiveTab = activeTabId;
+    safeClearChildNodes(tabBar);
+
+    var newTabBtn = document.createElement('span');
+    newTabBtn.id = 'new-tab-button';
+    newTabBtn.innerHTML = '+';
+    newTabBtn.onclick = handleNewTab;
+    tabBar.appendChild(newTabBtn);
+
+    for (var i = 0; i < tabs.length; i++) {
+      var tab = tabs[i];
+      var tabEl = document.createElement('span');
+      tabEl.className = 'tab' + (tab.targetId === currentActiveId ? ' tab-active' : '');
+
+      var titleText = (tab.title || 'New Tab').substring(0, 20);
+      if (typeof tabEl.innerText !== 'undefined') tabEl.innerText = titleText; else tabEl.textContent = titleText;
+
+      tabEl._tid = tab.targetId;
+      tabEl.onclick = function() {
+        var targetId = this._tid;
+        if (targetId !== activeTabId) {
+          activeTabId = targetId;
+          sendEvent('type=switch');
+        }
+      };
+
+      var closeBtn = document.createElement('span');
+      closeBtn.className = 'close-tab-button';
+      closeBtn.innerHTML = 'r'; // Webdings 'x'
+      closeBtn._tid = tab.targetId;
+      closeBtn.onclick = function(e) {
+        e = e || window.event;
+        if (e.stopPropagation) { e.stopPropagation(); } else { e.cancelBubble = true; }
+        handleCloseTab(this._tid);
+      };
+
+      tabEl.appendChild(closeBtn);
+      tabBar.appendChild(tabEl);
+    }
+
+    if (currentActiveId && currentActiveId !== previousActiveTab) {
+      lastKnownFrameTimestamp = 0;
+    }
+  }
+
   // --- Attach Events ---
   connectButton.onclick = toggleConnection;
   remoteScreen.onclick  = handleScreenClick;
@@ -607,7 +602,8 @@
   }
 
   // Auto-connect if token present
-  connectButton.click();
+  if (connectButton && connectButton.click) { connectButton.click(); }
+  else { toggleConnection(); }
 </script>
 
 </body>
