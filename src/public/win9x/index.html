@@ -60,7 +60,6 @@
   <tr style="height: 100%;"><td id="content-pane"><img id="remote-screen" src="placeholder.gif" alt="Loading Remote Browser View ..." style="width: 100%; height: 100%;"></td></tr>
   <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
 </table>
-
 <script type="text/javascript">
   // --- IE4-5 polyfills ---
   if (!window.encodeURIComponent) {
@@ -70,7 +69,9 @@
     };
   }
   if (!window.decodeURIComponent) {
-    window.decodeURIComponent = function (s) { return unescape(s); };
+    window.decodeURIComponent = function (s) {
+      return unescape(s);
+    };
   }
 </script>
 
@@ -88,9 +89,9 @@
   if (location && location.origin) {
     API_BASE_PATH = location.origin + API_BASE_PATH;
   }
-  var POLLING_INTERVAL_MS   = 1000;      // Frame-status idle poll rate
-  var TAB_REFRESH_RATE_MS   = 3000;
-  var RESIZE_DEBOUNCE_MS    = 300;       // 300ms debounce
+  var POLLING_INTERVAL_MS = 1000;        // Frame-status idle poll rate
+  var TAB_REFRESH_RATE_MS = 3000;
+  var RESIZE_THROTTLE_MS  = 250;
 
   // Nudge capture: gently poke /frame when status says not fresh
   var NUDGE_MIN_MS = 400;
@@ -127,38 +128,38 @@
     tokenInput.value = sessionToken;
   }
 
-  // Helpers
-  var HAS_XHR = (typeof XMLHttpRequest != "undefined") ||
-                (window.ActiveXObject && document.getElementById);
-
+  // --- Helpers ---
   function createXmlHttpRequestObject() {
-    // No try/catch anywhere
-    if (typeof XMLHttpRequest != "undefined") {
-      return new XMLHttpRequest();
+    var xhr;
+    try { xhr = new XMLHttpRequest(); } catch (e1) {
+      try { xhr = new ActiveXObject("Msxml2.XMLHTTP"); } catch (e2) {
+        try { xhr = new ActiveXObject("Microsoft.XMLHTTP"); } catch (e3) {
+          alert("Your browser does not support AJAX, which is required for this application.");
+          return null;
+        }
+      }
     }
-    // Only attempt ActiveX in IE5+ (IE4 lacks getElementById)
-    if (window.ActiveXObject && document.getElementById) {
-      return new ActiveXObject("Microsoft.XMLHTTP");
-    }
-    return null;
+    return xhr;
   }
 
   function parseJSON(jsonString) {
-    // Minimal guard; avoid throwing on empty/garbage
-    if (!jsonString || !jsonString.replace) return null;
-    var s = jsonString.replace(/^\s+|\s+$/g, '');
-    if (s.length === 0) return null;
-    var first = s.charAt(0);
-    if (first !== '{' && first !== '[') return null;
-    // No try/catch; assume well-formed from server
-    return eval('(' + s + ')');
+    try {
+      return eval('(' + jsonString + ')');
+    } catch (e) {
+      updateStatus("Error: Could not parse server response.");
+      return null;
+    }
   }
 
   function safeClearChildNodes(element) {
-    while (element.firstChild) { element.removeChild(element.firstChild); }
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
   }
 
-  function updateStatus(text) { statusBar.innerHTML = 'Status: ' + text; }
+  function updateStatus(text) {
+    statusBar.innerHTML = 'Status: ' + text;
+  }
 
   function setControlsEnabled(isEnabled) {
     backButton.disabled = !isEnabled;
@@ -184,7 +185,7 @@
     _nudgeImgBusy = true;
 
     if (!_nudgeImg) { _nudgeImg = new Image(); }
-    _nudgeImg.onload  = function() { _nudgeImgBusy = false; };
+    _nudgeImg.onload = function() { _nudgeImgBusy = false; };
     _nudgeImg.onerror = function() { _nudgeImgBusy = false; };
     _nudgeImg.src = API_BASE_PATH + '/frame?session_token=' +
                     encodeURIComponent(sessionToken) +
@@ -233,7 +234,9 @@
 
   function connect() {
     var xhr = createXmlHttpRequestObject();
-    if (!xhr) { return false; }
+    if (!xhr) { 
+      return false;
+    }
     var url = API_BASE_PATH + '/connect?session_token=' +
               encodeURIComponent(sessionToken) +
               '&ran=' + Math.random();
@@ -291,6 +294,7 @@
     var previousActiveTab = activeTabId;
     safeClearChildNodes(tabBar);
 
+    // New Tab button
     var newTabBtn = document.createElement('span');
     newTabBtn.id = 'new-tab-button';
     newTabBtn.innerHTML = '+';
@@ -301,29 +305,34 @@
     for (i = 0; i < tabs.length; i++) {
       var tab = tabs[i];
       var tabEl = document.createElement('span');
-      tabEl.className = 'tab' + (tab.targetId === currentActiveId ? ' tab-active' : '');
-      var titleText = (tab.title || 'New Tab').substring(0, 20);
-      if (typeof tabEl.innerText !== 'undefined') tabEl.innerText = titleText; else tabEl.textContent = titleText;
+      tabEl.className = 'tab';
+      if (tab.targetId === currentActiveId) {
+        tabEl.className += ' tab-active';
+      }
 
-      tabEl._tid = tab.targetId;
+      var titleText = (tab.title || 'New Tab').substring(0, 20);
+      if (typeof tabEl.innerText !== 'undefined') { tabEl.innerText = titleText; }
+      else { tabEl.textContent = titleText; }
+
+      tabEl.setAttribute('data-targetId', tab.targetId);
       tabEl.onclick = function() {
-        var targetId = this._tid;
+        var targetId = this.getAttribute('data-targetId');
         if (targetId !== activeTabId) {
           activeTabId = targetId;
           sendEvent('type=switch');
         }
       };
 
+      // Close button
       var closeBtn = document.createElement('span');
       closeBtn.className = 'close-tab-button';
       closeBtn.innerHTML = 'r'; // Webdings 'x'
-      closeBtn._tid = tab.targetId;
+      closeBtn.setAttribute('data-targetId', tab.targetId);
       closeBtn.onclick = function(e) {
         e = e || window.event;
         if (e.stopPropagation) { e.stopPropagation(); } else { e.cancelBubble = true; }
-        handleCloseTab(this._tid);
+        handleCloseTab(this.getAttribute('data-targetId'));
       };
-
       tabEl.appendChild(closeBtn);
       tabBar.appendChild(tabEl);
     }
@@ -341,13 +350,7 @@
     }
 
     var xhr = createXmlHttpRequestObject();
-    if (!xhr) {
-      // IE4 fallback: just refresh the image periodically
-      updateScreenImage();
-      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-      return;
-    }
-
+    if (!xhr) return;
     var url = API_BASE_PATH + '/frame-status?session_token=' +
               encodeURIComponent(sessionToken) +
               '&last_known_ts=' + lastKnownFrameTimestamp +
@@ -362,6 +365,7 @@
           lastKnownFrameTimestamp = data.timestamp;
           updateScreenImage();
         } else {
+          // Not fresh yet — gently nudge capture on the server
           maybeNudgeCapture();
           setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
         }
@@ -380,7 +384,8 @@
     if (_gettingFrame) return;
     _gettingFrame = true;
 
-    var parent = contentPane; if (!parent) { _gettingFrame = false; return; }
+    var parent = contentPane;
+    if (!parent) { _gettingFrame = false; return; }
 
     var newImage = document.createElement('img');
 
@@ -391,14 +396,10 @@
       newImage.style.cssText = oldImage.style.cssText;
       newImage.onclick = handleScreenClick;
       parent.appendChild(newImage);
-      if (oldImage) {
-        oldImage.onload = null;
-        oldImage.onerror = null;
-        parent.removeChild(oldImage);
-      }
+      if (oldImage) { parent.removeChild(oldImage); }
       remoteScreen = newImage;
       remoteScreen.alt = "BrowserBox View";
-      updateStatus('Frame ' + (lastKnownFrameTimestamp || '?') + ' loaded.');
+      updateStatus('Frame ' + lastKnownFrameTimestamp + ' loaded.');
       _gettingFrame = false;
       pollForNextFrame();
     };
@@ -410,62 +411,47 @@
       }
       _gettingFrame = false;
       setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+      newImage = null;
     };
 
-    var newSrc = API_BASE_PATH + '/frame?session_token=' + encodeURIComponent(sessionToken);
-    if (lastKnownFrameTimestamp) { newSrc += '&ts=' + lastKnownFrameTimestamp; }
-    newSrc += '&ran=' + Math.random();
-
+    var newSrc = API_BASE_PATH + '/frame?session_token=' +
+                 encodeURIComponent(sessionToken) +
+                 '&ts=' + lastKnownFrameTimestamp +
+                 '&ran=' + Math.random();
     newImage.src = newSrc;
   }
 
   // --- Events to backend ---
-  var _evtPool = [];        // keep references so IE doesn't abort GETs
-  var _evtPoolPos = 0;
-  var _evtPoolCap = 8;
-
   function sendEvent(params) {
     if (!isConnected) return;
     var eventUrl = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) +
                    (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') +
-                   '&' + params + '&cb=' + ((new Date()).getTime() % 1e9);
-    var img = new Image();
-    _evtPool[_evtPoolPos] = img;                 // circular buffer, no shift()
-    _evtPoolPos = (_evtPoolPos + 1) % _evtPoolCap;
-    img.src = eventUrl;
+                   '&' + params;
+    var tempImage = new Image();
+    tempImage.src = eventUrl;
   }
 
   function sendViewportSize() {
-    var w = contentPane.clientWidth  || contentPane.offsetWidth  || remoteScreen.offsetWidth  || 0;
-    var h = contentPane.clientHeight || contentPane.offsetHeight || remoteScreen.offsetHeight || 0;
-    remoteScreen.width  = w;
-    remoteScreen.height = h;
-    sendEvent('type=resize&width=' + w + '&height=' + h);
-    updateStatus('Sent viewport dimensions: ' + w + 'x' + h);
+    var width = contentPane.clientWidth;
+    var height = contentPane.clientHeight;
+    remoteScreen.width = width;
+    remoteScreen.height = height;
+    sendEvent('type=resize&width=' + width + '&height=' + height);
+    updateStatus('Sent viewport dimensions: ' + width + 'x' + height);
   }
 
-  // 300ms debounce
   function throttledResizeHandler() {
     if (resizeTimeout) { clearTimeout(resizeTimeout); }
     resizeTimeout = setTimeout(function() {
       if (isConnected) { sendViewportSize(); }
-    }, RESIZE_DEBOUNCE_MS);
+    }, RESIZE_THROTTLE_MS);
   }
 
   // --- Mouse & keyboard ---
-  function getElementOffset(el) {
-    var x = 0, y = 0;
-    while (el) { x += el.offsetLeft || 0; y += el.offsetTop || 0; el = el.offsetParent; }
-    return {x:x, y:y};
-  }
-
   function handleScreenClick(e) {
     e = e || window.event;
-    var off = getElementOffset(remoteScreen);
-    var cx = (e.clientX != null ? e.clientX : 0) + (document.documentElement && document.documentElement.scrollLeft || document.body.scrollLeft || 0);
-    var cy = (e.clientY != null ? e.clientY : 0) + (document.documentElement && document.documentElement.scrollTop  || document.body.scrollTop  || 0);
-    var x = (e.offsetX != null) ? e.offsetX : (cx - off.x);
-    var y = (e.offsetY != null) ? e.offsetY : (cy - off.y);
+    var x = e.offsetX || (e.pageX - remoteScreen.offsetLeft);
+    var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
     sendEvent('type=mousedown&x=' + x + '&y=' + y);
   }
 
@@ -479,9 +465,17 @@
     var y = e.offsetY || (e.pageY - remoteScreen.offsetTop);
     var delta = e.wheelDelta || -e.detail;
     sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
+
+    //if (e.preventDefault) e.preventDefault();
+    //e.returnValue = false;
   }
 
-  var nonPrintableKeys = [8,9,13,27,33,34,35,36,37,38,39,40,45,46];
+  var nonPrintableKeys = [
+    8, 9, 13, 27,            // Backspace, Tab, Enter, Escape
+    33,34,35,36,             // PageUp, PageDown, End, Home
+    37,38,39,40,             // Arrows
+    45,46                    // Insert, Delete
+  ];
 
   function indexOf(arr, val) {
     var i;
@@ -569,12 +563,18 @@
     };
   }
 
-  // --- Navigation helpers (no throw/try) ---
-  function parseURL(u) {
-    var url = u;
-    if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(url)) { url = "https://" + url; }
-    var a = document.createElement('a'); a.href = url;
-    if (!/^https?:$/.test(a.protocol) || !a.hostname) { return null; }
+  // --- Navigation helpers ---
+  function parseURL(url) {
+    if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(url)) {
+      url = "https://" + url;
+    } else {
+      throw new Error("Invalid URL format: " + url);
+    }
+    var a = document.createElement('a');
+    a.href = url;
+    if (!/^https?:$/.test(a.protocol) || !a.hostname) {
+      throw new Error("Invalid or unsupported URL: " + url);
+    }
     return {
       href: a.href,
       protocol: a.protocol,
@@ -588,14 +588,20 @@
   }
 
   function handleNavigate() {
-    var raw = urlInput.value; if (!raw) return;
-    var u = parseURL(raw);
-    if (!u) { u = parseURL('https://' + raw); }
-    if (!u) {
-      sendEvent('type=navigate&url=' + encodeURIComponent('https://duckduckgo.com/?q=' + raw));
-      return;
+    var url = urlInput.value;
+    if (!url) return;
+    try {
+      url = parseURL(url);
+      sendEvent('type=navigate&url=' + encodeURIComponent(url.href));
+    } catch(e1) {
+      try {
+        url = parseURL('https://' + url);
+        sendEvent('type=navigate&url=' + encodeURIComponent(url.href));
+      } catch(e2) {
+        // Fallback: search
+        sendEvent('type=navigate&url=' + encodeURIComponent('https://duckduckgo.com/?q=' + url));
+      }
     }
-    sendEvent('type=navigate&url=' + encodeURIComponent(u.href));
   }
 
   function handleBack()   { sendEvent('type=back'); }
@@ -620,14 +626,8 @@
     document.onmousewheel = handleMouseWheel;
   }
 
-  // Auto-connect if token present (no try/catch)
-  if (connectButton && connectButton.click) { connectButton.click(); }
-  else { toggleConnection(); }
-
-  window.onerror = function(message, url, line) {
-    alert("Error: " + message + " at line " + line);
-    return true; // Prevents default error handling
-  };
+  // Auto-connect if token present
+  connectButton.click();
 </script>
 
 </body>
