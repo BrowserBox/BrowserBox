@@ -52,7 +52,7 @@
         if (!window.decodeURIComponent) { window.decodeURIComponent = function (s) { return unescape(s); }; }
 
         /* Detect IE4: has document.all but no getElementById */
-        var IS_IE4 = (!!document.all && !document.getElementById);
+        var IS_IE4 = true || (!!document.all && !document.getElementById);
 
         function getEl(id) {
           if (document.getElementById) return document.getElementById(id);
@@ -182,15 +182,14 @@
           // cleanup timeout
           if (entry.timeoutId) clearTimeout(entry.timeoutId); 
           // cleanup iframe if any
-          
-          if (entry.frame && entry.frame.parentNode) entry.frame.parentNode.removeChild(entry.frame);
+
           __jsonpCallbacks[cbName] = null;
           if (entry.onOK) entry.onOK(data);
         };
 
         function jsonpViaIframe(fullUrl, cbName, onOK, onTimeout) {
           // Create hidden iframe
-          var iframe = document.createElement ? document.createElement('iframe') : null;
+          var iframe = getEl('iframe-buddy');
           if (!iframe) {
             // last-resort: overwrite document (undesirable) — but IE4 has iframes, so we shouldn't hit this
             if (onTimeout) onTimeout();
@@ -204,10 +203,6 @@
 
           // Keep a reference for cleanup
           __jsonpCallbacks[cbName] = { onOK: onOK, timeoutId: null, frame: iframe };
-
-          // Append first (so .document is ready)
-          if (document.body && document.body.appendChild) document.body.appendChild(iframe);
-          else { document.write('<iframe id="__jsonp_iframe_tmp" style="display:none"></iframe>'); iframe = getEl('__jsonp_iframe_tmp'); }
 
           // Get the frame's document
           var ifrWin = iframe.contentWindow || iframe.window || (window.frames ? window.frames[iframe.name] : null);
@@ -229,7 +224,6 @@
           __jsonpCallbacks[cbName].timeoutId = setTimeout(function(){
             var entry = __jsonpCallbacks[cbName];
             if (!entry) return;
-            if (entry.frame && entry.frame.parentNode) entry.frame.parentNode.removeChild(entry.frame);
             __jsonpCallbacks[cbName] = null;
             if (onTimeout) onTimeout();
           }, 3000);
@@ -255,8 +249,9 @@
           // IE5+/modern path: dynamic <script>
           __jsonpCallbacks[cbName] = { onOK: onOK, timeoutId: null, frame: null };
           // Install a global stub (so server can call cbName directly)
-          var stub = 'function ' + cbName + '(d){__jsonpDispatch("' + cbName + '", d);}';
+          var stub = 'window.' + cbName + ' = function ' + cbName + '(d){__jsonpDispatch("' + cbName + '", d);}';
           if (window.execScript) window.execScript(stub, 'JavaScript'); else eval(stub);
+          window[cbName] = function(d){__jsonpDispatch(cbName, d);};
 
           var s = document.createElement ? document.createElement('script') : null;
           if (s && document.body && document.body.appendChild) {
@@ -695,8 +690,9 @@
       <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
     </table>
 
-    <!-- Optional: place to hold hidden JSONP iframes -->
-    <div id="jsonp-frames"></div>
+    <div id="jsonp-frames">
+      <iframe src="/win9x/start.html" id="iframe-buddy"></iframe>
+    </div>
   </body>
 </html>
 
