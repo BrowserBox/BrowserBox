@@ -183,8 +183,10 @@
           if (entry.timeoutId) clearTimeout(entry.timeoutId); 
           // cleanup iframe if any
 
-          __jsonpCallbacks[cbName] = null;
           if (entry.onOK) entry.onOK(data);
+          setTimeout(() => {
+            __jsonpCallbacks[cbName] = null;
+          });
         };
 
         function jsonpViaIframe(fullUrl, cbName, onOK, onTimeout) {
@@ -217,7 +219,7 @@
               '</scr'+'ipt>' +
               '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
             '</head><body></body></html>';
-
+          //alert(page);
           d.open(); d.write(page); d.close();
 
           // timeout fallback
@@ -691,7 +693,7 @@
     </table>
 
     <div id="jsonp-frames">
-      <iframe src="/win9x/start.html" id="iframe-buddy"></iframe>
+      <iframe src="/win9x/start.html" id="iframe-buddy" name="iframe-buddy"></iframe>
     </div>
   </body>
 </html>
