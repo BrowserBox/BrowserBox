@@ -1,25 +1,13 @@
 #!/usr/bin/env bash
 
 # Kill existing processes
-bpid="$(pgrep -x browserbox -u "$(whoami)")"
-if [[ -n "$bpid" ]]; then
-  kill -HUP "$bpid" >&2
-fi
-
-pm2 delete run-docspark >&2
-pm2 delete devtools-server >&2
-pm2 delete start_audio >&2
-
-sleep 1
-
-pm2 stop basic-bb-main-service >&2
-sleep 1
-pm2 delete basic-bb-main-service >&2
-pm2 save --force >&2
+bbx stop
 
 export WIN9X_COMPATIBILITY_MODE="true"
-bbx run
-#npm test >&2
+export BBX_DONT_KILL_CHROME_ON_STOP="true"
+
+#bbx run
+npm test >&2
 
 echo "Waiting for server..." >&2
 sleep 8
