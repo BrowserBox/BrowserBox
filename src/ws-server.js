@@ -1115,12 +1115,14 @@
         if (cb) {
           const name = sanitizeCallback(cb);
           // JSONP cannot reliably signal non-200; embed error in payload instead.
+          const cbscript = `/* ok */ void 0; window.${name}(${JSON.stringify(payload)});`;
+          DEBUG.debug9x && console.log({cbscript});
           res
             .status(200)
-            .set('Content-Type', 'application/javascript; charset=utf-8')
+            .set('Content-Type', 'application/javascript;')
             .set('Cache-Control', 'no-store')
             .set('X-Content-Type-Options', 'nosniff')
-            .send(`/* ok */ void 0; window.${name}(${JSON.stringify(payload)});`);
+            .send(cbscript);
         } else {
           res
             .status(status)
