@@ -99,7 +99,7 @@
   }
   var POLLING_INTERVAL_MS = 1000;        // Frame-status idle poll rate
   var TAB_REFRESH_RATE_MS = 3000;
-  var RESIZE_THROTTLE_MS  = 250;
+  var RESIZE_THROTTLE_MS  = 300;         // 300ms debounce
 
   // Nudge capture: gently poke /frame when status says not fresh
   var NUDGE_MIN_MS = 400;
@@ -130,7 +130,6 @@
   var remoteScreen  = getEl('remote-screen');
   var statusBar     = getEl('status-bar');
 
-
   var sessionToken = '';
   if (location.search) {
     sessionToken = location.search.replace('?token=', '');
@@ -139,25 +138,15 @@
 
   // --- Helpers ---
   function createXmlHttpRequestObject() {
-    var xhr;
-    try { xhr = new XMLHttpRequest(); } catch (e1) {
-      try { xhr = new ActiveXObject("Msxml2.XMLHTTP"); } catch (e2) {
-        try { xhr = new ActiveXObject("Microsoft.XMLHTTP"); } catch (e3) {
-          alert("Your browser does not support AJAX, which is required for this application.");
-          return null;
-        }
-      }
-    }
-    return xhr;
+    if (window.XMLHttpRequest) return new XMLHttpRequest();
+    if (window.ActiveXObject)  return new ActiveXObject("Microsoft.XMLHTTP");
+    alert("Your browser does not support AJAX, which is required for this application.");
+    return null;
   }
 
   function parseJSON(jsonString) {
-    try {
-      return eval('(' + jsonString + ')');
-    } catch (e) {
-      updateStatus("Error: Could not parse server response.");
-      return null;
-    }
+    // assume server sends valid JSON
+    return eval('(' + jsonString + ')');
   }
 
   function safeClearChildNodes(el) {
@@ -243,9 +232,8 @@
 
   function connect() {
     var xhr = createXmlHttpRequestObject();
-    if (!xhr) { 
-      return false;
-    }
+    if (!xhr) return false;
+
     var url = API_BASE_PATH + '/connect?session_token=' +
               encodeURIComponent(sessionToken) +
               '&ran=' + Math.random();
@@ -450,6 +438,7 @@
     updateStatus('Sent viewport dimensions: ' + width + 'x' + height);
   }
 
+  // 300ms debounce
   function throttledResizeHandler() {
     if (resizeTimeout) { clearTimeout(resizeTimeout); }
     resizeTimeout = setTimeout(function() {
@@ -574,44 +563,24 @@
   }
 
   // --- Navigation helpers ---
-  function parseURL(url) {
-    if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(url)) {
-      url = "https://" + url;
-    } else {
-      throw new Error("Invalid URL format: " + url);
+  function parseURL(u) {
+    if (!u) return null;
+    var s = '' + u;
+    // if missing scheme but looks like a host, prefix https://
+    if (!/^https?:\/\//i.test(s)) {
+      if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(s)) s = 'https://' + s;
+      else return null;
     }
-    var a = document.createElement('a');
-    a.href = url;
-    if (!/^https?:$/.test(a.protocol) || !a.hostname) {
-      throw new Error("Invalid or unsupported URL: " + url);
-    }
-    return {
-      href: a.href,
-      protocol: a.protocol,
-      host: a.host,
-      hostname: a.hostname,
-      port: a.port,
-      pathname: a.pathname,
-      search: a.search,
-      hash: a.hash
-    };
+    return { href: s };
   }
 
   function handleNavigate() {
-    var url = urlInput.value;
-    if (!url) return;
-    try {
-      url = parseURL(url);
-      sendEvent('type=navigate&url=' + encodeURIComponent(url.href));
-    } catch(e1) {
-      try {
-        url = parseURL('https://' + url);
-        sendEvent('type=navigate&url=' + encodeURIComponent(url.href));
-      } catch(e2) {
-        // Fallback: search
-        sendEvent('type=navigate&url=' + encodeURIComponent('https://duckduckgo.com/?q=' + url));
-      }
-    }
+    var raw = urlInput.value;
+    if (!raw) return;
+    var parsed = parseURL(raw);
+    if (!parsed) parsed = parseURL('https://' + raw);
+    var href = parsed ? parsed.href : ('https://duckduckgo.com/?q=' + encodeURIComponent(raw));
+    sendEvent('type=navigate&url=' + encodeURIComponent(href));
   }
 
   function handleBack()   { sendEvent('type=back'); }
