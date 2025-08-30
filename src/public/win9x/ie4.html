@@ -22,15 +22,17 @@
       }
       #new-tab-button { display: inline-block; padding: 4px 6px; margin-right: 4px; border: 1px solid darkgray; background-color: silver; cursor: pointer; font-weight: bold; position: relative; top: 1px; }
       .close-tab-button { font-family: "Webdings", sans-serif; font-size: 12px; padding-left: 10px; color: darkgray; cursor: pointer; }
+      /* Hidden container for IE4 JSONP iframes (optional) */
+      #jsonp-frames { width:0; height:0; overflow:hidden; }
     </style>
     <script type="text/javascript" language="JavaScript">
       function initBrowserBoxLegacyClient() {
+        /* ---------- Minimal polyfills ---------- */
         if (!Array.prototype.shift) {
           Array.prototype.shift = function () {
             var len = this.length >>> 0;
             if (!len) { this.length = 0; return void 0; }
-            var first = this[0];
-            var i;
+            var first = this[0], i;
             for (i = 1; i < len; i++) this[i - 1] = this[i];
             this.length = len - 1;
             return first;
@@ -46,20 +48,19 @@
             return this.length;
           };
         }
-        if (!window.encodeURIComponent) {
-          window.encodeURIComponent = function (s) { return escape(s).split('+').join('%2B'); };
-        }
-        if (!window.decodeURIComponent) {
-          window.decodeURIComponent = function (s) { return unescape(s); };
-        }
-        var IS_IE4 = true || (!!document.all && !document.getElementById);
+        if (!window.encodeURIComponent) { window.encodeURIComponent = function (s) { return escape(s).split('+').join('%2B'); }; }
+        if (!window.decodeURIComponent) { window.decodeURIComponent = function (s) { return unescape(s); }; }
+
+        /* Detect IE4: has document.all but no getElementById */
+        var IS_IE4 = (!!document.all && !document.getElementById);
 
         function getEl(id) {
           if (document.getElementById) return document.getElementById(id);
-          if (document.all) return document.all[id];
+          if (document.all)            return document.all[id];
           return null;
         }
 
+        /* ---------- Minimal JSON.stringify ---------- */
         if (!window.JSON) { window.JSON = {}; }
         if (!JSON.stringify) {
           (function () {
@@ -74,10 +75,7 @@
                   else if (ch == '\n') out += '\\n';
                   else if (ch == '\r') out += '\\r';
                   else if (ch == '\t') out += '\\t';
-                  else {
-                    var h = c.toString(16); while (h.length < 4) h = '0' + h;
-                    out += '\\u' + h;
-                  }
+                  else { var h = c.toString(16); while (h.length < 4) h = '0' + h; out += '\\u' + h; }
                 } else out += ch;
               }
               return '"' + out + '"';
@@ -85,18 +83,17 @@
             function isArr(a) { return a && (a.constructor == Array || (typeof a.length == 'number' && typeof a.splice == 'function')); }
             function isDate(d) { return d && typeof d.getUTCFullYear == 'function'; }
             function s(v, stack) {
-              var t = typeof v;
+              var t = typeof v, i, j;
               if (v === null) return 'null';
               if (t == 'string') return escStr(v);
-              if (t == 'number') return (v - v == 0) ? '' + v : 'null'; 
+              if (t == 'number') return (v - v == 0) ? '' + v : 'null';
               if (t == 'boolean') return v ? 'true' : 'false';
               stack = stack || [];
-              var i;
               for (i = 0; i < stack.length; i++) if (stack[i] == v) return escStr('[Circular]');
               if (isDate(v)) return escStr(v.toUTCString ? v.toUTCString() : '' + v);
               if (isArr(v)) {
                 stack[stack.length] = v;
-                var out = [], j;
+                var out = [];
                 for (j = 0; j < v.length; j++) {
                   var sv = s(v[j], stack);
                   out[out.length] = (typeof v[j] == 'undefined' || typeof v[j] == 'function') ? 'null' : sv;
@@ -107,12 +104,10 @@
               if (t == 'object') {
                 stack[stack.length] = v;
                 var parts = [], k, hop = Object.prototype.hasOwnProperty;
-                for (k in v) {
-                  if (hop ? hop.call(v, k) : true) {
-                    var v2 = v[k], vt = typeof v2;
-                    if (vt != 'undefined' && vt != 'function') parts[parts.length] = escStr(k) + ':' + s(v2, stack);
-                  }
-                }
+                for (k in v) { if (hop ? hop.call(v, k) : true) {
+                  var v2 = v[k], vt = typeof v2;
+                  if (vt != 'undefined' && vt != 'function') parts[parts.length] = escStr(k) + ':' + s(v2, stack);
+                }}
                 stack.length = stack.length - 1;
                 return '{' + parts.join(',') + '}';
               }
@@ -122,17 +117,16 @@
           })();
         }
 
-        function _decodeQS(s) { return decodeURIComponent(String(s).replace(/\+/g, '%20')); }
-        function getQueryParam(name) {
-          var q = (location && location.search) ? String(location.search).replace(/^\?/, '') : '';
-          if (!q) return '';
-          var parts = q.split('&'), i, kv, rest;
-          for (i = 0; i < parts.length; i++) {
-            kv = parts[i].split('=');
-            if (_decodeQS(kv[0]) == name) { rest = kv.slice(1).join('='); return _decodeQS(rest); }
-          }
+        function _decodeQS(s){ return decodeURIComponent(String(s).replace(/\+/g,'%20')); }
+        function getQueryParam(name){
+          var q=(location&&location.search)?String(location.search).replace(/^\?/,''):'';
+          if(!q)return '';
+          var parts=q.split('&'),i,kv,rest;
+          for(i=0;i<parts.length;i++){ kv=parts[i].split('='); if(_decodeQS(kv[0])==name){ rest=kv.slice(1).join('='); return _decodeQS(rest); } }
           return '';
         }
+
+        /* ---------- Config / state ---------- */
         var KEY_BATCH_INTERVAL_MS = 1000;
         var MAX_KEYS_PER_BATCH    = 24;
         var keyBuffer = [];
@@ -141,30 +135,26 @@
         var VIEWPORT_SYNC_DELAY_MS = 750;
         var isNetworkError = false;
 
-        var API_BASE_PATH = '/api/vwin';  
-        if (location && location.origin) {
-          API_BASE_PATH = location.origin + API_BASE_PATH;
-        }
+        var API_BASE_PATH = '/api/vwin';
+        if (location && location.origin) API_BASE_PATH = location.origin + API_BASE_PATH;
 
         var POLLING_INTERVAL_MS = 1000;
         var TAB_REFRESH_RATE_MS = 4000;
-        var RESIZE_THROTTLE_MS  = 1000; 
+        var RESIZE_THROTTLE_MS  = 1000;
 
         var NUDGE_MIN_MS = 400;
-        var _lastNudgeAt = 0;
-        var _nudgeImgBusy = false;
-        var _nudgeImg = null;
+        var _lastNudgeAt = 0, _nudgeImgBusy = false, _nudgeImg = null;
 
         var tabPollingInterval = null;
 
         var activeTabId = null;
         var isConnected = false;
-        var modifierState = { shift: false, ctrl: false, alt: false };
         var resizeTimeout = null;
         var lastKnownFrameTimestamp = 0;
         var isUrlBarFocused = false;
         var _gettingFrame = false;
 
+        /* ---------- Elements ---------- */
         var contentPane   = getEl('content-pane');
         var connectButton = getEl('connect-button');
         var tokenInput    = getEl('token-input');
@@ -175,74 +165,138 @@
         var goButton      = getEl('go-button');
         var remoteScreen  = getEl('remote-screen');
         var statusBar     = getEl('status-bar');
-        var log = getEl('content-pane');
 
         var sessionToken = getQueryParam('token') || '';
         if (tokenInput) tokenInput.value = sessionToken;
 
+        /* ---------- JSONP (IE4-proof) ---------- */
         var _jsonpSeq = 0;
-        function addParam(u, k, v) { return u + (u.indexOf('?') >= 0 ? '&' : '?') + k + '=' + v; }
+        var __jsonpCallbacks = {}; // cbName -> { onOK, timeoutId, frame }
 
-        function jsonp(fullUrl, onOK) {
-          if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK); }, 50); return; }
+        function addParam(u,k,v){ return u + (u.indexOf('?')>=0?'&':'?') + k + '=' + v; }
 
-          var cb = '__bbcb' + (++_jsonpSeq);
-          window[cb] = function (data) { if (onOK) onOK(data); setTimeout(function() { window[cb] = null; });  };
+        // Parent dispatcher that request-specific callbacks will forward to
+        window.__jsonpDispatch = function(cbName, data){
+          var entry = __jsonpCallbacks[cbName];
+          if (!entry) return;
+          // cleanup timeout
+          if (entry.timeoutId) clearTimeout(entry.timeoutId); 
+          // cleanup iframe if any
+          
+          if (entry.frame && entry.frame.parentNode) entry.frame.parentNode.removeChild(entry.frame);
+          __jsonpCallbacks[cbName] = null;
+          if (entry.onOK) entry.onOK(data);
+        };
 
-          var url = fullUrl;
-          if (fullUrl.indexOf('session_token') == -1) {
-            if (sessionToken) url = addParam(url, 'session_token', encodeURIComponent(sessionToken));
+        function jsonpViaIframe(fullUrl, cbName, onOK, onTimeout) {
+          // Create hidden iframe
+          var iframe = document.createElement ? document.createElement('iframe') : null;
+          if (!iframe) {
+            // last-resort: overwrite document (undesirable) — but IE4 has iframes, so we shouldn't hit this
+            if (onTimeout) onTimeout();
+            return;
           }
+          iframe.style.width = '0px';
+          iframe.style.height = '0px';
+          iframe.style.border = 0;
+          iframe.style.visibility = 'hidden';
+          iframe.setAttribute ? iframe.setAttribute('frameBorder','0') : (iframe.frameBorder = 0);
+
+          // Keep a reference for cleanup
+          __jsonpCallbacks[cbName] = { onOK: onOK, timeoutId: null, frame: iframe };
+
+          // Append first (so .document is ready)
+          if (document.body && document.body.appendChild) document.body.appendChild(iframe);
+          else { document.write('<iframe id="__jsonp_iframe_tmp" style="display:none"></iframe>'); iframe = getEl('__jsonp_iframe_tmp'); }
+
+          // Get the frame's document
+          var ifrWin = iframe.contentWindow || iframe.window || (window.frames ? window.frames[iframe.name] : null);
+          var d = ifrWin ? ifrWin.document : (iframe.document || null);
+          if (!d) { if (onTimeout) onTimeout(); return; }
+
+          // Install per-frame stub that forwards to parent dispatcher
+          var page =
+            '<html><head>' +
+              '<scr'+'ipt type="text/javascript" language="JavaScript">' +
+                'function ' + cbName + '(d){ parent.__jsonpDispatch("' + cbName + '", d); }' +
+              '</scr'+'ipt>' +
+              '<scr'+'ipt type="text/javascript" language="JavaScript" src="' + fullUrl + '"></scr'+'ipt>' +
+            '</head><body></body></html>';
+
+          d.open(); d.write(page); d.close();
+
+          // timeout fallback
+          __jsonpCallbacks[cbName].timeoutId = setTimeout(function(){
+            var entry = __jsonpCallbacks[cbName];
+            if (!entry) return;
+            if (entry.frame && entry.frame.parentNode) entry.frame.parentNode.removeChild(entry.frame);
+            __jsonpCallbacks[cbName] = null;
+            if (onTimeout) onTimeout();
+          }, 3000);
+        }
+
+        function jsonp(fullUrl, onOK, onTimeout) {
+          if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK, onTimeout); }, 50); return; }
+
+          // Build callback name & full URL (include token + jsonp params)
+          var cbName = '__bbcb' + (++_jsonpSeq);
+          var url = fullUrl;
+          if (url.indexOf('session_token=') < 0 && sessionToken) url = addParam(url, 'session_token', encodeURIComponent(sessionToken));
           url = addParam(url, 'jsonp', '1');
-          url = addParam(url, 'callback', cb);
-          url = addParam(url, 'ran', String(Math.random()));
+          url = addParam(url, 'callback', cbName);
+          url = addParam(url, 'ran', '' + Math.random());
+
+          if (IS_IE4) {
+            // IE4 path: IFRAME + write
+            jsonpViaIframe(url, cbName, onOK, onTimeout);
+            return;
+          }
+
+          // IE5+/modern path: dynamic <script>
+          __jsonpCallbacks[cbName] = { onOK: onOK, timeoutId: null, frame: null };
+          // Install a global stub (so server can call cbName directly)
+          var stub = 'function ' + cbName + '(d){__jsonpDispatch("' + cbName + '", d);}';
+          if (window.execScript) window.execScript(stub, 'JavaScript'); else eval(stub);
 
           var s = document.createElement ? document.createElement('script') : null;
-          if (s) {
-            s.type = 'text/javascript'; s.src = url;
-            if (document.body.appendChild) document.body.appendChild(s);
-            return;
+          if (s && document.body && document.body.appendChild) {
+            s.type = 'text/javascript';
+            s.src  = url;
+            document.body.appendChild(s);
+          } else {
+            // Ultra fallback
+            document.write('<scr'+'ipt type="text/javascript" src="' + url + '"></scr'+'ipt>');
           }
-          if (document.body && document.body.insertAdjacentHTML) {
-            document.body.insertAdjacentHTML(
-              'beforeEnd',
-              '<script type="text/javascript" src="' + url + '"></' + 'script>'
-            );
-            return;
-          }
+
+          __jsonpCallbacks[cbName].timeoutId = setTimeout(function(){
+            if (!__jsonpCallbacks[cbName]) return;
+            __jsonpCallbacks[cbName] = null;
+            if (onTimeout) onTimeout();
+          }, 3000);
         }
 
-        function getJSON(fullUrl, onOK, onErr) { jsonp(fullUrl, onOK || function () {}); }
-
-        function netErr() {
-          if (!isNetworkError) {
-            isNetworkError = true;
-            updateStatus('Connection error. Attempting to reconnect...');
-          }
+        function getJSON(fullUrl, onOK, onErr) {
+          jsonp(fullUrl, function (data){ if(onOK) onOK(data); },
+                       function ()    { if(onErr) onErr();    });
         }
 
-        function parseJSON(jsonString) { return eval('(' + jsonString + ')'); }
+        /* ---------- UI helpers ---------- */
+        function updateStatus(text){ var el=statusBar; if (el) el.innerHTML = 'Status: ' + text; }
 
-        function safeClearChildNodes(el) {
+        function setControlsEnabled(isEnabled){
+          if (backButton)    backButton.disabled    = !isEnabled;
+          if (forwardButton) forwardButton.disabled = !isEnabled;
+          if (urlInput)      urlInput.disabled      = !isEnabled;
+          if (goButton)      goButton.disabled      = !isEnabled;
+        }
+
+        function safeClearChildNodes(el){
           if (!el) return;
           if (typeof el.innerHTML != 'undefined') { el.innerHTML = ''; return; }
           while (el.firstChild) { el.removeChild(el.firstChild); }
         }
 
-        function updateStatus(text) { 
-          if ( statusBar ) {
-            statusBar.textContent  = 'Status: ' + text; 
-          }
-        }
-
-        function setControlsEnabled(isEnabled) {
-          backButton.disabled = !isEnabled;
-          forwardButton.disabled = !isEnabled;
-          urlInput.disabled = !isEnabled;
-          goButton.disabled = !isEnabled;
-        }
-
-        function handleReconnection() {
+        function handleReconnection(){
           if (isNetworkError) {
             isNetworkError = false;
             updateStatus('Connection re-established. Syncing viewport...');
@@ -250,21 +304,19 @@
           }
         }
 
-        function maybeNudgeCapture() {
+        function maybeNudgeCapture(){
           var now = (new Date()).getTime();
           if (_nudgeImgBusy) return;
           if (now - _lastNudgeAt < NUDGE_MIN_MS) return;
-
-          _lastNudgeAt = now;
-          _nudgeImgBusy = true;
-
-          if (!_nudgeImg) { _nudgeImg = new Image(); }
-          _nudgeImg.onload = function() { _nudgeImgBusy = false; };
-          _nudgeImg.onerror = function() { _nudgeImgBusy = false; };
+          _lastNudgeAt = now; _nudgeImgBusy = true;
+          if (!_nudgeImg) _nudgeImg = new Image();
+          _nudgeImg.onload  = function(){ _nudgeImgBusy = false; };
+          _nudgeImg.onerror = function(){ _nudgeImgBusy = false; };
           _nudgeImg.src = API_BASE_PATH + '/frame?session_token=' + encodeURIComponent(sessionToken) + '&nudge=1&ran=' + Math.random();
         }
 
-        function toggleConnection() {
+        /* ---------- Connect / tabs / frames ---------- */
+        function toggleConnection(){
           if (isConnected) {
             isConnected = false;
             stopKeyBatching();
@@ -272,8 +324,7 @@
             sessionToken = '';
             activeTabId = null;
             lastKnownFrameTimestamp = 0;
-
-            if (connectButton) connectButton.innerText = 'Connect';
+            if (connectButton) connectButton.innerHTML = 'Connect';
             updateStatus('Disconnected.');
             setControlsEnabled(false);
             safeClearChildNodes(tabBar);
@@ -284,15 +335,10 @@
           sessionToken = tokenInput ? tokenInput.value : '';
           if (!sessionToken) { alert('Please enter a session token.'); return; }
 
-          // Do NOT wait for the server response to proceed.
           updateStatus('Connecting...');
-          alert('connecting');
-          isConnected = true;
+          isConnected = true; // don’t block on JSONP ack
 
-          // Kick off the connect hit (best-effort)
-          connect(); // fire-and-forget
-
-          // Start the normal flow immediately
+          connect();          // fire-and-forget
           sendViewportSize();
           updateTabs();
           pollForNextFrame();
@@ -300,51 +346,41 @@
 
           if (tabPollingInterval) clearInterval(tabPollingInterval);
           tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
-          if (connectButton) connectButton.innerText = 'Disconnect';
+          if (connectButton) connectButton.innerHTML = 'Disconnect';
           setControlsEnabled(true);
-
-          // Optional: safety "connected" status nudge after a moment
-          setTimeout(function () { handleReconnection(); }, 500);
+          setTimeout(function(){ handleReconnection(); }, 500);
         }
 
-        function connect(cb) {
+        function connect(){
           var url = API_BASE_PATH + '/connect?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
-          if ( ! cb ) {
-            cb = function (data) { alert('connected'); }
-          }
-          getJSON(url, cb);
+          getJSON(url, function(){ updateStatus('Connected (ack).'); },
+                       function(){ updateStatus('Connected (no ack).'); });
         }
 
-        function updateTabs() {
+        function updateTabs(){
           if (!isConnected) return;
           var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
-
-          getJSON(url, function(data) {
+          getJSON(url, function(data){
             handleReconnection();
             if (!data) return;
             var tabs = data.tabs || [];
             renderTabs(tabs, data.activeTarget);
             activeTabId = data.activeTarget;
-            if (!isUrlBarFocused && tabs.length) {
-              var i;
-              for (i = 0; i < tabs.length; i++) {
+            if (!isUrlBarFocused && tabs.length && urlInput) {
+              var i; for (i=0;i<tabs.length;i++){
                 if (tabs[i].targetId == activeTabId) { urlInput.value = tabs[i].url || ''; break; }
               }
             }
-          });
+          }, function(){ /* next tick will retry */ });
         }
 
-        function pollForNextFrame() {
-          if (!isConnected || !activeTabId) {
-            setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-            return;
-          }
+        function pollForNextFrame(){
+          if (!isConnected || !activeTabId) { setTimeout(pollForNextFrame, POLLING_INTERVAL_MS); return; }
           var url = API_BASE_PATH + '/frame-status?session_token=' + encodeURIComponent(sessionToken) +
                     '&targetId=' + encodeURIComponent(activeTabId) +
                     '&last_known_ts=' + lastKnownFrameTimestamp +
                     '&ran=' + Math.random();
-
-          getJSON(url, function(data) {
+          getJSON(url, function(data){
             handleReconnection();
             if (data && data.fresh) {
               lastKnownFrameTimestamp = data.timestamp;
@@ -353,10 +389,10 @@
               maybeNudgeCapture();
               setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
             }
-          });
+          }, function(){ setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2); });
         }
 
-        function updateScreenImage() {
+        function updateScreenImage(){
           if (_gettingFrame) return;
           _gettingFrame = true;
 
@@ -374,21 +410,21 @@
 
           var parent = contentPane; if (!parent) { _gettingFrame = false; return; }
           var newImage = document.createElement('img');
-          newImage.onload = function () {
+          newImage.onload = function(){
             var oldImage = getEl('remote-screen');
             newImage.id = 'remote-screen';
             newImage.alt = oldImage.alt;
             newImage.style.cssText = oldImage.style.cssText;
             newImage.onclick = handleScreenClick;
             parent.appendChild(newImage);
-            if (oldImage) { oldImage.onload = null; oldImage.onerror = null; parent.removeChild(oldImage); }
+            if (oldImage) { oldImage.onload = oldImage.onerror = null; parent.removeChild(oldImage); }
             remoteScreen = newImage;
             remoteScreen.alt = "BrowserBox View";
             updateStatus('Frame ' + (lastKnownFrameTimestamp || '?') + ' loaded.');
             _gettingFrame = false;
             pollForNextFrame();
           };
-          newImage.onerror = function () {
+          newImage.onerror = function(){
             if (!isNetworkError) { isNetworkError = true; updateStatus('Connection error. Retrying...'); }
             _gettingFrame = false;
             setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
@@ -396,17 +432,16 @@
           newImage.src = newSrc;
         }
 
+        /* ---------- Events ---------- */
         var _evtPool = [];
         var _evtPoolMax = 8;
 
-        function sendEvent(params) {
+        function sendEvent(params){
           if (!isConnected) return;
-
           var url = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) +
                     (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') +
                     '&' + params +
                     '&cb=' + ((new Date()).getTime() % 1000000000) + '&ran=' + Math.random();
-
           if (window.Image) {
             var img = new Image();
             _evtPool[_evtPool.length] = img;
@@ -422,7 +457,7 @@
           }
         }
 
-        function sendViewportSize() {
+        function sendViewportSize(){
           var w = contentPane.clientWidth  || contentPane.offsetWidth  || remoteScreen.offsetWidth  || 0;
           var h = contentPane.clientHeight || contentPane.offsetHeight || remoteScreen.offsetHeight || 0;
           remoteScreen.width  = w;
@@ -430,28 +465,28 @@
           sendEvent('type=resize&width=' + w + '&height=' + h);
         }
 
-        function throttledResizeHandler() {
+        function throttledResizeHandler(){
           remoteScreen.style.display = 'none';
           if (resizeTimeout) { clearTimeout(resizeTimeout); }
           resizeTimeout = setTimeout(doResize, RESIZE_THROTTLE_MS);
         }
-        function doResize() {
+        function doResize(){
           remoteScreen.style.display = 'block';
-          if (isConnected) { sendViewportSize(); }
+          if (isConnected) sendViewportSize();
         }
 
-        function getScroll() {
+        /* ---------- Mouse / keyboard ---------- */
+        function getScroll(){
           var d = document.documentElement, b = document.body;
           return { x: (d && d.scrollLeft) || (b && b.scrollLeft) || 0,
                    y: (d && d.scrollTop)  || (b && b.scrollTop)  || 0 };
         }
-        function getOffset(el) {
-          var x = 0, y = 0;
-          while (el) { x += el.offsetLeft || 0; y += el.offsetTop || 0; el = el.offsetParent; }
-          return { x: x, y: y };
+        function getOffset(el){
+          var x=0,y=0; while(el){ x+=el.offsetLeft||0; y+=el.offsetTop||0; el=el.offsetParent; }
+          return { x:x, y:y };
         }
 
-        function handleScreenClick(e) {
+        function handleScreenClick(e){
           e = e || window.event;
           var off = getOffset(remoteScreen), scr = getScroll();
           var cx = (e.clientX != null ? e.clientX : 0) + scr.x;
@@ -461,7 +496,7 @@
           sendEvent('type=mousedown&x=' + x + '&y=' + y);
         }
 
-        function handleMouseWheel(e) {
+        function handleMouseWheel(e){
           e = e || window.event;
           var t = e.srcElement; if (!t || t.id != 'remote-screen') return;
           var off = getOffset(remoteScreen), scr = getScroll();
@@ -475,29 +510,23 @@
 
         var nonPrintableKeys = [8,9,13,27,33,34,35,36,37,38,39,40,45,46];
 
-        function indexOf(arr, val) {
-          var i;
-          for (i = 0; i < arr.length; i++) { if (arr[i] == val) return i; }
-          return -1;
-        }
+        function indexOf(arr,val){ var i; for(i=0;i<arr.length;i++){ if(arr[i]==val) return i; } return -1; }
 
-        function startKeyBatching() {
+        function startKeyBatching(){
           if (keyBatchInterval) { clearInterval(keyBatchInterval); }
           keyBatchInterval = setInterval(sendKeyBatch, KEY_BATCH_INTERVAL_MS);
         }
-        function stopKeyBatching() {
+        function stopKeyBatching(){
           if (keyBatchInterval) { clearInterval(keyBatchInterval); keyBatchInterval = null; }
           keyBuffer = [];
         }
-        function sendKeyBatch() {
+        function sendKeyBatch(){
           if (keyBuffer.length == 0) return;
-
           var start = 0;
           while (start < keyBuffer.length) {
             var end = start + MAX_KEYS_PER_BATCH;
-            var chunk = [];
-            var i;
-            for (i = start; i < end && i < keyBuffer.length; i++) { chunk[chunk.length] = keyBuffer[i]; }
+            var chunk = [], i;
+            for (i = start; i < end && i < keyBuffer.length; i++) chunk[chunk.length] = keyBuffer[i];
 
             var eventsJson = '[';
             var j;
@@ -520,16 +549,13 @@
           keyBuffer = [];
         }
 
-        function handleKeyDown(e) {
+        function handleKeyDown(e){
           if (!isConnected) return;
           e = e || window.event;
           var keyCode = e.keyCode || e.which;
 
           if (isUrlBarFocused) {
-            if (keyCode == 13) {
-              handleNavigate();
-              e.returnValue = false;
-            }
+            if (keyCode == 13) { handleNavigate(); e.returnValue = false; }
             return;
           }
 
@@ -544,7 +570,7 @@
           }
         }
 
-        function handleKeyPress(e) {
+        function handleKeyPress(e){
           if (!isConnected || isUrlBarFocused) return;
           e = e || window.event;
           var charCode = e.charCode || e.keyCode;
@@ -556,7 +582,8 @@
           };
         }
 
-        function parseURL(u) {
+        /* ---------- Navigation helpers ---------- */
+        function parseURL(u){
           if (!u) return null;
           var s = '' + u;
           if (!/^https?:\/\//i.test(s)) {
@@ -566,8 +593,8 @@
           return { href: s };
         }
 
-        function handleNavigate() {
-          var raw = urlInput.value;
+        function handleNavigate(){
+          var raw = urlInput ? urlInput.value : '';
           if (!raw) return;
           var parsed = parseURL(raw);
           if (!parsed) parsed = parseURL('https://' + raw);
@@ -575,12 +602,12 @@
           sendEvent('type=navigate&url=' + encodeURIComponent(href));
         }
 
-        function handleBack()   { sendEvent('type=back'); }
-        function handleForward(){ sendEvent('type=forward'); }
-        function handleNewTab() { sendEvent('type=new_tab'); }
+        function handleBack()    { sendEvent('type=back'); }
+        function handleForward() { sendEvent('type=forward'); }
+        function handleNewTab()  { sendEvent('type=new_tab'); }
         function handleCloseTab(targetIdToClose) { sendEvent('type=close_tab&targetIdToClose=' + targetIdToClose); }
 
-        function renderTabs(tabs, currentActiveId) {
+        function renderTabs(tabs, currentActiveId){
           var previousActiveTab = activeTabId;
           safeClearChildNodes(tabBar);
 
@@ -599,21 +626,18 @@
             if (typeof tabEl.innerText != 'undefined') tabEl.innerText = titleText; else tabEl.innerHTML = titleText;
 
             tabEl._tid = tab.targetId;
-            tabEl.onclick = function() {
+            tabEl.onclick = function(){
               var targetId = this._tid;
-              if (targetId != activeTabId) {
-                activeTabId = targetId;
-                sendEvent('type=switch');
-              }
+              if (targetId != activeTabId) { activeTabId = targetId; sendEvent('type=switch'); }
             };
 
             var closeBtn = document.createElement('span');
             closeBtn.className = 'close-tab-button';
-            closeBtn.innerHTML = 'r'; 
+            closeBtn.innerHTML = 'r'; /* Webdings 'x' */
             closeBtn._tid = tab.targetId;
-            closeBtn.onclick = function(e) {
+            closeBtn.onclick = function(e){
               e = e || window.event;
-              if (e.cancelBubble != null) e.cancelBubble = true;
+              if (e && e.cancelBubble != null) e.cancelBubble = true;
               handleCloseTab(this._tid);
             };
 
@@ -626,15 +650,17 @@
           }
         }
 
-        connectButton.onclick = toggleConnection;
-        remoteScreen.onclick  = handleScreenClick;
-        goButton.onclick      = handleNavigate;
-        backButton.onclick    = handleBack;
-        forwardButton.onclick = handleForward;
+        /* ---------- Wire up ---------- */
+        if (connectButton) connectButton.onclick = toggleConnection;
+        if (remoteScreen)  remoteScreen.onclick  = handleScreenClick;
+        if (goButton)      goButton.onclick      = handleNavigate;
+        if (backButton)    backButton.onclick    = handleBack;
+        if (forwardButton) forwardButton.onclick = handleForward;
+
         window.onresize       = throttledResizeHandler;
         document.onkeydown    = handleKeyDown;
         document.onkeypress   = handleKeyPress;
-        document.onmousewheel = handleMouseWheel; 
+        document.onmousewheel = handleMouseWheel;
 
         if (sessionToken && connectButton && connectButton.click) { connectButton.click(); }
         else if (sessionToken) { toggleConnection(); }
@@ -668,6 +694,9 @@
       </td></tr>
       <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
     </table>
+
+    <!-- Optional: place to hold hidden JSONP iframes -->
+    <div id="jsonp-frames"></div>
   </body>
 </html>
 

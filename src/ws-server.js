@@ -1117,7 +1117,7 @@
           const name = sanitizeCallback(cb);
           DEBUG.debug9x && console.log({name});
           // JSONP cannot reliably signal non-200; embed error in payload instead.
-          const cbscript = `/* ok */ void 0; window.${name}(${JSON.stringify(payload)});`;
+          const cbscript = `/* ok */ void 0; ${name}(${JSON.stringify(payload)});`;
           DEBUG.debug9x && console.log({cbscript});
           res
             .status(200)
