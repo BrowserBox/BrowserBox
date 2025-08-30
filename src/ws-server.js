@@ -1114,6 +1114,23 @@
           return false;
         };
 
+        app.get(`/api/${LEGACY_API_VERSION}/connect`, wrap(async (req, res) => {
+          if (!legacyAuth(req, res)) return;
+
+          res.type('json');
+          const connectionId = 'legacy-' + Math.random().toString(36) + (+ new Date).toString(36);
+          DEBUG.debugConnect && console.log(`Check 1`);
+          await zl.act.addLink({so, forceMeta}, {connectionId, legacy: 'connect', fastest: null, peer: null, socket:null}, zombie_port);
+          DEBUG.debugConnect && console.log(`Check 2`);
+          forceMeta({
+            multiplayer: {
+              onlineCount: zl.act.linkStats(zombie_port).onlineCount
+            }
+          });
+          stopShutdownTimer();
+          res.json({ connected: true });
+        });
+
         /**
          * NEW: /api/vwin/frame-status
          * Lightweight endpoint for the client to poll if a new frame is available.
@@ -1353,6 +1370,7 @@
           }
         }
     }
+
     function addHandlers() {
       // Legacy API Handlers (Win9x compatibility mode, etc)
       addLegacyHandlers();
