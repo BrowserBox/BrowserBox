@@ -1099,6 +1099,32 @@
         // =================================================================
         // == START: REWRITTEN ROUTES FOR WIN9X LEGACY HTTP CLIENT
         // =================================================================
+          // --- Legacy frame state -------------------------------------------------
+            const LegacyFrameState = new Map(); 
+            // key: activeTargetId -> { lastCaptureAt: number, lastSentTs: number, inFlight: boolean }
+
+            function getOrInitFrameState(targetId) {
+              let st = LegacyFrameState.get(targetId);
+              if (!st) {
+                st = { lastCaptureAt: 0, lastSentTs: 0, inFlight: false };
+                LegacyFrameState.set(targetId, st);
+              }
+              return st;
+            }
+
+            function nowMs() { return Date.now(); }
+            function minGapMs() {
+              try { return MIN_TIME_BETWEEN_SHOTS(); } catch { return 120; } // safe default
+            }
+
+            // Try to read the freshest frame without forcing a new capture
+            function readLatestFrame(zombie_port, targetId) {
+              try {
+                return zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
+              } catch {
+                return null;
+              }
+            }
 
         // A shared authentication function for all legacy API routes
         const legacyAuth = (req, res) => {
@@ -1143,18 +1169,16 @@
           const activeTargetId = zl.act.getActiveTarget(zombie_port);
 
           if (!activeTargetId) {
-            console.log('sending not fresh frame because no target id');
             return res.json({ fresh: false });
           }
 
-          const frameData = zl.act.getFrameFromBuffer(zombie_port, activeTargetId);
+          const frameData = readLatestFrame(zombie_port, activeTargetId);
+          const serverTs = frameData?.timestamp || 0;
 
-          if (frameData && frameData.timestamp > lastKnownTimestamp) {
-            console.log('sending frame fresh');
-            res.json({ fresh: true, timestamp: frameData.timestamp });
+          if (serverTs > lastKnownTimestamp) {
+            return res.json({ fresh: true, timestamp: serverTs });
           } else {
-            console.log('sending frame not fresh');
-            res.json({ fresh: false });
+            return res.json({ fresh: false, timestamp: serverTs });
           }
         }));
 
@@ -1222,44 +1246,81 @@
             }
         }));
 
-        /**
-         * /api/vwin/frame
-         * This endpoint is polled by the legacy client to get the latest visual frame.
-         * It serves the most recent screenshot from the buffer for the active tab.
-         */
         app.get(`/api/${LEGACY_API_VERSION}/frame`, wrap(async (req, res) => {
-            if (!legacyAuth(req, res)) return;
+          if (!legacyAuth(req, res)) return;
 
-            try {
-                const activeTargetId = zl.act.getActiveTarget(zombie_port);
-                // Force a screenshot for the legacy client on each poll.
-                // This is inefficient but necessary for a simple HTTP-based client.
-                if (activeTargetId) {
-                    await zl.act.send({
-                        name: "Page.captureScreenshot",
-                        params: { format: 'jpeg', quality: 85 },
-                        sessionId: zl.act.getSessionId(activeTargetId, zombie_port)
-                    }, zombie_port);
-                }
+          try {
+            const activeTargetId = zl.act.getActiveTarget(zombie_port);
+            if (!activeTargetId) throw new Error("No active tab");
 
-                const frameData = activeTargetId ? zl.act.getFrameFromBuffer(zombie_port, activeTargetId) : null;
+            const st = getOrInitFrameState(activeTargetId);
+            let frameData = readLatestFrame(zombie_port, activeTargetId);
+            const needNew = !frameData || (frameData.timestamp <= st.lastSentTs);
 
-                if (frameData && frameData.buffer && frameData.buffer.length > 0) {
-                    res.set({
-                        'Content-Type': 'image/jpeg',
-                        'Content-Length': frameData.buffer.length,
-                        'Cache-Control': 'no-store, no-cache, must-revalidate, private'
-                    });
-                    res.send(frameData.buffer);
-                } else {
-                    throw new Error("Frame buffer is empty or unavailable.");
-                }
-            } catch (e) {
-                // Send a 1x1 transparent pixel as a fallback if no frame is available.
-                const fallbackPixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-                res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store' });
-                res.send(fallbackPixel);
+            const now = nowMs();
+            const canCapture = (now - st.lastCaptureAt) >= minGapMs();
+
+            // Only try to capture if we actually need a newer frame
+            if (needNew && canCapture && !st.inFlight) {
+              st.inFlight = true;
+              st.lastCaptureAt = now;
+
+              // Fire-and-forget; we’ll read the buffer after CDP says OK
+              const sessionId = zl.act.getSessionId(activeTargetId, zombie_port);
+              try {
+                await zl.act.send({
+                  name: "Page.captureScreenshot",
+                  params: { format: 'jpeg', quality: 85 },
+                  sessionId
+                }, zombie_port);
+
+                // re-peek after capture
+                frameData = readLatestFrame(zombie_port, activeTargetId) || frameData;
+              } catch (e) {
+                // no-op; we’ll fall back to the best we had
+              } finally {
+                st.inFlight = false;
+              }
             }
+
+            // Serve best-known frame (or 304 if client sent If-None-Match)
+            const buf = frameData?.buffer;
+            const ts = frameData?.timestamp || 0;
+            const etag = `"ts:${ts}"`;
+
+            // Conditional GET support
+            if (req.headers['if-none-match'] === etag) {
+              res.status(304).end();
+              return;
+            }
+
+            if (buf && buf.length) {
+              st.lastSentTs = Math.max(st.lastSentTs, ts);
+              res.set({
+                'Content-Type': 'image/jpeg',
+                'Content-Length': buf.length,
+                'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+                'ETag': etag,
+                'X-Frame-Timestamp': String(ts),
+              });
+              res.send(buf);
+            } else {
+              // 1x1 transparent GIF fallback
+              const fallbackPixel = Buffer.from(
+                'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+                'base64'
+              );
+              res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store', 'ETag': '"empty"' });
+              res.send(fallbackPixel);
+            }
+          } catch (e) {
+            const fallbackPixel = Buffer.from(
+              'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+              'base64'
+            );
+            res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store', 'ETag': '"error"' });
+            res.send(fallbackPixel);
+          }
         }));
 
         app.get(`/api/${LEGACY_API_VERSION}/event`, wrap(async (req, res) => {
