@@ -76,6 +76,14 @@
 </script>
 
 <script type="text/javascript">
+  function getEl(id) {
+    if (document.getElementById) return document.getElementById(id);
+    if (document.all) return document.all[id]; // IE4
+    return null;
+  }
+</script>
+
+<script type="text/javascript">
   // --- Configuration ---
   var KEY_BATCH_INTERVAL_MS = 1000;      // Send key events every 1s
   var MAX_KEYS_PER_BATCH    = 24;        // Keep URLs short for IE
@@ -111,16 +119,17 @@
   var _gettingFrame = false;
 
   // --- Element References ---
-  var contentPane   = document.getElementById('content-pane');
-  var connectButton = document.getElementById('connect-button');
-  var tokenInput    = document.getElementById('token-input');
-  var tabBar        = document.getElementById('tab-bar');
-  var backButton    = document.getElementById('back-button');
-  var forwardButton = document.getElementById('forward-button');
-  var urlInput      = document.getElementById('url-input');
-  var goButton      = document.getElementById('go-button');
-  var remoteScreen  = document.getElementById('remote-screen');
-  var statusBar     = document.getElementById('status-bar');
+  var contentPane   = getEl('content-pane');
+  var connectButton = getEl('connect-button');
+  var tokenInput    = getEl('token-input');
+  var tabBar        = getEl('tab-bar');
+  var backButton    = getEl('back-button');
+  var forwardButton = getEl('forward-button');
+  var urlInput      = getEl('url-input');
+  var goButton      = getEl('go-button');
+  var remoteScreen  = getEl('remote-screen');
+  var statusBar     = getEl('status-bar');
+
 
   var sessionToken = '';
   if (location.search) {
@@ -151,10 +160,10 @@
     }
   }
 
-  function safeClearChildNodes(element) {
-    while (element.firstChild) {
-      element.removeChild(element.firstChild);
-    }
+  function safeClearChildNodes(el) {
+    if (!el) return;
+    if (typeof el.innerHTML != 'undefined') { el.innerHTML = ''; return; }
+    while (el.firstChild) { el.removeChild(el.firstChild); }
   }
 
   function updateStatus(text) {
@@ -384,40 +393,41 @@
     if (_gettingFrame) return;
     _gettingFrame = true;
 
-    var parent = contentPane;
-    if (!parent) { _gettingFrame = false; return; }
+    var newSrc = API_BASE_PATH + '/frame?session_token=' +
+                 encodeURIComponent(sessionToken) +
+                 (lastKnownFrameTimestamp ? '&ts=' + lastKnownFrameTimestamp : '') +
+                 '&ran=' + Math.random();
 
+    // IE4 fallback: just swap src and keep polling
+    if (!document.getElementById && document.all) {
+      remoteScreen.src = newSrc;
+      _gettingFrame = false;
+      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+      return;
+    }
+
+    // modern-ish path (IE5+/others)
+    var parent = contentPane; if (!parent) { _gettingFrame = false; return; }
     var newImage = document.createElement('img');
-
-    newImage.onload = function() {
-      var oldImage = document.getElementById('remote-screen');
+    newImage.onload = function () {
+      var oldImage = getEl('remote-screen');
       newImage.id = 'remote-screen';
       newImage.alt = oldImage.alt;
       newImage.style.cssText = oldImage.style.cssText;
       newImage.onclick = handleScreenClick;
       parent.appendChild(newImage);
-      if (oldImage) { parent.removeChild(oldImage); }
+      if (oldImage) { oldImage.onload = oldImage.onerror = null; parent.removeChild(oldImage); }
       remoteScreen = newImage;
       remoteScreen.alt = "BrowserBox View";
-      updateStatus('Frame ' + lastKnownFrameTimestamp + ' loaded.');
+      updateStatus('Frame ' + (lastKnownFrameTimestamp || '?') + ' loaded.');
       _gettingFrame = false;
       pollForNextFrame();
     };
-
-    newImage.onerror = function() {
-      if (!isNetworkError) {
-        isNetworkError = true;
-        updateStatus('Connection error. Retrying...');
-      }
+    newImage.onerror = function () {
+      if (!isNetworkError) { isNetworkError = true; updateStatus('Connection error. Retrying...'); }
       _gettingFrame = false;
       setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-      newImage = null;
     };
-
-    var newSrc = API_BASE_PATH + '/frame?session_token=' +
-                 encodeURIComponent(sessionToken) +
-                 '&ts=' + lastKnownFrameTimestamp +
-                 '&ran=' + Math.random();
     newImage.src = newSrc;
   }
 
