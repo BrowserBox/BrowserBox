@@ -273,7 +273,7 @@
   if (sessionToken) { tokenInput.value = sessionToken; }
 
   // --- JSON / Net helpers (JSONP for IE4/5) ---
-    var USE_JSONP = true || !window.XMLHttpRequest;
+    var USE_JSONP = !window.XMLHttpRequest;
 
     var _jsonpSeq = 0;
 

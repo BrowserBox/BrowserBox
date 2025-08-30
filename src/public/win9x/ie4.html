@@ -197,17 +197,18 @@
           url = addParam(url, 'callback', cb);
           url = addParam(url, 'ran', String(Math.random()));
 
+          var s = document.createElement ? document.createElement('script') : null;
+          if (s) {
+            s.type = 'text/javascript'; s.src = url;
+            if (document.body.appendChild) document.body.appendChild(s);
+            return;
+          }
           if (document.body && document.body.insertAdjacentHTML) {
             document.body.insertAdjacentHTML(
               'beforeEnd',
               '<script type="text/javascript" src="' + url + '"></' + 'script>'
             );
             return;
-          }
-          var s = document.createElement ? document.createElement('script') : null;
-          if (s) {
-            s.type = 'text/javascript'; s.src = url;
-            if (document.body.appendChild) document.body.appendChild(s);
           }
         }
 
