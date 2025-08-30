@@ -1267,6 +1267,7 @@
        * Returns a list of open tabs and the active target ID.
        */
       app.get(`/api/${LEGACY_API_VERSION}/tabs`, wrap(async (req, res) => {
+        console.log('LOG', req.query);
         if (!legacyAuth(req, res)) return;
 
         try {
