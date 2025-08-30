@@ -877,36 +877,34 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         },null,2)+"\n");
       }, 5);
     }
+
     const {sessionId: castSessionId, data, metadata} = message.params;
-    const {timestamp} = metadata;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
 
     DEBUG.debug9x && console.log('New frame');
+    if (!sessions.has(sessionId)) return;
 
-    if ( !sessions.has(sessionId) ) return;
-
-    if ( timestamp <= latestTimestamp ) {
+    // Prefer screencast's own timestamp; fallback to now.
+    const sourceTs = Number(metadata && metadata.timestamp) || Date.now();
+    const lastTs   = latestTimestampBySession.get(sessionId) || 0;
+    if (sourceTs <= lastTs) {
       DEBUG.logCastOutOfOrderFrames && console.warn(
-        `Frame ${frameId} is from earlier than a prior frame. Dropping frame`,
-        {delta:(-latestTimestamp+timestamp)}
+        `Frame ${frameId} older than last for this session. Dropping.`,
+        { delta: sourceTs - lastTs }
       );
-      // ack it so we keep up the pace
-      if ( ! sessionId ) {
-        console.warn(`1 No sessionId for screencast ack`);
-      }
-      setTimeout(() => send("Page.screencastFrameAck", {sessionId: frameId}, sessionId), 5);
+      // Still ack so stream continues.
+      try { send("Page.screencastFrameAck", { sessionId: castSessionId || 1 }, sessionId); } catch {}
       return;
     }
-    latestTimestamp = timestamp;
-
+    latestTimestampBySession.set(sessionId, sourceTs);
     const targetId = sessions.get(sessionId);
     const frameBuffer = Buffer.from(data, 'base64');
-
-    const framedata = {
-      buffer: frameBuffer,
-      timestamp: Date.now()
-    };
+  
+    // Save for Win9x route
+    const framedata = { buffer: frameBuffer, timestamp: sourceTs };
     win9xCompatibilityBuffer.set(targetId, framedata);
+    try { send("Page.screencastFrameAck", { sessionId: castSessionId || 1 }, sessionId); } catch {}
+
     DEBUG.debug9x && console.log('9x buffer updated with framedata', framedata);
 
     const frame = frameBuffer; // Use the buffer we already created
