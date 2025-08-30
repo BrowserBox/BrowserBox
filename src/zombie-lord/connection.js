@@ -295,7 +295,8 @@ let GlobalFrameId = 1;
 let AD_BLOCK_ON = true;
 let DEMO_BLOCK_ON = false;
 let firstSource;
-let latestTimestamp;
+const latestTimestampBySession = new Map(); // sessionId -> lastTs
+
 let lastV = JSON.stringify(getViewport(),null,2); 
 let lastVT = lastV+'startup';
 let lastWChange = '';
@@ -879,6 +880,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const {sessionId: castSessionId, data, metadata} = message.params;
     const {timestamp} = metadata;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
+
+    DEBUG.debug9x && console.log('New frame');
 
     if ( !sessions.has(sessionId) ) return;
 

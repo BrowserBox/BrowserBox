@@ -1100,8 +1100,9 @@
         // == START: REWRITTEN ROUTES FOR WIN9X LEGACY HTTP CLIENT
         // =================================================================
           // --- Legacy frame state -------------------------------------------------
-            const LegacyFrameState = new Map(); 
-            // key: activeTargetId -> { lastCaptureAt: number, lastSentTs: number, inFlight: boolean }
+            // --- Legacy frame cache so /frame-status doesn't eat the only frame ---
+            const LegacyFrameCache = new Map(); // targetId -> { buffer: Buffer, timestamp: number }
+            const LegacyFrameState = new Map(); // targetId -> { lastSentTs: number, lastCaptureAt: number, inFlight: boolean }
 
             function getOrInitFrameState(targetId) {
               let st = LegacyFrameState.get(targetId);
@@ -1110,11 +1111,6 @@
                 LegacyFrameState.set(targetId, st);
               }
               return st;
-            }
-
-            function nowMs() { return Date.now(); }
-            function minGapMs() {
-              try { return MIN_TIME_BETWEEN_SHOTS(); } catch { return 120; } // safe default
             }
 
             // Try to read the freshest frame without forcing a new capture
@@ -1126,19 +1122,51 @@
               }
             }
 
-        // A shared authentication function for all legacy API routes
-        const legacyAuth = (req, res) => {
-          const cookie = req.cookies[COOKIENAME + port] || req.query[COOKIENAME + port] || req.headers['x-browserbox-local-auth'];
-          const st = req.query.session_token; // The legacy client sends this
+            function getState(targetId) {
+              let st = LegacyFrameState.get(targetId);
+              if (!st) { st = { lastSentTs: 0, lastCaptureAt: 0, inFlight: false }; LegacyFrameState.set(targetId, st); }
+              return st;
+            }
 
-          if ((cookie === allowed_user_cookie) || (st === session_token)) {
-            req.authAs = `${cookie}:${st}`;
-            return true;
-          }
+            function cachePeek(targetId) {
+              return LegacyFrameCache.get(targetId) || null;
+            }
+            function cachePut(targetId, frameData) {
+              if (frameData && frameData.buffer && frameData.buffer.length) {
+                LegacyFrameCache.set(targetId, frameData);
+              }
+            }
+            function cacheTake(targetId) {
+              const v = LegacyFrameCache.get(targetId) || null;
+              if (v) LegacyFrameCache.delete(targetId);
+              return v;
+            }
 
-          res.status(401).send('{"error":"forbidden"}');
-          return false;
-        };
+            // Pull a frame into cache if needed, but DO NOT consume what we already have.
+            async function pullIntoCacheIfNeeded(zombie_port, targetId) {
+              if (cachePeek(targetId)) return cachePeek(targetId);
+              // getFrameFromBuffer() is destructive in your build, so immediately re-cache what we pull
+              const fd = zl.act.getFrameFromBuffer(zombie_port, targetId);
+              if (fd) cachePut(targetId, fd);
+              return fd || null;
+            }
+
+            function nowMs(){ return Date.now(); }
+            function minGapMs(){ try { return MIN_TIME_BETWEEN_SHOTS(); } catch { return 120; } }
+
+            // A shared authentication function for all legacy API routes
+            const legacyAuth = (req, res) => {
+              const cookie = req.cookies[COOKIENAME + port] || req.query[COOKIENAME + port] || req.headers['x-browserbox-local-auth'];
+              const st = req.query.session_token; // The legacy client sends this
+
+              if ((cookie === allowed_user_cookie) || (st === session_token)) {
+                req.authAs = `${cookie}:${st}`;
+                return true;
+              }
+
+              res.status(401).send('{"error":"forbidden"}');
+              return false;
+            };
 
         app.get(`/api/${LEGACY_API_VERSION}/connect`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
@@ -1163,18 +1191,15 @@
          */
         app.get(`/api/${LEGACY_API_VERSION}/frame-status`, wrap(async (req, res) => {
           if (!legacyAuth(req, res)) return;
-
           res.type('json');
+
           const lastKnownTimestamp = parseInt(req.query.last_known_ts) || 0;
-          const activeTargetId = zl.act.getActiveTarget(zombie_port);
+          const targetId = zl.act.getActiveTarget(zombie_port);
+          if (!targetId) return res.json({ fresh: false });
 
-          if (!activeTargetId) {
-            return res.json({ fresh: false });
-          }
-
-          const frameData = readLatestFrame(zombie_port, activeTargetId);
-          const serverTs = frameData?.timestamp || 0;
-          console.log({frameData, serverTs});
+          // Pull once (destructive) only if we DON'T already have a cached frame
+          const fd = await pullIntoCacheIfNeeded(zombie_port, targetId);
+          const serverTs = fd && fd.timestamp ? fd.timestamp : 0;
 
           if (serverTs > lastKnownTimestamp) {
             return res.json({ fresh: true, timestamp: serverTs });
@@ -1251,76 +1276,76 @@
           if (!legacyAuth(req, res)) return;
 
           try {
-            const activeTargetId = zl.act.getActiveTarget(zombie_port);
-            if (!activeTargetId) throw new Error("No active tab");
+            const targetId = zl.act.getActiveTarget(zombie_port);
+            if (!targetId) throw new Error("No active tab");
 
-            const st = getOrInitFrameState(activeTargetId);
-            let frameData = readLatestFrame(zombie_port, activeTargetId);
-            const needNew = !frameData || (frameData.timestamp <= st.lastSentTs);
+            const st = getState(targetId);
+            let fd = cacheTake(targetId); // prefer the cached frame the status route saw
 
-            const now = nowMs();
-            const canCapture = (now - st.lastCaptureAt) >= minGapMs();
+            // If nothing cached or it's not newer than last we sent, try to capture (throttled)
+            const needNew = !fd || (fd.timestamp <= st.lastSentTs);
+            const canCapture = (nowMs() - st.lastCaptureAt) >= minGapMs();
 
-            // Only try to capture if we actually need a newer frame
             if (needNew && canCapture && !st.inFlight) {
               st.inFlight = true;
-              st.lastCaptureAt = now;
-
-              // Fire-and-forget; we’ll read the buffer after CDP says OK
-              const sessionId = zl.act.getSessionId(activeTargetId, zombie_port);
+              st.lastCaptureAt = nowMs();
+              const sid = zl.act.getSessionId(targetId, zombie_port);
               try {
                 await zl.act.send({
                   name: "Page.captureScreenshot",
                   params: { format: 'jpeg', quality: 85 },
-                  sessionId
+                  sessionId: sid
                 }, zombie_port);
-
-                // re-peek after capture
-                frameData = readLatestFrame(zombie_port, activeTargetId) || frameData;
-              } catch (e) {
-                // no-op; we’ll fall back to the best we had
+                // Pull whatever the browser produced (destructive) and use the freshest
+                const newFd = zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
+                if (newFd && (!fd || newFd.timestamp > (fd.timestamp || 0))) {
+                  fd = newFd;
+                } else if (newFd) {
+                  // keep older one around for possible next status; cache it
+                  cachePut(targetId, newFd);
+                }
+              } catch (_) {
+                // ignore, we'll serve best-known
               } finally {
                 st.inFlight = false;
               }
             }
 
-            // Serve best-known frame (or 304 if client sent If-None-Match)
-            const buf = frameData?.buffer;
-            const ts = frameData?.timestamp || 0;
+            // Fall back: if still nothing, try one last pull (maybe nudge had filled buffer)
+            if (!fd) {
+              fd = zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
+            }
+
+            // Serve response
+            const buf = fd && fd.buffer;
+            const ts  = fd && fd.timestamp ? fd.timestamp : 0;
             const etag = `"ts:${ts}"`;
 
-            // Conditional GET support
+            if (!buf || !buf.length) {
+              const px = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+              res.set({'Content-Type':'image/gif','Cache-Control':'no-store','ETag':'"empty"'}).send(px);
+              return;
+            }
+
+            st.lastSentTs = Math.max(st.lastSentTs, ts);
+
+            // Optional 304 support if your client sends If-None-Match
             if (req.headers['if-none-match'] === etag) {
               res.status(304).end();
               return;
             }
 
-            if (buf && buf.length) {
-              st.lastSentTs = Math.max(st.lastSentTs, ts);
-              res.set({
-                'Content-Type': 'image/jpeg',
-                'Content-Length': buf.length,
-                'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-                'ETag': etag,
-                'X-Frame-Timestamp': String(ts),
-              });
-              res.send(buf);
-            } else {
-              // 1x1 transparent GIF fallback
-              const fallbackPixel = Buffer.from(
-                'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-                'base64'
-              );
-              res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store', 'ETag': '"empty"' });
-              res.send(fallbackPixel);
-            }
+            res.set({
+              'Content-Type': 'image/jpeg',
+              'Content-Length': buf.length,
+              'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+              'ETag': etag,
+              'X-Frame-Timestamp': String(ts),
+            });
+            res.send(buf);
           } catch (e) {
-            const fallbackPixel = Buffer.from(
-              'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-              'base64'
-            );
-            res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store', 'ETag': '"error"' });
-            res.send(fallbackPixel);
+            const px = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+            res.set({'Content-Type':'image/gif','Cache-Control':'no-store','ETag':'"error"'}).send(px);
           }
         }));
 
