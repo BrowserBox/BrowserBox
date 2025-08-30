@@ -906,9 +906,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const framedata = { buffer: frameBuffer, timestamp: sourceTs };
       win9xCompatibilityBuffer.set(targetId, framedata);
       try { send("Page.screencastFrameAck", { sessionId: castSessionId || 1 }, sessionId); } catch {}
+      DEBUG.debug9x && console.log('9x buffer updated with framedata', framedata);
     }
-
-    DEBUG.debug9x && console.log('9x buffer updated with framedata', framedata);
 
     const frame = frameBuffer; // Use the buffer we already created
     const header = Buffer.alloc(28);

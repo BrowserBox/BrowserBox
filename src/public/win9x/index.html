@@ -9,19 +9,19 @@
   html, body { height: 100%; overflow: hidden; }
   body { font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif; font-size: 12px; margin: 0; padding: 0; background-color: ButtonFace; color: ButtonText; overflow: hidden; }
   #main-layout { width: 100%; height: 100%; border-spacing: 0; }
-  #tab-bar { background-color: ButtonFace; padding: 3px 2px 0 2px; border-bottom: 2px solid ThreeDShadow; white-space: nowrap; overflow: hidden; }
-  .tab { display: inline-block; padding: 4px 8px; border: 1px solid ButtonFace; border-bottom: none; margin-right: 2px; cursor: pointer; background-color: ThreeDLightShadow; position: relative; top: 1px; }
-  .tab-active { background-color: ButtonFace; border: 1px solid ThreeDShadow; border-bottom: 1px solid ButtonFace; font-weight: bold; }
-  #omni-box { background-color: ButtonFace; padding: 5px; border-bottom: 2px outset ThreeDFace; }
+  #tab-bar { background-color: ButtonFace; padding: 3px 2px 0 2px; border-bottom: 2px solid darkgray; white-space: nowrap; overflow: hidden; }
+  .tab { display: inline-block; padding: 4px 8px; border: 1px solid ButtonFace; border-bottom: none; margin-right: 2px; cursor: pointer; background-color: darkgray; position: relative; top: 1px; }
+  .tab-active { background-color: ButtonFace; border: 1px solid darkgray; border-bottom: 1px solid ButtonFace; font-weight: bold; }
+  #omni-box { background-color: ButtonFace; padding: 5px; border-bottom: 2px outset silver; }
   .omni-button { font-size: 12px; width: 60px; margin-right: 5px; }
   #url-input { font-size: 12px; width: 60%; }
-  #status-bar { padding: 3px; border-top: 1px solid ThreeDShadow; font-size: 10px; color: ThreeDDarkShadow; }
+  #status-bar { padding: 3px; border-top: 1px solid darkgray; font-size: 10px; color: darkgray; }
   #content-pane {
     position: relative;
     background-color: #000000;
     overflow: hidden;
     padding: 0;
-    border-top: 1px solid ThreeDLightShadow;
+    border-top: 1px solid darkgray;
   }
   #remote-screen {
     position: absolute;
@@ -30,11 +30,37 @@
     background-color: #FFFFFF;
     cursor: crosshair;
   }
-  #new-tab-button { display: inline-block; padding: 4px 6px; margin-right: 4px; border: 1px solid ThreeDShadow; background-color: ThreeDLightShadow; cursor: pointer; font-weight: bold; position: relative; top: 1px; }
-  .close-tab-button { font-family: "Webdings", sans-serif; font-size: 12px; padding-left: 10px; color: ThreeDDarkShadow; cursor: pointer; }
+  #new-tab-button { display: inline-block; padding: 4px 6px; margin-right: 4px; border: 1px solid darkgray; background-color: silver; cursor: pointer; font-weight: bold; position: relative; top: 1px; }
+  .close-tab-button { font-family: "Webdings", sans-serif; font-size: 12px; padding-left: 10px; color: darkgray; cursor: pointer; }
 </style>
 </head>
 <body>
+
+<script type="text/javascript" language="JavaScript">
+  // Minimal Array.prototype.shift / unshift for IE4–6 (JScript)
+  if (!Array.prototype.shift) {
+    Array.prototype.shift = function () {
+      var len = this.length >>> 0;          // coerce to uint32
+      if (!len) { this.length = 0; return void 0; }
+      var first = this[0];
+      for (var i = 1; i < len; i++) this[i - 1] = this[i];
+      this.length = len - 1;                // shrink without 'delete' (faster in old JScript)
+      return first;
+    };
+  }
+
+  // Optional: unshift (not strictly needed for your snippet, but handy)
+  if (!Array.prototype.unshift) {
+    Array.prototype.unshift = function () {
+      var add = arguments.length, len = this.length >>> 0, i;
+      if (!add) return len;
+      for (i = len - 1; i >= 0; i--) this[i + add] = this[i];
+      for (i = 0; i < add; i++) this[i] = arguments[i];
+      this.length = len + add;
+      return this.length;
+    };
+  }
+</script>
 
 <table id="main-layout" cellpadding="0" cellspacing="0">
   <tr style="height: 1px; display: none;">
@@ -133,22 +159,53 @@
   }
 
   // --- JSON / Net helpers (JSONP for IE4/5) ---
-  var USE_JSONP = !window.XMLHttpRequest;
+  var USE_JSONP = true || !window.XMLHttpRequest;
 
   var _jsonpSeq = 0;
+
   function jsonp(fullUrl, onOK) {
+    // Ensure BODY exists (IE4 can run this before <body> is live)
+    if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK); }, 50); return; }
+
     var cb = '__bbcb' + (++_jsonpSeq);
     window[cb] = function (data) { window[cb] = null; if (onOK) onOK(data); };
+
     var url = fullUrl + (fullUrl.indexOf('?')>=0 ? '&' : '?') +
               'jsonp=1&callback=' + cb + '&ran=' + Math.random();
 
-    if (document.createElement && (document.body && document.body.appendChild)) {
+    // Best path first
+    if (document.createElement) {
       var s = document.createElement('script');
-      s.type = 'text/javascript';
-      s.src  = url;
-      (document.body || (document.getElementsByTagName ? document.getElementsByTagName('head')[0] : document.body)).appendChild(s);
-    } else if (document.body && document.body.insertAdjacentHTML) {
-      document.body.insertAdjacentHTML('beforeEnd','<script type="text/javascript" src="' + url + '"><\/script>');
+      if ( s ) {
+        s.type = 'text/javascript';
+        s.src  = url;
+
+        if (document.body.appendChild) {
+          document.body.appendChild(s);
+          return;
+        }
+        if (document.body.insertAdjacentElement) {
+          document.body.insertAdjacentElement('beforeEnd', s);
+          return;
+        }
+      }
+      if (document.body.insertAdjacentHTML) {
+        setTimeout(function () {
+          document.body.insertAdjacentHTML(
+            'beforeEnd',
+            '<script type="text/javascript" src="' + url + '"></' + 'script>'
+          );
+          return;
+        });
+        return;
+      }
+    }
+
+    if (document.body && document.body.insertAdjacentHTML) {
+      document.body.insertAdjacentHTML(
+        'beforeEnd',
+        '<script type="text/javascript" src="' + url + '"></' + 'script>'
+      );
     }
   }
 
@@ -364,7 +421,9 @@
     if (window.Image) {
       var img = new Image();
       _evtPool[_evtPool.length] = img;
-      if (_evtPool.length > _evtPoolMax) _evtPool.shift();
+      if (_evtPool.length > _evtPoolMax) {
+        _evtPool.shift();
+      }
       img.src = url;
     } else {
       var f = document.getElementById ? document.getElementById('evt-iframe') :
