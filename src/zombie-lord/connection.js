@@ -881,7 +881,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const {sessionId: castSessionId, data, metadata} = message.params;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
 
-    DEBUG.debug9x && console.log('New frame');
     if (!sessions.has(sessionId)) return;
 
     // Prefer screencast's own timestamp; fallback to now.
@@ -901,9 +900,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const frameBuffer = Buffer.from(data, 'base64');
   
     // Save for Win9x route
-    const framedata = { buffer: frameBuffer, timestamp: sourceTs };
-    win9xCompatibilityBuffer.set(targetId, framedata);
-    try { send("Page.screencastFrameAck", { sessionId: castSessionId || 1 }, sessionId); } catch {}
+    if ( CONFIG.win9xCompatibility ) {
+      DEBUG.debug9x && console.log('New frame');
+      const framedata = { buffer: frameBuffer, timestamp: sourceTs };
+      win9xCompatibilityBuffer.set(targetId, framedata);
+      try { send("Page.screencastFrameAck", { sessionId: castSessionId || 1 }, sessionId); } catch {}
+    }
 
     DEBUG.debug9x && console.log('9x buffer updated with framedata', framedata);
 

@@ -345,6 +345,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  win9xCompatibility: !!process.env.WIN9X_COMPATIBILITY_MODE && process.env.WIN9X_COMPATIBILITY_MODE !== "false",
   ALWAYS_RESTART_CAST: true,
   tryRestartingChrome: false,
   useRedirectBlock: true,
