@@ -139,6 +139,7 @@
   // --- Helpers ---
   function createXmlHttpRequestObject() {
     if (window.XMLHttpRequest) return new XMLHttpRequest();
+    if (window.ActiveXObject)  return new ActiveXObject("Msxml2.XMLHTTP");
     if (window.ActiveXObject)  return new ActiveXObject("Microsoft.XMLHTTP");
     alert("Your browser does not support AJAX, which is required for this application.");
     return null;
@@ -156,7 +157,7 @@
   }
 
   function updateStatus(text) {
-    statusBar.innerHTML = 'Status: ' + text;
+    //statusBar.innerHTML = 'Status: ' + text;
   }
 
   function setControlsEnabled(isEnabled) {
