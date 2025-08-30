@@ -1,11 +1,12 @@
 // Imports, constants then state
-const CACHE_VERSION = 'v12.0.0';
+const CACHE_VERSION = 'v12.2.0';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'bb-etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
 
 const patternsToCache = ['.*'];
 const excludedPaths = new Set([
+  '/win9x',
   '/voodoo/src/common.js',
   '/isSubscriber',
   '/expiry_time',

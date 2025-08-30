@@ -48,52 +48,51 @@
 
 <script type="text/javascript">
   // --- Configuration ---
-  var KEY_BATCH_INTERVAL_MS = 1000; // Send key events every 1 second
-  var keyBuffer = []; // Buffer for keyboard events
-  var keyBatchInterval = null; // To hold the ID of our setInterval
-  var VIEWPORT_SYNC_DELAY_MS = 750; // Delay for viewport sync on reconnect
-  var isNetworkError = false; // <-- ADD THIS LINE
-  var tabPollingInterval = null;
-  var nonPrintableKeys = [
-    8,  // Backspace
-    9,  // Tab
-    13, // Enter
-    27, // Escape
-    33, 34, 35, 36, // PageUp, PageDown, End, Home
-    37, 38, 39, 40, // Arrow keys
-    45, 46         // Insert, Delete
-  ];
-
+    var KEY_BATCH_INTERVAL_MS = 1000; // Send key events every 1 second
+    var keyBuffer = []; // Buffer for keyboard events
+    var keyBatchInterval = null; // To hold the ID of our setInterval
+    var VIEWPORT_SYNC_DELAY_MS = 750; // Delay for viewport sync on reconnect
+    var isNetworkError = false; // <-- ADD THIS LINE
+    var tabPollingInterval = null;
+    var nonPrintableKeys = [
+      8,  // Backspace
+      9,  // Tab
+      13, // Enter
+      27, // Escape
+      33, 34, 35, 36, // PageUp, PageDown, End, Home
+      37, 38, 39, 40, // Arrow keys
+      45, 46         // Insert, Delete
+    ];
 
   // --- Configuration ---
-  var API_BASE_PATH = '/api/vwin';
-  if ( location && location.origin ) {
-    API_BASE_PATH = location.origin + API_BASE_PATH;
-  }
-  var POLLING_INTERVAL_MS = 1000; // How often to check for a new frame when idle
-  var TAB_REFRESH_RATE_MS = 3000;
-  var RESIZE_THROTTLE_MS = 250;
+    var API_BASE_PATH = '/api/vwin';
+    if ( location && location.origin ) {
+      API_BASE_PATH = location.origin + API_BASE_PATH;
+    }
+    var POLLING_INTERVAL_MS = 1000; // How often to check for a new frame when idle
+    var TAB_REFRESH_RATE_MS = 3000;
+    var RESIZE_THROTTLE_MS = 250;
 
   // --- State Variables ---
-  var activeTabId = null;
-  var isConnected = false;
-  var modifierState = { shift: false, ctrl: false, alt: false }; // <-- ADD THIS LINE
-  var tabPollingInterval = null;
-  var resizeTimeout = null;
-  var lastKnownFrameTimestamp = 0; // Tracks the timestamp of the last received frame
-  var isUrlBarFocused = false;
+    var activeTabId = null;
+    var isConnected = false;
+    var modifierState = { shift: false, ctrl: false, alt: false }; // <-- ADD THIS LINE
+    var tabPollingInterval = null;
+    var resizeTimeout = null;
+    var lastKnownFrameTimestamp = 0; // Tracks the timestamp of the last received frame
+    var isUrlBarFocused = false;
 
   // --- Element References ---
-  var contentPane = document.getElementById('content-pane');
-  var connectButton = document.getElementById('connect-button');
-  var tokenInput = document.getElementById('token-input');
-  var tabBar = document.getElementById('tab-bar');
-  var backButton = document.getElementById('back-button');
-  var forwardButton = document.getElementById('forward-button');
-  var urlInput = document.getElementById('url-input');
-  var goButton = document.getElementById('go-button');
-  var remoteScreen = document.getElementById('remote-screen');
-  var statusBar = document.getElementById('status-bar');
+    var contentPane = document.getElementById('content-pane');
+    var connectButton = document.getElementById('connect-button');
+    var tokenInput = document.getElementById('token-input');
+    var tabBar = document.getElementById('tab-bar');
+    var backButton = document.getElementById('back-button');
+    var forwardButton = document.getElementById('forward-button');
+    var urlInput = document.getElementById('url-input');
+    var goButton = document.getElementById('go-button');
+    var remoteScreen = document.getElementById('remote-screen');
+    var statusBar = document.getElementById('status-bar');
 
   var sessionToken = '';
   if ( location.search ) {
@@ -210,6 +209,7 @@
       }
 
       updateStatus('Connecting...');
+      connect();
       isConnected = true;
 
       sendViewportSize();
@@ -256,6 +256,27 @@
     xhr.send(null);
   }
 
+  function connect() {
+    var xhr = createXmlHttpRequestObject();
+    var url = API_BASE_PATH + '/connect?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        var data = parseJSON(xhr.responseText);
+        if (data) {
+          console.log('Connect data', data);
+        }
+      } else if (xhr.readyState === 4) {
+        // A non-200 status indicates a connection problem
+        if (!isNetworkError) {
+          isNetworkError = true;
+          updateStatus('Connection error. Attempting to reconnect...');
+        }
+      }
+    };
+    xhr.send(null);
+  }
+ 
   function updateTabs() {
     if (!isConnected) return;
     var xhr = createXmlHttpRequestObject();

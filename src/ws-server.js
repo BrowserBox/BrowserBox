@@ -1129,7 +1129,7 @@
           });
           stopShutdownTimer();
           res.json({ connected: true });
-        });
+        }));
 
         /**
          * NEW: /api/vwin/frame-status
