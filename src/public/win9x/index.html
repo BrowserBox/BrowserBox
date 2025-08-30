@@ -503,7 +503,7 @@
       var chunk = [];
       var i;
       for (i = start; i < end && i < keyBuffer.length; i++) {
-        chunk.push(keyBuffer[i]);
+        chunk[chunk.length] = keyBuffer[i];
       }
 
       // Manual JSON for IE
@@ -543,12 +543,12 @@
     }
 
     if (indexOf(nonPrintableKeys, keyCode) !== -1) {
-      keyBuffer.push({
+      keyBuffer[keyBuffer.length] = {
         keyCode: keyCode,
         shiftKey: e.shiftKey,
         ctrlKey: e.ctrlKey,
         altKey: e.altKey
-      });
+      };
       e.returnValue = false; if (e.preventDefault) e.preventDefault();
     }
   }
@@ -557,12 +557,12 @@
     if (!isConnected || isUrlBarFocused) return;
     e = e || window.event;
     var charCode = e.charCode || e.keyCode;
-    keyBuffer.push({
+    keyBuffer[keyBuffer.length] = {
       press: String.fromCharCode(charCode),
       shiftKey: e.shiftKey,
       ctrlKey: e.ctrlKey,
       altKey: e.altKey
-    });
+    };
   }
 
   // --- Navigation helpers ---
