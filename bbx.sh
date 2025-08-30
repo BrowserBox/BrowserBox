@@ -65,6 +65,9 @@ if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
     exit 1
 fi
 
+# env
+export BBX_DONT_KILL_CHROME_ON_STOP="true"
+
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 BBX_NEW_DIR="${BBX_HOME}/new"
