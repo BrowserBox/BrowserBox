@@ -9,9 +9,12 @@ export LICENSE_KEY
 # Kill existing processes
 bbx stop
 
-#bbx run
 bbcertify
-npm test >&2
+if [[ -n "BBX_RUN_CURRENT_DIRECTORY" ]]; then
+  npm test >&2
+else
+  bbx run
+fi
 
 echo "Waiting for server..." >&2
 sleep 8
