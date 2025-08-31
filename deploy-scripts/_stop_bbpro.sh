@@ -56,11 +56,9 @@ fi
 kill_chrome() {
   # Loop through all the pid files for Chrome processes
   for pidf in "$HOME/.config/dosyago/bbpro/chrome-"*/pid; do
-    pid=$(cat "$pidf")
-    if [ "$(ps -o user= -p "$pid")" = "$(whoami)" ]; then
-      # Call the killtree function to kill the process group
-      killtree "$pid"
-    fi
+    pid="$(cat "$pidf")"
+    killtree "$pid" || kill "$pid"
+    rm -f "$pidf"
   done
   # don't just randomly kill all chromes if this is set
   if [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP}" ]]; then
