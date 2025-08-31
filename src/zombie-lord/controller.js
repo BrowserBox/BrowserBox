@@ -229,58 +229,66 @@ const controller_api = {
     }
   },
 
-  async addLink({so, forceMeta}, {connectionId, peer, socket, fastest}, port) {
+  async addLink({so, forceMeta}, {legacy, connectionId, peer, socket, fastest}, port) {
     await untilTrue(() => connections.has(port), 100, 1000);
     const connection = connections.get(port);
     if ( connection ) {
       let channels = connection.links.get(connectionId);
-      if ( (socket || peer) && ! channels ) {
-        DEBUG.val && console.log("Links", connection.links.size, "Max", MAX_CONNECTIONS);
-        if ( ( connection.links.size + 1) > MAX_CONNECTIONS ) {
-          console.warn('Closing connection as total connection count exceeds MAX_CONNECTIONS');
-          if ( socket ) {
-            so(socket, 
-              { 
-                data: [{
-                  error: `There are already ${MAX_CONNECTIONS} in the session. The room is full`
-                }]
-              }
+      if ( legacy == 'connect' ) {
+        (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Connect [legacy]. Add connection ${connectionId}`);
+        connection.legacyClients.set(connectionId, {legacy});
+      } else if ( legacy == 'disconnect' ) {
+        (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Disconnect [legacy]. Remove connection ${connectionId}`);
+        this.deleteLink({connectionId, legacy: true}, port);
+      } else {
+        if ( (socket || peer) && ! channels ) {
+          DEBUG.val && console.log("Links", connection.links.size, "Max", MAX_CONNECTIONS);
+          if ( ( connection.links.size + 1) > MAX_CONNECTIONS ) {
+            console.warn('Closing connection as total connection count exceeds MAX_CONNECTIONS');
+            if ( socket ) {
+              so(socket, 
+                { 
+                  data: [{
+                    error: `There are already ${MAX_CONNECTIONS} in the session. The room is full`
+                  }]
+                }
+              );
+              setTimeout(() => socket && socket.close(), 600);
+            }
+            if ( peer ) {
+              setTimeout(() => peer && peer.destroy(), 500);
+            }
+            return;
+          }
+          channels = {ack:{received:true, buffer:[], sent:new Map(), times: [], timeSum: 0, bufSend: true}};
+          DEBUG.acks && console.log(`set ack received true at first ${connectionId}`, channels);
+          
+          (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Add connection ${connectionId}`);
+          connection.links.set(connectionId, channels);
+          untilTrue(() => connection.sessionId, 300, 100).then(() => {
+            DEBUG.acks && console.log(
+              'sending ack on link add or change', 
+              connection.sessionId, connection.latestCastId
             );
-            setTimeout(() => socket && socket.close(), 600);
-          }
-          if ( peer ) {
-            setTimeout(() => peer && peer.destroy(), 500);
-          }
-          return;
+            controller_api.screenshotAck(connectionId, port, 1);
+          });
         }
-        channels = {ack:{received:true, buffer:[], sent:new Map(), times: [], timeSum: 0, bufSend: true}};
-        DEBUG.acks && console.log(`set ack received true at first ${connectionId}`, channels);
-        
-        (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Add connection ${connectionId}`);
-        connection.links.set(connectionId, channels);
-        untilTrue(() => connection.sessionId, 300, 100).then(() => {
-          DEBUG.acks && console.log(
-            'sending ack on link add or change', 
-            connection.sessionId, connection.latestCastId
-          );
-          controller_api.screenshotAck(connectionId, port, 1);
-        });
-      }
-      if ( ! peer && ! socket ) {
-        (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Disconnect. Remove connection ${connectionId}`);
-        this.deleteLink({connectionId}, port);
-      } else if ( channels ) {
-        channels.peer = peer;
-        channels.socket = socket;
-        if ( channels.fastest !== fastest ) {
-          DEBUG.logFastest && console.log(`Switched fastest channel to ${
-            fastest === peer ? 'webrtc peer' : 'websocket'
-          }.`);
-          channels.fastest = fastest;
-        }
-        DEBUG.socDebug && console.log(`Client ${connectionId} setting ${peer ? 'peer' : ''} ${peer && socket? 'and socket' : 'socket'}`);
-        if ( !fastest && peer && socket ) {
-          console.log("Links keys", ...connection.links.keys());
+        if ( ! peer && ! socket ) {
+          (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Disconnect. Remove connection ${connectionId}`);
+          this.deleteLink({connectionId}, port);
+        } else if ( channels ) {
+          channels.peer = peer;
+          channels.socket = socket;
+          if ( channels.fastest !== fastest ) {
+            DEBUG.logFastest && console.log(`Switched fastest channel to ${
+              fastest === peer ? 'webrtc peer' : 'websocket'
+            }.`);
+            channels.fastest = fastest;
+          }
+          DEBUG.socDebug && console.log(`Client ${connectionId} setting ${peer ? 'peer' : ''} ${peer && socket? 'and socket' : 'socket'}`);
+          if ( !fastest && peer && socket ) {
+            console.log("Links keys", ...connection.links.keys());
+          }
         }
       }
       if ( ! connection.so || connection.renewed ) {
@@ -299,11 +307,15 @@ const controller_api = {
     }
   },
 
-  deleteLink({connectionId}, port) {
+  deleteLink({connectionId, legacy}, port) {
     const connection = connections.get(port);
     (DEBUG.socDebug || DEBUG.debugConnect) && console.info(`Remove connection ${connectionId}`);
     if ( connection ) {
-      connection.links.delete(connectionId);
+      if ( legacy ) {
+        connection.legacyClients.delete(connectionId);
+      } else {
+        connection.links.delete(connectionId);
+      }
       connection.viewports.delete(connectionId);
       updateTargetsOnCommonChanged({connection, command: "all", force: true});
     } else {
@@ -354,7 +366,9 @@ const controller_api = {
   getFrameFromBuffer(port, targetId) {
     const connection = connections.get(port);
     if (connection && connection.win9xCompatibilityBuffer) {
-      return connection.win9xCompatibilityBuffer.get(targetId);
+      const fr = connection.win9xCompatibilityBuffer.get(targetId);
+      connection.win9xCompatibilityBuffer.delete(targetId);
+      return fr;
     }
     return null;
   },

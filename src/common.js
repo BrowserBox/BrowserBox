@@ -8,6 +8,7 @@ import {fileURLToPath} from 'url';
 import isDocker from 'is-docker';
 
 import {FRAME_CONTROL} from './public/voodoo/src/common.js';
+import { rainstormHash } from '@dosyago/rainsum';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
@@ -17,6 +18,7 @@ export const scratchState = {
   slowConnection: false,
 };
 process.env.BB_QUICK_EXIT = process.env.STATUS_MODE == "quick exit" ? "true" : "";
+export const HVAL = await rainstormHash(256, 999, process.env.STATUS_MODE || "");
 export const KILL_TIME = process.env.BB_QUICK_EXIT ? 18_222 : 422_222;
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
@@ -75,6 +77,8 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   SPECIAL_CASE_FOR_META_KEY: false,
+  debug9x: false,
+  debug9xFrames: false,
   logVisibilityChange: false,
   debugDesktopOnly: false,
   debugPdf: false,
@@ -200,7 +204,7 @@ export const DEBUG = Object.freeze({
   // this rewdraws every mouse event which produces too many frames for slow Tor
   //showMousePosition: !process.env.TORBB && true, 
   showMousePosition: true, 
-  debugConnect: false,
+  debugConnect: true,
   debugCommandResponses: false,
   dataDebug: false,
   debugHistory: false,
@@ -342,6 +346,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  win9xCompatibility: !!process.env.WIN9X_COMPATIBILITY_MODE && process.env.WIN9X_COMPATIBILITY_MODE !== "false",
   ALWAYS_RESTART_CAST: true,
   tryRestartingChrome: false,
   useRedirectBlock: true,

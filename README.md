@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <strong>AUGUST 2025 NEWS: Windows 9x support is in beta!<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
+  <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is now in beta.<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
 </p>
 
 BrowserBox delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
@@ -147,8 +147,11 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 **Notes**
 
 - \*Tails is not supported because neither Chrome nor Docker can be installed.
-- †Windows 9x clients are supported by going to `/win9x`. For example, if your login link is **https://server:9999/login?token=123** then go to **https://server:9999/win9x?token=123**. Windows 9x includes Windows 95, Windows 98, Windows 2000, Windows NT and Internet Explorer 4.0 and up, and other old browsers on Windows, like Netscape. Please note that the BrowserBox server must still be run on a modern system, but now you can connect to BrowserBox from legacy Windows 9x machines and browsers.
+- †Windows 9x clients are supported by running the **new** `win9x_bbpro` command which will output the login link for legacy Windows clients (such as Internet Explorer (IE 5, IE 6, etc) or Netscape. Supported Windows 9x operating systems for legacy clients include Windows 95, Windows 98, Windows 2000, Windows NT the BrowserBox server must still be run on a modern system, but now you can connect to BrowserBox from legacy Windows 9x machines and browsers. Modern clients can still use the legacy endpoint but the experience is understandably jurassic.
 
+<p align=center>
+  <img src="readme-files/browserbox-running-in-windows-98-ie-5.jpg" alt="BrowserBox Legacy Client Running in IE 5 in Windows 98" title="BrowserBox Legacy Client Running in IE 5 in Windows 98" width=800">
+</p>
 
 ## Get Started in 3 Steps
 

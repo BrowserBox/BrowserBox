@@ -1,2 +1,4 @@
-- last thing: add an ack API to ensure we can get frames. We probably don't want to ack all frames, but a suitable delay we can do it. 
+- gemini, improve styles
+- throttle frame updates/ or if frames are not different.
+- part urls to address bar and anything else to search provider
 

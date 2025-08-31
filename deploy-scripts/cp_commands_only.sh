@@ -48,6 +48,12 @@ $SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh $COMMAND_DIR/bbpro
 
 echo "Copied!"
 
+echo -n "Copying win9x_bbpro command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/_win9x_bbpro.sh $COMMAND_DIR/win9x_bbpro
+
+echo "Copied!"
+
 echo -n "Copying setup_bbpro and stop_bbpro commands to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh $COMMAND_DIR/setup_bbpro
