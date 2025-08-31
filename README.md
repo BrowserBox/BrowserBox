@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is in beta!<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
+  <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is now in beta.<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
 </p>
 
 BrowserBox delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
