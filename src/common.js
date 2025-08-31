@@ -77,7 +77,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   SPECIAL_CASE_FOR_META_KEY: false,
-  debug9x: true,
+  debug9x: false,
   debug9xFrames: false,
   logVisibilityChange: false,
   debugDesktopOnly: false,

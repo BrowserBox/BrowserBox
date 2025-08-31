@@ -1,408 +1,1049 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<title>BrowserBox - Legacy Client</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=5">
-<meta http-equiv="imagetoolbar" content="no" />
-<style type="text/css">
-  /* --- All your styles remain the same --- */
-  html, body { height: 100%; overflow: hidden; }
-  /* Switched to reliable hex/named colors for max compatibility */
-  body { font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif; font-size: 12px; margin: 0; padding: 0; background-color: #C0C0C0; color: #000000; overflow: hidden; }
-  #main-layout { width: 100%; height: 100%; border-spacing: 0; }
+    <title>BrowserBox - Legacy Client</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=5">
+    <meta http-equiv="imagetoolbar" content="no" />
+    <style type="text/css">
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
 
-  /* --- REVISED TAB BAR STYLES (Using Basic HTML Colors) --- */
-  #tab-bar {
-    background-color: #C0C0C0; /* silver */
-    padding: 3px 2px 0 3px;
-    border-bottom: 1px solid gray;
-    white-space: nowrap;
-    overflow: hidden;
-    height: 25px;
-    line-height: 18px;
-  }
+        /* Switched to reliable hex/named colors for max compatibility */
+        body {
+            font-family: "MS Sans Serif", "Tahoma", "Verdana", sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+            background-color: #C0C0C0;
+            color: #000000;
+            overflow: hidden;
+        }
 
-  .tab {
-    display: inline-block;
-    *display: inline;
-    zoom: 1;
-    /* Explicit borders for classic 3D "outset" look */
-    border-top: 1px solid white;
-    border-left: 1px solid white;
-    border-right: 1px solid gray;
-    border-bottom: 1px solid gray;
-    background-color: #C0C0C0; /* silver */
-    color: black;
-    padding: 4px 8px 3px 8px;
-    margin-right: 2px;
-    cursor: default;
-    position: relative;
-    vertical-align: top;
-    font-size: 12px;
-  }
+        #main-layout {
+            width: 100%;
+            height: 100%;
+            border-spacing: 0;
+        }
 
-  .tab-active {
-    background-color: #C0C0C0;
-    font-weight: bold;
-    /* "Pressed" look: dark top/left, light right, bg-color bottom */
-    border-top: 1px solid gray;
-    border-left: 1px solid gray;
-    border-right: 1px solid white;
-    border-bottom: 1px solid #C0C0C0; /* Key trick: hide bottom border */
-    position: relative;
-    top: 1px;
-    padding-bottom: 4px;
-  }
+        /* --- REVISED TAB BAR STYLES (Using Basic HTML Colors) --- */
+        #tab-bar {
+            background-color: #C0C0C0;
+            /* silver */
+            padding: 3px 2px 0 3px;
+            border-bottom: 1px solid gray;
+            white-space: nowrap;
+            overflow: hidden;
+            height: 25px;
+            line-height: 18px;
+        }
 
-  #new-tab-button {
-    display: inline-block;
-    *display: inline;
-    zoom: 1;
-    border: 1px outset white; /* Simpler outset for buttons */
-    background-color: #C0C0C0;
-    color: black;
-    font-weight: bold;
-    font-size: 16px;
-    line-height: 16px;
-    padding: 2px 6px;
-    margin-right: 4px;
-    cursor: default;
-    vertical-align: middle;
-    position: relative;
-  }
+        .tab {
+            display: inline-block;
+            *display: inline;
+            zoom: 1;
+            /* Explicit borders for classic 3D "outset" look */
+            border-top: 1px solid white;
+            border-left: 1px solid white;
+            border-right: 1px solid gray;
+            border-bottom: 1px solid gray;
+            background-color: #C0C0C0;
+            /* silver */
+            color: black;
+            padding: 4px 8px 3px 8px;
+            margin-right: 2px;
+            cursor: default;
+            position: relative;
+            vertical-align: top;
+            font-size: 12px;
+        }
 
-  .close-tab-button {
-    font-family: "Webdings", sans-serif;
-    font-size: 12px;
-    margin-left: 8px;
-    color: gray;
-    cursor: default;
-    font-weight: normal;
-  }
+        .tab-active {
+            background-color: #C0C0C0;
+            font-weight: bold;
+            /* "Pressed" look: dark top/left, light right, bg-color bottom */
+            border-top: 1px solid gray;
+            border-left: 1px solid gray;
+            border-right: 1px solid white;
+            border-bottom: 1px solid #C0C0C0;
+            /* Key trick: hide bottom border */
+            position: relative;
+            top: 1px;
+            padding-bottom: 4px;
+        }
 
-  /* --- ORIGINAL STYLES (with color updates) --- */
-  #omni-box { background-color: #C0C0C0; padding: 5px; border-bottom: 2px outset silver; }
-  .omni-button { font-size: 12px; width: 60px; margin-right: 5px; }
-  #url-input { font-size: 12px; width: 60%; }
-  #status-bar { padding: 3px; border-top: 1px solid darkgray; font-size: 10px; color: black; }
-  #content-pane {
-    position: relative;
-    background-color: #000000;
-    overflow: hidden;
-    padding: 0;
-    border-top: 1px solid darkgray;
-  }
-  .remote-screen-buffer {
-    /* Shared styles for both image buffers */
-    position: absolute;
-    display: block;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: #FFFFFF;
-    cursor: crosshair;
-  }
-</style>
+        #new-tab-button {
+            display: inline-block;
+            *display: inline;
+            zoom: 1;
+            border: 1px outset white;
+            /* Simpler outset for buttons */
+            background-color: #C0C0C0;
+            color: black;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 16px;
+            padding: 2px 6px;
+            margin-right: 4px;
+            cursor: default;
+            vertical-align: middle;
+            position: relative;
+        }
+
+        .close-tab-button {
+            font-family: "Webdings", sans-serif;
+            font-size: 12px;
+            margin-left: 8px;
+            color: gray;
+            cursor: default;
+            font-weight: normal;
+        }
+
+        /* --- ORIGINAL STYLES (with color updates) --- */
+        #omni-box {
+            background-color: #C0C0C0;
+            padding: 5px;
+            border-bottom: 2px outset silver;
+        }
+
+        .omni-button {
+            font-size: 12px;
+            width: 60px;
+            margin-right: 5px;
+        }
+
+        #url-input {
+            font-size: 12px;
+            width: 60%;
+        }
+
+        #status-bar {
+            padding: 3px;
+            border-top: 1px solid darkgray;
+            font-size: 10px;
+            color: black;
+        }
+
+        #content-pane {
+            position: relative;
+            background-color: #000000;
+            overflow: hidden;
+            padding: 0;
+            border-top: 1px solid darkgray;
+        }
+
+        .remote-screen-buffer {
+            /* Shared styles for both image buffers */
+            position: absolute;
+            display: block;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #FFFFFF;
+            cursor: crosshair;
+        }
+    </style>
 </head>
 <body>
 
-<script type="text/javascript" language="JavaScript">
-if(!Array.prototype.shift){Array.prototype.shift=function(){var a=this.length>>>0;if(!a){this.length=0;return void 0}var b=this[0];for(var i=1;i<a;i++)this[i-1]=this[i];this.length=a-1;return b};}
-if(!Array.prototype.unshift){Array.prototype.unshift=function(){var a=arguments.length,b=this.length>>>0,i;if(!a)return b;for(i=b-1;i>=0;i--)this[i+a]=this[i];for(i=0;i<a;i++)this[i]=arguments[i];this.length=b+a;return this.length};}
-</script>
-
-<table id="main-layout" cellpadding="0" cellspacing="0">
-  <tr style="height: 1px; display: none;">
-    <td>
-      <div style="padding: 5px;">
-        Session Token:
-        <input type="text" id="token-input" size="20" value="8723e327ccfe57f8803e0f1dd1d780e6">
-        <button id="connect-button">Connect</button>
-      </div>
-    </td>
-  </tr>
-  <tr style="height: 25px;"><td><div id="tab-bar"></div></td></tr>
-  <tr style="height: 35px;">
-    <td>
-      <div id="omni-box">
-        <button id="back-button" class="omni-button" disabled>Back</button>
-        <button id="forward-button" class="omni-button" disabled>Forward</button>
-        <input type="text" id="url-input" disabled onfocus="isUrlBarFocused = true;" onblur="isUrlBarFocused = false;">
-        <button id="go-button" class="omni-button" disabled>Go</button>
-      </div>
-    </td>
-  </tr>
-  <tr style="height: 100%;">
-    <td id="content-pane">
-      <img id="remote-screen-a" class="remote-screen-buffer" src="placeholder.gif" alt="Loading Remote Browser View ..." style="visibility: visible;">
-      <img id="remote-screen-b" class="remote-screen-buffer" src="placeholder.gif" alt="" style="visibility: hidden;">
-    </td>
-  </tr>
-  <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
-</table>
-
-<script type="text/javascript" language="JavaScript">
-if(!window.encodeURIComponent){window.encodeURIComponent=function(s){return escape(s).split('+').join('%2B')};}
-if(!window.decodeURIComponent){window.decodeURIComponent=function(s){return unescape(s)};}
-function getEl(id){if(document.getElementById)return document.getElementById(id);if(document.all)return document.all[id];return null;}
-if(!window.JSON){window.JSON={};}
-if(!JSON.stringify){(function(){function a(s){var o='',i,c,h;for(i=0;i<s.length;i++){c=s.charCodeAt(i);h=s.charAt(i);if(h==='"'||h==='\\'){o+='\\'+h}else if(c<32){if(h==='\b')o+='\\b';else if(h==='\f')o+='\\f';else if(h==='\n')o+='\\n';else if(h==='\r')o+='\\r';else if(h==='\t')o+='\\t';else{var t=c.toString(16);while(t.length<4)t='0'+t;o+='\\u'+t}}else{o+=h}}return'"'+o+'"'}function b(v,s){var t=typeof v;if(v===null)return'null';if(t==='string')return a(v);if(t==='number')return isFinite(v)?String(v):'null';if(t==='boolean')return v?'true':'false';s=s||[];for(var si=0;si<s.length;si++){if(s[si]===v)return a('[Circular]')}if(v&&typeof v.getUTCFullYear==='function'){return a(v.toUTCString?v.toUTCString():String(v))}if(v&&(v.constructor===Array||(typeof v.length==='number'&&typeof v.splice==='function'))){s[s.length]=v;var arr=[];for(var i=0;i<v.length;i++){var val=b(v[i],s);arr[arr.length]=(typeof v[i]==='undefined'||typeof v[i]==='function')?'null':val}s.length=s.length-1;return'['+arr.join(',')+']'}if(t==='object'){s[s.length]=v;var p=[],h=Object.prototype.hasOwnProperty;for(var k in v){if(h?h.call(v,k):true){var v2=v[k];var vt=typeof v2;if(vt!=='undefined'&&vt!=='function'){p[p.length]=a(k)+':'+b(v2,s)}}}s.length=s.length-1;return'{'+p.join(',')+'}'}return'null'}JSON.stringify=function(v){return b(v,[])}})();}
-</script>
-
-<script type="text/javascript" language="JavaScript">
-  // --- Configuration ---
-  var MAX_FPS = 4;
-  var KEY_BATCH_INTERVAL_MS = 1000;
-  var MAX_KEYS_PER_BATCH    = 24;
-  var keyBuffer = [];
-  var keyBatchInterval = null;
-  var isNetworkError = false;
-  var API_BASE_PATH = '/api/vwin';
-  if (location && location.origin) {
-    API_BASE_PATH = location.origin + API_BASE_PATH;
-  }
-  var POLLING_INTERVAL_MS = 800;
-  var TAB_REFRESH_RATE_MS = 2150;
-  var RESIZE_THROTTLE_MS  = 1000;
-  var tabPollingInterval = null;
-
-  // --- State Variables ---
-  var _lastFrameRenderTime = 0;
-  var activeTabId = null;
-  var isConnected = false;
-  var modifierState = { shift: false, ctrl: false, alt: false };
-  var resizeTimeout = null;
-  var lastKnownFrameTimestamp = 0;
-  var isUrlBarFocused = false;
-  var _gettingFrame = false;
-  var _activeBuffer = 'a';
-
-  // --- Element References ---
-  var contentPane   = getEl('content-pane');
-  var connectButton = getEl('connect-button');
-  var tokenInput    = getEl('token-input');
-  var tabBar        = getEl('tab-bar');
-  var backButton    = getEl('back-button');
-  var forwardButton = getEl('forward-button');
-  var urlInput      = getEl('url-input');
-  var goButton      = getEl('go-button');
-  var statusBar     = getEl('status-bar');
-  var sessionToken = '';
-
-  var sessionToken = getQueryParam('token') || '';
-  if (sessionToken) { tokenInput.value = sessionToken; }
-  var USE_JSONP = !window.XMLHttpRequest;
-  var _jsonpSeq = 0;
-  function jsonp(fullUrl, onOK) { if (!document.body) { setTimeout(function(){ jsonp(fullUrl, onOK); }, 50); return; } var cb = '__bbcb' + (++_jsonpSeq); window[cb] = function (data) { window[cb] = null; if (onOK) onOK(data); }; var url = fullUrl + (fullUrl.indexOf('?')>=0 ? '&' : '?') + 'jsonp=1&callback=' + cb + '&ran=' + Math.random(); if (document.createElement) { var s = document.createElement('script'); if ( s ) { s.type = 'text/javascript'; s.src  = url; if (document.body.appendChild) { document.body.appendChild(s); return; } if (document.body.insertAdjacentElement) { document.body.insertAdjacentElement('beforeEnd', s); return; } } if (document.body.insertAdjacentHTML) { setTimeout(function () { document.body.insertAdjacentHTML( 'beforeEnd', '<script type="text/javascript" src="' + url + '"></' + 'script>' ); return; }); return; } } if (document.body && document.body.insertAdjacentHTML) { document.body.insertAdjacentHTML( 'beforeEnd', '<script type="text/javascript" src="' + url + '"></' + 'script>' ); } }
-  function getJSON(fullUrl, onOK, onErr) { if (USE_JSONP) { jsonp(fullUrl, onOK); return; } var xhr = new XMLHttpRequest(); xhr.open('GET', fullUrl, true); xhr.onreadystatechange = function () { if (xhr.readyState === 4) { if (xhr.status === 200) { onOK(parseJSON(xhr.responseText)); } else if (onErr) { onErr(); } } }; xhr.send(null); }
-  function netErr() { if (!isNetworkError) { isNetworkError = true; updateStatus('Connection error. Attempting to reconnect...'); } }
-  function parseJSON(jsonString) { return eval('(' + jsonString + ')'); }
-  function _decodeQS(s) { try { return decodeURIComponent(String(s).replace(/\+/g, '%20')); } catch (e) { return unescape(String(s)); } }
-  function getQueryParam(name) { var q = (location && location.search) ? String(location.search).replace(/^\?/, '') : ''; if (!q) return ''; var parts = q.split('&'); for (var i = 0; i < parts.length; i++) { var kv = parts[i].split('='); if (_decodeQS(kv[0]) === name) { var rest = kv.slice(1).join('='); return _decodeQS(rest); } } return ''; }
-  function safeClearChildNodes(el) { if (!el) return; if (typeof el.innerHTML != 'undefined') { el.innerHTML = ''; return; } while (el.firstChild) { el.removeChild(el.firstChild); } }
-  function updateStatus(text) { statusBar.innerHTML = 'Status: ' + text; }
-  function setControlsEnabled(isEnabled) { backButton.disabled = !isEnabled; forwardButton.disabled = !isEnabled; urlInput.disabled = !isEnabled; goButton.disabled = !isEnabled; }
-  function handleReconnection() { if (isNetworkError) { isNetworkError = false; updateStatus('Connection re-established. Syncing viewport...'); sendViewportSize(); } }
-  // REMOVED `maybeNudgeCapture` function - it's no longer needed.
-
-  function toggleConnection() {
-    if (isConnected) {
-      isConnected = false;
-      stopKeyBatching();
-      if (tabPollingInterval) { clearInterval(tabPollingInterval); tabPollingInterval = null; }
-      sessionToken = '';
-      activeTabId = null;
-      lastKnownFrameTimestamp = 0;
-      connectButton.innerHTML = 'Connect';
-      updateStatus('Disconnected.');
-      setControlsEnabled(false);
-      safeClearChildNodes(tabBar);
-      urlInput.value = '';
-    } else {
-      sessionToken = tokenInput.value;
-      if (!sessionToken) { alert('Please enter a session token.'); return; }
-      updateStatus('Connecting...');
-      connect();
-    }
-  }
-
-  function connect() {
-    var url = API_BASE_PATH + '/connect?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
-    getJSON(url, function(data) {
-        if (data && data.connected) {
-            isConnected = true;
-            connectButton.innerHTML = 'Disconnect';
-            setControlsEnabled(true);
-            updateStatus('Connected. Initializing session...');
-
-            // MODIFICATION: Chain the startup sequence.
-            // 1. Send viewport size. This will also trigger a frame capture on the server.
-            sendViewportSize();
-            // 2. Get tabs.
-            updateTabs();
-            // 3. Start polling.
-            setTimeout(pollForNextFrame, POLLING_INTERVAL_MS); // Start polling after a short delay.
-            startKeyBatching();
-            if (tabPollingInterval) clearInterval(tabPollingInterval);
-            tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
-        } else {
-            updateStatus('Connection failed.');
+    <!-- ================================================================= -->
+    <!-- == LEGACY BROWSER POLYFILLS                                    == -->
+    <!-- ================================================================= -->
+    <script type="text/javascript" language="JavaScript">
+        // Array.shift for IE4/5
+        if (!Array.prototype.shift) {
+            Array.prototype.shift = function() {
+                var a = this.length >>> 0;
+                if (!a) {
+                    this.length = 0;
+                    return void 0
+                }
+                var b = this[0];
+                for (var i = 1; i < a; i++) this[i - 1] = this[i];
+                this.length = a - 1;
+                return b
+            };
         }
-    }, function() {
-        updateStatus('Connection error.');
-    });
-  }
-
-  function updateTabs() { if (!isConnected) return; var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random(); getJSON(url, function(data) { handleReconnection(); if (!data) return; var tabs = data.tabs || []; var oldActiveTab = activeTabId; renderTabs(tabs, data.activeTarget); activeTabId = data.activeTarget; if (oldActiveTab !== activeTabId && activeTabId) { // If tab changed, force an immediate frame check lastKnownFrameTimestamp = 0; pollForNextFrame(); } if (!isUrlBarFocused && tabs.length) { for (var i=0; i<tabs.length; i++) { if (tabs[i].targetId === activeTabId) { urlInput.value = tabs[i].url || ''; break; } } } }, netErr); }
-
-  // --- Frame polling (MODIFIED) ---
-  function pollForNextFrame() {
-    if (!isConnected || !activeTabId || _gettingFrame) {
-      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-      return;
-    }
-
-    var url = API_BASE_PATH + '/frame-status?session_token=' +
-              encodeURIComponent(sessionToken) +
-              '&targetId=' + encodeURIComponent(activeTabId) +
-              '&last_known_ts=' + lastKnownFrameTimestamp +
-              '&ran=' + Math.random();
-
-    getJSON(url, function(data) {
-      handleReconnection();
-      if (data && data.fresh) {
-        var now = (new Date()).getTime();
-        var minFrameTime = 1000 / MAX_FPS;
-        var elapsed = now - _lastFrameRenderTime;
-
-        if (elapsed >= minFrameTime) {
-          _lastFrameRenderTime = now;
-          lastKnownFrameTimestamp = data.timestamp;
-          updateScreenImage(); // This will re-trigger polling on completion.
-        } else {
-          setTimeout(pollForNextFrame, minFrameTime - elapsed);
+        // Array.unshift for IE4/5
+        if (!Array.prototype.unshift) {
+            Array.prototype.unshift = function() {
+                var a = arguments.length,
+                    b = this.length >>> 0,
+                    i;
+                if (!a) return b;
+                for (i = b - 1; i >= 0; i--) this[i + a] = this[i];
+                for (i = 0; i < a; i++) this[i] = arguments[i];
+                this.length = b + a;
+                return this.length
+            };
         }
-      } else {
-        // No fresh frame, just wait and poll again.
-        setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-      }
-    }, function() {
-      netErr();
-      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
-    });
-  }
+    </script>
 
-  // --- updateScreenImage function is mostly the same ---
-  // The key is that it now ONLY calls pollForNextFrame() in its success handler.
-  function updateScreenImage() {
-    if (_gettingFrame) return;
-    _gettingFrame = true;
+    <!-- ================================================================= -->
+    <!-- == PAGE LAYOUT                                                 == -->
+    <!-- ================================================================= -->
+    <table id="main-layout" cellpadding="0" cellspacing="0">
+        <tr style="height: 1px; display: none;">
+            <td>
+                <div style="padding: 5px;">
+                    Session Token:
+                    <input type="text" id="token-input" size="20" value="8723e327ccfe57f8803e0f1dd1d780e6">
+                    <button id="connect-button">Connect</button>
+                </div>
+            </td>
+        </tr>
+        <tr style="height: 25px;">
+            <td>
+                <div id="tab-bar"></div>
+            </td>
+        </tr>
+        <tr style="height: 35px;">
+            <td>
+                <div id="omni-box">
+                    <button id="back-button" class="omni-button" disabled>Back</button>
+                    <button id="forward-button" class="omni-button" disabled>Forward</button>
+                    <input type="text" id="url-input" disabled onfocus="isUrlBarFocused = true;" onblur="isUrlBarFocused = false;">
+                    <button id="go-button" class="omni-button" disabled>Go</button>
+                </div>
+            </td>
+        </tr>
+        <tr style="height: 100%;">
+            <td id="content-pane">
+                <img id="remote-screen-a" class="remote-screen-buffer" src="placeholder.gif" alt="Loading Remote Browser View ..." style="visibility: visible;">
+                <img id="remote-screen-b" class="remote-screen-buffer" src="placeholder.gif" alt="" style="visibility: hidden;">
+            </td>
+        </tr>
+        <tr style="height: 20px;">
+            <td>
+                <div id="status-bar">Status: Disconnected.</div>
+            </td>
+        </tr>
+    </table>
 
-    var newSrc = API_BASE_PATH + '/frame?session_token=' +
-                 encodeURIComponent(sessionToken) +
-                 '&targetId=' + encodeURIComponent(activeTabId || '') +
-                 '&ran=' + Math.random(); // No need for TS here, ETag handles it
+    <!-- ================================================================= -->
+    <!-- == LEGACY JSON/URI POLYFILLS AND HELPERS                       == -->
+    <!-- ================================================================= -->
+    <script type="text/javascript" language="JavaScript">
+        if (!window.encodeURIComponent) {
+            window.encodeURIComponent = function(s) {
+                return escape(s).split('+').join('%2B')
+            };
+        }
+        if (!window.decodeURIComponent) {
+            window.decodeURIComponent = function(s) {
+                return unescape(s)
+            };
+        }
+        function getEl(id) {
+            if (document.getElementById) return document.getElementById(id);
+            if (document.all) return document.all[id];
+            return null;
+        }
+        if (!window.JSON) {
+            window.JSON = {};
+        }
+        if (!JSON.stringify) {
+            (function() {
+                function a(s) {
+                    var o = '',
+                        i, c, h;
+                    for (i = 0; i < s.length; i++) {
+                        c = s.charCodeAt(i);
+                        h = s.charAt(i);
+                        if (h === '"' || h === '\\') {
+                            o += '\\' + h
+                        } else if (c < 32) {
+                            if (h === '\b') o += '\\b';
+                            else if (h === '\f') o += '\\f';
+                            else if (h === '\n') o += '\\n';
+                            else if (h === '\r') o += '\\r';
+                            else if (h === '\t') o += '\\t';
+                            else {
+                                var t = c.toString(16);
+                                while (t.length < 4) t = '0' + t;
+                                o += '\\u' + t
+                            }
+                        } else {
+                            o += h
+                        }
+                    }
+                    return '"' + o + '"'
+                }
+                function b(v, s) {
+                    var t = typeof v;
+                    if (v === null) return 'null';
+                    if (t === 'string') return a(v);
+                    if (t === 'number') return isFinite(v) ? String(v) : 'null';
+                    if (t === 'boolean') return v ? 'true' : 'false';
+                    s = s || [];
+                    for (var si = 0; si < s.length; si++) {
+                        if (s[si] === v) return a('[Circular]')
+                    }
+                    if (v && typeof v.getUTCFullYear === 'function') {
+                        return a(v.toUTCString ? v.toUTCString() : String(v))
+                    }
+                    if (v && (v.constructor === Array || (typeof v.length === 'number' && typeof v.splice === 'function'))) {
+                        s[s.length] = v;
+                        var arr = [];
+                        for (var i = 0; i < v.length; i++) {
+                            var val = b(v[i], s);
+                            arr[arr.length] = (typeof v[i] === 'undefined' || typeof v[i] === 'function') ? 'null' : val
+                        }
+                        s.length = s.length - 1;
+                        return '[' + arr.join(',') + ']'
+                    }
+                    if (t === 'object') {
+                        s[s.length] = v;
+                        var p = [],
+                            h = Object.prototype.hasOwnProperty;
+                        for (var k in v) {
+                            if (h ? h.call(v, k) : true) {
+                                var v2 = v[k];
+                                var vt = typeof v2;
+                                if (vt !== 'undefined' && vt !== 'function') {
+                                    p[p.length] = a(k) + ':' + b(v2, s)
+                                }
+                            }
+                        }
+                        s.length = s.length - 1;
+                        return '{' + p.join(',') + '}'
+                    }
+                    return 'null'
+                }
+                JSON.stringify = function(v) {
+                    return b(v, [])
+                }
+            })()
+        };
+    </script>
 
-    var targetBufferId = (_activeBuffer === 'a') ? 'remote-screen-b' : 'remote-screen-a';
-    var visibleBufferId = 'remote-screen-' + _activeBuffer;
-    var targetImage = getEl(targetBufferId);
 
-    targetImage.onload = function() {
-      var visibleImage = getEl(visibleBufferId);
-      if (visibleImage) { visibleImage.style.visibility = 'hidden'; }
-      targetImage.style.visibility = 'visible';
-      _activeBuffer = (_activeBuffer === 'a') ? 'b' : 'a';
-      updateStatus('Frame ' + (lastKnownFrameTimestamp || '?') + ' loaded.');
-      _gettingFrame = false;
-      targetImage.onload = null;
-      targetImage.onerror = null;
-      // Success! Continue polling.
-      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
-    };
+    <!-- ================================================================= -->
+    <!-- == MAIN APPLICATION LOGIC                                      == -->
+    <!-- ================================================================= -->
+    <script type="text/javascript" language="JavaScript">
+        // --- Configuration ---
+        var MAX_FPS = 4;
+        var KEY_BATCH_INTERVAL_MS = 1000;
+        var MAX_KEYS_PER_BATCH = 24;
+        var VIEWPORT_SYNC_DELAY_MS = 750;
+        var API_BASE_PATH = '/api/vwin';
+        if (location && location.origin) {
+            API_BASE_PATH = location.origin + API_BASE_PATH;
+        }
+        var POLLING_INTERVAL_MS = 800;
+        var TAB_REFRESH_RATE_MS = 2150;
+        var RESIZE_THROTTLE_MS = 1000;
 
-    targetImage.onerror = function() {
-      if (!isNetworkError) {
-        isNetworkError = true;
-        updateStatus('Connection error. Retrying...');
-      }
-      _gettingFrame = false;
-      targetImage.onload = null;
-      targetImage.onerror = null;
-      // Error, wait a bit longer before polling.
-      setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
-    };
+        // --- State Variables ---
+        var keyBuffer = [];
+        var keyBatchInterval = null;
+        var isNetworkError = false;
+        var tabPollingInterval = null;
+        var _lastFrameRenderTime = 0;
+        var activeTabId = null;
+        var isConnected = false;
+        var modifierState = {
+            shift: false,
+            ctrl: false,
+            alt: false
+        };
+        var resizeTimeout = null;
+        var lastKnownFrameTimestamp = 0;
+        var isUrlBarFocused = false;
+        var _gettingFrame = false;
+        var _activeBuffer = 'a'; // 'a' or 'b'
 
-    targetImage.src = newSrc;
-  }
+        // --- Element References ---
+        var contentPane = getEl('content-pane');
+        var connectButton = getEl('connect-button');
+        var tokenInput = getEl('token-input');
+        var tabBar = getEl('tab-bar');
+        var backButton = getEl('back-button');
+        var forwardButton = getEl('forward-button');
+        var urlInput = getEl('url-input');
+        var goButton = getEl('go-button');
+        var statusBar = getEl('status-bar');
+        var sessionToken = '';
 
-  // --- All other functions (sendEvent, sendViewportSize, etc.) remain the same ---
-  var _evtPool = [];
-  var _evtPoolMax = 8;
-  function sendEvent(params) { if (!isConnected) return; var url = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) + (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') + '&' + params + '&cb=' + (new Date().getTime() % 1000000000) + '&ran=' + Math.random(); if (window.Image) { var img = new Image(); _evtPool[_evtPool.length] = img; if (_evtPool.length > _evtPoolMax) { _evtPool.shift(); } img.src = url; } else { var f = document.getElementById ? document.getElementById('evt-iframe') : (document.all ? document.all['evt-iframe'] : null); if (!f && document.body) { if (document.body.insertAdjacentHTML) { document.body.insertAdjacentHTML('beforeEnd','<iframe id="evt-iframe" width="0" height="0" frameborder="0"></iframe>'); f = document.all ? document.all['evt-iframe'] : document.getElementById('evt-iframe'); } } if (f) { f.src = url; } } }
-  function sendViewportSize() { var w = contentPane.clientWidth || contentPane.offsetWidth || 0; var h = contentPane.clientHeight || contentPane.offsetHeight || 0; var a = getEl('remote-screen-a'); var b = getEl('remote-screen-b'); if (a) { a.width = w; a.height = h; } if (b) { b.width = w; b.height = h; } sendEvent('type=resize&width=' + w + '&height=' + h); }
-  function throttledResizeHandler() { var a = getEl('remote-screen-a'); var b = getEl('remote-screen-b'); if (a) a.style.display = 'none'; if (b) b.style.display = 'none'; if (resizeTimeout) { clearTimeout(resizeTimeout); } resizeTimeout = setTimeout(doResize, RESIZE_THROTTLE_MS); }
-  function doResize() { var a = getEl('remote-screen-a'); var b = getEl('remote-screen-b'); if (a) a.style.display = 'block'; if (b) b.style.display = 'block'; if (isConnected) { sendViewportSize(); } }
-  function getScroll() { var d = document.documentElement, b = document.body; return { x: (d && d.scrollLeft) || (b && b.scrollLeft) || 0, y: (d && d.scrollTop)  || (b && b.scrollTop)  || 0 }; }
-  function getOffset(el) { var x=0,y=0; while (el) { x += el.offsetLeft||0; y += el.offsetTop||0; el = el.offsetParent; } return {x:x,y:y}; }
-  function handleScreenClick(e) { e = e || window.event; var el = e.target || e.srcElement; var off = getOffset(el), scr = getScroll(); var cx = (e.clientX != null ? e.clientX : 0) + scr.x; var cy = (e.clientY != null ? e.clientY : 0) + scr.y; var x = (e.offsetX != null) ? e.offsetX : (cx - off.x); var y = (e.offsetY != null) ? e.offsetY : (cy - off.y); sendEvent('type=mousedown&x=' + x + '&y=' + y); }
-  function handleMouseWheel(e) { e = e || window.event; var t = e.target || e.srcElement; if (!t || (t.id !== 'remote-screen-a' && t.id !== 'remote-screen-b')) return; var off = getOffset(t), scr = getScroll(); var cx = (e.clientX != null ? e.clientX : 0) + scr.x; var cy = (e.clientY != null ? e.clientY : 0) + scr.y; var x = (e.offsetX != null) ? e.offsetX : (cx - off.x); var y = (e.offsetY != null) ? e.offsetY : (cy - off.y); var delta = (typeof e.wheelDelta != 'undefined') ? e.wheelDelta : -(e.detail || 0); sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta); }
-  var nonPrintableKeys = [8,9,13,27,33,34,35,36,37,38,39,40,45,46];
-  function indexOf(arr, val) { for (var i = 0; i < arr.length; i++) { if (arr[i] == val) return i; } return -1; }
-  function startKeyBatching() { if (keyBatchInterval) { clearInterval(keyBatchInterval); } keyBatchInterval = setInterval(sendKeyBatch, KEY_BATCH_INTERVAL_MS); }
-  function stopKeyBatching() { if (keyBatchInterval) { clearInterval(keyBatchInterval); keyBatchInterval = null; } keyBuffer = []; }
-  function sendKeyBatch() { if (keyBuffer.length === 0) return; var start = 0; while (start < keyBuffer.length) { var end = start + MAX_KEYS_PER_BATCH; var chunk = []; for (var i = start; i < end && i < keyBuffer.length; i++) { chunk[chunk.length] = keyBuffer[i]; } var eventsJson = '['; for (var j = 0; j < chunk.length; j++) { var keyEvent = chunk[j]; eventsJson += '{' + '"p":"' + (keyEvent.press || '') + '",' + '"k":' + (keyEvent.keyCode != null ? keyEvent.keyCode : '""') + ',' + '"s":' + (keyEvent.shiftKey ? 1 : 0) + ',' + '"c":' + (keyEvent.ctrlKey ? 1 : 0) + ',' + '"a":' + (keyEvent.altKey ? 1 : 0) + '}'; if (j < chunk.length - 1) eventsJson += ','; } eventsJson += ']'; sendEvent('type=key_batch&events=' + encodeURIComponent(eventsJson)); start = end; } keyBuffer = []; }
-  function handleKeyDown(e) { if (!isConnected) return; e = e || window.event; var keyCode = e.keyCode || e.which; if (isUrlBarFocused) { if (keyCode === 13) { handleNavigate(); e.returnValue = false; if (e.preventDefault) e.preventDefault(); } return; } if (indexOf(nonPrintableKeys, keyCode) !== -1) { keyBuffer[keyBuffer.length] = { keyCode: keyCode, shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey }; e.returnValue = false; if (e.preventDefault) e.preventDefault(); } }
-  function handleKeyPress(e) { if (!isConnected || isUrlBarFocused) return; e = e || window.event; var charCode = e.charCode || e.keyCode; keyBuffer[keyBuffer.length] = { press: String.fromCharCode(charCode), shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey }; }
-  function parseURL(u) { if (!u) return null; var s = '' + u; if (!/^https?:\/\//i.test(s)) { if (/^[a-z0-9.-]+\.[a-z]{2,}/i.test(s)) s = 'https://' + s; else return null; } return { href: s }; }
-  // --- Navigation helpers ---
-  function handleNavigate() {
-    var rawUrl = urlInput.value;
-    var cleanUrl = rawUrl.replace(/^\s+|\s+$/g, '');
-    if (!cleanUrl) {
-      return;
-    }
-    var finalUrl = '';
-    var isUrlLike = /^[a-z0-9]+:\/\//i.test(cleanUrl) || /[\.:]/.test(cleanUrl);
+        // --- Initial Setup ---
+        sessionToken = getQueryParam('token') || '';
+        if (sessionToken) {
+            tokenInput.value = sessionToken;
+        }
+        var USE_JSONP = !window.XMLHttpRequest;
+        var _jsonpSeq = 0;
 
-    if (isUrlLike) {
-      if (!/^[a-z0-9]+:\/\//i.test(cleanUrl)) {
-        finalUrl = 'http://' + cleanUrl;
-      } else {
-        finalUrl = cleanUrl;
-      }
-    } else {
-      finalUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(cleanUrl);
-    }
-    sendEvent('type=navigate&url=' + encodeURIComponent(finalUrl));
-  }
-  function handleBack()   { sendEvent('type=back'); }
-  function handleForward(){ sendEvent('type=forward'); }
-  function handleNewTab() { sendEvent('type=new_tab'); }
-  function handleCloseTab(targetIdToClose) { sendEvent('type=close_tab&targetIdToClose=' + targetIdToClose); }
-  function renderTabs(tabs, currentActiveId) { var previousActiveTab = activeTabId; safeClearChildNodes(tabBar); var newTabBtn = document.createElement('span'); newTabBtn.id = 'new-tab-button'; newTabBtn.innerHTML = '+'; newTabBtn.onclick = handleNewTab; tabBar.appendChild(newTabBtn); for (var i = 0; i < tabs.length; i++) { var tab = tabs[i]; var tabEl = document.createElement('span'); tabEl.className = 'tab' + (tab.targetId === currentActiveId ? ' tab-active' : ''); var titleText = (tab.title || 'New Tab').substring(0, 20); if (typeof tabEl.innerText !== 'undefined') tabEl.innerText = titleText; else tabEl.textContent = titleText; tabEl._tid = tab.targetId; tabEl.onclick = function() { var targetId = this._tid; if (targetId !== activeTabId) { activeTabId = targetId; sendEvent('type=switch'); } }; var closeBtn = document.createElement('span'); closeBtn.className = 'close-tab-button'; closeBtn.innerHTML = 'r'; closeBtn._tid = tab.targetId; closeBtn.onclick = function(e) { e = e || window.event; if (e.stopPropagation) { e.stopPropagation(); } else { e.cancelBubble = true; } handleCloseTab(this._tid); }; tabEl.appendChild(closeBtn); tabBar.appendChild(tabEl); } if (currentActiveId && currentActiveId !== previousActiveTab) { lastKnownFrameTimestamp = 0; } }
 
-  // --- Attach Events ---
-  connectButton.onclick = toggleConnection;
-  getEl('remote-screen-a').onclick = handleScreenClick;
-  getEl('remote-screen-b').onclick = handleScreenClick;
-  goButton.onclick      = handleNavigate;
-  backButton.onclick    = handleBack;
-  forwardButton.onclick = handleForward;
-  window.onresize       = throttledResizeHandler;
-  document.onkeydown    = handleKeyDown;
-  document.onkeypress   = handleKeyPress;
+        // --- Core Networking and Helper Functions ---
 
-  if (document.addEventListener) {
-    document.addEventListener('mousewheel', handleMouseWheel, false);
-    document.addEventListener('DOMMouseScroll', handleMouseWheel, false);
-  } else {
-    document.onmousewheel = handleMouseWheel;
-  }
+        function jsonp(fullUrl, onOK) {
+            if (!document.body) {
+                setTimeout(function() {
+                    jsonp(fullUrl, onOK);
+                }, 50);
+                return;
+            }
+            var cb = '__bbcb' + (++_jsonpSeq);
+            window[cb] = function(data) {
+                window[cb] = null;
+                if (onOK) onOK(data);
+            };
+            var url = fullUrl + (fullUrl.indexOf('?') >= 0 ? '&' : '?') + 'jsonp=1&callback=' + cb + '&ran=' + Math.random();
+            if (document.createElement) {
+                var s = document.createElement('script');
+                if (s) {
+                    s.type = 'text/javascript';
+                    s.src = url;
+                    if (document.body.appendChild) {
+                        document.body.appendChild(s);
+                        return;
+                    }
+                    if (document.body.insertAdjacentElement) {
+                        document.body.insertAdjacentElement('beforeEnd', s);
+                        return;
+                    }
+                }
+                if (document.body.insertAdjacentHTML) {
+                    setTimeout(function() {
+                        document.body.insertAdjacentHTML('beforeEnd', '<script type="text/javascript" src="' + url + '"></' + 'script>');
+                        return;
+                    });
+                    return;
+                }
+            }
+            if (document.body && document.body.insertAdjacentHTML) {
+                document.body.insertAdjacentHTML('beforeEnd', '<script type="text/javascript" src="' + url + '"></' + 'script>');
+            }
+        }
 
-  // Auto-connect if token present
-  if (connectButton && connectButton.click) { connectButton.click(); }
-  else { toggleConnection(); }
-</script>
+        function getJSON(fullUrl, onOK, onErr) {
+            if (USE_JSONP) {
+                jsonp(fullUrl, onOK);
+                return;
+            }
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', fullUrl, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        onOK(parseJSON(xhr.responseText));
+                    } else if (onErr) {
+                        onErr();
+                    }
+                }
+            };
+            xhr.send(null);
+        }
+
+        function netErr() {
+            if (!isNetworkError) {
+                isNetworkError = true;
+                updateStatus('Connection error. Attempting to reconnect...');
+            }
+        }
+
+        function parseJSON(jsonString) {
+            // In a real legacy environment, a proper JSON parser polyfill would be better,
+            // but eval is the simplest for self-contained code.
+            try {
+                return eval('(' + jsonString + ')');
+            } catch (e) {
+                return {}; // Return empty object on parse error
+            }
+        }
+
+        function _decodeQS(s) {
+            try {
+                return decodeURIComponent(String(s).replace(/\+/g, '%20'));
+            } catch (e) {
+                return unescape(String(s));
+            }
+        }
+
+        function getQueryParam(name) {
+            var q = (location && location.search) ? String(location.search).replace(/^\?/, '') : '';
+            if (!q) return '';
+            var parts = q.split('&');
+            for (var i = 0; i < parts.length; i++) {
+                var kv = parts[i].split('=');
+                if (_decodeQS(kv[0]) === name) {
+                    var rest = kv.slice(1).join('=');
+                    return _decodeQS(rest);
+                }
+            }
+            return '';
+        }
+
+        function safeClearChildNodes(el) {
+            if (!el) return;
+            if (typeof el.innerHTML != 'undefined') {
+                el.innerHTML = '';
+                return;
+            }
+            while (el.firstChild) {
+                el.removeChild(el.firstChild);
+            }
+        }
+
+        function updateStatus(text) {
+            statusBar.innerHTML = 'Status: ' + text;
+        }
+
+        function setControlsEnabled(isEnabled) {
+            backButton.disabled = !isEnabled;
+            forwardButton.disabled = !isEnabled;
+            urlInput.disabled = !isEnabled;
+            goButton.disabled = !isEnabled;
+        }
+
+        function handleReconnection() {
+            if (isNetworkError) {
+                isNetworkError = false;
+                updateStatus('Connection re-established. Syncing viewport...');
+                // The server now forces a capture on resize, so this is all we need.
+                sendViewportSize();
+            }
+        }
+
+
+        // --- Connection and Main Loop ---
+
+        function toggleConnection() {
+            if (isConnected) {
+                isConnected = false;
+                stopKeyBatching();
+                if (tabPollingInterval) {
+                    clearInterval(tabPollingInterval);
+                    tabPollingInterval = null;
+                }
+                sessionToken = '';
+                activeTabId = null;
+                lastKnownFrameTimestamp = 0;
+                connectButton.innerHTML = 'Connect';
+                updateStatus('Disconnected.');
+                setControlsEnabled(false);
+                safeClearChildNodes(tabBar);
+                urlInput.value = '';
+            } else {
+                sessionToken = tokenInput.value;
+                if (!sessionToken) {
+                    alert('Please enter a session token.');
+                    return;
+                }
+                updateStatus('Connecting...');
+                connect();
+            }
+        }
+
+        /**
+         * MODIFIED: Connection logic now follows a clean sequence.
+         */
+        function connect() {
+            var url = API_BASE_PATH + '/connect?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+            getJSON(url, function(data) {
+                if (data && data.connected) {
+                    isConnected = true;
+                    connectButton.innerHTML = 'Disconnect';
+                    setControlsEnabled(true);
+                    updateStatus('Connected. Initializing session...');
+
+                    // Chain the startup sequence for reliability:
+                    // 1. Send viewport size. The server will capture a frame in response.
+                    sendViewportSize();
+                    // 2. Fetch the initial tab list.
+                    updateTabs();
+                    // 3. Start the polling loop after a short delay to allow the first frame to be ready.
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                    startKeyBatching();
+
+                    if (tabPollingInterval) clearInterval(tabPollingInterval);
+                    tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
+                } else {
+                    updateStatus('Connection failed.');
+                }
+            }, function() {
+                updateStatus('Connection error.');
+            });
+        }
+
+        function updateTabs() {
+            if (!isConnected) return;
+
+            var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken) + '&ran=' + Math.random();
+            getJSON(url, function(data) {
+                handleReconnection();
+                if (!data) return;
+
+                var tabs = data.tabs || [];
+                var oldActiveTab = activeTabId;
+                renderTabs(tabs, data.activeTarget);
+                activeTabId = data.activeTarget;
+
+                // If the active tab has changed, reset the timestamp to ensure we fetch the new tab's view.
+                if (oldActiveTab !== activeTabId && activeTabId) {
+                    lastKnownFrameTimestamp = 0;
+                    pollForNextFrame(); // Immediately check for the new tab's frame.
+                }
+
+                if (!isUrlBarFocused && tabs.length > 0) {
+                    for (var i = 0; i < tabs.length; i++) {
+                        if (tabs[i].targetId === activeTabId) {
+                            urlInput.value = tabs[i].url || '';
+                            break;
+                        }
+                    }
+                }
+            }, netErr);
+        }
+
+        /**
+         * MODIFIED: Simplified polling logic. No longer "nudges" the server.
+         */
+        function pollForNextFrame() {
+            if (!isConnected || !activeTabId || _gettingFrame) {
+                // If we're not ready, or a frame is already in flight, wait and try again.
+                setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                return;
+            }
+
+            var url = API_BASE_PATH + '/frame-status?session_token=' +
+                encodeURIComponent(sessionToken) +
+                '&targetId=' + encodeURIComponent(activeTabId) +
+                '&last_known_ts=' + lastKnownFrameTimestamp +
+                '&ran=' + Math.random();
+
+            getJSON(url, function(data) {
+                handleReconnection();
+                if (data && data.fresh) {
+                    var now = (new Date()).getTime();
+                    var minFrameTime = 1000 / MAX_FPS;
+                    var elapsed = now - _lastFrameRenderTime;
+
+                    if (elapsed >= minFrameTime) {
+                        _lastFrameRenderTime = now;
+                        lastKnownFrameTimestamp = data.timestamp;
+                        updateScreenImage(); // This function will re-trigger the next poll.
+                    } else {
+                        // Frame is fresh, but we are rate-limiting. Wait before polling again.
+                        setTimeout(pollForNextFrame, minFrameTime - elapsed);
+                    }
+                } else {
+                    // No fresh frame available, just wait for the standard interval.
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                }
+            }, function() {
+                netErr();
+                // On error, wait longer before retrying.
+                setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
+            });
+        }
+
+        /**
+         * MODIFIED: updateScreenImage now re-triggers the polling loop on success/error.
+         */
+        function updateScreenImage() {
+            if (_gettingFrame) return;
+            _gettingFrame = true;
+
+            var newSrc = API_BASE_PATH + '/frame?session_token=' +
+                encodeURIComponent(sessionToken) +
+                '&targetId=' + encodeURIComponent(activeTabId || '') +
+                '&ran=' + Math.random();
+
+            var targetBufferId = (_activeBuffer === 'a') ? 'remote-screen-b' : 'remote-screen-a';
+            var visibleBufferId = 'remote-screen-' + _activeBuffer;
+            var targetImage = getEl(targetBufferId);
+
+            // This function runs ONLY when the new image is fully downloaded.
+            targetImage.onload = function() {
+                var visibleImage = getEl(visibleBufferId);
+
+                if (visibleImage) {
+                    visibleImage.style.visibility = 'hidden';
+                }
+                targetImage.style.visibility = 'visible';
+
+                // Update the state to point to the new active buffer.
+                _activeBuffer = (_activeBuffer === 'a') ? 'b' : 'a';
+
+                updateStatus('Frame ' + (lastKnownFrameTimestamp || '?') + ' loaded.');
+                _gettingFrame = false;
+
+                // Clean up handlers to prevent leaks in old browsers.
+                targetImage.onload = null;
+                targetImage.onerror = null;
+
+                // Success! Schedule the next poll.
+                setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+            };
+
+            targetImage.onerror = function() {
+                if (!isNetworkError) {
+                    isNetworkError = true;
+                    updateStatus('Frame load error. Retrying...');
+                }
+                _gettingFrame = false;
+
+                targetImage.onload = null;
+                targetImage.onerror = null;
+
+                // Error! Wait longer before scheduling the next poll.
+                setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
+            };
+
+            // Set the src to start loading the new image into the hidden buffer.
+            targetImage.src = newSrc;
+        }
+
+
+        // --- Event Sending and Handling ---
+
+        var _evtPool = [];
+        var _evtPoolMax = 8; // Prevent creating too many Image objects
+        function sendEvent(params) {
+            if (!isConnected) return;
+            var url = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) + (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') + '&' + params + '&cb=' + (new Date().getTime() % 1000000000) + '&ran=' + Math.random();
+
+            // Use Image object for "fire and forget" requests, which is very reliable.
+            if (window.Image) {
+                var img = new Image();
+                _evtPool[_evtPool.length] = img;
+                if (_evtPool.length > _evtPoolMax) {
+                    _evtPool.shift(); // Remove oldest from pool
+                }
+                img.src = url;
+            } else {
+                // Fallback for extremely old browsers without the Image constructor.
+                var f = document.getElementById ? document.getElementById('evt-iframe') : (document.all ? document.all['evt-iframe'] : null);
+                if (!f && document.body) {
+                    if (document.body.insertAdjacentHTML) {
+                        document.body.insertAdjacentHTML('beforeEnd', '<iframe id="evt-iframe" width="0" height="0" frameborder="0"></iframe>');
+                        f = document.all ? document.all['evt-iframe'] : document.getElementById('evt-iframe');
+                    }
+                }
+                if (f) {
+                    f.src = url;
+                }
+            }
+        }
+
+        function sendViewportSize() {
+            var w = contentPane.clientWidth || contentPane.offsetWidth || 0;
+            var h = contentPane.clientHeight || contentPane.offsetHeight || 0;
+            var a = getEl('remote-screen-a');
+            var b = getEl('remote-screen-b');
+            if (a) {
+                a.width = w;
+                a.height = h;
+            }
+            if (b) {
+                b.width = w;
+                b.height = h;
+            }
+            sendEvent('type=resize&width=' + w + '&height=' + h);
+        }
+
+        function throttledResizeHandler() {
+            // Hide images to prevent strange rendering artifacts during resize.
+            var a = getEl('remote-screen-a');
+            var b = getEl('remote-screen-b');
+            if (a) a.style.display = 'none';
+            if (b) b.style.display = 'none';
+
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(doResize, RESIZE_THROTTLE_MS);
+        }
+
+        function doResize() {
+            var a = getEl('remote-screen-a');
+            var b = getEl('remote-screen-b');
+            if (a) a.style.display = 'block';
+            if (b) b.style.display = 'block';
+
+            if (isConnected) {
+                sendViewportSize();
+            }
+        }
+
+        function getScroll() {
+            var d = document.documentElement,
+                b = document.body;
+            return {
+                x: (d && d.scrollLeft) || (b && b.scrollLeft) || 0,
+                y: (d && d.scrollTop) || (b && b.scrollTop) || 0
+            };
+        }
+
+        function getOffset(el) {
+            var x = 0,
+                y = 0;
+            while (el) {
+                x += el.offsetLeft || 0;
+                y += el.offsetTop || 0;
+                el = el.offsetParent;
+            }
+            return {
+                x: x,
+                y: y
+            };
+        }
+
+        function handleScreenClick(e) {
+            e = e || window.event;
+            var el = e.target || e.srcElement;
+            var off = getOffset(el),
+                scr = getScroll();
+            var cx = (e.clientX != null ? e.clientX : 0) + scr.x;
+            var cy = (e.clientY != null ? e.clientY : 0) + scr.y;
+            var x = (e.offsetX != null) ? e.offsetX : (cx - off.x);
+            var y = (e.offsetY != null) ? e.offsetY : (cy - off.y);
+            sendEvent('type=mousedown&x=' + x + '&y=' + y);
+        }
+
+        function handleMouseWheel(e) {
+            e = e || window.event;
+            var t = e.target || e.srcElement;
+            if (!t || (t.id !== 'remote-screen-a' && t.id !== 'remote-screen-b')) return;
+
+            var off = getOffset(t),
+                scr = getScroll();
+            var cx = (e.clientX != null ? e.clientX : 0) + scr.x;
+            var cy = (e.clientY != null ? e.clientY : 0) + scr.y;
+            var x = (e.offsetX != null) ? e.offsetX : (cx - off.x);
+            var y = (e.offsetY != null) ? e.offsetY : (cy - off.y);
+            var delta = (typeof e.wheelDelta != 'undefined') ? e.wheelDelta : -(e.detail || 0);
+            sendEvent('type=mousewheel&x=' + x + '&y=' + y + '&deltaY=' + delta);
+        }
+
+        // --- Keyboard Input Batching ---
+        var nonPrintableKeys = [8, 9, 13, 27, 33, 34, 35, 36, 37, 38, 39, 40, 45, 46];
+
+        function indexOf(arr, val) {
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] == val) return i;
+            }
+            return -1;
+        }
+
+        function startKeyBatching() {
+            if (keyBatchInterval) {
+                clearInterval(keyBatchInterval);
+            }
+            keyBatchInterval = setInterval(sendKeyBatch, KEY_BATCH_INTERVAL_MS);
+        }
+
+        function stopKeyBatching() {
+            if (keyBatchInterval) {
+                clearInterval(keyBatchInterval);
+                keyBatchInterval = null;
+            }
+            keyBuffer = [];
+        }
+
+        function sendKeyBatch() {
+            if (keyBuffer.length === 0) return;
+
+            var start = 0;
+            while (start < keyBuffer.length) {
+                var end = start + MAX_KEYS_PER_BATCH;
+                var chunk = [];
+                for (var i = start; i < end && i < keyBuffer.length; i++) {
+                    chunk[chunk.length] = keyBuffer[i];
+                }
+
+                var eventsJson = '[';
+                for (var j = 0; j < chunk.length; j++) {
+                    var keyEvent = chunk[j];
+                    eventsJson += '{' +
+                        '"p":"' + (keyEvent.press || '') + '",' +
+                        '"k":' + (keyEvent.keyCode != null ? keyEvent.keyCode : '""') + ',' +
+                        '"s":' + (keyEvent.shiftKey ? 1 : 0) + ',' +
+                        '"c":' + (keyEvent.ctrlKey ? 1 : 0) + ',' +
+                        '"a":' + (keyEvent.altKey ? 1 : 0) + '}';
+                    if (j < chunk.length - 1) eventsJson += ',';
+                }
+                eventsJson += ']';
+
+                sendEvent('type=key_batch&events=' + encodeURIComponent(eventsJson));
+                start = end;
+            }
+            keyBuffer = [];
+        }
+
+        function handleKeyDown(e) {
+            if (!isConnected) return;
+            e = e || window.event;
+            var keyCode = e.keyCode || e.which;
+
+            if (isUrlBarFocused) {
+                if (keyCode === 13) { // Enter key
+                    handleNavigate();
+                    e.returnValue = false;
+                    if (e.preventDefault) e.preventDefault();
+                }
+                return;
+            }
+
+            if (indexOf(nonPrintableKeys, keyCode) !== -1) {
+                keyBuffer[keyBuffer.length] = {
+                    keyCode: keyCode,
+                    shiftKey: e.shiftKey,
+                    ctrlKey: e.ctrlKey,
+                    altKey: e.altKey
+                };
+                e.returnValue = false;
+                if (e.preventDefault) e.preventDefault();
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (!isConnected || isUrlBarFocused) return;
+            e = e || window.event;
+            var charCode = e.charCode || e.keyCode;
+            keyBuffer[keyBuffer.length] = {
+                press: String.fromCharCode(charCode),
+                shiftKey: e.shiftKey,
+                ctrlKey: e.ctrlKey,
+                altKey: e.altKey
+            };
+        }
+
+
+        // --- UI and Navigation Logic ---
+        function handleNavigate() {
+            var rawUrl = urlInput.value;
+            // Old browsers don't have .trim(), so use a regex.
+            var cleanUrl = rawUrl.replace(/^\s+|\s+$/g, '');
+            if (!cleanUrl) {
+                return;
+            }
+
+            var finalUrl = '';
+            var isUrlLike = /^[a-z0-9]+:\/\//i.test(cleanUrl) || /[\.:]/.test(cleanUrl);
+
+            if (isUrlLike) {
+                // Default to http:// for better compatibility with old sites.
+                if (!/^[a-z0-9]+:\/\//i.test(cleanUrl)) {
+                    finalUrl = 'http://' + cleanUrl;
+                } else {
+                    finalUrl = cleanUrl;
+                }
+            } else {
+                // Treat as a search query.
+                finalUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(cleanUrl);
+            }
+            sendEvent('type=navigate&url=' + encodeURIComponent(finalUrl));
+        }
+
+        function handleBack() {
+            sendEvent('type=back');
+        }
+
+        function handleForward() {
+            sendEvent('type=forward');
+        }
+
+        function handleNewTab() {
+            sendEvent('type=new_tab');
+        }
+
+        function handleCloseTab(targetIdToClose) {
+            sendEvent('type=close_tab&targetIdToClose=' + targetIdToClose);
+        }
+
+        function renderTabs(tabs, currentActiveId) {
+            var previousActiveTab = activeTabId;
+            safeClearChildNodes(tabBar);
+
+            var newTabBtn = document.createElement('span');
+            newTabBtn.id = 'new-tab-button';
+            newTabBtn.innerHTML = '+';
+            newTabBtn.onclick = handleNewTab;
+            tabBar.appendChild(newTabBtn);
+
+            for (var i = 0; i < tabs.length; i++) {
+                var tab = tabs[i];
+                var tabEl = document.createElement('span');
+                tabEl.className = 'tab' + (tab.targetId === currentActiveId ? ' tab-active' : '');
+
+                var titleText = (tab.title || 'New Tab').substring(0, 20);
+                if (typeof tabEl.innerText !== 'undefined') {
+                    tabEl.innerText = titleText;
+                } else {
+                    tabEl.textContent = titleText;
+                }
+
+                // Store targetId directly on the element for the click handler.
+                tabEl._tid = tab.targetId;
+                tabEl.onclick = function() {
+                    var targetId = this._tid;
+                    if (targetId !== activeTabId) {
+                        activeTabId = targetId;
+                        sendEvent('type=switch');
+                    }
+                };
+
+                var closeBtn = document.createElement('span');
+                closeBtn.className = 'close-tab-button';
+                closeBtn.innerHTML = 'r'; // Webdings 'x' character
+                closeBtn._tid = tab.targetId;
+                closeBtn.onclick = function(e) {
+                    e = e || window.event;
+                    if (e.stopPropagation) {
+                        e.stopPropagation();
+                    } else {
+                        e.cancelBubble = true;
+                    }
+                    handleCloseTab(this._tid);
+                };
+
+                tabEl.appendChild(closeBtn);
+                tabBar.appendChild(tabEl);
+            }
+
+            if (currentActiveId && currentActiveId !== previousActiveTab) {
+                lastKnownFrameTimestamp = 0; // Reset timestamp on tab switch
+            }
+        }
+
+
+        // --- Attach Final Event Handlers ---
+        connectButton.onclick = toggleConnection;
+        getEl('remote-screen-a').onclick = handleScreenClick;
+        getEl('remote-screen-b').onclick = handleScreenClick;
+        goButton.onclick = handleNavigate;
+        backButton.onclick = handleBack;
+        forwardButton.onclick = handleForward;
+        window.onresize = throttledResizeHandler;
+        document.onkeydown = handleKeyDown;
+        document.onkeypress = handleKeyPress;
+
+        if (document.addEventListener) {
+            document.addEventListener('mousewheel', handleMouseWheel, false);
+            document.addEventListener('DOMMouseScroll', handleMouseWheel, false);
+        } else {
+            document.onmousewheel = handleMouseWheel;
+        }
+
+        // --- Auto-connect if token is present in URL ---
+        if (sessionToken) {
+            // Use a timeout to ensure the DOM is fully ready before simulating the click.
+            setTimeout(function() {
+                if (connectButton && connectButton.click) {
+                    connectButton.click();
+                } else {
+                    toggleConnection(); // Fallback for very strange environments
+                }
+            }, 100);
+        }
+    </script>
 
 </body>
 </html>
