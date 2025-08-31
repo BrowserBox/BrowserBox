@@ -1,0 +1,351 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>BrowserBox - Legacy Client (IE4)</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style type="text/css">
+        /* IE4 FIX: Simplified CSS for maximum compatibility */
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: "MS Sans Serif", sans-serif; font-size: 12px; margin: 0; padding: 0; background: ButtonFace; color: ButtonText; }
+        #main-layout { width: 100%; height: 100%; }
+        #tab-bar { background: ButtonFace; padding: 3px 2px 0 2px; border-bottom: 1px solid gray; white-space: nowrap; overflow: hidden; height: 25px; line-height: 18px; }
+        .tab { display: inline-block; padding: 4px 8px; border: 1px solid black; border-bottom: none; margin-right: 2px; cursor: default; background: silver; position: relative; top: 1px; }
+        .tab-active { background: ButtonFace; border-bottom: 1px solid ButtonFace; font-weight: bold; }
+        #new-tab-button { display: inline-block; padding: 2px 6px; margin-right: 4px; border: 1px outset white; background: silver; cursor: default; font-weight: bold; }
+        .close-tab-button { font-family: "Webdings", sans-serif; font-size: 12px; margin-left: 8px; color: gray; cursor: default; }
+        #omni-box { background: ButtonFace; padding: 5px; border-bottom: 2px outset silver; }
+        .omni-button { font-size: 12px; width: 60px; margin-right: 5px; }
+        #url-input { font-size: 12px; width: 60%; }
+        #status-bar { padding: 3px; border-top: 1px solid darkgray; font-size: 10px; color: black; }
+        #content-pane { position: relative; background: #000; overflow: hidden; padding: 0; border-top: 1px solid darkgray; }
+        #remote-screen { position: absolute; display: block; top: 0; left: 0; width: 100%; height: 100%; background: #fff; cursor: crosshair; }
+        #jsonp-container { display: none; }
+    </style>
+</head>
+<body onload="initBrowserBoxLegacyClient()">
+
+    <!-- ================================================================= -->
+    <!-- == PAGE LAYOUT                                                 == -->
+    <!-- ================================================================= -->
+    <table id="main-layout" cellpadding="0" cellspacing="0">
+        <tr style="height: 1px; display: none;">
+            <td>
+                <div style="padding: 5px;">
+                    Session Token:
+                    <input type="text" id="token-input" size="20" value="">
+                    <button id="connect-button">Connect</button>
+                </div>
+            </td>
+        </tr>
+        <tr style="height: 25px;"><td><div id="tab-bar"></div></td></tr>
+        <tr style="height: 35px;">
+            <td>
+                <div id="omni-box">
+                    <button id="back-button" class="omni-button" disabled>Back</button>
+                    <button id="forward-button" class="omni-button" disabled>Forward</button>
+                    <input type="text" id="url-input" disabled>
+                    <button id="go-button" class="omni-button" disabled>Go</button>
+                </div>
+            </td>
+        </tr>
+        <tr style="height: 100%;"><td id="content-pane">
+            <img id="remote-screen" src="placeholder.gif" alt="Disconnected">
+        </td></tr>
+        <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
+    </table>
+
+    <!-- IE4 FIX: Hidden iframe for JSONP communication. Always present in the DOM. -->
+    <div id="jsonp-container">
+        <iframe src="about:blank" id="jsonp-frame" name="jsonp-frame"></iframe>
+    </div>
+
+
+    <!-- ================================================================= -->
+    <!-- == APPLICATION SCRIPT                                          == -->
+    <!-- ================================================================= -->
+    <script type="text/javascript" language="JavaScript">
+        function initBrowserBoxLegacyClient() {
+            // --- Polyfills (must be first) ---
+            if (!Array.prototype.shift) {
+                Array.prototype.shift = function () {
+                    var len = this.length, first, i;
+                    if (len == 0) { return; }
+                    first = this[0];
+                    for (i = 1; i < len; i++) { this[i - 1] = this[i]; }
+                    this.length = len - 1;
+                    return first;
+                };
+            }
+            if (!window.encodeURIComponent) { window.encodeURIComponent = function (s) { return escape(s).split('+').join('%2B'); }; }
+
+            // --- Global State ---
+            var API_BASE_PATH = '/api/vwin';
+            var POLLING_INTERVAL_MS = 1200; // Slower polling for stability
+            var TAB_REFRESH_RATE_MS = 4000;
+            var RESIZE_THROTTLE_MS  = 1500;
+
+            var activeTabId = null;
+            var isConnected = false;
+            var sessionToken = '';
+            var lastKnownFrameTimestamp = 0;
+            var _gettingFrame = false;
+            var isUrlBarFocused = false;
+
+            var tabPollingInterval = null;
+            var resizeTimeout = null;
+            var _jsonpSeq = 0;
+            window.__jsonpCallbacks = {};
+
+            // --- Element References ---
+            var connectButton = document.all.connectButton;
+            var tokenInput    = document.all.tokenInput;
+            var tabBar        = document.all.tabBar;
+            var backButton    = document.all.backButton;
+            var forwardButton = document.all.forwardButton;
+            var urlInput      = document.all.urlInput;
+            var goButton      = document.all.goButton;
+            var remoteScreen  = document.all.remoteScreen;
+            var statusBar     = document.all.statusBar;
+            var contentPane   = document.all.contentPane;
+
+            // --- Core Functions ---
+            function getEl(id) { return document.all[id]; }
+            function updateStatus(text) { if (statusBar) statusBar.innerHTML = 'Status: ' + text; }
+
+            // --- Simplified JSONP for IE4 ---
+            window.__jsonpDispatch = function (cbName, data) {
+                var cb = window.__jsonpCallbacks[cbName];
+                if (cb) {
+                    window.__jsonpCallbacks[cbName] = null; // Prevent re-entry
+                    if (cb.onOK) cb.onOK(data);
+                }
+            };
+
+            function getJSON(url, onOK, onErr) {
+                var cbName = '__bbcb' + (_jsonpSeq++);
+                var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName + '&ran=' + Math.random();
+
+                window.__jsonpCallbacks[cbName] = { onOK: onOK };
+
+                // IE4 FIX: Use a single, persistent iframe and just change its src.
+                // This avoids creating/destroying DOM elements which is very unstable.
+                var frame = getEl('jsonp-frame');
+                if (frame) {
+                    // This is a fire-and-forget mechanism. We don't have reliable onload/onerror.
+                    // The server response executing the callback is the only success signal.
+                    frame.location.replace('javascript:"<script src=\'' + fullUrl + '\'></script>"');
+                } else if (onErr) {
+                    onErr();
+                }
+            }
+
+            // --- Event Sending ---
+            var _evtPool = []; // Use a pool to avoid creating too many Image objects at once
+            function sendEvent(params) {
+                if (!isConnected) return;
+                var url = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) +
+                          (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') + '&' + params;
+
+                var img = new Image();
+                _evtPool[_evtPool.length] = img;
+                if (_evtPool.length > 4) _evtPool.shift(); // Keep pool small
+                img.src = url;
+            }
+
+            // --- Main Application Logic ---
+            function updateScreenImage() {
+                if (_gettingFrame || !activeTabId) return;
+                _gettingFrame = true;
+
+                var newSrc = API_BASE_PATH + '/frame?session_token=' + encodeURIComponent(sessionToken) +
+                             '&targetId=' + encodeURIComponent(activeTabId) +
+                             '&ts=' + lastKnownFrameTimestamp + '&ran=' + Math.random();
+
+                // IE4 FIX: The most critical change. NEVER replace the image element.
+                // Only change its 'src'. Let the browser handle the repaint.
+                // Assign onload/onerror first, then set src.
+                remoteScreen.onload = function() {
+                    updateStatus('Frame ' + lastKnownFrameTimestamp + ' loaded.');
+                    _gettingFrame = false;
+                    remoteScreen.onload = null; // Clean up handler
+                    remoteScreen.onerror = null;
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                };
+                remoteScreen.onerror = function() {
+                    updateStatus('Frame load error.');
+                    _gettingFrame = false;
+                    remoteScreen.onload = null;
+                    remoteScreen.onerror = null;
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2); // Wait longer on error
+                };
+                remoteScreen.src = newSrc;
+            }
+
+            function pollForNextFrame() {
+                if (!isConnected || !activeTabId) {
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                    return;
+                }
+                var url = API_BASE_PATH + '/frame-status?last_known_ts=' + lastKnownFrameTimestamp +
+                          '&targetId=' + encodeURIComponent(activeTabId) +
+                          '&session_token=' + encodeURIComponent(sessionToken);
+                getJSON(url, function(data) {
+                    if (data && data.fresh) {
+                        lastKnownFrameTimestamp = data.timestamp;
+                        updateScreenImage();
+                    } else {
+                        // Not fresh, just wait and poll again.
+                        setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                    }
+                }, function() { // onFailure
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
+                });
+            }
+
+            function renderTabs(tabs, currentActiveId) {
+                var i, tab, tabEl, titleText, closeBtn;
+                tabBar.innerHTML = ''; // Risky, but simplest way to clear
+
+                var newTabBtn = document.createElement('span');
+                newTabBtn.className = 'new-tab-button';
+                newTabBtn.innerHTML = '+';
+                newTabBtn.onclick = function() { sendEvent('type=new_tab'); };
+                tabBar.appendChild(newTabBtn);
+
+                for (i = 0; i < tabs.length; i++) {
+                    tab = tabs[i];
+                    tabEl = document.createElement('span');
+                    tabEl.className = 'tab' + (tab.targetId == currentActiveId ? ' tab-active' : '');
+                    titleText = (tab.title || 'New Tab').substring(0, 20);
+                    tabEl.innerHTML = titleText; // Use innerHTML for IE4 text setting
+
+                    tabEl._tid = tab.targetId;
+                    tabEl.onclick = function() {
+                        if (this._tid != activeTabId) { sendEvent('type=switch&targetId=' + this._tid); }
+                    };
+
+                    closeBtn = document.createElement('span');
+                    closeBtn.className = 'close-tab-button';
+                    closeBtn.innerHTML = 'r'; // Webdings 'x'
+                    closeBtn._tid = tab.targetId;
+                    closeBtn.onclick = function(e) {
+                        if(window.event) window.event.cancelBubble = true;
+                        sendEvent('type=close_tab&targetIdToClose=' + this._tid);
+                    };
+
+                    tabEl.appendChild(closeBtn);
+                    tabBar.appendChild(tabEl);
+                }
+            }
+
+            function updateTabs() {
+                if (!isConnected) return;
+                var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken);
+                getJSON(url, function(data) {
+                    if (!data) return;
+                    var tabs = data.tabs || [];
+                    var serverActive = data.activeTarget;
+
+                    if (!serverActive && tabs.length > 0) {
+                        // Auto-select first tab if none is active
+                        serverActive = tabs[0].targetId;
+                        sendEvent('type=switch&targetId=' + serverActive);
+                    }
+
+                    if (activeTabId != serverActive) {
+                        lastKnownFrameTimestamp = 0; // Force frame refresh on tab switch
+                    }
+                    activeTabId = serverActive;
+
+                    renderTabs(tabs, activeTabId);
+
+                    if (urlInput && !isUrlBarFocused) {
+                        var i;
+                        urlInput.value = ''; // Clear first
+                        for(i=0; i<tabs.length; i++) {
+                            if(tabs[i].targetId == activeTabId) {
+                                urlInput.value = tabs[i].url || '';
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+
+            function sendViewportSize() {
+                var w = contentPane.offsetWidth || 0;
+                var h = contentPane.offsetHeight || 0;
+                if (w > 0 && h > 0) {
+                    sendEvent('type=resize&width=' + w + '&height=' + h);
+                }
+            }
+
+            function doResize() {
+                if (isConnected) sendViewportSize();
+            }
+
+            // --- Event Handlers ---
+            function handleNavigate() {
+                var url = urlInput.value;
+                if (url.indexOf('://') == -1) url = 'http://' + url;
+                sendEvent('type=navigate&url=' + encodeURIComponent(url));
+            }
+
+            function handleScreenClick(e) {
+                e = e || window.event;
+                // IE4 uses offsetX/offsetY relative to the element, which is perfect.
+                sendEvent('type=mousedown&x=' + e.offsetX + '&y=' + e.offsetY);
+            }
+
+            function toggleConnection() {
+                if (isConnected) {
+                    // Disconnect logic (simplified)
+                    isConnected = false;
+                    if (tabPollingInterval) clearInterval(tabPollingInterval);
+                    tabPollingInterval = null;
+                    activeTabId = null;
+                    updateStatus('Disconnected.');
+                    remoteScreen.alt = 'Disconnected';
+                    return;
+                }
+                sessionToken = tokenInput.value;
+                if (!sessionToken) { alert('Please enter a session token.'); return; }
+
+                isConnected = true;
+                updateStatus('Connecting...');
+                remoteScreen.alt = 'Loading...';
+
+                sendEvent('type=connect'); // Fire and forget connect event
+                sendViewportSize();
+                updateTabs();
+                setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
+                tabPollingInterval = setInterval(updateTabs, TAB_REFRESH_RATE_MS);
+
+                connectButton.innerHTML = 'Disconnect';
+                backButton.disabled = false;
+                forwardButton.disabled = false;
+                urlInput.disabled = false;
+                goButton.disabled = false;
+            }
+
+            // --- Wire up events ---
+            connectButton.onclick = toggleConnection;
+            remoteScreen.onclick = handleScreenClick;
+            goButton.onclick = handleNavigate;
+            backButton.onclick = function() { sendEvent('type=back'); };
+            forwardButton.onclick = function() { sendEvent('type=forward'); };
+            window.onresize = function() {
+                if (resizeTimeout) clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(doResize, RESIZE_THROTTLE_MS);
+            };
+            urlInput.onfocus = function() { isUrlBarFocused = true; };
+            urlInput.onblur = function() { isUrlBarFocused = false; };
+
+            // --- Auto-connect if token is present ---
+            sessionToken = getQueryParam('token') || '';
+            if (tokenInput) tokenInput.value = sessionToken;
+            if (sessionToken) toggleConnection();
+        }
+    </script>
+</body>
+</html>
