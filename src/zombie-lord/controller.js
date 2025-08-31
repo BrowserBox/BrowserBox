@@ -3,7 +3,7 @@ import os from 'os';
 import {spawn} from 'node:child_process';
 import Connect from './connection.js';
 import {workerAllows, getWorker, shouldBeWorker, updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
-import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
+import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG, ConnectOptions} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
 
@@ -12,12 +12,6 @@ const TIME_WINDOW = 2;
 const MAX_CONNECTIONS = process.env.MAX_CONN ? parseInt(process.env.MAX_CONN) : 5;
 console.log({MAX_CONNECTIONS});
 const connections = new Map();
-
-// Connection options
-const Options = {
-  adBlock: DEBUG.adBlock,
-  demoBlock: false
-};
 
 //const TAIL_START = 100;
 //let lastTailShot = false;
@@ -333,7 +327,7 @@ const controller_api = {
   },
 
   setOptions(new_options) {
-    Object.assign(Options, new_options);
+    Object.assign(ConnectOptions, new_options);
   },
 
   close(port) {
@@ -425,7 +419,7 @@ const controller_api = {
     //let Page, Target;
     try {
       if ( ! connection ) {
-        connection = await Connect({port}, Options);
+        connection = await Connect({port}, ConnectOptions);
         connections.set(port,connection)
       }
       //({Page, Target} = connection.zombie);
@@ -801,6 +795,10 @@ const controller_api = {
 
   getConnection(port) {
     return connections.get(port);
+  },
+
+  setConnection(port, connection) {
+    connections.set(port, connection);
   },
 
   deleteConnection(port) {
