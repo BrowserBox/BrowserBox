@@ -4,7 +4,7 @@
     <title>BrowserBox - Legacy Client (IE4)</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <style type="text/css">
-        /* IE4 FIX: Simplified CSS for maximum compatibility */
+        /* IE4-compatible CSS */
         html, body { height: 100%; overflow: hidden; }
         body { font-family: "MS Sans Serif", sans-serif; font-size: 12px; margin: 0; padding: 0; background: ButtonFace; color: ButtonText; }
         #main-layout { width: 100%; height: 100%; }
@@ -54,7 +54,6 @@
         <tr style="height: 20px;"><td><div id="status-bar">Status: Disconnected.</div></td></tr>
     </table>
 
-    <!-- IE4 FIX: Hidden iframe for JSONP communication. Always present in the DOM. -->
     <div id="jsonp-container">
         <iframe src="about:blank" id="jsonp-frame" name="jsonp-frame"></iframe>
     </div>
@@ -77,10 +76,11 @@
                 };
             }
             if (!window.encodeURIComponent) { window.encodeURIComponent = function (s) { return escape(s).split('+').join('%2B'); }; }
-
+            if (!window.decodeURIComponent) { window.decodeURIComponent = function (s) { return unescape(s); }; }
+            
             // --- Global State ---
             var API_BASE_PATH = '/api/vwin';
-            var POLLING_INTERVAL_MS = 1200; // Slower polling for stability
+            var POLLING_INTERVAL_MS = 1200;
             var TAB_REFRESH_RATE_MS = 4000;
             var RESIZE_THROTTLE_MS  = 1500;
 
@@ -97,58 +97,97 @@
             window.__jsonpCallbacks = {};
 
             // --- Element References ---
-            var connectButton = document.all.connectButton;
-            var tokenInput    = document.all.tokenInput;
-            var tabBar        = document.all.tabBar;
-            var backButton    = document.all.backButton;
-            var forwardButton = document.all.forwardButton;
-            var urlInput      = document.all.urlInput;
-            var goButton      = document.all.goButton;
-            var remoteScreen  = document.all.remoteScreen;
-            var statusBar     = document.all.statusBar;
-            var contentPane   = document.all.contentPane;
+            function getEl(id) {
+                // IE4 primarily uses document.all
+                if (document.all) return document.all[id];
+                if (document.getElementById) return document.getElementById(id);
+                return null;
+            }
+
+            var connectButton = getEl('connect-button');
+            var tokenInput    = getEl('token-input');
+            var tabBar        = getEl('tab-bar');
+            var backButton    = getEl('back-button');
+            var forwardButton = getEl('forward-button');
+            var urlInput      = getEl('url-input');
+            var goButton      = getEl('go-button');
+            var remoteScreen  = getEl('remote-screen');
+            var statusBar     = getEl('status-bar');
+            var contentPane   = getEl('content-pane');
 
             // --- Core Functions ---
-            function getEl(id) { return document.all[id]; }
             function updateStatus(text) { if (statusBar) statusBar.innerHTML = 'Status: ' + text; }
+            function _decodeQS(s) { return decodeURIComponent(String(s).replace(/\+/g, '%20')); }
+            function getQueryParam(name) {
+                var q = (location && location.search) ? String(location.search).replace(/^\?/, '') : '';
+                if (!q) return '';
+                var parts = q.split('&'), i, kv, rest;
+                for (i = 0; i < parts.length; i++) {
+                    kv = parts[i].split('=');
+                    if (_decodeQS(kv[0]) == name) {
+                        rest = kv.slice(1).join('=');
+                        return _decodeQS(rest);
+                    }
+                }
+                return '';
+            }
 
-            // --- Simplified JSONP for IE4 ---
+            // --- JSONP Communication Bridge ---
+            // This function lives in the PARENT window.
             window.__jsonpDispatch = function (cbName, data) {
                 var cb = window.__jsonpCallbacks[cbName];
                 if (cb) {
-                    window.__jsonpCallbacks[cbName] = null; // Prevent re-entry
+                    window.__jsonpCallbacks[cbName] = null; // Clean up to prevent memory leaks
                     if (cb.onOK) cb.onOK(data);
                 }
             };
 
             function getJSON(url, onOK, onErr) {
                 var cbName = '__bbcb' + (_jsonpSeq++);
-                var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName + '&ran=' + Math.random();
+                // Add session token here to keep URL clean in call sites
+                var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'session_token=' + encodeURIComponent(sessionToken) +
+                              '&callback=' + cbName + '&ran=' + Math.random();
 
+                // Store the actual handler function in the parent's callback map.
                 window.__jsonpCallbacks[cbName] = { onOK: onOK };
 
-                // IE4 FIX: Use a single, persistent iframe and just change its src.
-                // This avoids creating/destroying DOM elements which is very unstable.
                 var frame = getEl('jsonp-frame');
-                if (frame) {
-                    // This is a fire-and-forget mechanism. We don't have reliable onload/onerror.
-                    // The server response executing the callback is the only success signal.
-                    frame.location.replace('javascript:"<script src=\'' + fullUrl + '\'></script>"');
-                } else if (onErr) {
-                    onErr();
-                }
+                if (!frame) { if(onErr) onErr(); return; }
+
+                /* FIX: This is the critical part. We must dynamically write an HTML
+                   document into the iframe that contains the callback function. This
+                   function then calls back to the parent window. */
+                var frameDoc = frame.contentWindow ? frame.contentWindow.document : frame.document;
+                if (!frameDoc) { if (onErr) onErr(); return; }
+                
+                var html = '<html><body>' +
+                    '<script type="text/javascript" language="JavaScript">' +
+                        // 1. Define the callback function INSIDE the iframe
+                        'function ' + cbName + '(data) {' +
+                            // 2. Make it call the dispatcher function in the PARENT
+                            'if (parent && parent.__jsonpDispatch) {' +
+                                'parent.__jsonpDispatch("' + cbName + '", data);' +
+                            '}' +
+                        '}' +
+                    '</' + 'script>' +
+                    // 3. Load the server script, which will now find and execute the function above.
+                    '<script type="text/javascript" language="JavaScript" src="' + fullUrl + '"></' + 'script>' +
+                '</body></html>';
+
+                frameDoc.open();
+                frameDoc.write(html);
+                frameDoc.close();
             }
 
             // --- Event Sending ---
-            var _evtPool = []; // Use a pool to avoid creating too many Image objects at once
+            var _evtPool = [];
             function sendEvent(params) {
                 if (!isConnected) return;
                 var url = API_BASE_PATH + '/event?session_token=' + encodeURIComponent(sessionToken) +
                           (activeTabId ? '&targetId=' + encodeURIComponent(activeTabId) : '') + '&' + params;
-
                 var img = new Image();
                 _evtPool[_evtPool.length] = img;
-                if (_evtPool.length > 4) _evtPool.shift(); // Keep pool small
+                if (_evtPool.length > 4) _evtPool.shift();
                 img.src = url;
             }
 
@@ -161,13 +200,10 @@
                              '&targetId=' + encodeURIComponent(activeTabId) +
                              '&ts=' + lastKnownFrameTimestamp + '&ran=' + Math.random();
 
-                // IE4 FIX: The most critical change. NEVER replace the image element.
-                // Only change its 'src'. Let the browser handle the repaint.
-                // Assign onload/onerror first, then set src.
                 remoteScreen.onload = function() {
                     updateStatus('Frame ' + lastKnownFrameTimestamp + ' loaded.');
                     _gettingFrame = false;
-                    remoteScreen.onload = null; // Clean up handler
+                    remoteScreen.onload = null;
                     remoteScreen.onerror = null;
                     setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
                 };
@@ -176,7 +212,7 @@
                     _gettingFrame = false;
                     remoteScreen.onload = null;
                     remoteScreen.onerror = null;
-                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2); // Wait longer on error
+                    setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
                 };
                 remoteScreen.src = newSrc;
             }
@@ -187,24 +223,22 @@
                     return;
                 }
                 var url = API_BASE_PATH + '/frame-status?last_known_ts=' + lastKnownFrameTimestamp +
-                          '&targetId=' + encodeURIComponent(activeTabId) +
-                          '&session_token=' + encodeURIComponent(sessionToken);
+                          '&targetId=' + encodeURIComponent(activeTabId);
                 getJSON(url, function(data) {
                     if (data && data.fresh) {
                         lastKnownFrameTimestamp = data.timestamp;
                         updateScreenImage();
                     } else {
-                        // Not fresh, just wait and poll again.
                         setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
                     }
-                }, function() { // onFailure
+                }, function() {
                     setTimeout(pollForNextFrame, POLLING_INTERVAL_MS * 2);
                 });
             }
 
             function renderTabs(tabs, currentActiveId) {
                 var i, tab, tabEl, titleText, closeBtn;
-                tabBar.innerHTML = ''; // Risky, but simplest way to clear
+                tabBar.innerHTML = '';
 
                 var newTabBtn = document.createElement('span');
                 newTabBtn.className = 'new-tab-button';
@@ -217,7 +251,7 @@
                     tabEl = document.createElement('span');
                     tabEl.className = 'tab' + (tab.targetId == currentActiveId ? ' tab-active' : '');
                     titleText = (tab.title || 'New Tab').substring(0, 20);
-                    tabEl.innerHTML = titleText; // Use innerHTML for IE4 text setting
+                    tabEl.innerHTML = titleText;
 
                     tabEl._tid = tab.targetId;
                     tabEl.onclick = function() {
@@ -226,7 +260,7 @@
 
                     closeBtn = document.createElement('span');
                     closeBtn.className = 'close-tab-button';
-                    closeBtn.innerHTML = 'r'; // Webdings 'x'
+                    closeBtn.innerHTML = 'r';
                     closeBtn._tid = tab.targetId;
                     closeBtn.onclick = function(e) {
                         if(window.event) window.event.cancelBubble = true;
@@ -240,28 +274,26 @@
 
             function updateTabs() {
                 if (!isConnected) return;
-                var url = API_BASE_PATH + '/tabs?session_token=' + encodeURIComponent(sessionToken);
+                var url = API_BASE_PATH + '/tabs';
                 getJSON(url, function(data) {
                     if (!data) return;
                     var tabs = data.tabs || [];
                     var serverActive = data.activeTarget;
 
                     if (!serverActive && tabs.length > 0) {
-                        // Auto-select first tab if none is active
                         serverActive = tabs[0].targetId;
                         sendEvent('type=switch&targetId=' + serverActive);
                     }
 
                     if (activeTabId != serverActive) {
-                        lastKnownFrameTimestamp = 0; // Force frame refresh on tab switch
+                        lastKnownFrameTimestamp = 0;
                     }
                     activeTabId = serverActive;
-
                     renderTabs(tabs, activeTabId);
 
                     if (urlInput && !isUrlBarFocused) {
                         var i;
-                        urlInput.value = ''; // Clear first
+                        urlInput.value = '';
                         for(i=0; i<tabs.length; i++) {
                             if(tabs[i].targetId == activeTabId) {
                                 urlInput.value = tabs[i].url || '';
@@ -275,37 +307,36 @@
             function sendViewportSize() {
                 var w = contentPane.offsetWidth || 0;
                 var h = contentPane.offsetHeight || 0;
-                if (w > 0 && h > 0) {
-                    sendEvent('type=resize&width=' + w + '&height=' + h);
-                }
+                if (w > 0 && h > 0) sendEvent('type=resize&width=' + w + '&height=' + h);
             }
 
-            function doResize() {
-                if (isConnected) sendViewportSize();
-            }
+            function doResize() { if (isConnected) sendViewportSize(); }
 
             // --- Event Handlers ---
             function handleNavigate() {
                 var url = urlInput.value;
-                if (url.indexOf('://') == -1) url = 'http://' + url;
-                sendEvent('type=navigate&url=' + encodeURIComponent(url));
+                if (url && url.indexOf('://') == -1) url = 'http://' + url;
+                if (url) sendEvent('type=navigate&url=' + encodeURIComponent(url));
             }
 
             function handleScreenClick(e) {
                 e = e || window.event;
-                // IE4 uses offsetX/offsetY relative to the element, which is perfect.
                 sendEvent('type=mousedown&x=' + e.offsetX + '&y=' + e.offsetY);
             }
 
             function toggleConnection() {
                 if (isConnected) {
-                    // Disconnect logic (simplified)
                     isConnected = false;
                     if (tabPollingInterval) clearInterval(tabPollingInterval);
                     tabPollingInterval = null;
                     activeTabId = null;
                     updateStatus('Disconnected.');
                     remoteScreen.alt = 'Disconnected';
+                    connectButton.innerHTML = 'Connect';
+                    backButton.disabled = true;
+                    forwardButton.disabled = true;
+                    urlInput.disabled = true;
+                    goButton.disabled = true;
                     return;
                 }
                 sessionToken = tokenInput.value;
@@ -315,7 +346,7 @@
                 updateStatus('Connecting...');
                 remoteScreen.alt = 'Loading...';
 
-                sendEvent('type=connect'); // Fire and forget connect event
+                sendEvent('type=connect');
                 sendViewportSize();
                 updateTabs();
                 setTimeout(pollForNextFrame, POLLING_INTERVAL_MS);
