@@ -10,13 +10,13 @@ export LICENSE_KEY
 bbx stop
 
 bbcertify
-if [[ -n "BBX_RUN_CURRENT_DIRECTORY" ]]; then
+if [[ -n "$BBX_RUN_CURRENT_DIRECTORY" ]]; then
   npm test >&2
 else
   bbx run
 fi
 
-echo "Waiting for server..." >&2
+echo "Waiting for Windows 9x Compatibility server..." >&2
 sleep 8
 
 # Extract current login link

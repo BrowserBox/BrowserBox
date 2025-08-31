@@ -54,7 +54,7 @@ if [[ "$(pm2 jlist)" == "[]" ]] || ! timeout 5s pm2 jlist; then
 fi
 
 kill_chrome() {
-  if [[ -z "${BBX_DONT_KILL_CHROME_ON_STOP}" ]]; then
+  if [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP}" ]]; then
     return 0
   fi
   # Loop through all the pid files for Chrome processes

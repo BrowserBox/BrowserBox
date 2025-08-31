@@ -411,6 +411,11 @@ export const CONFIG = Object.freeze({
     "https://www.arista.com",
   ]
 });
+// Connection options
+export const ConnectOptions = {
+  adBlock: DEBUG.adBlock,
+  demoBlock: false
+};
 export const localBlockList = process.platform == 'darwin' 
   || 
   process.env.GITHUB_ACTIONS 

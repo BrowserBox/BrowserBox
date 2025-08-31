@@ -35,6 +35,7 @@
     sleep,
     EXTENSIONS_PATH,
     throttle,
+    ConnectOptions,
   } from './common.js';
   import {releaseLicense, timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
@@ -43,6 +44,7 @@
 
   // legacy route import
   import KEYS from '../client/kbd.js';
+  import Connect from './zombie-lord/connection.js';
 
   const { exec, execSync } = child_process;
 
@@ -1239,6 +1241,12 @@
 
         const connectionId = 'legacy-' + Math.random().toString(36) + (+ new Date).toString(36);
         DEBUG.debugConnect && console.log(`Check 1`);
+        let connection = zl.act.getConnection(zombie_port);
+        if ( ! connection ) {
+          connection = await Connect({port:zombie_port}, ConnectOptions);
+          zl.act.setConnection(zombie_port,connection)
+        }
+
         await zl.act.addLink({so, forceMeta}, {connectionId, legacy: 'connect', fastest: null, peer: null, socket:null}, zombie_port);
         DEBUG.debugConnect && console.log(`Check 2`);
         forceMeta({
