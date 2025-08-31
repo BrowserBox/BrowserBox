@@ -1104,7 +1104,8 @@
       // == START: REWRITTEN ROUTES FOR WIN9X LEGACY HTTP CLIENT
       // =================================================================
 
-      // ---------- JSON / JSONP helpers ----------
+      // --- All helpers like sanitizeCallback, reply, replyOK, replyErr, etc. remain the same ---
+      // (Omitted for brevity)
       function sanitizeCallback(cb) {
         // allow a.b.c_123 style; strip anything else
         return String(cb || '').replace(/[^\w.$]/g, '');
@@ -1182,6 +1183,35 @@
 
       function nowMs(){ return Date.now(); }
       function minGapMs(){ try { return MIN_TIME_BETWEEN_SHOTS(); } catch { return 120; } }
+      // --- All helpers like sanitizeCallback, reply, replyOK, replyErr, etc. remain the same ---
+
+      /**
+       * NEW: A function to force a screen capture for a specific tab.
+       * This is the key to solving the "stale frame" problem.
+       */
+      async function forceCaptureAndCache(targetId, zombie_port) {
+        const sid = zl.act.getSessionId(targetId, zombie_port);
+        if (!sid) return null;
+
+        try {
+          await zl.act.send({
+            name: "Page.captureScreenshot",
+            params: { format: 'jpeg', quality: 85 },
+            sessionId: sid
+          }, zombie_port);
+
+          const newFd = zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
+          if (newFd) {
+            // Overwrite the cache with the newest frame
+            cachePut(targetId, newFd);
+            return newFd;
+          }
+        } catch (e) {
+          console.warn(`Legacy API: Failed to force capture for ${targetId}`, e.message);
+        }
+        return null;
+      }
+
 
       // A shared authentication function for all legacy API routes
       const legacyAuth = (req, res) => {
@@ -1231,6 +1261,7 @@
         const targetId = zl.act.getActiveTarget(zombie_port);
         if (!targetId) return replyOK(req, res, { fresh: false });
 
+        // PULL from cache first, don't force a capture here. Let the connect/resize do that.
         const fd = await pullIntoCacheIfNeeded(zombie_port, targetId);
         const serverTs = fd && fd.timestamp ? fd.timestamp : 0;
 
@@ -1309,37 +1340,14 @@
           if (!targetId) throw new Error("No active tab");
 
           const st = getState(targetId);
-          let fd = cacheTake(targetId); // prefer the cached frame the status route saw
+          // MODIFICATION: No longer try to capture here. The resize/connect logic is now responsible.
+          // We just serve the best frame we have.
+          let fd = cacheTake(targetId) || zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
 
-          // If nothing cached or it's not newer than last we sent, try to capture (throttled)
-          const needNew = !fd || (fd.timestamp <= st.lastSentTs);
-          const canCapture = (nowMs() - st.lastCaptureAt) >= minGapMs();
-
-          if (needNew && canCapture && !st.inFlight) {
-            st.inFlight = true;
-            st.lastCaptureAt = nowMs();
-            const sid = zl.act.getSessionId(targetId, zombie_port);
-            try {
-              await zl.act.send({
-                name: "Page.captureScreenshot",
-                params: { format: 'jpeg', quality: 85 },
-                sessionId: sid
-              }, zombie_port);
-              const newFd = zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
-              if (newFd && (!fd || newFd.timestamp > (fd.timestamp || 0))) {
-                fd = newFd;
-              } else if (newFd) {
-                cachePut(targetId, newFd);
-              }
-            } catch (_) {
-              // ignore, we'll serve best-known
-            } finally {
-              st.inFlight = false;
-            }
-          }
 
           if (!fd) {
-            fd = zl.act.getFrameFromBuffer(zombie_port, targetId) || null;
+            // If there's truly nothing, try one last-ditch effort to capture.
+            fd = await forceCaptureAndCache(targetId, zombie_port);
           }
 
           const buf = fd && fd.buffer;
@@ -1403,10 +1411,22 @@
             case 'switch':
               await zl.act.send({ name: "Target.activateTarget", params: { targetId } }, zombie_port);
               await zl.act.send({ isZombieLordCommand: true, name: "Connection.activateTarget", params: { targetId, source: mySource } }, zombie_port);
+              // NEW: Force a capture on tab switch
+              if (targetId) {
+                forceCaptureAndCache(targetId, zombie_port);
+              }
               break;
             case 'resize':
+              // MODIFICATION: Force a capture *after* resizing.
               const viewport = { width: parseInt(width), height: parseInt(height), mobile: false };
               zl.act.setViewport(req.query.session_token, viewport, zombie_port);
+              // Give the browser a moment to resize, then capture.
+              setTimeout(function() {
+                const currentTarget = zl.act.getActiveTarget(zombie_port);
+                if(currentTarget) {
+                  forceCaptureAndCache(currentTarget, zombie_port);
+                }
+              }, 250); // 250ms delay
               break;
             case 'mousewheel':
               await zl.act.send({ name: "Input.dispatchMouseEvent", params: { type: 'mouseWheel', x: parseInt(x), y: parseInt(y), deltaX: 0, deltaY: parseInt(deltaY) }, sessionId }, zombie_port);
