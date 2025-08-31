@@ -54,9 +54,6 @@ if [[ "$(pm2 jlist)" == "[]" ]] || ! timeout 5s pm2 jlist; then
 fi
 
 kill_chrome() {
-  if [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP}" ]]; then
-    return 0
-  fi
   # Loop through all the pid files for Chrome processes
   for pidf in "$HOME/.config/dosyago/bbpro/chrome-"*/pid; do
     pid=$(cat "$pidf")
@@ -65,6 +62,10 @@ kill_chrome() {
       killtree "$pid"
     fi
   done
+  # don't just randomly kill all chromes if this is set
+  if [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP}" ]]; then
+    return 0
+  fi
   pkill -i chrome
 }
 
