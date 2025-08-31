@@ -1498,7 +1498,10 @@
 
     function addHandlers() {
       // Legacy API Handlers (Win9x compatibility mode, etc)
-      addLegacyHandlers();
+
+      if ( CONFIG.win9xCompatibility ) {
+        addLegacyHandlers();
+      }
       // Legacy END
       const CACHE_EXPIRY = 3 * 60 * 1000;
       let torExitList;
