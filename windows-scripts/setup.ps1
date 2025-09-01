@@ -244,11 +244,14 @@ Write-Host "Created config directory at $CONFIG_DIR." -ForegroundColor Cyan
 
 $testEnvPath = "$CONFIG_DIR\test.env"
 
+<# Preserve existing LICENSE_KEY from file or env #>
+$existingLicenseFromFile = $null
 if (Test-Path $testEnvPath) {
     $existingConfig = Get-Content $testEnvPath | ForEach-Object {
         if ($_ -match "^([^=]+)=(.*)$") { [PSCustomObject]@{ Name = $Matches[1]; Value = $Matches[2] } }
     }
     $existingHostname = ($existingConfig | Where-Object { $_.Name -eq "DOMAIN" }).Value
+    $existingLicenseFromFile = ($existingConfig | Where-Object { $_.Name -eq "LICENSE_KEY" }).Value
     if ($existingHostname -eq $Hostname -and -not $Force) {
         Write-Host "Setup already completed for $Hostname. Using existing configuration." -ForegroundColor Yellow
     } else {
@@ -267,7 +270,10 @@ $DEVTOOLS_PORT = $PortInt + 1
 $DOCS_PORT = $PortInt - 1
 $COOKIE_VALUE = if ($env:COOKIE_VALUE) { $env:COOKIE_VALUE } else { [System.Guid]::NewGuid().ToString() }
 
-# Create or update test.env file
+# Decide what LICENSE_KEY to keep
+$LICENSE_KEY_TO_KEEP = if ($env:LICENSE_KEY) { $env:LICENSE_KEY } elseif ($existingLicenseFromFile) { $existingLicenseFromFile } else { $null }
+
+# Create or update test.env file (preserve LICENSE_KEY if available)
 $envContent = @"
 APP_PORT=$APP_PORT
 AUDIO_PORT=$AUDIO_PORT
@@ -278,9 +284,12 @@ DOCS_PORT=$DOCS_PORT
 SSLCERTS_DIR="${env:USERPROFILE}\sslcerts"
 DOMAIN="$Hostname"
 "@
+$envContent = $envContent.TrimEnd()
+if ($LICENSE_KEY_TO_KEEP) {
+    $envContent += "`r`nLICENSE_KEY=$LICENSE_KEY_TO_KEEP"
+}
 
 $envContent | Out-File "${CONFIG_DIR}\test.env" -Encoding utf8
-
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
 # Generate and display login link
