@@ -238,20 +238,20 @@ try {
         $seatId = Get-VacantSeat
         $fullTicket = New-Ticket -SeatId $seatId
         if (-not $ticketValid) {
-            $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
-            Register-Certificate -Ticket $fullTicket
-            if (-not $NoReservation) {
-                Reserve-Seat -Ticket $fullTicket
-            }
-            # augment cert.meta.env with ticket basics
-            $ticketId = $fullTicket.ticket.ticketData.ticketId
-            $timeSlot = $fullTicket.ticket.ticketData.timeSlot
-            Meta-Put -Key "BBX_TICKET_ID" -Value $ticketId
-            Meta-Put -Key "BBX_TICKET_SLOT" -Value $timeSlot
-            Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
-            if (-not $keyFromConfig) {
-                Save-Config
-            }
+          $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
+          Register-Certificate -Ticket $fullTicket
+          if (-not $NoReservation) {
+              Reserve-Seat -Ticket $fullTicket
+          }
+          # augment cert.meta.env with ticket basics
+          $ticketId = $fullTicket.ticket.ticketData.ticketId
+          $timeSlot = $fullTicket.ticket.ticketData.timeSlot
+          Meta-Put -Key "BBX_TICKET_ID" -Value $ticketId
+          Meta-Put -Key "BBX_TICKET_SLOT" -Value $timeSlot
+          Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
+
+          # Persist LICENSE_KEY regardless of its source (param/env/config/prompt)
+          Save-Config
         } else {
             Write-Host "License is valid, keeping existing valid ticket" -ForegroundColor Green
         }
@@ -272,9 +272,9 @@ try {
             Meta-Put -Key "BBX_TICKET_ID" -Value $ticketId
             Meta-Put -Key "BBX_TICKET_SLOT" -Value $timeSlot
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
-            if (-not $keyFromConfig) {
-                Save-Config
-            }
+
+            # Persist LICENSE_KEY regardless of its source (param/env/config/prompt)
+            Save-Config
         }
     }
     Write-Host "Certification complete." -ForegroundColor Green
