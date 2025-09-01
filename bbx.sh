@@ -322,15 +322,36 @@ trap save_config EXIT
 save_config() {
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"  # Restrict to owner only
+
+  # Grab any existing key from config (without sourcing / polluting env)
+  local existing_key=""
+  if [ -f "$CONFIG_FILE" ]; then
+    existing_key=$(grep -E '^LICENSE_KEY=' "$CONFIG_FILE" | head -n1 | sed -E 's/^LICENSE_KEY="?([^"]*)"?$/\1/')
+  fi
+
+  # Decide what key to write:
+  # - Prefer the current in-memory key if it's valid format
+  # - Else keep the existing on-disk key if it's valid format
+  # - Else write empty
+  local _LIC_TO_WRITE=""
+  if [[ -n "$LICENSE_KEY" && "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+    _LIC_TO_WRITE="$LICENSE_KEY"
+  elif [[ -n "$existing_key" && "$existing_key" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+    _LIC_TO_WRITE="$existing_key"
+  else
+    _LIC_TO_WRITE=""
+  fi
+
   cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
-LICENSE_KEY="${LICENSE_KEY:-}"
+LICENSE_KEY="${_LIC_TO_WRITE}"
 BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
+
 
 ensure_nvm() {
     if [ -f "$HOME/.nvm/nvm.sh" ]; then
