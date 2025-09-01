@@ -98,6 +98,9 @@ Write-Verbose "devtoolsOutLog: $devtoolsOutLog"
 Write-Verbose "devtoolsErrLog: $devtoolsErrLog"
 Write-Verbose "devtoolsPidFile: $devtoolsPidFile"
 
+# certify to get ticket
+& $certifyScriptPath
+
 # Load environment variables from test.env
 Write-Verbose "Loading env vars from $envFile"
 Get-Content $envFile | ForEach-Object {
