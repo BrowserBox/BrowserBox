@@ -293,7 +293,7 @@ $envContent | Out-File "${CONFIG_DIR}\test.env" -Encoding utf8
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
 # Generate and display login link
-$loginLink = "https://${Hostname}:${PORT}/login?token=$Token"
+$loginLink = "https://${Hostname}:${APP_PORT}/login?token=$Token"
 Write-Host "Login link for this instance:" -ForegroundColor Green
 Write-Host $loginLink
 $loginLink | Out-File "${CONFIG_DIR}\login.link" -Encoding utf8

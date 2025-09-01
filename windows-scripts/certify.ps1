@@ -222,17 +222,18 @@ try {
     } elseif ($Config["LICENSE_KEY"]) {
         $LICENSE_KEY = $Config["LICENSE_KEY"]
         $keyFromConfig = $true
-    } elseif (-not $ticketValid) {
-        Write-Host "No LICENSE_KEY provided. Please enter a license key (purchase at http://getbrowserbox.com or email sales@dosaygo.com for help):" -ForegroundColor Yellow
+    }
+
+    # If we still don't have a key, prompt (even if a ticket is already valid) so it gets persisted for other commands.
+    if (-not $LICENSE_KEY) {
+        Write-Host "No LICENSE_KEY found. Please enter your license key (purchase at http://getbrowserbox.com or email sales@dosaygo.com):" -ForegroundColor Yellow
         $LICENSE_KEY = Read-Host "License Key"
         if (-not $LICENSE_KEY) {
             Write-Error "No license key entered. Run 'bbx certify -LicenseKey <key>' or set LICENSE_KEY environment variable."
             throw "LICENSE Error"
         }
-    } else {
-        Write-Host "Using existing valid ticket without requiring a new license key" -ForegroundColor Green
-        return
     }
+
     if ($ForceLicense) {
         Write-Host "Force license mode: Checking license validity without overwriting valid ticket" -ForegroundColor Yellow
         $seatId = Get-VacantSeat
