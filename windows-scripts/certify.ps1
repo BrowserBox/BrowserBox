@@ -277,6 +277,9 @@ try {
             Save-Config
         }
     }
+    # Final safety: if we have a LICENSE_KEY in memory, ensure it's persisted to test.env
+    if ($LICENSE_KEY) { Save-Config }
+
     Write-Host "Certification complete." -ForegroundColor Green
 } catch {
     Write-Error "An error occurred during certification: $_"
