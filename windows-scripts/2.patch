@@ -1,0 +1,32 @@
+--- setup.ps1
++++ setup.ps1
+@@
+ $testEnvPath = "$CONFIG_DIR\test.env"
++<# Preserve existing LICENSE_KEY from file or env #>
++$existingLicenseFromFile = $null
++if (Test-Path $testEnvPath) {
++    $existingConfig = Get-Content $testEnvPath | ForEach-Object {
++        if ($_ -match "^([^=]+)=(.*)$") { [PSCustomObject]@{ Name = $Matches[1]; Value = $Matches[2] } }
++    }
++    $existingLicenseFromFile = ($existingConfig | Where-Object { $_.Name -eq "LICENSE_KEY" }).Value
++}
++$LICENSE_KEY_TO_KEEP = if ($env:LICENSE_KEY) { $env:LICENSE_KEY } elseif ($existingLicenseFromFile) { $existingLicenseFromFile } else { $null }
+@@
+-$envContent = @"
++$envContent = @"
+ APP_PORT=$APP_PORT
+ AUDIO_PORT=$AUDIO_PORT
+ LOGIN_TOKEN=$Token
+ COOKIE_VALUE=$COOKIE_VALUE
+ DEVTOOLS_PORT=$DEVTOOLS_PORT
+ DOCS_PORT=$DOCS_PORT
+ SSLCERTS_DIR="${env:USERPROFILE}\sslcerts"
+ DOMAIN="$Hostname"
+ "@
++$envContent = $envContent.TrimEnd()
++if ($LICENSE_KEY_TO_KEEP) {
++    $envContent += "`r`nLICENSE_KEY=$LICENSE_KEY_TO_KEEP"
++}
+ 
+ $envContent | Out-File "${CONFIG_DIR}\test.env" -Encoding utf8
+
