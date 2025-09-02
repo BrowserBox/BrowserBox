@@ -212,20 +212,28 @@ jobs:
         run: |
           set -euxo pipefail
           bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
-          sleep 5
-          # capture BOTH stdout and stderr so we actually see errors
-          ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" > ngrok_output.txt 2>&1 &
-          sleep 5
+          sleep 3
+          ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" >/dev/null 2>&1 &
 
-          # If ngrok logged anything interesting, export it as a multiline env var
-          if [[ -s ngrok_output.txt ]]; then
-            {
-              echo "NGROK_FAILED_OUTPUT<<NGROK_EOF"
-              sed -n '1,200p' ngrok_output.txt
-              echo "NGROK_EOF"
-            } >> "$GITHUB_ENV"
-          fi
-
+      - name: Wait for ngrok public URL
+        if: steps.decide.outputs.mode == 'ngrok'
+        id: ngrok
+        run: |
+          set -euo pipefail
+          # Retry up to ~60s (30 * 2s) until a public_url appears
+          for i in $(seq 1 30); do
+            url="$(curl -sf --retry 1 --max-time 2 http://127.0.0.1:4040/api/tunnels \
+                  | jq -r '.tunnels[0].public_url // empty')"
+            if [[ -n "$url" ]]; then
+              echo "url=$url" >> "$GITHUB_OUTPUT"
+              echo "Found ngrok URL: $url"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timed out waiting for ngrok public URL from Agent API." >&2
+          exit 1
+      
       - name: If ngrok failed then comment and close
         if: steps.decide.outputs.mode == 'ngrok' && env.NGROK_FAILED_OUTPUT != '' && github.event_name != 'push'
         uses: actions/github-script@v7
@@ -278,17 +286,63 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
             const issue_number = context.issue.number;
             const actor = context.actor;
-            const pub = "${{ steps.ngrok.outputs.url }}";
-            const suffix = `${{ steps.setup.outputs.suffix }}`;
-            const full = new URL(pub + suffix);
-            full.searchParams.set('url', JSON.stringify(['https://github.com','https://bing.com']));
             const minutes = Number(process.env.SESSION_MINUTES) || 15;
-            await github.rest.issues.createComment({
-              ...context.repo, issue_number,
-              body: `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).\n\nIt will run for about **${minutes} minutes**. Open this link:\n\n${full.toString()}`
-            });
+
+            const noRsa = `${{ steps.encrypt.outputs.NO_RSA || '1' }}` === '1';
+
+            if (!noRsa) {
+              // Encrypted path: read the base64 blob we created
+              const encPath = '.secure/url.b64';
+              const encB64 = fs.readFileSync(encPath, 'utf8').trim();
+
+              const body = [
+                `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).`,
+                ``,
+                `🔐 I've encrypted your login link with your **GitHub SSH RSA** public key.`,
+                `Only your matching **~/.ssh/id_rsa** private key can decrypt it.`,
+                ``,
+                `**Decrypt instructions (on your machine):**`,
+                ``,
+                `1) Copy the blob below into a file \`url.b64\``,
+                `2) Decode: \`base64 -d url.b64 > url.bin\``,
+                `3) Decrypt (OpenSSL): \`openssl pkeyutl -decrypt -inkey ~/.ssh/id_rsa -in url.bin -out url.txt\``,
+                `4) Open: \`cat url.txt\``,
+                ``,
+                `**Encrypted blob (base64):**`,
+                '```',
+                encB64,
+                '```',
+                ``,
+                `Session will run for about **${minutes} minutes**.`
+              ].join("\n");
+
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            } else {
+              // Fallback: no RSA key found; post the full URL plainly.
+              // If you want to *force* RSA and avoid posting the link, replace this block with a "please add RSA key" message + exit(1).
+              const pub = `${{ steps.ngrok.outputs.url }}`;
+              const suffix = `${{ steps.setup.outputs.suffix }}`;
+              const full = new URL(pub + suffix);
+              full.searchParams.set('url', JSON.stringify(['https://github.com','https://bing.com']));
+
+              const body = [
+                `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).`,
+                ``,
+                `⚠️ I couldn't find an **ssh-rsa** key on your GitHub account, so I couldn't encrypt the link.`,
+                `Consider adding an RSA key if you'd like encrypted delivery in the future: https://github.com/settings/keys`,
+                ``,
+                `Open this link now (it auto-expires when the session ends):`,
+                ``,
+                full.toString(),
+                ``,
+                `Session will run for about **${minutes} minutes**.`
+              ].join("\n");
+
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            }
 
       # ===== Tor path =====
       - name: Start bbx for Tor hidden service
