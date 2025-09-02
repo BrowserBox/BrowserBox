@@ -168,14 +168,38 @@ jobs:
           bbx install || true
           bbx certify "${LICENSE_KEY}"
 
-      - name: Configure bbx
+      - name: Configure bbx and read login.link
         id: setup
         run: |
           set -euo pipefail
-          url="$(bbx setup --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}")"
-          # Example: https://localhost:8080/...?token=...
-          suffix="${url#*https://$BBX_HOSTNAME:${BBX_PORT}}"
-          printf "suffix=%s\n" "$suffix" >> "$GITHUB_OUTPUT"
+
+          # Run setup (creates/updates the login.link file)
+          bbx setup --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" >/dev/null
+
+          LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
+          if [[ ! -s "$LINK_FILE" ]]; then
+            echo "login.link not found or empty at $LINK_FILE"
+            exit 1
+          fi
+
+          # Single-line URL from file
+          url="$(tr -d '\r\n' < "$LINK_FILE")"
+          if ! echo "$url" | grep -Eq '^https?://'; then
+            echo "login.link does not contain a valid URL:"
+            cat "$LINK_FILE" || true
+            exit 1
+          fi
+
+          origin="$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')"
+          suffix="${url#${origin}}"                      # everything after origin (starts with /)
+          token="$(echo "$url" | grep -oP 'token=\K[^&]+' || true)"
+
+          {
+            echo "url=${url}"
+            echo "origin=${origin}"
+            echo "suffix=${suffix}"
+            echo "token=${token}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create integrity file
         run: |
