@@ -129,7 +129,7 @@ jobs:
 
       - name: Install system deps
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y \
             libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 \
@@ -140,7 +140,7 @@ jobs:
       - name: Install ngrok if needed
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           npm install -g ngrok
           ngrok config add-authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
 
@@ -155,7 +155,7 @@ jobs:
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           if ! command -v bbx >/dev/null 2>&1; then
             echo "Bootstrapping bbx CLI..."
             bash <(curl -fsSL https://bbx.sh.dosaygo.com) install
@@ -166,7 +166,7 @@ jobs:
         env:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           bbx install || true
           bbx certify "${LICENSE_KEY}"
 
@@ -196,14 +196,14 @@ jobs:
 
       - name: Create integrity file
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           openssl rand -base64 32 > "$HOME/BBPRO.INTEGRITY"
 
       # ===== ngrok path =====
       - name: Start bbx and ngrok
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
           sleep 3
           ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" >/dev/null 2>&1 &
@@ -231,11 +231,13 @@ jobs:
         run: |
           set -euo pipefail
           full="${{ steps.ngrok.outputs.url }}${{ steps.setup.outputs.suffix }}"
-          # mask just in case
-          echo "::add-mask::${full}"
-          echo "::add-mask::${{ steps.setup.outputs.token }}"
-          echo "::add-mask::${{ steps.setup.outputs.suffix }}"
-          echo "full=${full}" >> "$GITHUB_OUTPUT"
+           # mask first, then write to GITHUB_OUTPUT without touching stdout
+           echo "::add-mask::${full}"
+           echo "::add-mask::${{ steps.setup.outputs.token }}"
+           echo "::add-mask::${{ steps.setup.outputs.suffix }}"
+           exec 3>>"$GITHUB_OUTPUT"
+           printf 'full=%s\n' "$full" >&3
+           exec 3>&-
 
       - name: Encrypt URL for actor (SSH RSA only)
         if: steps.decide.outputs.mode == 'ngrok'
@@ -317,11 +319,13 @@ jobs:
           base_url="$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')"
           echo "::add-mask::${base_url}"
           token="${{ steps.setup.outputs.token }}"
+          [[ -n "$token" ]] && echo "::add-mask::${token}"
           integrity_url="${base_url}/integrity"
           if [[ -n "$token" ]]; then integrity_url="${integrity_url}?session_token=${token}"; fi
           want="$(cat "$HOME/BBPRO.INTEGRITY")"
           ok=0
           for i in {1..10}; do
+            # Only print attempt counter; never print URLs or tokens
             echo "Attempt $i..."
             got="$(curl -Ls "$integrity_url" || true)"
             if [[ "$got" == "$want" ]]; then ok=1; break; fi
@@ -388,7 +392,7 @@ jobs:
       - name: Start bbx for Tor hidden service
         if: steps.decide.outputs.mode == 'tor'
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           bbx tor-run > tor_output.txt 2>&1 &
           sleep 25
 
