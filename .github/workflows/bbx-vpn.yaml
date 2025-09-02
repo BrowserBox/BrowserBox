@@ -242,17 +242,41 @@ jobs:
           set -euo pipefail
           mkdir -p .secure
           echo -n "${{ steps.access.outputs.full }}" > .secure/url.txt
-          curl -sf "https://api.github.com/users/${ACTOR}/keys" > .secure/keys.json
-          if jq -e '.[] | select(.key | startswith("ssh-rsa "))' .secure/keys.json >/dev/null; then
-            jq -r '.[] | select(.key | startswith("ssh-rsa ")) | .key' .secure/keys.json | head -n1 > .secure/actor_rsa.pub
+
+          # 1) Try GitHub JSON API
+          curl -sfL -H 'Accept: application/vnd.github+json' -H 'User-Agent: bbx-workflow' \
+            "https://api.github.com/users/${ACTOR}/keys" -o .secure/keys.json || true
+
+          # Extract first RSA from JSON (if any)
+          rsa_from_json="$(jq -r '.[] | .key' .secure/keys.json 2>/dev/null | awk '/ssh-rsa/{print; exit}' || true)"
+
+          # 2) Fallback to plaintext .keys if JSON didn’t yield RSA
+          if [[ -z "$rsa_from_json" ]]; then
+            curl -sfL -H 'User-Agent: bbx-workflow' "https://github.com/${ACTOR}.keys" -o .secure/keys.plain || true
+            rsa_from_plain="$(awk '/ssh-rsa/{print; exit}' .secure/keys.plain || true)"
           else
+            rsa_from_plain=""
+          fi
+
+          rsa_line="${rsa_from_json:-$rsa_from_plain}"
+
+          if [[ -z "$rsa_line" ]]; then
             echo "NO_RSA=1" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          # Write OpenSSH-format RSA pubkey
+          printf '%s\n' "$rsa_line" > .secure/actor_rsa.pub
+
+          # Convert to PEM for OpenSSL
           ssh-keygen -f .secure/actor_rsa.pub -e -m pem > .secure/actor_rsa.pem
-          openssl pkeyutl -encrypt -pubin -inkey .secure/actor_rsa.pem \
+
+          # Encrypt with RSA-OAEP(SHA-256)
+          openssl pkeyutl -encrypt \
+            -pubin -inkey .secure/actor_rsa.pem \
             -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 \
             -in .secure/url.txt -out .secure/url.bin
+
           base64 -w 0 .secure/url.bin > .secure/url.b64
           echo "NO_RSA=0" >> "$GITHUB_OUTPUT"
 
