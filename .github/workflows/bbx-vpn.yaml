@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Gate: only repo owner (or o0101)
+      - name: Gate: only repo owner
         id: gate
         run: |
           if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" && "${{ github.actor }}" != "o0101" ]]; then
