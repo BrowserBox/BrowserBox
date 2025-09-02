@@ -213,13 +213,18 @@ jobs:
           set -euxo pipefail
           bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
           sleep 5
-          ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" 2> ngrok_output.txt &
+          # capture BOTH stdout and stderr so we actually see errors
+          ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" > ngrok_output.txt 2>&1 &
           sleep 5
-          {
-            echo "NGROK_FAILED_OUTPUT<<'EOF'"
-            cat ngrok_output.txt
-            echo "EOF"
-          } >> "$GITHUB_ENV"
+
+          # If ngrok logged anything interesting, export it as a multiline env var
+          if [[ -s ngrok_output.txt ]]; then
+            {
+              echo "NGROK_FAILED_OUTPUT<<NGROK_EOF"
+              sed -n '1,200p' ngrok_output.txt
+              echo "NGROK_EOF"
+            } >> "$GITHUB_ENV"
+          fi
 
       - name: If ngrok failed then comment and close
         if: steps.decide.outputs.mode == 'ngrok' && env.NGROK_FAILED_OUTPUT != '' && github.event_name != 'push'
@@ -256,7 +261,7 @@ jobs:
         run: |
           set -euo pipefail
           base_url="$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')"
-          token="$(echo "${{ steps.setup.outputs.suffix }}" | grep -oP 'token=\K[^&]+' || true)"
+          token="${{ steps.setup.outputs.token }}"
           integrity_url="${base_url}/integrity?session_token=${token}"
           want="$(cat "$HOME/BBPRO.INTEGRITY")"
           ok=0
