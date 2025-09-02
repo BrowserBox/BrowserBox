@@ -1,12 +1,13 @@
 # Preamble (please keep)
-# _meta_action_id: dosyago/BrowserBox/bbx/sep-2025
+# _meta_action_id: dosyago/BrowserBox/bbx/sep-2025-unified
 # Purpose: short-lived personal test of BrowserBox via bbx on a GitHub Actions runner.
-
-name: Personal ephemeral VPN/browser (bbx + ngrok)
+name: Personal ephemeral BrowserBox (bbx + ngrok|tor)
 
 on:
   issues:
     types: [opened, reopened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -22,7 +23,8 @@ env:
   SESSION_MINUTES: "15"
 
 jobs:
-  create_vpn:
+  run_bbx:
+    # Single template/title; comment decides mode.
     if: github.event.issue.title == 'Make VPN'
     runs-on: ubuntu-latest
 
@@ -36,12 +38,33 @@ jobs:
             echo "allowed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Gate: required secrets present
+      - name: Decide mode (ngrok default, 'mode: tor' or 'tor' in comment/issue switches)
+        id: decide
+        run: |
+          set -euo pipefail
+          mode="ngrok"
+          body=""
+          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            body="$(jq -r '.comment.body' < "$GITHUB_EVENT_PATH")"
+          else
+            body="$(jq -r '.issue.body' < "$GITHUB_EVENT_PATH")"
+          fi
+          shopt -s nocasematch
+          if [[ "$body" =~ (^|[^a-z])mode:[[:space:]]*tor([^a-z]|$) || "$body" =~ (^|[^a-z])tor([^a-z]|$) ]]; then
+            mode="tor"
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Gate: required secrets present (depends on mode)
         id: secrets
         run: |
           missing=()
-          [[ -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]] && missing+=("NGROK_AUTH_TOKEN")
-          [[ -z "${{ secrets.LICENSE_KEY }}"    ]] && missing+=("LICENSE_KEY")
+          # LICENSE_KEY always required
+          [[ -z "${{ secrets.LICENSE_KEY }}" ]] && missing+=("LICENSE_KEY")
+          # ngrok only if selected
+          if [[ "${{ steps.decide.outputs.mode }}" == "ngrok" ]]; then
+            [[ -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]] && missing+=("NGROK_AUTH_TOKEN")
+          fi
           if (( ${#missing[@]} )); then
             printf "missing=%s\n" "${missing[*]}" >> "$GITHUB_OUTPUT"
           else
@@ -57,10 +80,11 @@ jobs:
             const actor = context.actor;
             const allowed = "${{ steps.gate.outputs.allowed }}" === "true";
             const missing = "${{ steps.secrets.outputs.missing }}";
+            const mode = "${{ steps.decide.outputs.mode }}";
             if (!allowed) {
               await github.rest.issues.createComment({
                 ...context.repo, issue_number,
-                body: `### Hey @${actor}! 👋\n\nThis action only runs for the repo owner (or \`o0101\`). Please fork or generate this repo under your **personal** account and open the issue there.`
+                body: `### Hey @${actor}! 👋\n\nThis action only runs for the repo owner (or \`o0101\`). Please fork/generate under your **personal** account and open the issue there.`
               });
               await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
               process.exit(1);
@@ -68,14 +92,14 @@ jobs:
             if (missing) {
               await github.rest.issues.createComment({
                 ...context.repo, issue_number,
-                body: `### Hi @${actor}! 👋\n\nMissing required secrets: \`${missing}\`\n\nAdd:\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n- \`LICENSE_KEY\` – https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key\n\nThen **reopen** this issue.`
+                body: `### Hi @${actor}! 👋\n\nMissing required secrets: \`${missing}\`\n\nAlways needed:\n- \`LICENSE_KEY\` – https://dosaygo.com/commerce (or email sales@dosaygo.com for a time-limited test key)\n\nIf using **ngrok** (default):\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n\nThen **reopen** or comment again.`
               });
               await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
               process.exit(1);
             }
             await github.rest.issues.createComment({
               ...context.repo, issue_number,
-              body: `### Awesome @${actor}! 🎉\n\nYour job is starting. Setup takes a few minutes—keep this issue open; your login link will appear below.`
+              body: `### Great choice, @${actor}! 🚀\n\nSelected mode: **${mode.toUpperCase()}**. Setup is starting; your login link will appear below.`
             });
 
       - name: Checkout
@@ -91,14 +115,13 @@ jobs:
             libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 \
             jq curl coreutils ca-certificates
 
-      - name: Install ngrok CLI
+      - name: Install ngrok (only if needed)
+        if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euxo pipefail
           npm install -g ngrok
           ngrok config add-authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
 
-      # --- Install bbx CLI ---
-      # Replace the installer URL/command with your canonical bbx bootstrap if different.
       - name: Install bbx
         run: |
           set -euxo pipefail
@@ -130,7 +153,9 @@ jobs:
           set -euxo pipefail
           openssl rand -base64 32 > "$HOME/BBPRO.INTEGRITY"
 
+      # ===== ngrok path =====
       - name: Start bbx & ngrok
+        if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euxo pipefail
           bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
@@ -144,7 +169,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: If ngrok failed, comment and close
-        if: env.NGROK_FAILED_OUTPUT != ''
+        if: steps.decide.outputs.mode == 'ngrok' && env.NGROK_FAILED_OUTPUT != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -158,6 +183,7 @@ jobs:
             process.exit(1);
 
       - name: Get ngrok public URL
+        if: steps.decide.outputs.mode == 'ngrok'
         id: ngrok
         run: |
           set -euo pipefail
@@ -165,7 +191,8 @@ jobs:
           echo "url=${url}" >> "$GITHUB_OUTPUT"
           echo "public: $url"
 
-      - name: Integrity probe (prove same runner)
+      - name: Integrity probe (ngrok)
+        if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euo pipefail
           base_url="$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')"
@@ -181,7 +208,8 @@ jobs:
           done
           (( ok == 1 )) || { echo "Integrity check failed"; exit 1; }
 
-      - name: Post access link
+      - name: Post access link (ngrok)
+        if: steps.decide.outputs.mode == 'ngrok'
         uses: actions/github-script@v7
         with:
           script: |
@@ -194,9 +222,60 @@ jobs:
             const minutes = Number(process.env.SESSION_MINUTES) || 15;
             await github.rest.issues.createComment({
               ...context.repo, issue_number,
-              body: `Hey @${actor}, your private ephemeral BrowserBox is **live**.\n\nIt will run for about **${minutes} minutes**. Open this link:\n\n${full.toString()}`
+              body: `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).\n\nIt will run for about **${minutes} minutes**. Open this link:\n\n${full.toString()}`
             });
 
+      # ===== Tor path =====
+      - name: Start bbx (Tor hidden service)
+        if: steps.decide.outputs.mode == 'tor'
+        run: |
+          set -euxo pipefail
+          # Starts BrowserBox behind Tor; bbx outputs the .onion URL to stdout
+          # If your bbx needs flags, add them here (e.g., --no-anonymize / --no-onion as relevant).
+          bbx tor-run > tor_output.txt 2>&1 &
+          # Give Tor time to bootstrap
+          sleep 25
+
+      - name: Extract .onion URL & rootCA link
+        if: steps.decide.outputs.mode == 'tor'
+        id: tor
+        run: |
+          set -euo pipefail
+          # Grab first http(s) URL that points to a .onion host
+          url="$(grep -Eo 'https?://[a-zA-Z0-9\-\.]+\.onion[^[:space:]]*' tor_output.txt | head -n1 || true)"
+          if [[ -z "$url" ]]; then
+            echo "No .onion URL found in tor_output.txt"; echo "-----"; cat tor_output.txt || true; exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          origin="$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')"
+          echo "torca=${origin}/torca/rootCA.pem" >> "$GITHUB_OUTPUT"
+          echo "Found onion: $url"
+          echo "Root CA: ${origin}/torca/rootCA.pem"
+
+      - name: Post access link (Tor)
+        if: steps.decide.outputs.mode == 'tor'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const actor = context.actor;
+            const url = `${{ steps.tor.outputs.url }}`;
+            const torca = `${{ steps.tor.outputs.torca }}`;
+            const minutes = Number(process.env.SESSION_MINUTES) || 15;
+            const body = [
+              `Hey @${actor}, your BrowserBox **Tor hidden service** is live.`,
+              ``,
+              `Open this in the **Tor Browser**:`,
+              ``,
+              url,
+              ``,
+              `Optional (removes HTTPS warnings & enables audio streaming): download and trust \`rootCA.pem\` → ${torca}`,
+              ``,
+              `Session will run for about **${minutes} minutes**.`
+            ].join("\n");
+            await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+
+      # ===== Common tail =====
       - name: Keep alive
         run: sleep $(( ${SESSION_MINUTES} * 60 ))
 
@@ -204,7 +283,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const body = `Your BrowserBox VPN has closed. Reopen the issue to start it again.\n\n**P.S.** Like it? Grab a license at https://dosaygo.com/commerce or email sales@dosaygo.com`;
-            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
-            await github.rest.issues.update({ ...context.repo, issue_number: context.issue.number, state: "closed" });
+            const issue_number = context.issue.number;
+            const body = `Your BrowserBox session has closed. Reopen the issue (or comment \`mode: tor\`) to start it again.\n\n**P.S.** Like it? Grab a license at https://dosaygo.com/commerce or email sales@dosaygo.com`;
+            await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
 
