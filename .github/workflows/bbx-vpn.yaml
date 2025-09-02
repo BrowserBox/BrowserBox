@@ -28,7 +28,7 @@ env:
 jobs:
   run_bbx:
     # Single template/title; comment decides mode.
-    if: github.event.issue.title == 'Make VPN'
+    if: github.event_name == 'push' || github.event.issue.title == 'Make VPN'
     runs-on: ubuntu-latest
 
     steps:
