@@ -1,30 +1,39 @@
 ---
 name: Make VPN
-about: Set up an ephemeral, private VPN with BrowserBox via GitHub Actions
+about: Start a short-lived personal BrowserBox via GitHub Actions (choose ngrok or Tor)
 title: Make VPN
 labels: enhancement
 assignees: ''
+---
+
+# Set Up a VPN (bbx)
+
+Before starting, **fork** or **generate** this repo to your **personal** account (not orgs).
+
+Make sure:
+1. [Issues](../settings#issue-feature) are enabled  
+2. [Actions](../actions) are enabled  
+3. Add repo **secrets**:
+   - `BB_LICENSE_KEY` – buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
+   - `NGROK_AUTH_TOKEN` – only needed if you use **ngrok** (default) https://dashboard.ngrok.com/get-started/your-authtoken
+
+**Choose tunnel by comment:**
+- Do nothing → **ngrok** (default)
+- Comment `mode: tor` (or just `tor`) → **Tor hidden service**
 
 ---
 
-# Set Up a VPN
+## 🔐 Privacy of your login link
 
-Before starting, [fork](../fork) or [generate](../generate) this repo to your account (not for orgs).
+- Issue comments are visible to anyone who can see this repo.  
+- By default, your login link is posted **in plaintext**.  
+- If you prefer your URL to **stay private**, add an **SSH RSA key** to your GitHub account at [GitHub SSH keys settings](https://github.com/settings/keys).  
+  - The workflow will detect your RSA key and encrypt your link with it.  
+  - Only your matching `~/.ssh/id_rsa*` or corresponding RSA private key can decrypt the blob.
 
-Then ensure that:
-
-1. [Issues](../settings#issue-feature) are switched on, and 
-2. [Actions](actions) are enabled.
-
-To begin the action to create your BrowserBox Tor Hidden Service, click **Submit New Issue**. 
-
-Keep an eye on the comments for next steps.
-
-*Note: This VPN activates only for the repo owner when opening or reopening the issue. It's designed to conserve your GitHub Actions minutes. My username has access for support purposes. Adjust `userjob.yaml` if you wish to change this.*
-
-Once you click **Submit New Issue**, follow-up instructions will appear in the comments.
+> **Decryption instructions** will be included in the comment.
 
 ---
 
-*Powered by [DOSYAGO](https://dosaygo.com)*
+*Powered by [DOSAYGO](https://dosaygo.com)*
 

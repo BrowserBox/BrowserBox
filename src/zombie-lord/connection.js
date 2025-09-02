@@ -619,7 +619,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     connection.forceMeta({created:targetInfo,targetInfo});
     if ( AttachmentTypes.has(targetInfo.type) && !attaching.has(targetId) && ! settingUp.has(targetId) ) {
       attaching.add(targetId);
-      DEBUG.debugSetupTab && console.log(`Attaching to target ${targetID}`);
+      DEBUG.debugSetupTab && console.log(`Attaching to target ${targetId}`);
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
     DEBUG.val && consolelog('create 2', targetInfo);
@@ -848,7 +848,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           await sleep(40);
           if ( !attaching.has(targetId) && !(settingUp.has(targetId) || setupComplete.has(targetId) || sessions.has(targetId)) ) {
             attaching.add(targetId);
-            DEBUG.debugSetupTab && console.log(`Attaching to target ${targetID}`);
+            DEBUG.debugSetupTab && console.log(`Attaching to target ${targetId}`);
             await send("Target.attachToTarget", {targetId, flatten: true});
           }
         } else if ( ! attaching.has(targetId) ) {

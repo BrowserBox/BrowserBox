@@ -1,0 +1,458 @@
+# Preamble (please keep)
+# _meta_action_id: dosyago/BrowserBox/bbx/sep-2025-unified
+# Purpose: short-lived personal test of BrowserBox via bbx on a GitHub Actions runner.
+name: Personal ephemeral BrowserBox (bbx + ngrok|tor)
+
+on:
+  issues:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created]
+  push:
+    branches:
+      - wkflows
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  BBX_PORT: "8080"
+  BBX_HOSTNAME: "localhost"
+  SESSION_MINUTES: "15"
+  REQUIRE_RSA: "false"   # set to "true" to block plaintext posting
+
+
+jobs:
+  run_bbx:
+    # Allow push runs for branch testing; keep issue title check for issue-based runs.
+    if: github.event_name == 'push' || github.event.issue.title == 'Make VPN'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: only repo owner
+        id: gate
+        run: |
+          if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" && "${{ github.actor }}" != "o0101" ]]; then
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide mode
+        id: decide
+        run: |
+          set -euo pipefail
+          mode="ngrok"
+          body=""
+          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            body="$(jq -r '.comment.body // ""' < "$GITHUB_EVENT_PATH")"
+          elif [[ "${{ github.event_name }}" == "issues" ]]; then
+            body="$(jq -r '.issue.body // ""' < "$GITHUB_EVENT_PATH")"
+          else
+            body=""
+          fi
+          shopt -s nocasematch
+          if [[ "$body" =~ (^|[^a-z])mode:[[:space:]]*tor([^a-z]|$) || "$body" =~ (^|[^a-z])tor([^a-z]|$) ]]; then
+            mode="tor"
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: required secrets present depending on mode
+        id: secrets
+        run: |
+          missing=()
+          # LICENSE_KEY always required
+          [[ -z "${{ secrets.BB_LICENSE_KEY }}" ]] && missing+=("BB_LICENSE_KEY")
+          # ngrok only if selected
+          if [[ "${{ steps.decide.outputs.mode }}" == "ngrok" ]]; then
+            [[ -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]] && missing+=("NGROK_AUTH_TOKEN")
+          fi
+          if (( ${#missing[@]} )); then
+            printf "missing=%s\n" "${missing[*]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # For issue/issue_comment runs: comment and possibly close (with RSA warning)
+      - name: Comment and possibly close
+        if: github.event_name != 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const actor = context.actor;
+            const allowed = "${{ steps.gate.outputs.allowed }}" === "true";
+            const missing = "${{ steps.secrets.outputs.missing }}";
+            const mode = "${{ steps.decide.outputs.mode }}";
+            if (!allowed) {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number,
+                body: `### Hey @${actor}! 👋\n\nThis action only runs for the repo owner (or \`o0101\`). Please fork/generate under your **personal** account and open the issue there.`
+              });
+              await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
+              process.exit(1);
+            }
+            if (missing) {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number,
+                body: `### Hi @${actor}! 👋\n\nMissing required secrets: \`${missing}\`\n\nAlways needed:\n- \`BB_LICENSE_KEY\` – https://dosaygo.com/commerce (or email sales@dosaygo.com for a time-limited test key)\n\nIf using **ngrok** (default):\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n\n> **Privacy:** by default the login link will be posted in plaintext here. If you want it **encrypted**, add an **SSH RSA** key to your GitHub account: https://github.com/settings/keys`
+              });
+              await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
+              process.exit(1);
+            }
+            await github.rest.issues.createComment({
+              ...context.repo, issue_number,
+              body: `### Great choice, @${actor}! 🚀\n\nSelected mode: **${mode.toUpperCase()}**. Setup is starting; your login link will appear below.\n\n> **Privacy tip:** add an **SSH RSA** key to your GitHub account to receive an **encrypted** link instead of plaintext.`
+            });
+
+      # For push runs: fail fast if not allowed or secrets missing (no issue to comment on).
+      - name: Enforce gates on push
+        if: github.event_name == 'push'
+        run: |
+          if [[ "${{ steps.gate.outputs.allowed }}" != "true" ]]; then
+            echo "Not repo owner (or o0101); refusing to run on push."
+            exit 1
+          fi
+          if [[ -n "${{ steps.secrets.outputs.missing }}" ]]; then
+            echo "Missing required secrets: ${{ steps.secrets.outputs.missing }}"
+            exit 1
+          fi
+          echo "Gates OK for push."
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 \
+            libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 \
+            libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 \
+            jq curl coreutils ca-certificates
+
+      - name: Install ngrok if needed
+        if: steps.decide.outputs.mode == 'ngrok'
+        run: |
+          set -euo pipefail
+          npm install -g ngrok
+          ngrok config add-authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
+
+      - name: Install bbx
+        env:
+          BBX_HOSTNAME: "localhost"
+          BBX_NO_UPDATE: "true"
+          BB_QUICK_EXIT: "yesplease"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
+        run: |
+          set -euo pipefail
+          if ! command -v bbx >/dev/null 2>&1; then
+            echo "Bootstrapping bbx CLI..."
+            bash <(curl -fsSL https://bbx.sh.dosaygo.com) install
+          fi
+          bbx --version || true
+
+      - name: Activate and certify license
+        env:
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+        run: |
+          set -euo pipefail
+          bbx install || true
+          bbx certify "${LICENSE_KEY}"
+
+      - name: Configure bbx and read login.link
+        id: setup
+        run: |
+          set -euo pipefail
+          bbx setup --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" >/dev/null
+          LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
+          if [[ ! -s "$LINK_FILE" ]]; then
+            echo "login.link not found or empty at $LINK_FILE"
+            exit 1
+          fi
+          url="$(tr -d '\r\n' < "$LINK_FILE")"
+          if ! echo "$url" | grep -Eq '^https?://'; then
+            echo "login.link does not contain a valid URL:"; cat "$LINK_FILE" || true; exit 1
+          fi
+          origin="$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')"
+          suffix="${url#${origin}}"
+          token="$(echo "$url" | grep -oP 'token=\K[^&]+' || true)"
+          {
+            echo "url=${url}"
+            echo "origin=${origin}"
+            echo "suffix=${suffix}"
+            echo "token=${token}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create integrity file
+        run: |
+          set -euo pipefail
+          openssl rand -base64 32 > "$HOME/BBPRO.INTEGRITY"
+
+      # ===== ngrok path =====
+      - name: Start bbx and ngrok
+        if: steps.decide.outputs.mode == 'ngrok'
+        run: |
+          set -euo pipefail
+          bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
+          sleep 3
+          ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" >/dev/null 2>&1 &
+
+      - name: Wait for ngrok public URL
+        if: steps.decide.outputs.mode == 'ngrok'
+        id: ngrok
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            url="$(curl -sf --max-time 2 http://127.0.0.1:4040/api/tunnels \
+                  | jq -r '[.tunnels[] | select(.public_url|startswith("https://"))][0].public_url // empty')"
+            if [[ -n "$url" ]]; then
+              echo "url=$url" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timed out waiting for ngrok public URL from Agent API." >&2
+          exit 1
+
+      - name: Build final access URL
+        if: steps.decide.outputs.mode == 'ngrok'
+        id: access
+        run: |
+          set -euo pipefail
+          full="${{ steps.ngrok.outputs.url }}${{ steps.setup.outputs.suffix }}"
+           # mask first, then write to GITHUB_OUTPUT without touching stdout
+           echo "::add-mask::${full}"
+           echo "::add-mask::${{ steps.setup.outputs.token }}"
+           echo "::add-mask::${{ steps.setup.outputs.suffix }}"
+           exec 3>>"$GITHUB_OUTPUT"
+           printf 'full=%s\n' "$full" >&3
+           exec 3>&-
+
+      - name: Encrypt URL for actor (SSH RSA only)
+        if: steps.decide.outputs.mode == 'ngrok'
+        id: encrypt
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          mkdir -p .secure
+          echo -n "${{ steps.access.outputs.full }}" > .secure/url.txt
+
+          # 1) Try GitHub JSON API
+          curl -sfL -H 'Accept: application/vnd.github+json' -H 'User-Agent: bbx-workflow' \
+            "https://api.github.com/users/${ACTOR}/keys" -o .secure/keys.json || true
+
+          # Extract first RSA from JSON (if any)
+          rsa_from_json="$(jq -r '.[] | .key' .secure/keys.json 2>/dev/null | awk '/ssh-rsa/{print; exit}' || true)"
+
+          # 2) Fallback to plaintext .keys if JSON didn’t yield RSA
+          if [[ -z "$rsa_from_json" ]]; then
+            curl -sfL -H 'User-Agent: bbx-workflow' "https://github.com/${ACTOR}.keys" -o .secure/keys.plain || true
+            rsa_from_plain="$(awk '/ssh-rsa/{print; exit}' .secure/keys.plain || true)"
+          else
+            rsa_from_plain=""
+          fi
+
+          rsa_line="${rsa_from_json:-$rsa_from_plain}"
+
+          if [[ -z "$rsa_line" ]]; then
+            echo "NO_RSA=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Write OpenSSH-format RSA pubkey
+          printf '%s\n' "$rsa_line" > .secure/actor_rsa.pub
+
+          # Convert to PEM for OpenSSL
+          ssh-keygen -f .secure/actor_rsa.pub -e -m pem > .secure/actor_rsa.pem
+
+          # Encrypt with RSA-OAEP(SHA-256)
+          openssl pkeyutl -encrypt \
+            -pubin -inkey .secure/actor_rsa.pem \
+            -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 \
+            -in .secure/url.txt -out .secure/url.bin
+
+          base64 -w 0 .secure/url.bin > .secure/url.b64
+          echo "NO_RSA=0" >> "$GITHUB_OUTPUT"
+
+      - name: Print RSA decrypt one-liner to logs
+        if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
+        run: |
+          set -euo pipefail
+          echo
+          echo "Run this ONE command locally, then paste the base64 blob and press Ctrl-D:"
+          echo
+          printf "%s\n" 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"'
+          echo
+          echo "Encrypted blob (base64):"
+          echo "-----BEGIN BLOB-----"
+          cat .secure/url.b64
+          echo "-----END BLOB-----"
+
+      - name: Show decrypt one-liner in summary
+        if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
+        run: |
+          set -euo pipefail
+          encB64="$(cat .secure/url.b64)"
+          {
+            echo '### Decrypt your BrowserBox login link'
+            echo
+            echo 'Run this **one command** locally, then paste the blob and press **Ctrl-D**:'
+            echo
+            echo '```bash'
+            echo 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"'
+            echo '```'
+            echo
+            echo '**Encrypted blob (base64):**'
+            echo
+            echo '```'
+            echo "$encB64"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Integrity probe for ngrok
+        if: steps.decide.outputs.mode == 'ngrok'
+        run: |
+          set -euo pipefail
+          base_url="$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')"
+          echo "::add-mask::${base_url}"
+          token="${{ steps.setup.outputs.token }}"
+          [[ -n "$token" ]] && echo "::add-mask::${token}"
+          integrity_url="${base_url}/integrity"
+          if [[ -n "$token" ]]; then integrity_url="${integrity_url}?session_token=${token}"; fi
+          want="$(cat "$HOME/BBPRO.INTEGRITY")"
+          ok=0
+          for i in {1..10}; do
+            # Only print attempt counter; never print URLs or tokens
+            echo "Attempt $i..."
+            got="$(curl -Ls "$integrity_url" || true)"
+            if [[ "$got" == "$want" ]]; then ok=1; break; fi
+            sleep 7
+          done
+          (( ok == 1 )) || { echo "Integrity check failed"; exit 1; }
+
+      - name: Post access link ngrok (encrypted if RSA)
+        if: steps.decide.outputs.mode == 'ngrok' && github.event_name != 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const issue_number = context.issue.number;
+            const actor = context.actor;
+            const minutes = Number(process.env.SESSION_MINUTES) || 15;
+            const noRsa = `${{ steps.encrypt.outputs.NO_RSA || '1' }}` === '1';
+
+            if (!noRsa) {
+              const encB64 = fs.readFileSync('.secure/url.b64', 'utf8').trim();
+              const oneLiner =
+                'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; ' +
+                'T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; ' +
+                'if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ' +
+                'ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \\"$K\\""; rm -f "$T" "$P"; process.exit(1); }; ' +
+                'K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"';
+
+              const body = [
+                `Hi @${actor}, your BrowserBox (ngrok) is ready.`,
+                ``,
+                `Run this command locally, then paste the blob and press Ctrl-D:`,
+                ``,
+                '```bash',
+                oneLiner,
+                '```',
+                ``,
+                '**Encrypted blob (base64):**',
+                '```',
+                encB64,
+                '```',
+                ``,
+                `Session will run for about ${minutes} minutes.`
+              ].join("\n");
+
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            } else {
+              const full = `${{ steps.access.outputs.full }}`;
+              const body = [
+                `Hi @${actor}, your BrowserBox (ngrok) is ready.`,
+                ``,
+                `No ssh-rsa key was found on your GitHub account, so the link cannot be encrypted.`,
+                `Add an RSA key here for encrypted delivery next time: https://github.com/settings/keys`,
+                ``,
+                `Open this link now:`,
+                full,
+                ``,
+                `Session will run for about ${minutes} minutes.`
+              ].join("\n");
+
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            }
+
+      # ===== Tor path =====
+      - name: Start bbx for Tor hidden service
+        if: steps.decide.outputs.mode == 'tor'
+        run: |
+          set -euo pipefail
+          bbx tor-run > tor_output.txt 2>&1 &
+          sleep 25
+
+      - name: Extract onion URL & rootCA link
+        if: steps.decide.outputs.mode == 'tor'
+        id: tor
+        run: |
+          set -euo pipefail
+          url="$(grep -Eo 'https?://[^[:space:]]+\.onion[^[:space:]]*' tor_output.txt | tail -n1 || true)"
+          if [[ -z "$url" ]]; then
+            echo "No .onion URL found in tor_output.txt"; echo "-----"; sed -n '1,200p' tor_output.txt || true; exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          origin="$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')"
+          echo "torca=${origin}/torca/rootCA.pem" >> "$GITHUB_OUTPUT"
+          echo "Found onion: $url"
+          echo "Root CA: ${origin}/torca/rootCA.pem"
+
+      - name: Post access link Tor
+        if: steps.decide.outputs.mode == 'tor' && github.event_name != 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const actor = context.actor;
+            const url = `${{ steps.tor.outputs.url }}`;
+            const torca = `${{ steps.tor.outputs.torca }}`;
+            const minutes = Number(process.env.SESSION_MINUTES) || 15;
+            const body = [
+              `Hey @${actor}, your BrowserBox **Tor hidden service** is live.`,
+              ``,
+              `Open this in the **Tor Browser**:`,
+              url,
+              ``,
+              `Optional (removes HTTPS warnings & enables audio streaming): download and trust \`rootCA.pem\` → ${torca}`,
+              ``,
+              `Session will run for about **${minutes} minutes**.`
+            ].join("\n");
+            await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+
+      # ===== Common tail =====
+      - name: Keep alive
+        run: sleep $(( ${SESSION_MINUTES} * 60 ))
+
+      - name: Close issue
+        if: github.event_name != 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const body = `Your BrowserBox session has closed. Reopen the issue (or comment \`mode: tor\`) to start it again.\n\n**P.S.** Like it? Grab a license at https://dosaygo.com/commerce or email sales@dosaygo.com`;
+            await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+            await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
+
