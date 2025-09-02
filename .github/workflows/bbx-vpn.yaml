@@ -65,7 +65,7 @@ jobs:
         run: |
           missing=()
           # LICENSE_KEY always required
-          [[ -z "${{ secrets.LICENSE_KEY }}" ]] && missing+=("LICENSE_KEY")
+          [[ -z "${{ secrets.BB_LICENSE_KEY }}" ]] && missing+=("BB_LICENSE_KEY")
           # ngrok only if selected
           if [[ "${{ steps.decide.outputs.mode }}" == "ngrok" ]]; then
             [[ -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]] && missing+=("NGROK_AUTH_TOKEN")
@@ -98,7 +98,7 @@ jobs:
             if (missing) {
               await github.rest.issues.createComment({
                 ...context.repo, issue_number,
-                body: `### Hi @${actor}! 👋\n\nMissing required secrets: \`${missing}\`\n\nAlways needed:\n- \`LICENSE_KEY\` – https://dosaygo.com/commerce (or email sales@dosaygo.com for a time-limited test key)\n\nIf using **ngrok** (default):\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n\nThen **reopen** or comment again.`
+                body: `### Hi @${actor}! 👋\n\nMissing required secrets: \`${missing}\`\n\nAlways needed:\n- \`BB_LICENSE_KEY\` – https://dosaygo.com/commerce (or email sales@dosaygo.com for a time-limited test key)\n\nIf using **ngrok** (default):\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n\nThen **reopen** or comment again.`
               });
               await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
               process.exit(1);
@@ -153,7 +153,7 @@ jobs:
 
       - name: Activate and certify license
         env:
-          LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
         run: |
           set -euxo pipefail
           bbx install || true
