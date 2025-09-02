@@ -24,6 +24,8 @@ env:
   BBX_PORT: "8080"
   BBX_HOSTNAME: "localhost"
   SESSION_MINUTES: "15"
+  REQUIRE_RSA: "false"   # set to "true" to block plaintext posting
+
 
 jobs:
   run_bbx:
@@ -216,7 +218,6 @@ jobs:
                   | jq -r '[.tunnels[] | select(.public_url|startswith("https://"))][0].public_url // empty')"
             if [[ -n "$url" ]]; then
               echo "url=$url" >> "$GITHUB_OUTPUT"
-              echo "Found ngrok URL: $url"
               exit 0
             fi
             sleep 2
@@ -230,8 +231,11 @@ jobs:
         run: |
           set -euo pipefail
           full="${{ steps.ngrok.outputs.url }}${{ steps.setup.outputs.suffix }}"
+          # mask just in case
+          echo "::add-mask::${full}"
+          echo "::add-mask::${{ steps.setup.outputs.token }}"
+          echo "::add-mask::${{ steps.setup.outputs.suffix }}"
           echo "full=${full}" >> "$GITHUB_OUTPUT"
-          echo "Final URL: $full"
 
       - name: Encrypt URL for actor (SSH RSA only)
         if: steps.decide.outputs.mode == 'ngrok'
@@ -280,11 +284,37 @@ jobs:
           base64 -w 0 .secure/url.bin > .secure/url.b64
           echo "NO_RSA=0" >> "$GITHUB_OUTPUT"
 
+      - name: Print RSA decrypt one-liner to logs
+        if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
+        run: |
+          set -euo pipefail
+          encB64="$(cat .secure/url.b64)"
+          echo
+          echo "Paste this command in your terminal to reveal the URL:"
+          echo
+          printf "%s\n" "echo '${encB64}' | base64 -d | openssl pkeyutl -decrypt -inkey ~/.ssh/id_rsa -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in /dev/stdin -out -"
+          echo
+
+      - name: Show decrypt one-liner in summary
+        if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
+        run: |
+          encB64="$(cat .secure/url.b64)"
+          {
+            echo '### 🔐 Decrypt your BrowserBox login link'
+            echo
+            echo 'Paste this command in your terminal:'
+            echo
+            echo '```bash'
+            echo "echo '${encB64}' | base64 -d | openssl pkeyutl -decrypt -inkey ~/.ssh/id_rsa -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in /dev/stdin -out -"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Integrity probe for ngrok
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euo pipefail
           base_url="$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')"
+          echo "::add-mask::${base_url}"
           token="${{ steps.setup.outputs.token }}"
           integrity_url="${base_url}/integrity"
           if [[ -n "$token" ]]; then integrity_url="${integrity_url}?session_token=${token}"; fi
@@ -332,6 +362,14 @@ jobs:
               ].join("\n");
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
             } else {
+              if (process.env.REQUIRE_RSA === "true") {
+                const body = [
+                  `I couldn’t find an ssh-rsa key on your GitHub account, so I did not post the link.`,
+                  `Add an RSA key here: https://github.com/settings/keys and reopen this issue.`
+                ].join("\n");
+                await github.rest.issues.createComment({ ...context.repo, issue_number, body });
+                process.exit(1);
+              }
               const full = `${{ steps.access.outputs.full }}`;
               const body = [
                 `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).`,
