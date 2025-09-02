@@ -8,6 +8,9 @@ on:
     types: [opened, reopened]
   issue_comment:
     types: [created]
+  push:
+      branches:
+        - wkflows
 
 permissions:
   contents: read
