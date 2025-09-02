@@ -1,3 +1,4 @@
+# Preamble (please keep)
 # _meta_action_id: dosyago/BrowserBox/bbx/sep-2025-unified
 # Purpose: short-lived personal test of BrowserBox via bbx on a GitHub Actions runner.
 name: Personal ephemeral BrowserBox (bbx + ngrok|tor)
