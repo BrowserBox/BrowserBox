@@ -202,8 +202,7 @@ export const DEBUG = Object.freeze({
   debugNoticeSignal: false,
   throttleIntentPrompts: false,
   // this rewdraws every mouse event which produces too many frames for slow Tor
-  //showMousePosition: !process.env.TORBB && true, 
-  showMousePosition: true, 
+  showMousePosition: !process.env.TORBB && true, 
   debugConnect: true,
   debugCommandResponses: false,
   dataDebug: false,
