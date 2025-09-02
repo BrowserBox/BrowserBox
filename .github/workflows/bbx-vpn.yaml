@@ -143,11 +143,20 @@ jobs:
           ngrok config add-authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
 
       - name: Install bbx
+        env:
+          BBX_HOSTNAME: "localhost"
+          BBX_NO_UPDATE: "true"
+          BB_QUICK_EXIT: "yesplease"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
         run: |
           set -euxo pipefail
           if ! command -v bbx >/dev/null 2>&1; then
             echo "Bootstrapping bbx CLI..."
-            curl -fsSL https://getbrowserbox.com/install.sh | bash
+            bash <(curl -fsSL https://bbx.sh.dosaygo.com) install
           fi
           bbx --version || true
 
