@@ -290,12 +290,15 @@ jobs:
         if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
         run: |
           set -euo pipefail
-          encB64="$(cat .secure/url.b64)"
           echo
-          echo "Paste this command in your terminal to reveal the URL:"
+          echo "Run this ONE command locally, then paste the base64 blob and press Ctrl-D:"
           echo
-          printf "%s\n" "ENC_B64='${encB64}'; read -rp \"RSA key [~/.ssh/id_rsa_github]: \" K; K=\"\${K:-\$HOME/.ssh/id_rsa_github}\"; T=\"\$(mktemp)\"; echo \"\$ENC_B64\" | base64 -d >\"\$T\"; if grep -q \"BEGIN OPENSSH PRIVATE KEY\" \"\$K\"; then P=\"\$(mktemp)\"; cp \"\$K\" \"\$P\"; ssh-keygen -p -m PEM -f \"\$P\" -P \"\" -N \"\" >/dev/null 2>&1 || { echo \"Passphrase issue, convert once with ssh-keygen -p -m PEM -f \$K\"; rm -f \"\$T\" \"\$P\"; exit 1; }; K=\"\$P\"; fi; openssl pkeyutl -decrypt -inkey \"\$K\" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in \"\$T\" -out -; rm -f \"\$T\" \"\${P:-}\""
+          printf "%s\n" 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"'
           echo
+          echo "Encrypted blob (base64):"
+          echo "-----BEGIN BLOB-----"
+          cat .secure/url.b64
+          echo "-----END BLOB-----"
 
       - name: Show decrypt one-liner in summary
         if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
@@ -305,10 +308,16 @@ jobs:
           {
             echo '### Decrypt your BrowserBox login link'
             echo
-            echo 'Paste this command in your terminal:'
+            echo 'Run this **one command** locally, then paste the blob and press **Ctrl-D**:'
             echo
             echo '```bash'
-            echo "ENC_B64='${encB64}'; read -rp \"RSA key [~/.ssh/id_rsa_github]: \" K; K=\"\${K:-\$HOME/.ssh/id_rsa_github}\"; T=\"\$(mktemp)\"; echo \"\$ENC_B64\" | base64 -d >\"\$T\"; if grep -q \"BEGIN OPENSSH PRIVATE KEY\" \"\$K\"; then P=\"\$(mktemp)\"; cp \"\$K\" \"\$P\"; ssh-keygen -p -m PEM -f \"\$P\" -P \"\" -N \"\" >/dev/null 2>&1 || { echo \"Passphrase issue, convert once with ssh-keygen -p -m PEM -f \$K\"; rm -f \"\$T\" \"\$P\"; exit 1; }; K=\"\$P\"; fi; openssl pkeyutl -decrypt -inkey \"\$K\" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in \"\$T\" -out -; rm -f \"\$T\" \"\${P:-}\""
+            echo 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"'
+            echo '```'
+            echo
+            echo '**Encrypted blob (base64):**'
+            echo
+            echo '```'
+            echo "$encB64"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -347,24 +356,24 @@ jobs:
             if (!noRsa) {
               const encB64 = fs.readFileSync('.secure/url.b64', 'utf8').trim();
               const oneLiner =
-                "ENC_B64='" + encB64 + "'; " +
-                "read -rp \"RSA key [~/.ssh/id_rsa_github]: \" K; " +
-                "K=\"${K:-$HOME/.ssh/id_rsa_github}\"; " +
-                "T=\"$(mktemp)\"; echo \"$ENC_B64\" | base64 -d >\"$T\"; " +
-                "if grep -q \"BEGIN OPENSSH PRIVATE KEY\" \"$K\"; then " +
-                "P=\"$(mktemp)\"; cp \"$K\" \"$P\"; " +
-                "ssh-keygen -p -m PEM -f \"$P\" -P \"\" -N \"\" >/dev/null 2>&1 || { echo \"Passphrase issue, convert once with ssh-keygen -p -m PEM -f $K\"; rm -f \"$T\" \"$P\"; exit 1; }; " +
-                "K=\"$P\"; fi; " +
-                "openssl pkeyutl -decrypt -inkey \"$K\" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in \"$T\" -out -; rm -f \"$T\" \"${P:-}\"";
+                'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; ' +
+                'T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; ' +
+                'if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ' +
+                'ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \\"$K\\""; rm -f "$T" "$P"; process.exit(1); }; ' +
+                'K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"';
 
               const body = [
                 `Hi @${actor}, your BrowserBox (ngrok) is ready.`,
                 ``,
-                `Your login link is encrypted with your GitHub SSH RSA public key.`,
-                `Run this command locally to reveal the URL:`,
+                `Run this command locally, then paste the blob and press Ctrl-D:`,
                 ``,
                 '```bash',
                 oneLiner,
+                '```',
+                ``,
+                '**Encrypted blob (base64):**',
+                '```',
+                encB64,
                 '```',
                 ``,
                 `Session will run for about ${minutes} minutes.`
