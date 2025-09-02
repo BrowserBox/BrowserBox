@@ -41,7 +41,7 @@ jobs:
             echo "allowed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Decide mode (ngrok default, 'mode: tor' or 'tor' in comment/issue switches)
+      - name: Decide mode 
         id: decide
         run: |
           set -euo pipefail
@@ -58,7 +58,7 @@ jobs:
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
-      - name: Gate: required secrets present (depends on mode)
+      - name: Gate: required secrets present depending on mode
         id: secrets
         run: |
           missing=()
@@ -74,7 +74,7 @@ jobs:
             echo "missing=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Comment & possibly close (gates)
+      - name: Comment & possibly close
         if: always()
         uses: actions/github-script@v7
         with:
@@ -108,7 +108,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install system deps (headless Chrome/GTK/etc.)
+      - name: Install system deps 
         run: |
           set -euxo pipefail
           sudo apt-get update
@@ -118,7 +118,7 @@ jobs:
             libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 \
             jq curl coreutils ca-certificates
 
-      - name: Install ngrok (only if needed)
+      - name: Install ngrok if needed
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euxo pipefail
@@ -134,7 +134,7 @@ jobs:
           fi
           bbx --version || true
 
-      - name: Activate / certify license
+      - name: Activate and certify license
         env:
           LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
         run: |
@@ -142,7 +142,7 @@ jobs:
           bbx install || true
           bbx certify "${LICENSE_KEY}"
 
-      - name: Configure bbx (capture suffix)
+      - name: Configure bbx 
         id: setup
         run: |
           set -euo pipefail
@@ -157,7 +157,7 @@ jobs:
           openssl rand -base64 32 > "$HOME/BBPRO.INTEGRITY"
 
       # ===== ngrok path =====
-      - name: Start bbx & ngrok
+      - name: Start bbx and ngrok
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euxo pipefail
@@ -171,7 +171,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: If ngrok failed, comment and close
+      - name: If ngrok failed then comment and close
         if: steps.decide.outputs.mode == 'ngrok' && env.NGROK_FAILED_OUTPUT != ''
         uses: actions/github-script@v7
         with:
@@ -194,7 +194,7 @@ jobs:
           echo "url=${url}" >> "$GITHUB_OUTPUT"
           echo "public: $url"
 
-      - name: Integrity probe (ngrok)
+      - name: Integrity probe for ngrok
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euo pipefail
@@ -211,7 +211,7 @@ jobs:
           done
           (( ok == 1 )) || { echo "Integrity check failed"; exit 1; }
 
-      - name: Post access link (ngrok)
+      - name: Post access link ngrok
         if: steps.decide.outputs.mode == 'ngrok'
         uses: actions/github-script@v7
         with:
@@ -229,7 +229,7 @@ jobs:
             });
 
       # ===== Tor path =====
-      - name: Start bbx (Tor hidden service)
+      - name: Start bbx for Tor hidden service
         if: steps.decide.outputs.mode == 'tor'
         run: |
           set -euxo pipefail
@@ -239,7 +239,7 @@ jobs:
           # Give Tor time to bootstrap
           sleep 25
 
-      - name: Extract .onion URL & rootCA link
+      - name: Extract onion URL & rootCA link
         if: steps.decide.outputs.mode == 'tor'
         id: tor
         run: |
@@ -255,7 +255,7 @@ jobs:
           echo "Found onion: $url"
           echo "Root CA: ${origin}/torca/rootCA.pem"
 
-      - name: Post access link (Tor)
+      - name: Post access link Tor
         if: steps.decide.outputs.mode == 'tor'
         uses: actions/github-script@v7
         with:
