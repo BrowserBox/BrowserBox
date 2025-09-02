@@ -234,7 +234,7 @@ jobs:
           echo "Final URL: $full"
 
       - name: Encrypt URL for actor (SSH RSA only)
-        if: steps.decide.outputs.mode == 'ngrok' && github.event_name != 'push'
+        if: steps.decide.outputs.mode == 'ngrok'
         id: encrypt
         env:
           ACTOR: ${{ github.actor }}
