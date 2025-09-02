@@ -292,20 +292,21 @@ jobs:
           echo
           echo "Paste this command in your terminal to reveal the URL:"
           echo
-          printf "%s\n" "echo '${encB64}' | base64 -d | openssl pkeyutl -decrypt -inkey ~/.ssh/id_rsa -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in /dev/stdin -out -"
+          printf "%s\n" "ENC_B64='${encB64}'; read -rp \"RSA key [~/.ssh/id_rsa_github]: \" K; K=\"\${K:-\$HOME/.ssh/id_rsa_github}\"; T=\"\$(mktemp)\"; echo \"\$ENC_B64\" | base64 -d >\"\$T\"; if grep -q \"BEGIN OPENSSH PRIVATE KEY\" \"\$K\"; then P=\"\$(mktemp)\"; cp \"\$K\" \"\$P\"; ssh-keygen -p -m PEM -f \"\$P\" -P \"\" -N \"\" >/dev/null 2>&1 || { echo \"Passphrase issue, convert once with ssh-keygen -p -m PEM -f \$K\"; rm -f \"\$T\" \"\$P\"; exit 1; }; K=\"\$P\"; fi; openssl pkeyutl -decrypt -inkey \"\$K\" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in \"\$T\" -out -; rm -f \"\$T\" \"\${P:-}\""
           echo
 
       - name: Show decrypt one-liner in summary
         if: steps.decide.outputs.mode == 'ngrok' && steps.encrypt.outputs.NO_RSA == '0'
         run: |
+          set -euo pipefail
           encB64="$(cat .secure/url.b64)"
           {
-            echo '### 🔐 Decrypt your BrowserBox login link'
+            echo '### Decrypt your BrowserBox login link'
             echo
             echo 'Paste this command in your terminal:'
             echo
             echo '```bash'
-            echo "echo '${encB64}' | base64 -d | openssl pkeyutl -decrypt -inkey ~/.ssh/id_rsa -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in /dev/stdin -out -"
+            echo "ENC_B64='${encB64}'; read -rp \"RSA key [~/.ssh/id_rsa_github]: \" K; K=\"\${K:-\$HOME/.ssh/id_rsa_github}\"; T=\"\$(mktemp)\"; echo \"\$ENC_B64\" | base64 -d >\"\$T\"; if grep -q \"BEGIN OPENSSH PRIVATE KEY\" \"\$K\"; then P=\"\$(mktemp)\"; cp \"\$K\" \"\$P\"; ssh-keygen -p -m PEM -f \"\$P\" -P \"\" -N \"\" >/dev/null 2>&1 || { echo \"Passphrase issue, convert once with ssh-keygen -p -m PEM -f \$K\"; rm -f \"\$T\" \"\$P\"; exit 1; }; K=\"\$P\"; fi; openssl pkeyutl -decrypt -inkey \"\$K\" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in \"\$T\" -out -; rm -f \"\$T\" \"\${P:-}\""
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -341,47 +342,45 @@ jobs:
 
             if (!noRsa) {
               const encB64 = fs.readFileSync('.secure/url.b64', 'utf8').trim();
+              const oneLiner =
+                "ENC_B64='" + encB64 + "'; " +
+                "read -rp \"RSA key [~/.ssh/id_rsa_github]: \" K; " +
+                "K=\"${K:-$HOME/.ssh/id_rsa_github}\"; " +
+                "T=\"$(mktemp)\"; echo \"$ENC_B64\" | base64 -d >\"$T\"; " +
+                "if grep -q \"BEGIN OPENSSH PRIVATE KEY\" \"$K\"; then " +
+                "P=\"$(mktemp)\"; cp \"$K\" \"$P\"; " +
+                "ssh-keygen -p -m PEM -f \"$P\" -P \"\" -N \"\" >/dev/null 2>&1 || { echo \"Passphrase issue, convert once with ssh-keygen -p -m PEM -f $K\"; rm -f \"$T\" \"$P\"; exit 1; }; " +
+                "K=\"$P\"; fi; " +
+                "openssl pkeyutl -decrypt -inkey \"$K\" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in \"$T\" -out -; rm -f \"$T\" \"${P:-}\"";
+
               const body = [
-                `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).`,
+                `Hi @${actor}, your BrowserBox (ngrok) is ready.`,
                 ``,
-                `🔐 I've encrypted your login link with your **GitHub SSH RSA** public key.`,
-                `Only your matching \`~/.ssh/id_rsa\` can decrypt it.`,
+                `Your login link is encrypted with your GitHub SSH RSA public key.`,
+                `Run this command locally to reveal the URL:`,
                 ``,
-                `**Decrypt on your machine:**`,
-                `1) Save the blob below as \`url.b64\``,
-                `2) Decode: \`base64 -d url.b64 > url.bin\``,
-                `3) Decrypt: \`openssl pkeyutl -decrypt -inkey ~/.ssh/id_rsa -in url.bin -out url.txt\``,
-                `4) Open: \`cat url.txt\``,
-                ``,
-                `**Encrypted blob (base64):**`,
-                '```',
-                encB64,
+                '```bash',
+                oneLiner,
                 '```',
                 ``,
-                `Session will run for about **${minutes} minutes**.`
+                `Session will run for about ${minutes} minutes.`
               ].join("\n");
+
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
             } else {
-              if (process.env.REQUIRE_RSA === "true") {
-                const body = [
-                  `I couldn’t find an ssh-rsa key on your GitHub account, so I did not post the link.`,
-                  `Add an RSA key here: https://github.com/settings/keys and reopen this issue.`
-                ].join("\n");
-                await github.rest.issues.createComment({ ...context.repo, issue_number, body });
-                process.exit(1);
-              }
               const full = `${{ steps.access.outputs.full }}`;
               const body = [
-                `Hey @${actor}, your private ephemeral BrowserBox is **live** (ngrok).`,
+                `Hi @${actor}, your BrowserBox (ngrok) is ready.`,
                 ``,
-                `⚠️ I couldn’t find an **ssh-rsa** key on your GitHub account, so I couldn’t encrypt the link.`,
-                `Add an RSA key for encrypted delivery next time: https://github.com/settings/keys`,
+                `No ssh-rsa key was found on your GitHub account, so the link cannot be encrypted.`,
+                `Add an RSA key here for encrypted delivery next time: https://github.com/settings/keys`,
                 ``,
-                `**Open this link now:**`,
+                `Open this link now:`,
                 full,
                 ``,
-                `Session will run for about **${minutes} minutes**.`
+                `Session will run for about ${minutes} minutes.`
               ].join("\n");
+
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
             }
 

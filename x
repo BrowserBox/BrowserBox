@@ -1,0 +1,2 @@
+read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; read -rp "Paste blob: " ENC_B64; T="$(mktemp)"; echo "$ENC_B64" | base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "🔐 Passphrase issue, convert once with ssh-keygen -p -m PEM -f $K"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"
+
