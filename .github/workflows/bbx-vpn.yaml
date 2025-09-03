@@ -221,6 +221,9 @@ jobs:
 
       # Proactive secret check in runner, with status coaching (issue-only)
       - name: Check secrets (runner) & update status
+        env: 
+          BB_LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         if: github.event_name != 'push'
         uses: actions/github-script@v7
         with:
