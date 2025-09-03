@@ -1,40 +1,47 @@
 ---
 name: Make VPN
-about: Start a short-lived personal BrowserBox via GitHub Actions (choose ngrok or Tor)
+about: Start a short-lived personal BrowserBox via GitHub Actions (choose tunnel, encryption)
 title: Make VPN
 labels: enhancement
 assignees: ''
 ---
 
-# Set Up a VPN (bbx)
+# Set Up a Personal BrowserBox (bbx)
 
 Before starting, **fork** or **generate** this repo to your **personal** account (not orgs).
 
-Make sure:
-1. [Issues](../settings#issue-feature) are enabled  
-2. [Actions](../actions) are enabled  
-3. Add repo **secrets**:
-   - `BB_LICENSE_KEY` – buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
-   - `NGROK_AUTH_TOKEN` – only needed if you use **ngrok** (default) https://dashboard.ngrok.com/get-started/your-authtoken
-
-**Choose the tunnel you'll use to access your BrowserBox, using a comment directive:**
-- Do nothing → **ngrok** (default)
-- Comment **mode:&nbsp;tor** → **Tor hidden service** 
-- Comment **mode:&nbsp;ssh** → **SSH tunnel** [*not available in GitHub workflow yet*]
+### ✅ Repository checklist (Required)
+- [ ] **Issues** are enabled → Settings ▸ General ▸ Features → Issues
+- [ ] **Actions** are enabled → Actions tab
+- [ ] Secrets added (**Settings ▸ Secrets and variables ▸ Actions ▸ New repository secret**)
+  - [ ] `BB_LICENSE_KEY` – buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
+  - [ ] `NGROK_AUTH_TOKEN` – **only** if you select **ngrok**: https://dashboard.ngrok.com/get-started/your-authtoken
 
 ---
 
-## 🔐 Privacy of your login link
+### 🔧 Options (edit this section to choose)
+**Tunnel (pick one):**
+- [x] ngrok
+- [ ] tor
+- [ ] ssh  <!-- not available in this workflow yet -->
 
-- Issue comments are visible to anyone who can see this repo.  
-- By default, your login link is posted **in plaintext**.  
-- If you prefer your URL to **stay private**, add an **SSH RSA key** to your GitHub account at [GitHub SSH keys settings](https://github.com/settings/keys).  
-  - The workflow will detect your RSA key and encrypt your link with it.  
-  - Only your matching `~/.ssh/id_rsa*` or corresponding RSA private key can decrypt the blob.
+**Encrypt login link?**
+- [ ] Encrypt  <!-- Requires an SSH **RSA** key on your GitHub account -->
 
-> **Decryption instructions** will be included in the comment.
+> To add an **SSH RSA** key: https://github.com/settings/keys
 
 ---
+
+### ▶️ Start it
+When your repo checklist is complete and options above are set, **comment** `start` or `run`
+
+The action will post the login details in a comment when your server is active (takes 5 - 10 minutes to install). Sessions run for ~40 minutes by default.
+
+---
+
+**Privacy notes**
+- Issue comments are visible to anyone with repo access.
+- If **Encrypt** is checked and you have an **SSH RSA** key on GitHub, your link will be posted **encrypted** with that key; only your matching private key can decrypt it. We’ll include a one-liner to decrypt locally.
 
 *Powered by [DOSAYGO](https://dosaygo.com)*
 
