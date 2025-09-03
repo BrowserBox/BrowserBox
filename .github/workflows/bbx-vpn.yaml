@@ -118,8 +118,8 @@ jobs:
             const encrypt = "${{ steps.parse.outputs.encrypt }}" === "1";
             const hasRSA = "${{ steps.rsa.outputs.has }}" === "1";
             const missing = "${{ steps.secrets.outputs.missing }}";
-            const checklistHelp =
-`**How to use this thread**
+            const checklistHelp = `
+**How to use this thread**
 
 1. Edit the **Options** section in the issue body (toggle the checkboxes).
 2. When ready, comment \`start\` (also accepts: \`go\`, \`run\`, \`do it\`, \`make it so\`).
@@ -135,8 +135,8 @@ jobs:
                   : `🔐 **Encrypt** is checked, but **no SSH RSA** key was found on your GitHub account. Add one at https://github.com/settings/keys or uncheck **Encrypt**.`)
               : `🔓 **Encrypt** is not selected; the link will be posted in plaintext.`;
 
-            const body =
-`### BrowserBox setup helper
+            const body = `
+### BrowserBox setup helper
 
 - Tunnel: **${mode.toUpperCase()}**
 - Encryption: **${encrypt ? "ON (RSA required)" : "OFF"}**
