@@ -1,3 +1,11 @@
+---
+name: Make VPN
+about: Configure and start your BrowserBox VPN on GitHub Actions
+title: 'Make VPN'
+labels: enhancement
+assignees: ''
+
+---
 # Personal BrowserBox (bbx) — Control Panel
 
 Welcome! This is your **control panel**. Flip switches here; the Action handles the rest.
