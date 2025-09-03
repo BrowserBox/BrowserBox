@@ -119,11 +119,11 @@ jobs:
             const hasRSA = "${{ steps.rsa.outputs.has }}" === "1";
             const missing = "${{ steps.secrets.outputs.missing }}";
             const checklistHelp = `
-**How to use this thread**
+            **How to use this thread**
 
-1. Edit the **Options** section in the issue body (toggle the checkboxes).
-2. When ready, comment \`start\` (also accepts: \`go\`, \`run\`, \`do it\`, \`make it so\`).
-3. We’ll post your login details below.`;
+            1. Edit the **Options** section in the issue body (toggle the checkboxes).
+            2. When ready, comment \`start\` (also accepts: \`go\`, \`run\`, \`do it\`, \`make it so\`).
+            3. We’ll post your login details below.`;
 
             const secretsBlock = missing
               ? `❗ Missing required secrets: \`${missing}\``
@@ -136,15 +136,15 @@ jobs:
               : `🔓 **Encrypt** is not selected; the link will be posted in plaintext.`;
 
             const body = `
-### BrowserBox setup helper
+            ### BrowserBox setup helper
 
-- Tunnel: **${mode.toUpperCase()}**
-- Encryption: **${encrypt ? "ON (RSA required)" : "OFF"}**
+            - Tunnel: **${mode.toUpperCase()}**
+            - Encryption: **${encrypt ? "ON (RSA required)" : "OFF"}**
 
-${secretsBlock}
-${encBlock}
+            ${secretsBlock}
+            ${encBlock}
 
-${checklistHelp}`;
+            ${checklistHelp}`;
 
             // Find an existing bot status comment to update (prevents spam)
             const { data: comments } = await github.rest.issues.listComments({
