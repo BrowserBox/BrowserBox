@@ -5,9 +5,9 @@ name: Personal ephemeral BrowserBox (bbx + ngrok|tor)
 
 on:
   issues:
-    types: [opened, edited, reopened]
+    types: [opened]
   issue_comment:
-    types: [created, edited]
+    types: [created]
   push:
     branches:
       - vpn123
@@ -31,7 +31,11 @@ jobs:
   # 1) Lightweight UI/status job
   # -----------------------------
   ui_comment:
-    if: github.event_name != 'push'
+    if: >
+      github.event_name != 'push' &&
+      github.event.issue &&
+      github.event.issue.pull_request == null &&
+      github.event.issue.title == 'Make VPN'
     runs-on: ubuntu-latest
     steps:
       - name: Prepare context
@@ -172,15 +176,21 @@ jobs:
   # ----------------------------------------
   run_bbx:
     # Allow push runs for branch testing; otherwise require a "start-like" command
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'issue_comment' && (
-        contains(github.event.comment.body, 'start') ||
-        contains(github.event.comment.body, 'go') ||
-        contains(github.event.comment.body, 'run') ||
-        contains(github.event.comment.body, 'do it') ||
-        contains(github.event.comment.body, 'make it so')
-      ))
+    if: >
+      (github.event_name == 'push' &&
+       startsWith(github.ref, 'refs/heads/vpn123'))
+      ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue &&
+       github.event.issue.pull_request == null &&
+       github.event.issue.title == 'Make VPN' &&
+       (
+         contains(github.event.comment.body, 'start') ||
+         contains(github.event.comment.body, 'go') ||
+         contains(github.event.comment.body, 'run') ||
+         contains(github.event.comment.body, 'do it') ||
+         contains(github.event.comment.body, 'make it so')
+       ))
     runs-on: ubuntu-latest
 
     steps:
