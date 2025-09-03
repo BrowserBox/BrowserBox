@@ -154,12 +154,13 @@ jobs:
       # Refs we need later
       - name: Export basics
         run: |
-          echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> "$GITHUB_ENV"
+          echo "ISSUE_NUMBER=${{ github.event.issue.number || '' }}" >> "$GITHUB_ENV"
           echo "REPO=${{ github.repository }}" >> "$GITHUB_ENV"
           echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
 
-      # Status: Starting
+      # Status: Starting (issue-only)
       - name: Stage → Starting
+        if: github.event_name != 'push'
         uses: actions/github-script@v7
         with:
           script: |
@@ -201,7 +202,9 @@ jobs:
               core.setFailed("Aborted by preconditions");
             }
 
+      # Status update steps (issue-only)
       - name: Install system deps (status)
+        if: github.event_name != 'push'
         uses: actions/github-script@v7
         with:
           script: |
@@ -230,7 +233,7 @@ jobs:
             jq curl coreutils ca-certificates
 
       - name: Install ngrok (status)
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok')
         uses: actions/github-script@v7
         with:
           script: |
@@ -249,13 +252,14 @@ jobs:
             }
 
       - name: Install ngrok if needed
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name == 'push' || (github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok'))
         run: |
           set -euo pipefail
           npm install -g ngrok
           ngrok config add-authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
 
       - name: Install bbx (status)
+        if: github.event_name != 'push'
         uses: actions/github-script@v7
         with:
           script: |
@@ -294,6 +298,7 @@ jobs:
           bbx --version || true
 
       - name: Certify & setup (status)
+        if: github.event_name != 'push'
         uses: actions/github-script@v7
         with:
           script: |
@@ -345,7 +350,7 @@ jobs:
 
       # ===== ngrok path =====
       - name: Start bbx + ngrok (status)
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok')
         uses: actions/github-script@v7
         with:
           script: |
@@ -364,7 +369,7 @@ jobs:
             }
 
       - name: Start bbx and ngrok
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name == 'push' || (github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok'))
         run: |
           set -euo pipefail
           bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
@@ -372,7 +377,7 @@ jobs:
           ngrok http "https://$BBX_HOSTNAME:${BBX_PORT}" >/dev/null 2>&1 &
 
       - name: Wait for ngrok public URL
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name == 'push' || (github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok'))
         id: ngrok
         run: |
           set -euo pipefail
@@ -386,7 +391,7 @@ jobs:
           exit 1
 
       - name: Prepare masked env for access (ngrok)
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name == 'push' || (github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok'))
         run: |
           set -euo pipefail
           full="${{ steps.ngrok.outputs.url }}${{ steps.setup.outputs.suffix }}"
@@ -402,7 +407,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Verify (integrity, ngrok)
-        if: contains(github.event.issue.body, '- [x] ngrok')
+        if: github.event_name == 'push' || (github.event_name != 'push' && contains(github.event.issue.body, '- [x] ngrok'))
         run: |
           set -euo pipefail
           base_url="$(printf '%s\n' "$NGROK_URL" | grep -oE 'https?://[^/]+')"
@@ -422,7 +427,7 @@ jobs:
 
       # ===== TOR path (use login.link, not stdout) =====
       - name: Start bbx (Tor) – status
-        if: contains(github.event.issue.body, '- [x] tor')
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] tor')
         uses: actions/github-script@v7
         with:
           script: |
@@ -441,7 +446,7 @@ jobs:
             }
 
       - name: Start bbx for Tor hidden service
-        if: contains(github.event.issue.body, '- [x] tor')
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] tor')
         run: |
           # tor-run starts bbx with an onion service and writes login.link with the .onion URL
           bbx tor-run > tor_output.txt 2>&1 &
@@ -473,7 +478,7 @@ jobs:
           exit 1
 
       - name: Read Tor login.link and prepare env
-        if: contains(github.event.issue.body, '- [x] tor')
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] tor')
         id: tor_setup
         run: |
           set -euo pipefail
@@ -491,7 +496,7 @@ jobs:
 
       # ===== Encryption (ngrok & tor) =====
       - name: Encrypt URL for actor (RSA only)
-        if: contains(github.event.issue.body, '- [x] Encrypt')
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] Encrypt')
         id: encrypt
         env:
           ACTOR: ${{ github.actor }}
@@ -523,7 +528,7 @@ jobs:
 
       # ===== Final status update with access details =====
       - name: Status → Ready (encrypted)
-        if: contains(github.event.issue.body, '- [x] Encrypt') && steps.encrypt.outputs.NO_RSA == '0'
+        if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] Encrypt') && steps.encrypt.outputs.NO_RSA == '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -562,8 +567,10 @@ jobs:
 
       - name: Status → Ready (plaintext)
         if: >
-          (!contains(github.event.issue.body, '- [x] Encrypt')) ||
-          (contains(github.event.issue.body, '- [x] Encrypt') && steps.encrypt.outputs.NO_RSA == '1' && env.REQUIRE_RSA != 'true')
+          github.event_name != 'push' && (
+            !contains(github.event.issue.body, '- [x] Encrypt') ||
+            (contains(github.event.issue.body, '- [x] Encrypt') && steps.encrypt.outputs.NO_RSA == '1' && env.REQUIRE_RSA != 'true')
+          )
         uses: actions/github-script@v7
         env:
           ACCESS_FULL: ${{ env.ACCESS_FULL }}
@@ -593,8 +600,9 @@ jobs:
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
 
-      # ===== Keep-alive with OFF switch monitoring =====
+      # ===== Keep-alive with OFF switch monitoring (issue-only) =====
       - name: Keep alive with OFF monitoring
+        if: github.event_name != 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -612,10 +620,10 @@ jobs:
             sleep 10
           done
 
-      # ===== Normal end: we’ll close via status comment; no auto-close issue here =====
+      # ===== Normal end: issue-only status close =====
       - name: Status → Closed
+        if: always() && github.event_name != 'push'
         uses: actions/github-script@v7
-        if: always()
         with:
           script: |
             const issue_number = context.issue.number;
@@ -632,7 +640,7 @@ jobs:
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
 
-      # ===== Failure reporter (new comment with link) =====
+      # ===== Failure reporter (new comment) — issue-only =====
       - name: Report failure (new comment)
         if: failure() && github.event_name != 'push'
         uses: actions/github-script@v7
