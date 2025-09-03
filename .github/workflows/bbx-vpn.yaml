@@ -514,12 +514,19 @@ jobs:
         if: steps.decide.outputs.mode == 'ngrok'
         run: |
           set -euo pipefail
-          base_url="$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')"
+
+          # Derive base host from the masked env var (no literals in the script body)
+          base_url="$(printf '%s\n' "$NGROK_URL" | grep -oE 'https?://[^/]+')"
+
+          # Mask again defensively (idempotent; fine)
           echo "::add-mask::${base_url}"
-          token="${{ steps.setup.outputs.token }}"
-          [[ -n "$token" ]] && echo "::add-mask::${token }}"
+          [[ -n "${SESSION_TOKEN:-}" ]] && echo "::add-mask::${SESSION_TOKEN}"
+
           integrity_url="${base_url}/integrity"
-          if [[ -n "$token" ]]; then integrity_url="${integrity_url}?session_token=${token}"; fi
+          if [[ -n "${SESSION_TOKEN:-}" ]]; then
+            integrity_url="${integrity_url}?session_token=${SESSION_TOKEN}"
+          fi
+
           want="$(cat "$HOME/BBPRO.INTEGRITY")"
           ok=0
           for i in {1..10}; do

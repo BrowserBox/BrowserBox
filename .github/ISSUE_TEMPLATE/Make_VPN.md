@@ -10,12 +10,12 @@ assignees: ''
 
 Before starting, **fork** or **generate** this repo to your **personal** account (not orgs).
 
-### ✅ Repository checklist (Required)
-- [ ] **Issues** are enabled → Settings ▸ General ▸ Features → Issues
-- [ ] **Actions** are enabled → Actions tab
-- [ ] Secrets added (**Settings ▸ Secrets and variables ▸ Actions ▸ New repository secret**)
-  - [ ] `BB_LICENSE_KEY` – buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
-  - [ ] `NGROK_AUTH_TOKEN` – **only** if you select **ngrok**: https://dashboard.ngrok.com/get-started/your-authtoken
+### ✅ Repository checklist (Required for this to work)
+- **Issues** are enabled → Settings ▸ General ▸ Features → Issues
+- **Actions** are enabled → Actions tab
+- Secrets added (**Settings ▸ Secrets and variables ▸ Actions ▸ New repository secret**)
+  - `BB_LICENSE_KEY` – buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
+  - `NGROK_AUTH_TOKEN` – **only** if you select **ngrok**: https://dashboard.ngrok.com/get-started/your-authtoken
 
 ---
 
@@ -26,7 +26,7 @@ Before starting, **fork** or **generate** this repo to your **personal** account
 - [ ] ssh  <!-- not available in this workflow yet -->
 
 **Encrypt login link?**
-- [ ] Encrypt  <!-- Requires an SSH **RSA** key on your GitHub account -->
+- [x] Encrypt  <!-- Requires an SSH **RSA** key on your GitHub account -->
 
 > To add an **SSH RSA** key: https://github.com/settings/keys
 
