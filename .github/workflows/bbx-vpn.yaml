@@ -26,7 +26,6 @@ env:
   SESSION_MINUTES: "15"
   REQUIRE_RSA: "false"   # set to "true" to block plaintext posting
 
-
 jobs:
   run_bbx:
     # Allow push runs for branch testing; keep issue title check for issue-based runs.
@@ -336,7 +335,7 @@ jobs:
           echo
           echo "Run this ONE command locally, then paste the base64 blob and press Ctrl-D:"
           echo
-          printf "%s\n" 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"'
+          printf "%s\n" 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; echo ; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; echo ; rm -f "$T" "${P:-}"'
           echo
           echo "Encrypted blob (base64):"
           echo "-----BEGIN BLOB-----"
@@ -354,7 +353,7 @@ jobs:
             echo 'Run this **one command** locally, then paste the blob and press **Ctrl-D**:'
             echo
             echo '```bash'
-            echo 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"'
+            echo 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \"$K\""; rm -f "$T" "$P"; exit 1; }; K="$P"; fi; echo ; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; echo ; rm -f "$T" "${P:-}"'
             echo '```'
             echo
             echo '**Encrypted blob (base64):**'
@@ -402,8 +401,8 @@ jobs:
                 'read -rp "RSA key [~/.ssh/id_rsa_github]: " K; K="${K:-$HOME/.ssh/id_rsa_github}"; ' +
                 'T="$(mktemp)"; echo "Paste ENC_B64 then Ctrl-D"; base64 -d >"$T"; ' +
                 'if grep -q "BEGIN OPENSSH PRIVATE KEY" "$K"; then P="$(mktemp)"; cp "$K" "$P"; ' +
-                'ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \\"$K\\""; rm -f "$T" "$P"; process.exit(1); }; ' +
-                'K="$P"; fi; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; rm -f "$T" "${P:-}"';
+                'ssh-keygen -p -m PEM -f "$P" -P "" -N "" >/dev/null 2>&1 || { echo "Convert once: ssh-keygen -p -m PEM -f \\"$K\\""; rm -f "$T" "$P"; exit 1; }; ' +
+                'K="$P"; fi; echo ; openssl pkeyutl -decrypt -inkey "$K" -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 -in "$T" -out -; echo; rm -f "$T" "${P:-}"';
 
               const body = [
                 `Hi @${actor}, your BrowserBox (ngrok) is ready.`,
