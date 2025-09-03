@@ -246,11 +246,11 @@ jobs:
                 ].join("\n");
                 const body = `${base}
 
-**Stages:** (updated automatically)
-- ⛔ Missing secrets: \`${missing.join(", ")}\`
+            **stages:** (updated automatically)
+            - ⛔ missing secrets: \`${missing.join(", ")}\`
 
-${list}
-`;
+            ${list}
+            `;
                 await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
               }
               core.setFailed("Missing secrets: " + missing.join(", "));
