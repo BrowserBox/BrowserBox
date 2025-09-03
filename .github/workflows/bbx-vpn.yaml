@@ -10,7 +10,7 @@ on:
     types: [created]
   push:
     branches:
-      - wkflows
+      - vpn123
 
 permissions:
   contents: read
@@ -49,18 +49,48 @@ jobs:
           set -euo pipefail
           mode="ngrok"
           body=""
+
+          # Only respond to explicit directives in comments.
           if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             body="$(jq -r '.comment.body // ""' < "$GITHUB_EVENT_PATH")"
-          elif [[ "${{ github.event_name }}" == "issues" ]]; then
-            body="$(jq -r '.issue.body // ""' < "$GITHUB_EVENT_PATH")"
-          else
-            body=""
+            # Match a whole-line directive like:  mode: tor   or   mode: ngrok
+            if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*mode:[[:space:]]*tor[[:space:]]*$'; then
+              mode="tor"
+            elif printf '%s\n' "$body" | grep -qiE '^[[:space:]]*mode:[[:space:]]*ngrok[[:space:]]*$'; then
+              mode="ngrok"
+            fi
           fi
-          shopt -s nocasematch
-          if [[ "$body" =~ (^|[^a-z])mode:[[:space:]]*tor([^a-z]|$) || "$body" =~ (^|[^a-z])tor([^a-z]|$) ]]; then
-            mode="tor"
-          fi
+
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Detect GitHub RSA key
+        id: rsa
+        env:
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          mkdir -p .secure
+          # Try GitHub JSON API first
+          curl -sfL -H 'Accept: application/vnd.github+json' -H 'User-Agent: bbx-workflow' \
+            "https://api.github.com/users/${ACTOR}/keys" -o .secure/keys.json || true
+
+          rsa_from_json="$(jq -r '.[] | .key' .secure/keys.json 2>/dev/null | awk '/^ssh-rsa /{print; exit}' || true)"
+
+          # Fallback to plaintext .keys if JSON didn’t yield RSA
+          if [[ -z "$rsa_from_json" ]]; then
+            curl -sfL -H 'User-Agent: bbx-workflow' "https://github.com/${ACTOR}.keys" -o .secure/keys.plain || true
+            rsa_from_plain="$(awk '/^ssh-rsa /{print; exit}' .secure/keys.plain || true)"
+          else
+            rsa_from_plain=""
+          fi
+
+          rsa_line="${rsa_from_json:-$rsa_from_plain}"
+
+          if [[ -n "$rsa_line" ]]; then
+            echo "present=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=0" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: required secrets present depending on mode
         id: secrets
@@ -78,7 +108,6 @@ jobs:
             echo "missing=" >> "$GITHUB_OUTPUT"
           fi
 
-      # For issue/issue_comment runs: comment and possibly close (with RSA warning)
       - name: Comment and possibly close
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -89,25 +118,39 @@ jobs:
             const allowed = "${{ steps.gate.outputs.allowed }}" === "true";
             const missing = "${{ steps.secrets.outputs.missing }}";
             const mode = "${{ steps.decide.outputs.mode }}";
+            const hasRSA = "${{ steps.rsa.outputs.present || '0' }}" === "1";
+
+            const privacyLineHasRSA = "> Privacy: I'll encrypt your login link with your GitHub SSH RSA public key and post a one-liner to decrypt locally.";
+            const privacyLineNoRSA  = "> Privacy: By default the login link is plaintext. Add an SSH **RSA** key to receive an encrypted link: https://github.com/settings/keys";
+
             if (!allowed) {
               await github.rest.issues.createComment({
                 ...context.repo, issue_number,
-                body: `### Hey @${actor}! 👋\n\nThis action only runs for the repo owner (or \`o0101\`). Please fork/generate under your **personal** account and open the issue there.`
+                body: `### Hey @${actor}!\n\nThis action only runs for the repo owner (or \`o0101\`). Please fork/generate under your personal account and open the issue there.`
               });
               await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
               process.exit(1);
             }
+
             if (missing) {
               await github.rest.issues.createComment({
                 ...context.repo, issue_number,
-                body: `### Hi @${actor}! 👋\n\nMissing required secrets: \`${missing}\`\n\nAlways needed:\n- \`BB_LICENSE_KEY\` – https://dosaygo.com/commerce (or email sales@dosaygo.com for a time-limited test key)\n\nIf using **ngrok** (default):\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n\n> **Privacy:** by default the login link will be posted in plaintext here. If you want it **encrypted**, add an **SSH RSA** key to your GitHub account: https://github.com/settings/keys`
+                body:
+                  `### Hi @${actor}!\n\nMissing required secrets: \`${missing}\`\n\n` +
+                  `Always needed:\n- \`BB_LICENSE_KEY\` – https://dosaygo.com/commerce (or sales@dosaygo.com for a time-limited test key)\n\n` +
+                  `If using **ngrok** (default):\n- \`NGROK_AUTH_TOKEN\` – https://dashboard.ngrok.com/get-started/your-authtoken\n\n` +
+                  (hasRSA ? privacyLineHasRSA : privacyLineNoRSA)
               });
               await github.rest.issues.update({ ...context.repo, issue_number, state: "closed" });
               process.exit(1);
             }
+
             await github.rest.issues.createComment({
               ...context.repo, issue_number,
-              body: `### Great choice, @${actor}! 🚀\n\nSelected mode: **${mode.toUpperCase()}**. Setup is starting; your login link will appear below.\n\n> **Privacy tip:** add an **SSH RSA** key to your GitHub account to receive an **encrypted** link instead of plaintext.`
+              body:
+                `### Great choice, @${actor}!\n\n` +
+                `Selected mode: **${mode.toUpperCase()}**. Setup is starting; your login link will appear below.\n\n` +
+                (hasRSA ? privacyLineHasRSA : privacyLineNoRSA)
             });
 
       # For push runs: fail fast if not allowed or secrets missing (no issue to comment on).
