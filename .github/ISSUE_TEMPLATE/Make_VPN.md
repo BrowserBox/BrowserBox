@@ -17,9 +17,10 @@ Make sure:
    - `BB_LICENSE_KEY` – buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
    - `NGROK_AUTH_TOKEN` – only needed if you use **ngrok** (default) https://dashboard.ngrok.com/get-started/your-authtoken
 
-**Choose tunnel by comment:**
+**Choose the tunnel you'll use to access your BrowserBox, using a comment directive:**
 - Do nothing → **ngrok** (default)
-- Comment `mode: tor` (or just `tor`) → **Tor hidden service**
+- Comment **mode:&nbsp;tor** → **Tor hidden service** 
+- Comment **mode:&nbsp;ssh** → **SSH tunnel** [*not available in GitHub workflow yet*]
 
 ---
 
