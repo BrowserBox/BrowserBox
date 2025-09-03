@@ -461,6 +461,7 @@ jobs:
           echo "Encrypted blob (base64):"
           echo "-----BEGIN BLOB-----"
           cat .secure/url.b64
+          echo
           echo "-----END BLOB-----"
 
       - name: Show decrypt one-liner in summary
