@@ -45,24 +45,30 @@ jobs:
         id: parse
         run: |
           set -euo pipefail
-          body="${{ github.event.issue.body }}"
+          body="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")"
+          clean="$(printf '%s' "$body" | sed -E 's/<!--[^>]*-->//g' | tr -d '\r')"
+
           # Defaults
           mode="ngrok"
           encrypt="1"   # default ON
           onflag="0"
 
-          # ON iff the ON line is checked; OFF is informational only
-          if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on[[:space:]]*$'; then
-            onflag="1"
-          fi
+          has_checked () {
+            printf '%s\n' "$clean" | grep -qiE \
+              "^[[:space:]]*-[[:space:]]*\\[x\\][[:space:]]*$1([[:space:]]|$)"
+          }
 
-          # Tunnel selection (priority by explicit checks; ngrok default)
-          if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*tor[[:space:]]*$'; then mode="tor"; fi
-          if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*ssh[[:space:]]*$'; then mode="ssh"; fi
-          if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*ngrok[[:space:]]*$'; then mode="ngrok"; fi
+          # ON iff the ON line is checked; OFF is informational only
+          if has_checked "on"; then onflag="1"; fi
+
+          # Tunnel selection (explicit checks override; ngrok default)
+          if has_checked "tor";   then mode="tor";   fi
+          if has_checked "ssh";   then mode="ssh";   fi
+          if has_checked "ngrok"; then mode="ngrok"; fi
 
           # Encrypt default ON; turn OFF if explicitly unchecked
-          if printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[[[:space:]]\][[:space:]]*encrypt[[:space:]]*$'; then
+          if printf '%s\n' "$clean" | grep -qiE \
+               '^[[:space:]]*-[[:space:]]*\[[[:space:]]\][[:space:]]*encrypt([[:space:]]|$)'; then
             encrypt="0"
           fi
 
@@ -107,20 +113,32 @@ jobs:
             const encrypt = "${{ steps.parse.outputs.encrypt }}" === "1";
             const hasRSA = "${{ steps.rsa.outputs.has }}" === "1";
             const onflag = "${{ steps.parse.outputs.onflag }}" === "1";
-            const missing = "${{ steps.secrets.outputs.missing }}";
+            const missing = ("${{ steps.secrets.outputs.missing }}").trim();
 
             const header = "### BrowserBox Status";
+
             const cfg = [
               `- Power: **${onflag ? "ON" : "OFF"}**`,
               `- Tunnel: **${mode.toUpperCase()}**`,
               `- Encryption: **${encrypt ? "ON (RSA required)" : "OFF"}**`,
-              missing ? `- Missing secrets: \`${missing}\`` : `- Secrets: **OK**`,
-              encrypt && !hasRSA ? `- RSA key: **NOT FOUND** (add one at https://github.com/settings/keys)` : `- RSA key: **${encrypt ? "Required" : "Not required"}${encrypt ? (hasRSA ? ", Found" : "") : ""}**`,
+              missing ? `- Secrets: **Missing — ${missing}**` : `- Secrets: **OK**`,
+              encrypt && !hasRSA ? `- RSA key: **NOT FOUND** (add one: https://github.com/settings/keys)` : `- RSA key: **${encrypt ? (hasRSA ? "Found" : "Required") : "Not required"}**`,
             ].join("\n");
+
+            const fixList = missing
+              ? [
+                  "",
+                  "**Fix & Retry**",
+                  ...(missing.includes("BB_LICENSE_KEY") ? ["- [ ] Add `BB_LICENSE_KEY` — https://dosaygo.com/commerce (or sales@dosaygo.com for a time-limited key)"] : []),
+                  ...(missing.includes("NGROK_AUTH_TOKEN") ? ["- [ ] Add `NGROK_AUTH_TOKEN` — https://dashboard.ngrok.com/get-started/your-authtoken"] : []),
+                  "- Then edit the **Control Panel** above and toggle **Power** OFF → ON to retry."
+                ].join("\n")
+              : "";
 
             const body = `${header}
 
             ${cfg}
+            ${fixList}
 
             **Stages:** (updated automatically)
             - 🟡 Queued
@@ -151,7 +169,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Refs we need later
       - name: Export basics
         run: |
           echo "ISSUE_NUMBER=${{ github.event.issue.number || '' }}" >> "$GITHUB_ENV"
@@ -198,8 +215,45 @@ jobs:
             const on = body.includes("- [x] ON");
             if (!allowed || !on || context.payload.issue.title !== "Make VPN" || context.payload.issue.pull_request) {
               await github.rest.issues.createComment({ ...context.repo, issue_number,
-                body: `Run aborted (allowed:${allowed}, ON:${on}). Toggle **ON** to start.` });
+                body: `Run aborted (allowed: ${allowed}, ON: ${on}). Toggle **ON** in the Control Panel to start.` });
               core.setFailed("Aborted by preconditions");
+            }
+
+      # Proactive secret check in runner, with status coaching (issue-only)
+      - name: Check secrets (runner) & update status
+        if: github.event_name != 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const body = (context.payload.issue.body || "").replace(/<!--[^>]*-->/g, "");
+            const usingNgrok = /(^|\n)\s*-\s*\[x\]\s*ngrok(\s|$)/i.test(body);
+            const missing = [];
+            if (!process.env.BB_LICENSE_KEY) missing.push("BB_LICENSE_KEY");
+            if (usingNgrok && !process.env.NGROK_AUTH_TOKEN) missing.push("NGROK_AUTH_TOKEN");
+
+            if (missing.length) {
+              const header = "### BrowserBox Status";
+              const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
+              const mine = comments.find(c => c.user.type === "Bot" && (c.body||"").includes(header));
+              if (mine) {
+                const base = (mine.body || "").split("\n**Stages:**")[0];
+                const list = [
+                  "**Fix & Retry**",
+                  ...(missing.includes("BB_LICENSE_KEY") ? ["- [ ] Add `BB_LICENSE_KEY` — https://dosaygo.com/commerce (or sales@dosaygo.com for a time-limited key)"] : []),
+                  ...(missing.includes("NGROK_AUTH_TOKEN") ? ["- [ ] Add `NGROK_AUTH_TOKEN` — https://dashboard.ngrok.com/get-started/your-authtoken"] : []),
+                  "- Then edit the **Control Panel** above and toggle **Power** OFF → ON to retry."
+                ].join("\n");
+                const body = `${base}
+
+            **stages:** (updated automatically)
+            - ⛔ missing secrets: \`${missing.join(", ")}\`
+
+            ${list}
+            `;
+                await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
+              }
+              core.setFailed("Missing secrets: " + missing.join(", "));
             }
 
       # Status update steps (issue-only)
@@ -460,7 +514,6 @@ jobs:
             if [[ -s "$LINK_FILE" ]]; then
               url="$(tr -d '\r\n' < "$LINK_FILE")"
               if echo "$url" | grep -Eq "$PAT"; then
-                # Mask and export for downstream steps (no URL in logs)
                 echo "::add-mask::${url}"
                 token="$(echo "$url" | grep -oP 'token=\K[^&]+' || true)"
                 [[ -n "$token" ]] && echo "::add-mask::${token}"
@@ -656,7 +709,7 @@ jobs:
             ].join("\n");
             await github.rest.issues.createComment({ ...context.repo, issue_number, body });
 
-      # ===== Always cleanup: stop bbx and kill ngrok if present =====
+      # ===== Always cleanup: stop bbx and ngrok if present =====
       - name: Cleanup — stop bbx and ngrok
         if: always()
         run: |
