@@ -464,7 +464,7 @@ jobs:
           # Open reverse tunnel: public HTTPS on edge -> HTTP to runner:BBX_PORT
           # localhost.run prints a URL like https://xxxx.localhost.run
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
-              -R 80:localhost:${BBX_PORT} localhost.run 2>&1 | tee -a "$LOG" &
+              -R 80:localhost:${BBX_PORT} nokey@localhost.run 2>&1 | tee -a "$LOG" &
 
           # Wait for public URL to appear in ssh output
           for i in $(seq 1 40); do
