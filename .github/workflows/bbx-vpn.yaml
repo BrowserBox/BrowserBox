@@ -211,11 +211,20 @@ jobs:
           script: |
             const issue_number = context.issue.number;
             const allowed = "${{ steps.owner_gate.outputs.allowed }}" === "true";
-            const body = context.payload.issue.body || "";
-            const on = body.includes("- [x] ON");
-            if (!allowed || !on || context.payload.issue.title !== "Make VPN" || context.payload.issue.pull_request) {
-              await github.rest.issues.createComment({ ...context.repo, issue_number,
-                body: `Run aborted (allowed: ${allowed}, ON: ${on}). Toggle **ON** in the Control Panel to start.` });
+
+            // Normalize body the same way everywhere: strip CRs + HTML comments
+            const raw = (context.payload.issue.body || "");
+            const clean = raw.replace(/\r/g, '').replace(/<!--[^>]*-->/g, '');
+
+            // ON iff any line matches "- [x] ON" (case-insensitive)
+            const onChecked = /(^|\n)\s*-\s*\[x\]\s*on(\s|$)/i.test(clean);
+
+            const badTitle = context.payload.issue.title !== "Make VPN";
+            const isPR = !!context.payload.issue.pull_request;
+
+            if (!allowed || !onChecked || badTitle || isPR) {
+              const body = `Run aborted (allowed: ${allowed}, ON: ${onChecked}, title_ok: ${!badTitle}, is_pr: ${isPR}). Toggle **ON** in the Control Panel to start.`;
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body });
               core.setFailed("Aborted by preconditions");
             }
 
@@ -229,7 +238,7 @@ jobs:
         with:
           script: |
             const issue_number = context.issue.number;
-            const body = (context.payload.issue.body || "").replace(/<!--[^>]*-->/g, "");
+            const body = (context.payload.issue.body || "").replace(/\r/g, "").replace(/<!--[^>]*-->/g, "");
             const usingNgrok = /(^|\n)\s*-\s*\[x\]\s*ngrok(\s|$)/i.test(body);
             const missing = [];
             if (!process.env.BB_LICENSE_KEY) missing.push("BB_LICENSE_KEY");
@@ -507,7 +516,6 @@ jobs:
         run: |
           # tor-run starts bbx with an onion service and writes login.link with the .onion URL
           bbx tor-run > tor_output.txt 2>&1 &
-          bbx tor-run > tor_output.txt 2>&1 &
 
           # Wait for a valid .onion login link (not just file existence)
           LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
@@ -663,16 +671,31 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+
           secs=$(( ${SESSION_MINUTES} * 60 ))
           issue_api="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}"
           end=$(( $(date +%s) + secs ))
+          off_count=0
+
           while (( $(date +%s) < end )); do
-            body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" | jq -r '.body // ""')"
-            if ! printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on[[:space:]]*$'; then
-              echo "OFF detected. Stopping bbx."
-              bbx stop || true
-              exit 0
+            body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" \
+              | jq -r '.body // ""')"
+
+            # Normalize and strip comments like in the parser
+            clean="$(printf '%s' "$body" | tr -d '\r' | sed -E 's/<!--[^>]*-->//g')"
+
+            # Consider "ON" present if any line has "- [x] ON" (case-insensitive), no strict line anchors
+            if printf '%s\n' "$clean" | grep -Eqi '(^|\n)[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on([[:space:]]|$)'; then
+              off_count=0
+            else
+              off_count=$((off_count+1))
+              if (( off_count >= 2 )); then
+                echo "OFF detected twice consecutively. Stopping bbx."
+                bbx stop || true
+                exit 0
+              fi
             fi
+
             sleep 10
           done
 
