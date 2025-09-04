@@ -663,16 +663,31 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+
           secs=$(( ${SESSION_MINUTES} * 60 ))
           issue_api="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}"
           end=$(( $(date +%s) + secs ))
+          off_count=0
+
           while (( $(date +%s) < end )); do
-            body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" | jq -r '.body // ""')"
-            if ! printf '%s\n' "$body" | grep -qiE '^[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on[[:space:]]*$'; then
-              echo "OFF detected. Stopping bbx."
-              bbx stop || true
-              exit 0
+            body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" \
+              | jq -r '.body // ""')"
+
+            # Normalize and strip comments like in the parser
+            clean="$(printf '%s' "$body" | tr -d '\r' | sed -E 's/<!--[^>]*-->//g')"
+
+            # Consider "ON" present if any line has "- [x] ON" (case-insensitive), no strict line anchors
+            if printf '%s\n' "$clean" | grep -Eqi '(^|\n)[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on([[:space:]]|$)'; then
+              off_count=0
+            else
+              off_count=$((off_count+1))
+              if (( off_count >= 2 )); then
+                echo "OFF detected twice consecutively. Stopping bbx."
+                bbx stop || true
+                exit 0
+              fi
             fi
+
             sleep 10
           done
 
