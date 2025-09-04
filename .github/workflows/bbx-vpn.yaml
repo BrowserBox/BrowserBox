@@ -58,12 +58,12 @@ jobs:
               "^[[:space:]]*-[[:space:]]*\\[x\\][[:space:]]*$1([[:space:]]|$)"
           }
 
-          # ON iff the ON line is checked; OFF is informational only
+          # ON iff the ON line is checked
           if has_checked "on"; then onflag="1"; fi
 
           # Tunnel selection (explicit checks override; tor default)
-          if has_checked "ssh";   then mode="ssh";   fi
-          if has_checked "tor";   then mode="tor";   fi
+          if has_checked "ssh"; then mode="ssh"; fi
+          if has_checked "tor"; then mode="tor"; fi
 
           # Encrypt default ON; turn OFF if explicitly unchecked
           if printf '%s\n' "$clean" | grep -qiE \
@@ -462,13 +462,20 @@ jobs:
           : > "$LOG"
 
           # Open reverse tunnel: public HTTPS on edge -> HTTP to runner:BBX_PORT
-          # localhost.run prints a URL like https://xxxx.localhost.run
-          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+          # Service now prints regional domains (e.g., *.lhr.life) + the public URL line contains a marker.
+          ssh -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes \
+              -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
               -R 80:localhost:${BBX_PORT} nokey@localhost.run 2>&1 | tee -a "$LOG" &
 
-          # Wait for public URL to appear in ssh output
+          # Prefer the "tunneled with tls termination" line to extract the URL.
           for i in $(seq 1 40); do
-            url="$(grep -Eo 'https://[a-zA-Z0-9.-]+\.localhost\.run' "$LOG" | tail -n1 || true)"
+            url="$(awk '/tunneled with tls termination/ { for (i=1;i<=NF;i++) if ($i ~ /^https:\/\//) print $i }' "$LOG" | tail -n1 || true)"
+            if [[ -z "$url" ]]; then
+              # Fallback: grab the last plausible https URL that's not localhost/docs/twitter/admin
+              url="$(grep -Eo 'https://[^[:space:]]+' "$LOG" \
+                    | grep -Ev 'localhost:8080|localhost\.run/docs|twitter\.com|admin\.localhost\.run' \
+                    | tail -n1 || true)"
+            fi
             if [[ -n "$url" ]]; then
               echo "::add-mask::${url}"
               echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -489,24 +496,24 @@ jobs:
             echo "ACCESS_FULL=${full}"
           } >> "$GITHUB_ENV"
 
-      - name: Verify (integrity, tor/ssh)
+      - name: Verify (integrity, prefer external if SSH; fallback to local)
         run: |
           set -euo pipefail
-          base_url=""
-          if [[ "${{ contains(github.event.issue.body, '- [x] tor') && 'true' || 'false' }}" == "true" ]]; then
-            base_url="$(printf '%s\n' "$ACCESS_FULL" | sed -E 's|(https?://[^/]+).*|\1|')"
-          elif [[ "${{ contains(github.event.issue.body, '- [x] ssh') && 'true' || 'false' }}" == "true" ]]; then
-            base_url="${SSH_URL}"
+          # Prefer external (SSH URL) so we validate the tunnel; for Tor we fallback to local since curl can't reach .onion without Tor client.
+          base_url="${SSH_URL:-}"
+          if [[ -z "$base_url" ]]; then
+            base_url="http://localhost:${BBX_PORT}"
           fi
-          echo "::add-mask::${base_url}"
-          [[ -n "${SESSION_TOKEN:-}" ]] && echo "::add-mask::${SESSION_TOKEN}"
+          if [[ -n "$base_url" ]]; then echo "::add-mask::${base_url}"; fi
+
           integrity_url="${base_url}/integrity"
           if [[ -n "${SESSION_TOKEN:-}" ]]; then integrity_url="${integrity_url}?session_token=${SESSION_TOKEN}"; fi
+
           want="$(cat "$HOME/BBPRO.INTEGRITY")"
           ok=0
           for i in {1..10}; do
             echo "Attempt $i..."
-            got="$(curl -Ls "$integrity_url" || true)"
+            got="$(curl -Ls --connect-timeout 5 --max-time 10 "$integrity_url" || true)"
             if [[ "$got" == "$want" ]]; then ok=1; break; fi
             sleep 7
           done
