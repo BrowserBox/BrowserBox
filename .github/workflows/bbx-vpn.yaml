@@ -510,7 +510,7 @@ jobs:
 
           normalize() { sed -e 's/[\r\n]*$//'; }
           #redact() { sed -E 's/((token|session_token)=)[^&]+/\1REDACTED/g'; }
-          redact() { echo "$1" }
+          redact() { echo "$1"; }
 
           WANT1="$HOME/BBPRO.INTEGRITY"
           WANT2="$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
