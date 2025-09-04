@@ -387,7 +387,6 @@ jobs:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
         run: |
           set -euo pipefail
-          bbx install || true
           bbx certify "${LICENSE_KEY}"
 
       - name: Configure bbx and read login.link (initial)
