@@ -507,7 +507,6 @@ jobs:
         run: |
           # tor-run starts bbx with an onion service and writes login.link with the .onion URL
           bbx tor-run > tor_output.txt 2>&1 &
-          bbx tor-run > tor_output.txt 2>&1 &
 
           # Wait for a valid .onion login link (not just file existence)
           LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
