@@ -376,7 +376,8 @@ jobs:
       - name: Create integrity file
         run: |
           set -euo pipefail
-          openssl rand -base64 32 > "$HOME/BBPRO.INTEGRITY"
+          # write base64 string with no trailing newline
+          openssl rand -base64 32 | tr -d '\n' > "$HOME/BBPRO.INTEGRITY"
 
       # ===== TOR path (use login.link, not stdout) =====
       - name: Start bbx (Tor) – status
@@ -496,28 +497,35 @@ jobs:
             echo "ACCESS_FULL=${full}"
           } >> "$GITHUB_ENV"
 
-      - name: Verify (integrity, prefer external if SSH; fallback to local)
+      - name: Verify (integrity)
         run: |
           set -euo pipefail
-          # Prefer external (SSH URL) so we validate the tunnel; for Tor we fallback to local since curl can't reach .onion without Tor client.
           base_url="${SSH_URL:-}"
           if [[ -z "$base_url" ]]; then
             base_url="http://localhost:${BBX_PORT}"
           fi
-          if [[ -n "$base_url" ]]; then echo "::add-mask::${base_url}"; fi
+          [[ -n "$base_url" ]] && echo "::add-mask::${base_url}"
 
           integrity_url="${base_url}/integrity"
           if [[ -n "${SESSION_TOKEN:-}" ]]; then integrity_url="${integrity_url}?session_token=${SESSION_TOKEN}"; fi
 
-          want="$(cat "$HOME/BBPRO.INTEGRITY")"
+          # normalize trims trailing \r and \n (server keeps newline; $(...) drops it)
+          normalize() { sed -e 's/[\r\n]*$//'; }
+
+          want="$(cat "$HOME/BBPRO.INTEGRITY" | normalize)"
           ok=0
           for i in {1..10}; do
             echo "Attempt $i..."
-            got="$(curl -Ls --connect-timeout 5 --max-time 10 "$integrity_url" || true)"
+            got="$(curl -sSL --connect-timeout 5 --max-time 10 "$integrity_url" | normalize || true)"
             if [[ "$got" == "$want" ]]; then ok=1; break; fi
             sleep 7
           done
-          (( ok == 1 )) || { echo "Integrity check failed"; exit 1; }
+          (( ok == 1 )) || {
+            echo "Integrity check failed"
+            echo "want_len=$(printf %s "$want" | wc -c) got_len=$(printf %s "$got" | wc -c)"
+            echo "got_head=$(printf %s "$got" | head -c 80)"
+            exit 1
+          }
 
       # ===== Encryption (tor & ssh) =====
       - name: Encrypt URL for actor (RSA only)
