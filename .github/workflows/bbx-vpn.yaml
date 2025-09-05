@@ -419,7 +419,7 @@ jobs:
           LOG_JSON="${HOME}/localhostrun.jsonl"
           : > "$LOG_JSON"
           # Run tunnel in background (-f) with verbose logging (-v) and capture JSON output
-          ssh -v -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON"
+          ssh -o StrictHostKeyChecking=no -v -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON"
           # Discover public URL from JSON (.address from tcpip-forward event)
           for i in $(seq 1 10); do
             url="$(jq -r 'select(.event=="tcpip-forward" and .status=="success") | .address | select(. != null) | "https://" + .' "$LOG_JSON" | tail -n1 || true)"
