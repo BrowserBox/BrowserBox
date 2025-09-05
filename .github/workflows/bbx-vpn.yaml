@@ -669,7 +669,7 @@ jobs:
           fi
 
       - name: Open tmate (fallback runner)
-        id: open_tmate                         # <-- add id
+        id: open_tmate                         
         run: |
           set -euo pipefail
           sudo apt-get update
