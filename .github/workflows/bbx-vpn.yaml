@@ -443,7 +443,7 @@ jobs:
 
       # === BULLETPROOF: run tmate in-job if ssh_tunnel failed ===
       - name: Debug SSH tunnel failure with tmate (same job safety net)
-          id: debug_tmate                      # <-- add this
+          id: debug_tmate 
           if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' }}
           timeout-minutes: 30
           run: |
