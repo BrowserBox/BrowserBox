@@ -2,23 +2,28 @@
 # _meta_action_id: dosyago/BrowserBox/bbx/sep-2025-unified
 # Purpose: short-lived personal test of BrowserBox via bbx on a GitHub Actions runner.
 name: Personal ephemeral BrowserBox (bbx + tor|ssh)
+
 on:
   issues:
     types: [opened, edited] # Control Panel edits drive runs
   push:
     branches: [vpn123] # Manual branch testing
+
 permissions:
   contents: read
   issues: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: true
+
 env:
   BBX_PORT: "8080"
   BBX_HOSTNAME: "127.0.0.1" # explicit IPv4 bind
   SESSION_MINUTES: "40"
   REQUIRE_RSA: "false" # set to "true" to block plaintext posting
   WIN9X_COMPATIBILITY_MODE: "true" # force bbx to serve HTTP (needed for free localhost.run HTTP tunnel)
+
 jobs:
   # -------------------------------------------------
   # UI/status job: parses control panel & posts status
@@ -66,6 +71,7 @@ jobs:
             echo "encrypt=$encrypt"
             echo "onflag=$onflag"
           } >> "$GITHUB_OUTPUT"
+
       - name: Detect GitHub RSA key (for messaging)
         id: rsa
         env:
@@ -81,12 +87,14 @@ jobs:
             rsa="$(awk "/^ssh-rsa /{print; exit}" .secure/keys.plain || true)"
           fi
           echo "has=$([[ -n "$rsa" ]] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+
       - name: Check required secrets (mode-aware)
         id: secrets
         run: |
           missing=()
           [[ -z "${{ secrets.BB_LICENSE_KEY }}" ]] && missing+=("BB_LICENSE_KEY")
           if (( ${#missing[@]} )); then printf "missing=%s\n" "${missing[*]}" >> "$GITHUB_OUTPUT"; else echo "missing=" >> "$GITHUB_OUTPUT"; fi
+
       - name: Upsert BrowserBox Status comment
         uses: actions/github-script@v7
         with:
@@ -126,6 +134,7 @@ jobs:
             } else {
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
             }
+
   # -------------------------------------------------
   # Runner job: auto-starts when ON is checked
   # -------------------------------------------------
@@ -146,7 +155,7 @@ jobs:
           echo "ISSUE_NUMBER=${{ github.event.issue.number || '' }}" >> "$GITHUB_ENV"
           echo "REPO=${{ github.repository }}" >> "$GITHUB_ENV"
           echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
-      # Status: Starting (issue-only)
+
       - name: Stage → Starting
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -164,6 +173,7 @@ jobs:
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
+
       - name: only repo owner
         id: owner_gate
         run: |
@@ -172,6 +182,7 @@ jobs:
           else
             echo "allowed=true" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Abort early if not allowed / wrong issue / OFF
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -179,10 +190,8 @@ jobs:
           script: |
             const issue_number = context.issue.number;
             const allowed = "${{ steps.owner_gate.outputs.allowed }}" === "true";
-            // Normalize body the same way everywhere: strip CRs + HTML comments
             const raw = (context.payload.issue.body || "");
             const clean = raw.replace(/\r/g, '').replace(/<!--[^>]*-->/g, '');
-            // ON iff any line matches "- [x] ON" (case-insensitive)
             const onChecked = /(^|\n)\s*-\s*\[x\]\s*on(\s|$)/i.test(clean);
             const badTitle = context.payload.issue.title !== "Make VPN";
             const isPR = !!context.payload.issue.pull_request;
@@ -191,7 +200,7 @@ jobs:
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
               core.setFailed("Aborted by preconditions");
             }
-      # Proactive secret check in runner, with status coaching (issue-only)
+
       - name: Check secrets (runner) & update status
         env:
           BB_LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
@@ -223,7 +232,7 @@ jobs:
               }
               core.setFailed("Missing secrets: " + missing.join(", "));
             }
-      # Status update steps (issue-only)
+
       - name: Install system deps (status)
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -241,6 +250,7 @@ jobs:
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
+
       - name: Install system deps
         run: |
           set -euo pipefail
@@ -250,6 +260,7 @@ jobs:
             libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 \
             libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 \
             jq curl coreutils ca-certificates openssh-client lsof net-tools
+
       - name: Install bbx (status)
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -267,8 +278,10 @@ jobs:
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
+
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Install bbx
         timeout-minutes: 15
         env:
@@ -287,6 +300,7 @@ jobs:
             bash <(curl -fsSL https://bbx.sh.dosaygo.com) install
           fi
           bbx --version || true
+
       - name: Certify & setup (status)
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -304,12 +318,14 @@ jobs:
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
+
       - name: Activate and certify license
         env:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
         run: |
           set -euo pipefail
           bbx certify "${LICENSE_KEY}"
+
       - name: Configure bbx and read login.link (initial)
         id: setup
         env:
@@ -336,7 +352,6 @@ jobs:
             echo "suffix=${suffix}"
             echo "token=${token}"
           } >> "$GITHUB_OUTPUT"
-          # Build explicit HTTP local link (bbx now HTTP)
           LOCAL_HTTP_ORIGIN="http://127.0.0.1:${BBX_PORT}"
           echo "LOCAL_HTTP_ORIGIN: ${LOCAL_HTTP_ORIGIN}"
           echo "LOCAL_HTTP_FULL: ${LOCAL_HTTP_ORIGIN}${suffix}"
@@ -344,6 +359,7 @@ jobs:
             echo "LOCAL_HTTP_ORIGIN=${LOCAL_HTTP_ORIGIN}"
             echo "LOCAL_HTTP_FULL=${LOCAL_HTTP_ORIGIN}${suffix}"
           } >> "$GITHUB_ENV"
+
       - name: Create integrity file (print contents)
         run: |
           set -euo pipefail
@@ -351,6 +367,7 @@ jobs:
           openssl rand -base64 32 | tr -d '\n' | tee "$HOME/BBPRO.INTEGRITY" > "$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
           echo "Integrity WANT (HOME): $(cat "$HOME/BBPRO.INTEGRITY")"
           echo "Integrity WANT (CONFIG): $(cat "$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY")"
+
       - name: Start bbx (background) and sanity-check local listener
         env:
           BBX_PORT: ${{ env.BBX_PORT }}
@@ -373,6 +390,7 @@ jobs:
             curl -sS "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${{ steps.setup.outputs.token }}" || true
             echo
           fi
+
       # ===== SSH tunnel path (reverse via localhost.run over HTTP) =====
       - name: Start bbx (SSH) – status
         if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] ssh')
@@ -391,6 +409,7 @@ jobs:
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
+
       - name: Start SSH reverse tunnel (localhost.run; JSON output) + capture URL
         id: ssh_tunnel
         env:
@@ -413,40 +432,43 @@ jobs:
                 echo "ACCESS_FULL=${url}${{ steps.setup.outputs.suffix }}"
                 echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
               } >> "$GITHUB_ENV"
-              echo "failure=0" >> "$GITHUB_OUTPUT"
-              break
+              exit 0
             fi
             sleep 1
           done
-          if [ -z "${url:-}" ]; then
-            echo "FAILED to discover public URL from JSON after 10s."
-            echo "--- JSON log ---"
-            cat "$LOG_JSON"
-            echo "failure=1" >> "$GITHUB_OUTPUT"
-            exit 1
-          fi
-      - name: Debug SSH tunnel failure with tmate
-        if: steps.ssh_tunnel.outputs.failure == '1'
-        continue-on-error: true
+          echo "FAILED to discover public URL from JSON after 10s."
+          echo "--- JSON log ---"
+          cat "$LOG_JSON" || true
+          exit 1
+
+      # === BULLETPROOF: run tmate in-job if ssh_tunnel failed ===
+      - name: Debug SSH tunnel failure with tmate (same job safety net)
+        if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' }}
+        timeout-minutes: 45
         run: |
           set -euo pipefail
           LOG_JSON="${HOME}/localhostrun.jsonl"
-          echo "SSH tunnel failed. Printing logs for debugging..."
+          echo "SSH tunnel step concluded: FAILURE — printing logs then opening tmate."
           echo "--- JSON log ---"
           cat "$LOG_JSON" || true
-          echo "Installing tmate for debug session..."
+          echo "--- Installing tmate ---"
           sudo apt-get update
           sudo apt-get install -y tmate
-          echo "Starting tmate session..."
+          echo "--- Starting tmate ---"
           tmate -S /tmp/tmate.sock new-session -d
           tmate -S /tmp/tmate.sock wait tmate-ready
-          CONNECTION_STRING=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-          echo "tmate SSH connection: $CONNECTION_STRING"
-          # Hold for 10 minutes for debugging
-          sleep 600
-          # Kill tmate after hold
-          pkill tmate || true
+          SSH_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+          echo "tmate SSH: ${SSH_LINE}"
+          echo "tmate WEB: ${WEB_LINE}"
+          echo "TMATE_SSH=${SSH_LINE}" >> "$GITHUB_OUTPUT"
+          echo "TMATE_WEB=${WEB_LINE}" >> "$GITHUB_OUTPUT"
+          # Hold the runner open
+          echo "Holding session..."
+          sleep 1800
+
       - name: Probe login links (local & edge; print bodies; no-fail)
+        if: ${{ success() }} # Only sensibly probe if the tunnel step succeeded
         env:
           ACCESS_FULL: ${{ env.ACCESS_FULL }}
           LOCAL_HTTP_FULL: ${{ env.LOCAL_HTTP_FULL }}
@@ -470,7 +492,9 @@ jobs:
             sleep 2
           done
           rm -f /tmp/probe_edge.$$
+
       - name: Verify integrity (debug; 5m hold on failure)
+        if: ${{ success() }} # Skip if earlier steps already failed; the safety nets handle debug
         env:
           BBX_PORT: ${{ env.BBX_PORT }}
           SSH_URL: ${{ env.SSH_URL }}
@@ -504,7 +528,6 @@ jobs:
             return $rc
           }
           ok=0
-          # Always prefer query param; cookies are not needed per route handler.
           req "local /integrity?session_token=…" "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" && ok=1
           if [[ $ok -eq 0 && -n "${SSH_URL:-}" ]]; then
             req "edge /integrity?session_token=…" "${SSH_URL}/integrity?session_token=${SESSION_TOKEN}" && ok=1
@@ -519,12 +542,14 @@ jobs:
             sleep 300
             exit 1
           fi
+
       - name: Upload integrity debug bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integrity-debug
           path: /tmp/int_debug.txt
+
       - name: Upload localhost.run logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -533,7 +558,7 @@ jobs:
           path: |
             ~/localhostrun.jsonl
             ~/localhostrun.err
-      # ===== Keep-alive with OFF switch monitoring (issue-only) =====
+
       - name: Keep alive with OFF monitoring
         if: github.event_name != 'push'
         env:
@@ -547,9 +572,7 @@ jobs:
           while (( $(date +%s) < end )); do
             body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" \
               | jq -r '.body // ""')"
-            # Normalize and strip comments like in the parser
             clean="$(printf '%s' "$body" | tr -d '\r' | sed -E 's/<!--[^>]*-->//g')"
-            # Consider "ON" present if any line has "- [x] ON" (case-insensitive), no strict line anchors
             if printf '%s\n' "$clean" | grep -Eqi '(^|\n)[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on([[:space:]]|$)'; then
               off_count=0
             else
@@ -562,7 +585,7 @@ jobs:
             fi
             sleep 10
           done
-      # ===== Normal end: issue-only status close =====
+
       - name: Status → Closed
         if: always() && github.event_name != 'push'
         uses: actions/github-script@v7
@@ -580,7 +603,7 @@ jobs:
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-      # ===== Always cleanup =====
+
       - name: Cleanup — stop bbx and tunnels
         if: always()
         run: |
@@ -589,7 +612,56 @@ jobs:
             echo "Cleanup: debug hold already elapsed; proceeding."
           fi
           bbx stop || true
-          # Kill any SSH tunnels (be specific first, then broad)
           pkill -f 'ssh -f -N .*localhost\.run' || true
           pkill -f 'ssh .*localhost\.run' || true
           pkill -f 'ssh .*@.*' || true
+
+  # -------------------------------------------------
+  # GLOBAL BULLETPROOF FALLBACK: open tmate if the job fails/cancels anywhere
+  # -------------------------------------------------
+  debug_tmate_on_fail:
+    needs: [run_bbx]
+    if: ${{ always() && (needs.run_bbx.result == 'failure' || needs.run_bbx.result == 'cancelled') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Note prior job result
+        run: |
+          echo "run_bbx result: ${{ needs.run_bbx.result }}"
+
+      - name: Try to fetch artifacts (may or may not exist)
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+        continue-on-error: true
+
+      - name: Print any recovered logs
+        run: |
+          set -euo pipefail
+          if compgen -G "artifacts/*" > /dev/null; then
+            echo "=== Available artifacts ==="
+            find artifacts -maxdepth 2 -type f -print
+            echo "=== integrity-debug (if present) ==="
+            cat artifacts/integrity-debug/int_debug.txt 2>/dev/null || true
+            echo "=== localhostrun logs (if present) ==="
+            cat artifacts/localhostrun-logs/localhostrun.jsonl 2>/dev/null || true
+            cat artifacts/localhostrun-logs/localhostrun.err 2>/dev/null || true
+          else
+            echo "No artifacts found (job may have failed before upload)."
+          fi
+
+      - name: Open tmate (fallback runner)
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y tmate
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+          SSH_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+          echo "tmate SSH: ${SSH_LINE}"
+          echo "tmate WEB: ${WEB_LINE}"
+          echo "Connect using SSH or open the web URL above."
+          # Keep the door open
+          sleep 2700
+
