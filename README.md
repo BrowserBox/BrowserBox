@@ -139,6 +139,7 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 | NixOS                    | ✅        | <img src="readme-files/nixos.png" alt="NixOS" width="100" title="NixOS">                             |
 | Docker                   | ✅        | <img src="readme-files/docker.png" alt="Docker" width="100" title="Docker">                           |
 | LXC                      | ✅        | <img src="readme-files/LXC.png" alt="LXC" height="64" title="LXC">                                   |
+| Podman\‡                 | 🚧        | <img src="readme-files/Podman.png" alt="Podman" width="64" title="Podman">                           |
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.png" alt="Windows 9x" width="64" title="Windows 9x">              |
 
 >[!NOTE]
@@ -147,6 +148,7 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 **Notes**
 
 - \*Tails is not supported because neither Chrome nor Docker can be installed.
+- ‡Podman support is currently under consideration.
 - †Windows 9x clients are supported by running the **new** `win9x_bbpro` command which will output the login link for legacy Windows clients (such as Internet Explorer (IE 5, IE 6, etc) or Netscape. Supported Windows 9x operating systems for legacy clients include Windows 95, Windows 98, Windows 2000, Windows NT the BrowserBox server must still be run on a modern system, but now you can connect to BrowserBox from legacy Windows 9x machines and browsers. Modern clients can still use the legacy endpoint but the experience is understandably jurassic.
 
 <p align=center>
