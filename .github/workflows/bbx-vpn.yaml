@@ -2,28 +2,23 @@
 # _meta_action_id: dosyago/BrowserBox/bbx/sep-2025-unified
 # Purpose: short-lived personal test of BrowserBox via bbx on a GitHub Actions runner.
 name: Personal ephemeral BrowserBox (bbx + tor|ssh)
-
 on:
   issues:
-    types: [opened, edited]   # Control Panel edits drive runs
+    types: [opened, edited] # Control Panel edits drive runs
   push:
-    branches: [vpn123]        # Manual branch testing
-
+    branches: [vpn123] # Manual branch testing
 permissions:
   contents: read
   issues: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: true
-
 env:
   BBX_PORT: "8080"
-  BBX_HOSTNAME: "127.0.0.1"           # explicit IPv4 bind
+  BBX_HOSTNAME: "127.0.0.1" # explicit IPv4 bind
   SESSION_MINUTES: "40"
-  REQUIRE_RSA: "false"                 # set to "true" to block plaintext posting
-  WIN9X_COMPATIBILITY_MODE: "true"     # force bbx to serve HTTP (needed for free localhost.run HTTP tunnel)
-
+  REQUIRE_RSA: "false" # set to "true" to block plaintext posting
+  WIN9X_COMPATIBILITY_MODE: "true" # force bbx to serve HTTP (needed for free localhost.run HTTP tunnel)
 jobs:
   # -------------------------------------------------
   # UI/status job: parses control panel & posts status
@@ -48,36 +43,29 @@ jobs:
           set -euo pipefail
           body="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")"
           clean="$(printf '%s' "$body" | sed -E 's/<!--[^>]*-->//g' | tr -d '\r')"
-
           # Defaults
           mode="tor"
-          encrypt="1"   # default ON
+          encrypt="1" # default ON
           onflag="0"
-
           has_checked () {
             printf '%s\n' "$clean" | grep -qiE \
               "^[[:space:]]*-[[:space:]]*\\[x\\][[:space:]]*$1([[:space:]]|$)"
           }
-
           # ON iff the ON line is checked
           if has_checked "on"; then onflag="1"; fi
-
           # Tunnel selection (explicit checks override; tor default)
           if has_checked "ssh"; then mode="ssh"; fi
           if has_checked "tor"; then mode="tor"; fi
-
           # Encrypt default ON; turn OFF if explicitly unchecked
           if printf '%s\n' "$clean" | grep -qiE \
                '^[[:space:]]*-[[:space:]]*\[[[:space:]]\][[:space:]]*encrypt([[:space:]]|$)'; then
             encrypt="0"
           fi
-
           {
             echo "mode=$mode"
             echo "encrypt=$encrypt"
             echo "onflag=$onflag"
           } >> "$GITHUB_OUTPUT"
-
       - name: Detect GitHub RSA key (for messaging)
         id: rsa
         env:
@@ -93,14 +81,12 @@ jobs:
             rsa="$(awk "/^ssh-rsa /{print; exit}" .secure/keys.plain || true)"
           fi
           echo "has=$([[ -n "$rsa" ]] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
-
       - name: Check required secrets (mode-aware)
         id: secrets
         run: |
           missing=()
           [[ -z "${{ secrets.BB_LICENSE_KEY }}" ]] && missing+=("BB_LICENSE_KEY")
           if (( ${#missing[@]} )); then printf "missing=%s\n" "${missing[*]}" >> "$GITHUB_OUTPUT"; else echo "missing=" >> "$GITHUB_OUTPUT"; fi
-
       - name: Upsert BrowserBox Status comment
         uses: actions/github-script@v7
         with:
@@ -111,9 +97,7 @@ jobs:
             const hasRSA = "${{ steps.rsa.outputs.has }}" === "1";
             const onflag = "${{ steps.parse.outputs.onflag }}" === "1";
             const missing = ("${{ steps.secrets.outputs.missing }}").trim();
-
             const header = "### BrowserBox Status";
-
             const cfg = [
               `- Power: **${onflag ? "ON" : "OFF"}**`,
               `- Tunnel: **${mode.toUpperCase()}**`,
@@ -121,7 +105,6 @@ jobs:
               missing ? `- Secrets: **Missing — ${missing}**` : `- Secrets: **OK**`,
               encrypt && !hasRSA ? `- RSA key: **NOT FOUND** (add one: https://github.com/settings/keys)` : `- RSA key: **${encrypt ? (hasRSA ? "Found" : "Required") : "Not required"}**`,
             ].join("\n");
-
             const fixList = missing
               ? [
                   "",
@@ -130,25 +113,19 @@ jobs:
                   "- Then edit the **Control Panel** above and toggle **Power** OFF → ON to retry."
                 ].join("\n")
               : "";
-
             const body = `${header}
-
             ${cfg}
             ${fixList}
-
             **Stages:** (updated automatically)
             - 🟡 Queued
             `;
-
             const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
             const mine = comments.find(c => c.user.type === "Bot" && (c.body||"").includes(header));
-
             if (mine) {
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             } else {
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
             }
-
   # -------------------------------------------------
   # Runner job: auto-starts when ON is checked
   # -------------------------------------------------
@@ -163,14 +140,12 @@ jobs:
        github.event.issue.title == 'Make VPN' &&
        contains(github.event.issue.body, '- [x] ON'))
     runs-on: ubuntu-latest
-
     steps:
       - name: Export basics
         run: |
           echo "ISSUE_NUMBER=${{ github.event.issue.number || '' }}" >> "$GITHUB_ENV"
           echo "REPO=${{ github.repository }}" >> "$GITHUB_ENV"
           echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
-
       # Status: Starting (issue-only)
       - name: Stage → Starting
         if: github.event_name != 'push'
@@ -184,13 +159,11 @@ jobs:
             if (mine) {
               const base = (mine.body || "").split("\n**Stages:**")[0];
               const body = `${base}
-
             **Stages:** (updated automatically)
             - 🛠️ Starting…
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-
       - name: only repo owner
         id: owner_gate
         run: |
@@ -199,7 +172,6 @@ jobs:
           else
             echo "allowed=true" >> "$GITHUB_OUTPUT"
           fi
-
       - name: Abort early if not allowed / wrong issue / OFF
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -207,23 +179,18 @@ jobs:
           script: |
             const issue_number = context.issue.number;
             const allowed = "${{ steps.owner_gate.outputs.allowed }}" === "true";
-
             // Normalize body the same way everywhere: strip CRs + HTML comments
             const raw = (context.payload.issue.body || "");
             const clean = raw.replace(/\r/g, '').replace(/<!--[^>]*-->/g, '');
-
             // ON iff any line matches "- [x] ON" (case-insensitive)
             const onChecked = /(^|\n)\s*-\s*\[x\]\s*on(\s|$)/i.test(clean);
-
             const badTitle = context.payload.issue.title !== "Make VPN";
             const isPR = !!context.payload.issue.pull_request;
-
             if (!allowed || !onChecked || badTitle || isPR) {
               const body = `Run aborted (allowed: ${allowed}, ON: ${onChecked}, title_ok: ${!badTitle}, is_pr: ${isPR}). Toggle **ON** in the Control Panel to start.`;
               await github.rest.issues.createComment({ ...context.repo, issue_number, body });
               core.setFailed("Aborted by preconditions");
             }
-
       # Proactive secret check in runner, with status coaching (issue-only)
       - name: Check secrets (runner) & update status
         env:
@@ -236,7 +203,6 @@ jobs:
             const body = (context.payload.issue.body || "").replace(/\r/g, "").replace(/<!--[^>]*-->/g, "");
             const missing = [];
             if (!process.env.BB_LICENSE_KEY) missing.push("BB_LICENSE_KEY");
-
             if (missing.length) {
               const header = "### BrowserBox Status";
               const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
@@ -249,17 +215,14 @@ jobs:
                   "- Then edit the **Control Panel** above and toggle **Power** OFF → ON to retry."
                 ].join("\n");
                 const body = `${base}
-
             **stages:** (updated automatically)
             - ⛔ missing secrets: \`${missing.join(", ")}\`
-
             ${list}
             `;
                 await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
               }
               core.setFailed("Missing secrets: " + missing.join(", "));
             }
-
       # Status update steps (issue-only)
       - name: Install system deps (status)
         if: github.event_name != 'push'
@@ -273,13 +236,11 @@ jobs:
             if (mine) {
               const base = (mine.body || "").split("\n**Stages:**")[0];
               const body = `${base}
-
             **Stages:** (updated automatically)
             - 🛠️ Installing system deps…
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-
       - name: Install system deps
         run: |
           set -euo pipefail
@@ -289,7 +250,6 @@ jobs:
             libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 \
             libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 \
             jq curl coreutils ca-certificates openssh-client lsof net-tools
-
       - name: Install bbx (status)
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -302,16 +262,13 @@ jobs:
             if (mine) {
               const base = (mine.body || "").split("\n**Stages:**")[0];
               const body = `${base}
-
             **Stages:** (updated automatically)
             - 💿 Installing bbx…
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install bbx
         timeout-minutes: 15
         env:
@@ -330,7 +287,6 @@ jobs:
             bash <(curl -fsSL https://bbx.sh.dosaygo.com) install
           fi
           bbx --version || true
-
       - name: Certify & setup (status)
         if: github.event_name != 'push'
         uses: actions/github-script@v7
@@ -343,20 +299,17 @@ jobs:
             if (mine) {
               const base = (mine.body || "").split("\n**Stages:**")[0];
               const body = `${base}
-
             **Stages:** (updated automatically)
             - 🧾 Certifying & configuring…
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-
       - name: Activate and certify license
         env:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
         run: |
           set -euo pipefail
           bbx certify "${LICENSE_KEY}"
-
       - name: Configure bbx and read login.link (initial)
         id: setup
         env:
@@ -383,24 +336,21 @@ jobs:
             echo "suffix=${suffix}"
             echo "token=${token}"
           } >> "$GITHUB_OUTPUT"
-
           # Build explicit HTTP local link (bbx now HTTP)
           LOCAL_HTTP_ORIGIN="http://127.0.0.1:${BBX_PORT}"
           echo "LOCAL_HTTP_ORIGIN: ${LOCAL_HTTP_ORIGIN}"
-          echo "LOCAL_HTTP_FULL:   ${LOCAL_HTTP_ORIGIN}${suffix}"
+          echo "LOCAL_HTTP_FULL: ${LOCAL_HTTP_ORIGIN}${suffix}"
           {
             echo "LOCAL_HTTP_ORIGIN=${LOCAL_HTTP_ORIGIN}"
             echo "LOCAL_HTTP_FULL=${LOCAL_HTTP_ORIGIN}${suffix}"
           } >> "$GITHUB_ENV"
-
       - name: Create integrity file (print contents)
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.config/dosyago/bbpro"
           openssl rand -base64 32 | tr -d '\n' | tee "$HOME/BBPRO.INTEGRITY" > "$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
-          echo "Integrity WANT (HOME):   $(cat "$HOME/BBPRO.INTEGRITY")"
+          echo "Integrity WANT (HOME): $(cat "$HOME/BBPRO.INTEGRITY")"
           echo "Integrity WANT (CONFIG): $(cat "$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY")"
-
       - name: Start bbx (background) and sanity-check local listener
         env:
           BBX_PORT: ${{ env.BBX_PORT }}
@@ -423,7 +373,6 @@ jobs:
             curl -sS "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${{ steps.setup.outputs.token }}" || true
             echo
           fi
-
       # ===== SSH tunnel path (reverse via localhost.run over HTTP) =====
       - name: Start bbx (SSH) – status
         if: github.event_name != 'push' && contains(github.event.issue.body, '- [x] ssh')
@@ -437,13 +386,11 @@ jobs:
             if (mine) {
               const base = (mine.body || "").split("\n**Stages:**")[0];
               const body = `${base}
-
             **Stages:** (updated automatically)
             - 🌐 Starting bbx + SSH reverse tunnel…
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-
       - name: Start SSH reverse tunnel (localhost.run; JSON output) + capture URL
         id: ssh_tunnel
         env:
@@ -451,30 +398,12 @@ jobs:
         run: |
           set -euo pipefail
           LOG_JSON="${HOME}/localhostrun.jsonl"
-          LOG_ERR="${HOME}/localhostrun.err"
-          : > "$LOG_JSON" ; : > "$LOG_ERR"
-
-          # Run tunnel DETACHED (-f) with no remote command (-N); JSON-only on stdout; stderr separated.
-          ssh -f -N \
-              -o StrictHostKeyChecking=no \
-              -o ExitOnForwardFailure=yes \
-              -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
-              -o LogLevel=ERROR \
-              -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run \
-              -- --output json \
-              1>"$LOG_JSON" 2>"$LOG_ERR"
-
-          # Discover public URL from JSON events (.public_url || https:// + .address || first https in message)
-          for i in $(seq 1 60); do
-            url="$(jq -r '
-              select(type=="object")
-              | select(.event=="tcpip-forward" and ((.status=="success") or (.authz_code=="OK")))
-              | (
-                  .public_url
-                  // ("https://" + (.address // ""))
-                  // ( .message | capture("(?<u>https://[^[:space:]]+)").u )
-                )
-            ' "$LOG_JSON" | tail -n1 || true)"
+          : > "$LOG_JSON"
+          # Run tunnel in background (-f) and capture JSON output
+          ssh -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON"
+          # Discover public URL from JSON (.address from tcpip-forward event)
+          for i in $(seq 1 10); do
+            url="$(jq -r 'select(.event=="tcpip-forward" and .status=="success") | .address | select(. != null) | "https://" + .' "$LOG_JSON" | tail -n1 || true)"
             if [ -n "$url" ]; then
               echo "Discovered tunnel URL: $url"
               echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -488,16 +417,12 @@ jobs:
             fi
             sleep 1
           done
-
           if [ -z "${url:-}" ]; then
-            echo "FAILED to discover public URL from JSON after 60s."
-            echo "--- stderr (localhost.run / ssh) ---"
-            sed -n '1,200p' "$LOG_ERR" || true
-            echo "--- last 200 lines of JSON log ---"
-            tail -n 200 "$LOG_JSON" || true
+            echo "FAILED to discover public URL from JSON after 10s."
+            echo "--- JSON log ---"
+            cat "$LOG_JSON"
             exit 1
           fi
-
       - name: Probe login links (local & edge; print bodies; no-fail)
         env:
           ACCESS_FULL: ${{ env.ACCESS_FULL }}
@@ -513,7 +438,6 @@ jobs:
             sleep 2
           done
           rm -f /tmp/probe_local.$$
-
           echo "Probing EDGE login link (HTTPS via localhost.run): ${ACCESS_FULL}"
           for i in $(seq 1 20); do
             code=$(curl -i -L -sS -o /tmp/probe_edge.$$ -w '%{http_code}' "${ACCESS_FULL}")
@@ -523,7 +447,6 @@ jobs:
             sleep 2
           done
           rm -f /tmp/probe_edge.$$
-
       - name: Verify integrity (debug; 5m hold on failure)
         env:
           BBX_PORT: ${{ env.BBX_PORT }}
@@ -544,7 +467,6 @@ jobs:
             echo "Integrity file (cat): ${want}"
             echo "want_len=$(printf %s "$want" | wc -c)"
           } | tee /tmp/int_debug.txt
-
           req(){ # label url
             label="$1"; url="$2"
             printf "\n--- %s ---\nURL: %s\n" "$label" "$url" | tee -a /tmp/int_debug.txt
@@ -558,14 +480,12 @@ jobs:
             rm -f /tmp/h.$$ /tmp/b.$$
             return $rc
           }
-
           ok=0
           # Always prefer query param; cookies are not needed per route handler.
           req "local /integrity?session_token=…" "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" && ok=1
           if [[ $ok -eq 0 && -n "${SSH_URL:-}" ]]; then
             req "edge /integrity?session_token=…" "${SSH_URL}/integrity?session_token=${SESSION_TOKEN}" && ok=1
           fi
-
           if [[ $ok -eq 1 ]]; then
             echo "Integrity verified successfully."
             exit 0
@@ -576,14 +496,12 @@ jobs:
             sleep 300
             exit 1
           fi
-
       - name: Upload integrity debug bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integrity-debug
           path: /tmp/int_debug.txt
-
       - name: Upload localhost.run logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -592,7 +510,6 @@ jobs:
           path: |
             ~/localhostrun.jsonl
             ~/localhostrun.err
-
       # ===== Keep-alive with OFF switch monitoring (issue-only) =====
       - name: Keep alive with OFF monitoring
         if: github.event_name != 'push'
@@ -600,19 +517,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-
           secs=$(( ${SESSION_MINUTES} * 60 ))
           issue_api="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}"
           end=$(( $(date +%s) + secs ))
           off_count=0
-
           while (( $(date +%s) < end )); do
             body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" \
               | jq -r '.body // ""')"
-
             # Normalize and strip comments like in the parser
             clean="$(printf '%s' "$body" | tr -d '\r' | sed -E 's/<!--[^>]*-->//g')"
-
             # Consider "ON" present if any line has "- [x] ON" (case-insensitive), no strict line anchors
             if printf '%s\n' "$clean" | grep -Eqi '(^|\n)[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on([[:space:]]|$)'; then
               off_count=0
@@ -624,10 +537,8 @@ jobs:
                 exit 0
               fi
             fi
-
             sleep 10
           done
-
       # ===== Normal end: issue-only status close =====
       - name: Status → Closed
         if: always() && github.event_name != 'push'
@@ -641,13 +552,11 @@ jobs:
             if (mine) {
               const base = (mine.body || "").split("\n**Stages:**")[0];
               const body = `${base}
-
             **Stages:** (updated automatically)
             - ⏹️ Session ended
             `;
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
-
       # ===== Always cleanup =====
       - name: Cleanup — stop bbx and tunnels
         if: always()
@@ -661,4 +570,3 @@ jobs:
           pkill -f 'ssh -f -N .*localhost\.run' || true
           pkill -f 'ssh .*localhost\.run' || true
           pkill -f 'ssh .*@.*' || true
-
