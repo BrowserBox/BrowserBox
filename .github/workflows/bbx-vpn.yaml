@@ -399,8 +399,8 @@ jobs:
           set -euo pipefail
           LOG_JSON="${HOME}/localhostrun.jsonl"
           : > "$LOG_JSON"
-          # Run tunnel in background (-f) and capture JSON output
-          ssh -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON"
+          # Run tunnel in background (-f) with verbose logging (-v) and capture JSON output
+          ssh -v -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON"
           # Discover public URL from JSON (.address from tcpip-forward event)
           for i in $(seq 1 10); do
             url="$(jq -r 'select(.event=="tcpip-forward" and .status=="success") | .address | select(. != null) | "https://" + .' "$LOG_JSON" | tail -n1 || true)"
@@ -413,6 +413,7 @@ jobs:
                 echo "ACCESS_FULL=${url}${{ steps.setup.outputs.suffix }}"
                 echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
               } >> "$GITHUB_ENV"
+              echo "failure=0" >> "$GITHUB_OUTPUT"
               break
             fi
             sleep 1
@@ -421,19 +422,30 @@ jobs:
             echo "FAILED to discover public URL from JSON after 10s."
             echo "--- JSON log ---"
             cat "$LOG_JSON"
-            # Install tmate for debug
-            sudo apt-get install -y tmate
-            # Run tmate and get SSH connection string
-            tmate -S /tmp/tmate.sock new-session -d
-            tmate -S /tmp/tmate.sock wait tmate-ready
-            CONNECTION_STRING=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-            echo "tmate SSH connection: $CONNECTION_STRING"
-            # Hold for 10 minutes
-            sleep 600
-            # Kill tmate after hold
-            pkill tmate
+            echo "failure=1" >> "$GITHUB_OUTPUT"
             exit 1
           fi
+      - name: Debug SSH tunnel failure with tmate
+        if: steps.ssh_tunnel.outputs.failure == '1'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          LOG_JSON="${HOME}/localhostrun.jsonl"
+          echo "SSH tunnel failed. Printing logs for debugging..."
+          echo "--- JSON log ---"
+          cat "$LOG_JSON" || true
+          echo "Installing tmate for debug session..."
+          sudo apt-get update
+          sudo apt-get install -y tmate
+          echo "Starting tmate session..."
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+          CONNECTION_STRING=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          echo "tmate SSH connection: $CONNECTION_STRING"
+          # Hold for 10 minutes for debugging
+          sleep 600
+          # Kill tmate after hold
+          pkill tmate || true
       - name: Probe login links (local & edge; print bodies; no-fail)
         env:
           ACCESS_FULL: ${{ env.ACCESS_FULL }}
