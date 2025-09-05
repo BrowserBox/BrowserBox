@@ -421,6 +421,17 @@ jobs:
             echo "FAILED to discover public URL from JSON after 10s."
             echo "--- JSON log ---"
             cat "$LOG_JSON"
+            # Install tmate for debug
+            sudo apt-get install -y tmate
+            # Run tmate and get SSH connection string
+            tmate -S /tmp/tmate.sock new-session -d
+            tmate -S /tmp/tmate.sock wait tmate-ready
+            CONNECTION_STRING=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+            echo "tmate SSH connection: $CONNECTION_STRING"
+            # Hold for 10 minutes
+            sleep 600
+            # Kill tmate after hold
+            pkill tmate
             exit 1
           fi
       - name: Probe login links (local & edge; print bodies; no-fail)
