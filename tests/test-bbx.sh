@@ -143,7 +143,10 @@ test_uninstall() {
 
 test_install() {
   echo "Installing bbx... "
-  yes yes | ./bbx.sh install
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    brew install coreutils
+  fi
+  yes yes | timeout -k 10s 10m ./bbx.sh install
   if [ $? -eq 0 ]; then
     echo -e "${GREEN}✔ Success${NC}"
     ((passed++))

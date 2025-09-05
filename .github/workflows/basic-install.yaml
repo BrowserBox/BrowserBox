@@ -113,7 +113,10 @@ jobs:
       - name: Install application
         shell: /bin/bash {0}
         run: |
-          yes | ./deploy-scripts/global_install.sh localhost
+          if [[ "$(uname -s)" == "Darwin" ]]; then
+            brew install coreutils
+          fi
+          yes | timeout -k 10s 10m ./deploy-scripts/global_install.sh localhost
 
       # Configure application
       - name: Configure application
