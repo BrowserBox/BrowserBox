@@ -443,29 +443,48 @@ jobs:
 
       # === BULLETPROOF: run tmate in-job if ssh_tunnel failed ===
       - name: Debug SSH tunnel failure with tmate (same job safety net)
-        if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' }}
-        timeout-minutes: 45
-        run: |
-          set -euo pipefail
-          LOG_JSON="${HOME}/localhostrun.jsonl"
-          echo "SSH tunnel step concluded: FAILURE — printing logs then opening tmate."
-          echo "--- JSON log ---"
-          cat "$LOG_JSON" || true
-          echo "--- Installing tmate ---"
-          sudo apt-get update
-          sudo apt-get install -y tmate
-          echo "--- Starting tmate ---"
-          tmate -S /tmp/tmate.sock new-session -d
-          tmate -S /tmp/tmate.sock wait tmate-ready
-          SSH_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-          WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
-          echo "tmate SSH: ${SSH_LINE}"
-          echo "tmate WEB: ${WEB_LINE}"
-          echo "TMATE_SSH=${SSH_LINE}" >> "$GITHUB_OUTPUT"
-          echo "TMATE_WEB=${WEB_LINE}" >> "$GITHUB_OUTPUT"
-          # Hold the runner open
-          echo "Holding session..."
-          sleep 1800
+          id: debug_tmate                      # <-- add this
+          if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' }}
+          timeout-minutes: 30
+          run: |
+            set -euo pipefail
+            LOG_JSON="${HOME}/localhostrun.jsonl"
+            echo "SSH tunnel step concluded: FAILURE — printing logs then opening tmate."
+            echo "--- JSON log ---"
+            cat "$LOG_JSON" || true
+            echo "--- Installing tmate ---"
+            sudo apt-get update
+            sudo apt-get install -y tmate
+            echo "--- Starting tmate ---"
+            tmate -S /tmp/tmate.sock new-session -d
+            tmate -S /tmp/tmate.sock wait tmate-ready
+            SSH_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+            WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+            echo "tmate SSH: ${SSH_LINE}"
+            echo "tmate WEB: ${WEB_LINE}"
+            echo "TMATE_SSH=${SSH_LINE}" >> "$GITHUB_OUTPUT"
+            echo "TMATE_WEB=${WEB_LINE}"  >> "$GITHUB_OUTPUT"
+            # Hold the runner open
+            echo "Holding session..."
+            sleep 1800
+
+      - name: Publish tmate connection to status comment
+        if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' && github.event_name == 'issues' }}
+        uses: actions/github-script@v7
+        env:
+          TMATE_SSH: ${{ steps.debug_tmate.outputs.TMATE_SSH }}
+          TMATE_WEB: ${{ steps.debug_tmate.outputs.TMATE_WEB }}
+        with:
+          script: |
+            const issue_number = context.issue?.number;
+            if (!issue_number) { core.warning('No issue context.'); return; }
+            const header = "### BrowserBox Status";
+            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
+            const mine = comments.find(c => c.user.type === "Bot" && (c.body||"").includes(header));
+            if (!mine) return;
+            const base = (mine.body || "").split("\n**Stages:**")[0];
+            const add = `\n**Debug door:**\n- SSH: \`${process.env.TMATE_SSH}\`\n- Web: ${process.env.TMATE_WEB}\n`;
+            await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body: base + add + "\n**Stages:**\n- 🚪 Debug session opened\n" });
 
       - name: Probe login links (local & edge; print bodies; no-fail)
         if: ${{ success() }} # Only sensibly probe if the tunnel step succeeded
@@ -626,8 +645,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Note prior job result
-        run: |
-          echo "run_bbx result: ${{ needs.run_bbx.result }}"
+        run: echo "run_bbx result: ${{ needs.run_bbx.result }}"
 
       - name: Try to fetch artifacts (may or may not exist)
         uses: actions/download-artifact@v4
@@ -651,6 +669,7 @@ jobs:
           fi
 
       - name: Open tmate (fallback runner)
+        id: open_tmate                         # <-- add id
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -661,7 +680,27 @@ jobs:
           WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
           echo "tmate SSH: ${SSH_LINE}"
           echo "tmate WEB: ${WEB_LINE}"
-          echo "Connect using SSH or open the web URL above."
+          echo "TMATE_SSH=${SSH_LINE}" >> "$GITHUB_OUTPUT"
+          echo "TMATE_WEB=${WEB_LINE}"  >> "$GITHUB_OUTPUT"
           # Keep the door open
           sleep 2700
+
+      - name: Publish tmate connection to status comment
+        if: ${{ github.event_name == 'issues' }}   # only issues have a control panel/status comment
+        uses: actions/github-script@v7
+        env:
+          TMATE_SSH: ${{ steps.open_tmate.outputs.TMATE_SSH }}
+          TMATE_WEB: ${{ steps.open_tmate.outputs.TMATE_WEB }}
+        with:
+          script: |
+            const issue_number = context.issue?.number;
+            if (!issue_number) { core.warning('No issue context.'); return; }
+            const header = "### BrowserBox Status";
+            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
+            const mine = comments.find(c => c.user.type === "Bot" && (c.body||"").includes(header));
+            if (!mine) return;
+            const base = (mine.body || "").split("\n**Stages:**")[0];
+            const add = `\n**Debug door (fallback runner):**\n- SSH: \`${process.env.TMATE_SSH}\`\n- Web: ${process.env.TMATE_WEB}\n`;
+            await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body: base + add + "\n**Stages:**\n- 🚪 Fallback debug session opened\n" });
+
 
