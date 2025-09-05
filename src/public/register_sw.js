@@ -13,7 +13,7 @@ import('./voodoo/src/common.js').then(({ DEBUG, CONFIG, VERSION }) => {
     if (reloadedOnce) return;
     reloadedOnce = true;
     sessionStorage.setItem('sw-reloaded-for', VERSION);
-    setTimeout(() => location.reload(), 50);
+    //setTimeout(() => location.reload(), 50);
   });
 
   // Listen for SW messages

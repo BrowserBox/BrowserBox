@@ -1590,7 +1590,8 @@
         console.warn(msg);
       }
     }
-    latestAlert = setTimeout(() => alert(msg), ALERT_TIMEOUT);
+    alert(msg);
+    //latestAlert = setTimeout(() => alert(msg), ALERT_TIMEOUT);
   }
 
   async function tconfirm(msg, connected, state) {
