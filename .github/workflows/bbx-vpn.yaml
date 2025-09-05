@@ -418,27 +418,78 @@ jobs:
           set -euo pipefail
           LOG_JSON="${HOME}/localhostrun.jsonl"
           : > "$LOG_JSON"
-          # Run tunnel in background (-f) with verbose logging (-v) and capture JSON output
-          ssh -o StrictHostKeyChecking=no -v -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON"
-          # Discover public URL from JSON (.address from tcpip-forward event)
-          for i in $(seq 1 10); do
-            url="$(jq -r 'select(.event=="tcpip-forward" and .status=="success") | .address | select(. != null) | "https://" + .' "$LOG_JSON" | tail -n1 || true)"
-            if [ -n "$url" ]; then
-              echo "Discovered tunnel URL: $url"
-              echo "url=$url" >> "$GITHUB_OUTPUT"
+
+          # Single joined log (stdout+stderr) exactly as you wanted
+          ssh -o StrictHostKeyChecking=no -v -f -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json &> "$LOG_JSON" || true
+
+          # Try up to ~20s to discover the URL from JSON lines embedded in the mixed log.
+          for i in $(seq 1 20); do
+            # 1) Clean JSON pass: fromjson? ignores non-JSON lines safely
+            url="$(jq -Rr '
+              fromjson?                                   # ignore non-JSON lines
+              | select(.event=="tcpip-forward" and .status=="success")
+              | (.address // .listen_host)                # prefer .address, fallback .listen_host
+              | select(.!=null)
+            ' "$LOG_JSON" | tail -n1 || true)"
+
+            if [ -n "${url:-}" ]; then
+              case "$url" in
+                http://*|https://*) full="$url" ;;
+                *) full="https://$url" ;;
+              esac
+              echo "Discovered tunnel URL: $full"
+              echo "url=$full" >> "$GITHUB_OUTPUT"
               {
-                echo "SSH_URL=${url}"
+                echo "SSH_URL=${full}"
                 echo "ACCESS_SUFFIX=${{ steps.setup.outputs.suffix }}"
-                echo "ACCESS_FULL=${url}${{ steps.setup.outputs.suffix }}"
+                echo "ACCESS_FULL=${full}${{ steps.setup.outputs.suffix }}"
                 echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
               } >> "$GITHUB_ENV"
               exit 0
             fi
+
+            # 2) Fallback: parse the JSON .message field for an https:// URL
+            msg_url="$(jq -Rr '
+              fromjson?
+              | select(.event=="tcpip-forward")
+              | .message // ""
+            ' "$LOG_JSON" \
+              | grep -oE 'https://[[:alnum:]\.\-]+(:[0-9]+)?(/[[:graph:]]*)?' \
+              | head -n1 || true)"
+
+            if [ -n "${msg_url:-}" ]; then
+              echo "Recovered tunnel URL from message: $msg_url"
+              echo "url=$msg_url" >> "$GITHUB_OUTPUT"
+              {
+                echo "SSH_URL=${msg_url}"
+                echo "ACCESS_SUFFIX=${{ steps.setup.outputs.suffix }}"
+                echo "ACCESS_FULL=${msg_url}${{ steps.setup.outputs.suffix }}"
+                echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
+              } >> "$GITHUB_ENV"
+              exit 0
+            fi
+
+            # 3) Last-ditch regex over the whole mixed log (in case schema drifts)
+            rx="$(grep -oE 'https://[[:alnum:]\.\-]+(:[0-9]+)?(/[[:graph:]]*)?' "$LOG_JSON" \
+                  | grep -E 'localhost\.run|\.life|\.ngrok|\.tunnel|\.cloud' \
+                  | head -n1 || true)"
+            if [ -n "${rx:-}" ]; then
+              echo "Recovered tunnel URL via regex: $rx"
+              echo "url=$rx" >> "$GITHUB_OUTPUT"
+              {
+                echo "SSH_URL=${rx}"
+                echo "ACCESS_SUFFIX=${{ steps.setup.outputs.suffix }}"
+                echo "ACCESS_FULL=${rx}${{ steps.setup.outputs.suffix }}"
+                echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
+              } >> "$GITHUB_ENV"
+              exit 0
+            fi
+
             sleep 1
           done
-          echo "FAILED to discover public URL from JSON after 10s."
-          echo "--- JSON log ---"
-          cat "$LOG_JSON" || true
+
+          echo "FAILED to discover public URL from mixed log after 20s."
+          echo "--- Mixed log (head) ---"; sed -n '1,200p' "$LOG_JSON" || true
           exit 1
 
       # === BULLETPROOF: run tmate in-job if ssh_tunnel failed ===
