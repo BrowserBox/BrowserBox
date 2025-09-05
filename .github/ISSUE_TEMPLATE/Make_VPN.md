@@ -17,12 +17,10 @@ Watch for the **BrowserBox Status** comment below — it updates with progress a
 
 **Tunnel**
 - [x] tor
-- [ ] ssh   <!-- zero-setup HTTPS via SSH reverse tunnel (localhost.run) -->
+- [ ] ssh  (localhost.run)
 
 **Encrypt login link?**
 - [x] Encrypt                <!-- default ON; requires an SSH **RSA** key on your GitHub account -->
-
-> Add SSH **RSA** key: https://github.com/settings/keys
 
 ---
 
@@ -40,6 +38,9 @@ Watch for the **BrowserBox Status** comment below — it updates with progress a
 - **Actions** enabled → **Actions** tab
 - **Secrets** added (Settings ▸ *Secrets and variables* ▸ *Actions* ▸ **New repository secret**)
   - `BB_LICENSE_KEY` — buy at https://dosaygo.com/commerce or email sales@dosaygo.com for a time-limited test key
+- Want to encrypt your login link? The first RSA key on your GitHub account is used. 
+Add an SSH **RSA** key if you don't have one: https://github.com/settings/keys
+
 
 ### ▶️ How to run / retry
 - Edit this issue to set Options, then toggle **Power** **OFF → ON** to (re)start.
