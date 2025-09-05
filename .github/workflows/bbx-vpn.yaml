@@ -313,7 +313,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install bbx
-        timeout-minutes: 11
+        timeout-minutes: 15
         env:
           BBX_HOSTNAME: ${{ env.BBX_HOSTNAME }}
           BBX_NO_UPDATE: "true"
@@ -450,46 +450,43 @@ jobs:
           BBX_PORT: ${{ env.BBX_PORT }}
         run: |
           set -euo pipefail
-
           LOG_JSON="${HOME}/localhostrun.jsonl"
           LOG_ERR="${HOME}/localhostrun.err"
           : > "$LOG_JSON" ; : > "$LOG_ERR"
 
-          # Run the tunnel in the background.
-          # IMPORTANT:
-          #   * Keep ssh quiet (-o LogLevel=ERROR) so stdout is ONLY JSON from localhost.run.
-          #   * Send stderr to a separate file (diagnostics) so it never pollutes the JSON stream.
-          ssh -N \
+          # Run tunnel DETACHED (-f) with no remote command (-N); JSON-only on stdout; stderr separated.
+          ssh -f -N \
               -o StrictHostKeyChecking=no \
               -o ExitOnForwardFailure=yes \
               -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
               -o LogLevel=ERROR \
-              -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json \
-              >"$LOG_JSON" 2>"$LOG_ERR" &
+              -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run \
+              -- --output json \
+              1>"$LOG_JSON" 2>"$LOG_ERR"
 
-          # Discover the public URL from JSON events.
-          # We don't know the exact schema, so try common keys, then fall back to scanning all strings.
+          # Discover public URL from JSON events (.public_url || https:// + .address || first https in message)
           for i in $(seq 1 60); do
             url="$(jq -r '
               select(type=="object")
-              | ( .public_url // .url // .domain // .hostname // .message // "" )
-              | select(type=="string")
-              | select(test("^https://"))
+              | select(.event=="tcpip-forward" and ((.status=="success") or (.authz_code=="OK")))
+              | (
+                  .public_url
+                  // ("https://" + (.address // ""))
+                  // ( .message | capture("(?<u>https://[^[:space:]]+)").u )
+                )
             ' "$LOG_JSON" | tail -n1 || true)"
-
             if [ -n "$url" ]; then
               echo "Discovered tunnel URL: $url"
               echo "url=$url" >> "$GITHUB_OUTPUT"
-              # Also export for later steps
               {
                 echo "SSH_URL=${url}"
-                echo "ACCESS_FULL=${url}${{ steps.setup.outputs.suffix }}"
                 echo "ACCESS_SUFFIX=${{ steps.setup.outputs.suffix }}"
+                echo "ACCESS_FULL=${url}${{ steps.setup.outputs.suffix }}"
                 echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
               } >> "$GITHUB_ENV"
               break
             fi
-            sleep 2
+            sleep 1
           done
 
           if [ -z "${url:-}" ]; then
@@ -511,7 +508,7 @@ jobs:
           for i in $(seq 1 12); do
             code=$(curl -i -L -sS -o /tmp/probe_local.$$ -w '%{http_code}' "${LOCAL_HTTP_FULL}")
             echo "LOCAL attempt $i — HTTP $code"
-            head -n 120 /tmp/probe_local.$$; echo
+            head -n 200 /tmp/probe_local.$$; echo
             [[ "$code" != "000" ]] && break
             sleep 2
           done
@@ -521,7 +518,7 @@ jobs:
           for i in $(seq 1 20); do
             code=$(curl -i -L -sS -o /tmp/probe_edge.$$ -w '%{http_code}' "${ACCESS_FULL}")
             echo "EDGE attempt $i — HTTP $code"
-            head -n 120 /tmp/probe_edge.$$; echo
+            head -n 200 /tmp/probe_edge.$$; echo
             [[ "$code" != "000" ]] && break
             sleep 2
           done
@@ -548,15 +545,10 @@ jobs:
             echo "want_len=$(printf %s "$want" | wc -c)"
           } | tee /tmp/int_debug.txt
 
-          req(){ # label url [cookie_name]
-            label="$1"; url="$2"; cookie="${3:-session_token}"
+          req(){ # label url
+            label="$1"; url="$2"
             printf "\n--- %s ---\nURL: %s\n" "$label" "$url" | tee -a /tmp/int_debug.txt
-            COOKIE_OPT=()
-            if [[ -n "${SESSION_TOKEN:-}" ]]; then
-              COOKIE_OPT=(-b "${cookie}=${SESSION_TOKEN}")
-              echo "Cookie: ${cookie}=${SESSION_TOKEN}" | tee -a /tmp/int_debug.txt
-            fi
-            code=$(curl -sSL -D /tmp/h.$$ "${COOKIE_OPT[@]}" -o /tmp/b.$$ -w '%{http_code}' "$url" || true)
+            code=$(curl -sSL -D /tmp/h.$$ -o /tmp/b.$$ -w '%{http_code}' "$url" || true)
             clen=$(wc -c < /tmp/b.$$ | tr -d ' ')
             head -c 200 /tmp/b.$$ | sed '1s/^/Body head (200 bytes): /' | tee -a /tmp/int_debug.txt
             echo -e "\nHTTP $code, body_len=$clen" | tee -a /tmp/int_debug.txt
@@ -568,15 +560,10 @@ jobs:
           }
 
           ok=0
-          req "local /integrity" "http://127.0.0.1:${BBX_PORT}/integrity" && ok=1
-          if [[ $ok -eq 0 && -n "${SESSION_TOKEN:-}" ]]; then
-            req "local /integrity?session_token=…" "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" && ok=1
-          fi
+          # Always prefer query param; cookies are not needed per route handler.
+          req "local /integrity?session_token=…" "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" && ok=1
           if [[ $ok -eq 0 && -n "${SSH_URL:-}" ]]; then
-            req "edge /integrity (cookie)" "${SSH_URL}/integrity" "session_token" && ok=1
-            if [[ $ok -eq 0 && -n "${SESSION_TOKEN:-}" ]]; then
-              req "edge /integrity?session_token=…" "${SSH_URL}/integrity?session_token=${SESSION_TOKEN}" && ok=1
-            fi
+            req "edge /integrity?session_token=…" "${SSH_URL}/integrity?session_token=${SESSION_TOKEN}" && ok=1
           fi
 
           if [[ $ok -eq 1 ]]; then
@@ -596,6 +583,15 @@ jobs:
         with:
           name: integrity-debug
           path: /tmp/int_debug.txt
+
+      - name: Upload localhost.run logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: localhostrun-logs
+          path: |
+            ~/localhostrun.jsonl
+            ~/localhostrun.err
 
       # ===== Keep-alive with OFF switch monitoring (issue-only) =====
       - name: Keep alive with OFF monitoring
@@ -661,6 +657,8 @@ jobs:
             echo "Cleanup: debug hold already elapsed; proceeding."
           fi
           bbx stop || true
+          # Kill any SSH tunnels (be specific first, then broad)
+          pkill -f 'ssh -f -N .*localhost\.run' || true
           pkill -f 'ssh .*localhost\.run' || true
           pkill -f 'ssh .*@.*' || true
 
