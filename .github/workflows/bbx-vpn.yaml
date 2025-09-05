@@ -645,7 +645,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Note prior job result
-        run: echo "run_bbx result: ${{ needs.run_bbx.result }}"
+        run: |
+          echo "run_bbx result: ${{ needs.run_bbx.result }}"
 
       - name: Try to fetch artifacts (may or may not exist)
         uses: actions/download-artifact@v4
