@@ -443,30 +443,30 @@ jobs:
 
       # === BULLETPROOF: run tmate in-job if ssh_tunnel failed ===
       - name: Debug SSH tunnel failure with tmate (same job safety net)
-          id: debug_tmate 
-          if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' }}
-          timeout-minutes: 30
-          run: |
-            set -euo pipefail
-            LOG_JSON="${HOME}/localhostrun.jsonl"
-            echo "SSH tunnel step concluded: FAILURE — printing logs then opening tmate."
-            echo "--- JSON log ---"
-            cat "$LOG_JSON" || true
-            echo "--- Installing tmate ---"
-            sudo apt-get update
-            sudo apt-get install -y tmate
-            echo "--- Starting tmate ---"
-            tmate -S /tmp/tmate.sock new-session -d
-            tmate -S /tmp/tmate.sock wait tmate-ready
-            SSH_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-            WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
-            echo "tmate SSH: ${SSH_LINE}"
-            echo "tmate WEB: ${WEB_LINE}"
-            echo "TMATE_SSH=${SSH_LINE}" >> "$GITHUB_OUTPUT"
-            echo "TMATE_WEB=${WEB_LINE}"  >> "$GITHUB_OUTPUT"
-            # Hold the runner open
-            echo "Holding session..."
-            sleep 1800
+        id: debug_tmate 
+        if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' }}
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          LOG_JSON="${HOME}/localhostrun.jsonl"
+          echo "SSH tunnel step concluded: FAILURE — printing logs then opening tmate."
+          echo "--- JSON log ---"
+          cat "$LOG_JSON" || true
+          echo "--- Installing tmate ---"
+          sudo apt-get update
+          sudo apt-get install -y tmate
+          echo "--- Starting tmate ---"
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+          SSH_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          WEB_LINE=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+          echo "tmate SSH: ${SSH_LINE}"
+          echo "tmate WEB: ${WEB_LINE}"
+          echo "TMATE_SSH=${SSH_LINE}" >> "$GITHUB_OUTPUT"
+          echo "TMATE_WEB=${WEB_LINE}"  >> "$GITHUB_OUTPUT"
+          # Hold the runner open
+          echo "Holding session..."
+          sleep 1800
 
       - name: Publish tmate connection to status comment
         if: ${{ always() && steps.ssh_tunnel.conclusion == 'failure' && github.event_name == 'issues' }}
