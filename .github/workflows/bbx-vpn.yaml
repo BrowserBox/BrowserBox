@@ -444,43 +444,62 @@ jobs:
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
 
-      - name: Start SSH reverse tunnel (localhost.run; IPv4; PTY; verbose)
+      - name: Start SSH reverse tunnel (localhost.run; JSON output) + capture URL
         id: ssh_tunnel
         env:
           BBX_PORT: ${{ env.BBX_PORT }}
         run: |
           set -euo pipefail
-          LOG="${HOME}/ssh_tunnel.log"
-          : > "$LOG"
 
-          # Force a TTY (-tt). Some runs only print the public URL when a PTY is present.
-          ssh -tt -N -v -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes \
+          LOG_JSON="${HOME}/localhostrun.jsonl"
+          LOG_ERR="${HOME}/localhostrun.err"
+          : > "$LOG_JSON" ; : > "$LOG_ERR"
+
+          # Run the tunnel in the background.
+          # IMPORTANT:
+          #   * Keep ssh quiet (-o LogLevel=ERROR) so stdout is ONLY JSON from localhost.run.
+          #   * Send stderr to a separate file (diagnostics) so it never pollutes the JSON stream.
+          ssh -N \
+              -o StrictHostKeyChecking=no \
+              -o ExitOnForwardFailure=yes \
               -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
-              -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run 2>&1 | tee -a "$LOG" &
+              -o LogLevel=ERROR \
+              -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json \
+              >"$LOG_JSON" 2>"$LOG_ERR" &
 
-          # Discover public URL (broadened patterns; ignore localhost)
+          # Discover the public URL from JSON events.
+          # We don't know the exact schema, so try common keys, then fall back to scanning all strings.
           for i in $(seq 1 60); do
-            url="$(grep -Eo 'https://[0-9a-zA-Z.-]+\.(life|run|link|rocks)' "$LOG" \
-                    | grep -Ev 'localhost(:[0-9]+)?' | tail -n1 || true)"
-            if [[ -n "$url" ]]; then
+            url="$(jq -r '
+              select(type=="object")
+              | ( .public_url // .url // .domain // .hostname // .message // "" )
+              | select(type=="string")
+              | select(test("^https://"))
+            ' "$LOG_JSON" | tail -n1 || true)"
+
+            if [ -n "$url" ]; then
               echo "Discovered tunnel URL: $url"
               echo "url=$url" >> "$GITHUB_OUTPUT"
+              # Also export for later steps
+              {
+                echo "SSH_URL=${url}"
+                echo "ACCESS_FULL=${url}${{ steps.setup.outputs.suffix }}"
+                echo "ACCESS_SUFFIX=${{ steps.setup.outputs.suffix }}"
+                echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
+              } >> "$GITHUB_ENV"
               break
             fi
             sleep 2
           done
-          [[ -n "${url:-}" ]] || { echo "Timed out waiting for localhost.run URL"; echo "--- SSH LOG TAIL ---"; tail -n 200 "$LOG" || true; exit 1; }
 
-          # Compose full login link by appending BBX login suffix (path+query)
-          full="${url}${{ steps.setup.outputs.suffix }}"
-          echo "ACCESS_SUFFIX: ${{ steps.setup.outputs.suffix }}"
-          echo "ACCESS_FULL:   ${full}"
-          {
-            echo "SSH_URL=${url}"
-            echo "SESSION_TOKEN=${{ steps.setup.outputs.token }}"
-            echo "ACCESS_SUFFIX=${{ steps.setup.outputs.suffix }}"
-            echo "ACCESS_FULL=${full}"
-          } >> "$GITHUB_ENV"
+          if [ -z "${url:-}" ]; then
+            echo "FAILED to discover public URL from JSON after 60s."
+            echo "--- stderr (localhost.run / ssh) ---"
+            sed -n '1,200p' "$LOG_ERR" || true
+            echo "--- last 200 lines of JSON log ---"
+            tail -n 200 "$LOG_JSON" || true
+            exit 1
+          fi
 
       - name: Probe login links (local & edge; print bodies; no-fail)
         env:
