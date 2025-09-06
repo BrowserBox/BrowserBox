@@ -20,9 +20,9 @@ import('./voodoo/src/common.js').then(({ DEBUG, CONFIG, VERSION }) => {
   S.addEventListener('message', (event) => {
     if (event.data?.message === 'cache-out-of-sync') {
       DEBUG?.debugSW && console.log('Cache out of sync, reloading page.');
+      alert('We need to refresh your cache. We will reload now.');
       setTimeout(() => {
-        alert('We need to refresh your cache. We will reload now.');
-        window.location.reload();
+        //window.location.reload();
       }, 500);
     }
     if (event.data?.message === 'content-updated') {

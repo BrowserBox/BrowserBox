@@ -1,9 +1,0 @@
-${{key}}
-<input type=text name=cell 
-  class="${typeof value === "number" ? 'number' : ''}"
-  value="${editFormula ? (formula||value) : !isUnset(value) ? value : EMPTY}" 
-  onchange=Recalculate 
-  ondblclick=ShowFormula
-  oncontextmenu=ShowFormula
-  onfocusout=ShowValue
->
