@@ -725,6 +725,7 @@ setup() {
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
+  local zeta_mode="${HOST_PER_SERVICE}"
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -740,9 +741,13 @@ setup() {
         token="$2"
         shift 2
         ;;
+      --zeta|-z)
+        zeta_mode="true"
+        shift 1
+        ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
-        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
+        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
         exit 1
         ;;
     esac
@@ -757,6 +762,10 @@ setup() {
   BBX_HOSTNAME="$hostname"
   TOKEN="${token:-$(openssl rand -hex 16)}"
   BB_TOKEN="${TOKEN}"
+  HOST_PER_SERVICE=""
+  if [[ -n "$zeta_mode" ]]; then
+    HOST_PER_SERVICE="true"
+  fi
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
@@ -782,7 +791,7 @@ setup() {
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  HOST_PER_SERVICE="${HOST_PER_SERVICE}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
@@ -794,11 +803,18 @@ run() {
   load_config
 
   # Ensure setup has been run
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
   fi
+
+  if [[ ! -f "${BB_CONFIG_DIR}/hosts.env" ]]; then
+    printf "${RED}No hosts file: --zeta mode requires a hosts.env file in your config directory (${BB_CONFIG_DIR}).${NC}\n"
+    exit 1
+  fi
+
+  local zeta_mode="${HOST_PER_SERVICE}"
 
   # Default values (should be set by setup, but fallback for safety)
   local port="${PORT}"
@@ -849,10 +865,11 @@ run() {
     fi
   fi
 
+  export HOST_PER_SERVICE;
   bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  local login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
-  draw_box "Login Link: $login_link"
+  source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  local login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
+  draw_box "Login Link: ${login_link}"
   save_config
 }
 
