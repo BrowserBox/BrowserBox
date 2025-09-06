@@ -786,6 +786,7 @@ setup() {
   HOST_PER_SERVICE=""
   if [[ -n "$zeta_mode" ]]; then
     HOST_PER_SERVICE="true"
+    echo "WARNING: You need to implement the addition of the Z-VAL (z=) parameter to the login URL"
   fi
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
