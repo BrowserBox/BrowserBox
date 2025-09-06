@@ -806,11 +806,9 @@ jobs:
           start_tunnel() {
             : > "$LOG_JSON"
             if command -v stdbuf >/dev/null 2>&1; then STD="stdbuf -o0 -e0"; else STD=""; fi
-            # NOTE: no -N (per your request)
             $STD ssh "${SSH_OPTS[@]}" -v -f \
               -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json \
               &> "$LOG_JSON" || true
-
             local found_url=""; local start_epoch=$(date +%s)
             exec 3< <(tail -n +1 -F "$LOG_JSON")
             while true; do
@@ -841,13 +839,11 @@ jobs:
               fi
             done
             exec 3<&-
-
             if [[ -n "$found_url" ]]; then
               echo "::add-mask::$found_url"
               export SSH_URL="$found_url"
               export ACCESS_FULL="${SSH_URL}${ACCESS_SUFFIX}"
               echo "Re-established tunnel: $SSH_URL"
-
               # -------- Update the existing status comment (no new comment) --------
               sc="$(get_status_comment)"
               cid="$(printf '%s' "$sc" | jq -r '.id // empty')"
@@ -878,7 +874,7 @@ jobs:
                       body="$(printf '%s' "$body" | sed -E "s#(\*\*Login link:\*\*\s*).*#\1${ACCESS_FULL}#")"
                     else
                       body="${body}\n**Login link:**\n${ACCESS_FULL}\n"
-                    end
+                    fi
                     update_comment_body "$cid" "$body"
                   fi
                 else
@@ -894,7 +890,6 @@ jobs:
                 fi
               fi
               # --------------------------------------------------------------------
-
               return 0
             fi
             echo "Failed to obtain tunnel URL after restart attempt."
