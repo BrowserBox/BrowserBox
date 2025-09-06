@@ -119,9 +119,9 @@ find_mkcert_root_ca() {
     return 0
   fi
   case "$(uname)" in
-    "Linux") mkcert_dir="$HOME/.local/share/mkcert";;
-    "Darwin") mkcert_dir="$HOME/Library/Application Support/mkcert";;
-    "MINGW"*|"MSYS"*|"CYGWIN"*) mkcert_dir="$HOME/AppData/Local/mkcert";;
+    "Linux") mkcert_dir="${HOME}/.local/share/mkcert";;
+    "Darwin") mkcert_dir="${HOME}/Library/Application Support/mkcert";;
+    "MINGW"*|"MSYS"*|"CYGWIN"*) mkcert_dir="${HOME}/AppData/Local/mkcert";;
     *) echo "Unsupported OS for mkcert root ca location finding" >&2; return 1;;
   esac
   if [ -d "$mkcert_dir" ]; then
@@ -142,15 +142,15 @@ find_torrc_path() {
       cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
     fi
   elif [[ "$OS_TYPE" == "win" ]]; then
-    TORRC="$HOME/tor/torrc"
-    TORDIR="$HOME/tor/data"
+    TORRC="${HOME}/tor/torrc"
+    TORDIR="${HOME}/tor/data"
     mkdir -p "$TORDIR"
     [ -f "$TORRC" ] || touch "$TORRC"
   else
     TORRC="/etc/tor/torrc"
     TORDIR="/var/lib/tor"
   fi
-  COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+  COOKIE_AUTH_FILE="${TORDIR}/control_auth_cookie"
   echo "$TORRC"
 }
 
@@ -265,11 +265,11 @@ wait_for_hostnames() {
     all_exist=1
     for i in {0..4}; do
       local service_port=$((base_port + i))
-      local hidden_service_dir="$TORDIR/hidden_service_$service_port"
+      local hidden_service_dir="${TORDIR}/hidden_service_${service_port}"
       if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
-        [ -f "$hidden_service_dir/hostname" ] || $SUDO test -f "$hidden_service_dir/hostname" || all_exist=0
+        [ -f "${hidden_service_dir}/hostname" ] || $SUDO test -f "${hidden_service_dir}/hostname" || all_exist=0
       else
-        $SUDO test -f "$hidden_service_dir/hostname" || all_exist=0
+        $SUDO test -f "${hidden_service_dir}/hostname" || all_exist=0
       fi
     done
     [ $all_exist -eq 0 ] && sleep 1
@@ -282,7 +282,7 @@ configure_and_export_tor() {
   echo "Setting up tor hidden services..." >&2
   for i in {0..4}; do
     local service_port=$((base_port + i))
-    local hidden_service_dir="$TORDIR/hidden_service_$service_port"
+    local hidden_service_dir="${TORDIR}/hidden_service_${service_port}"
     local dirLine="HiddenServiceDir $hidden_service_dir"
     if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
       $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
@@ -298,10 +298,10 @@ configure_and_export_tor() {
       $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
       if ! grep -qF -- "$dirLine" "$TORRC"; then
         echo "$dirLine" | $SUDO tee -a "$TORRC"
-        echo "HiddenServicePort 443 127.0.0.1:$service_port" | $SUDO tee -a "$TORRC"
+        echo "HiddenServicePort 443 127.0.0.1:${service_port}" | $SUDO tee -a "$TORRC"
       fi
       $SUDO mkdir -p "$hidden_service_dir"
-      $SUDO chown "$TOR_USER:$TOR_GROUP" "$hidden_service_dir"
+      $SUDO chown "${TOR_USER}:${TOR_GROUP}" "$hidden_service_dir"
       $SUDO chmod 770 "$hidden_service_dir"
     fi
   done
@@ -338,12 +338,12 @@ configure_and_export_tor() {
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="$TORDIR/hidden_service_$service_port"
-    local onion_address=$( [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]] && cat "$hidden_service_dir/hostname" || $SUDO cat "$hidden_service_dir/hostname" )
-    export "ADDR_$service_port=$onion_address"
+    local onion_address=$( [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]] && cat "${hidden_service_dir}/hostname" || $SUDO cat "${hidden_service_dir}/hostname" )
+    export "ADDR_${service_port}=${onion_address}"
     echo "$service_port $onion_address" >&2
-    local cert_dir="$HOME/$torsslcerts/$onion_address"
+    local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "$cert_dir"
-    if ! mkcert -cert-file "$cert_dir/fullchain.pem" -key-file "$cert_dir/privkey.pem" "$onion_address" &>/dev/null; then
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
       echo "mkcert failed for $onion_address" >&2
       exit 1
     fi
@@ -399,12 +399,12 @@ manage_firewall() {
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
 
   # Source the config file if it exists
-  CONFIG_FILE="$CONFIG_DIR/config"
+  CONFIG_FILE="${CONFIG_DIR}/config"
   if [[ -f "$CONFIG_FILE" ]]; then
     echo "Sourcing $CONFIG_FILE..." >&2
     source "$CONFIG_FILE"
   else
-    echo "No config file found at $CONFIG_FILE. Proceeding without it." >&2
+    echo "No config file found at ${CONFIG_FILE}. Proceeding without it." >&2
   fi
 
   # Check for LICENSE_KEY and prompt if not set
@@ -416,7 +416,7 @@ manage_firewall() {
         echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
       fi
     done
-    echo "LICENSE_KEY set to $LICENSE_KEY." >&2
+    echo "LICENSE_KEY set to ${LICENSE_KEY}." >&2
   else
     echo "LICENSE_KEY is already set." >&2
   fi
@@ -436,12 +436,12 @@ manage_firewall() {
     for i in {0..4}; do
       service_port=$((base_port + i))
       onion_address="$(add_hidden_service_via_control_port "$service_port")"
-      export "ADDR_$service_port=$onion_address"
-      echo "Onion address for port $service_port: $onion_address" >&2
-      cert_dir="$HOME/$torsslcerts/$onion_address"
+      export "ADDR_${service_port}=${onion_address}"
+      echo "Onion address for port ${service_port}: ${onion_address}" >&2
+      cert_dir="$HOME/${torsslcerts}/${onion_address}"
       setup_mkcert
       mkdir -p "$cert_dir"
-      if ! mkcert -cert-file "$cert_dir/fullchain.pem" -key-file "$cert_dir/privkey.pem" "$onion_address" &>/dev/null; then
+      if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
         echo "mkcert failed for $onion_address" >&2
         exit 1
       fi
@@ -450,8 +450,8 @@ manage_firewall() {
 
   cert_root=$(find_mkcert_root_ca)
 
-  cat > "$CONFIG_DIR/torbb.env" <<EOF
-source "$CONFIG_DIR/test.env"
+  cat > "${CONFIG_DIR}/torbb.env" <<EOF
+source "${CONFIG_DIR}/test.env"
 export TORBB=true
 export TORCA_CERT_ROOT="$cert_root"
 export SSLCERTS_DIR="$torsslcerts"
@@ -459,8 +459,8 @@ EOF
   base_port=$((APP_PORT - 2))
   for i in {0..4}; do
     service_port=$((base_port + i))
-    ref="ADDR_$service_port"
-    echo "export $ref=${!ref}" >> "$CONFIG_DIR/torbb.env"
+    ref="ADDR_${service_port}"
+    echo "export $ref=${!ref}" >> "${CONFIG_DIR}/torbb.env"
   done
 
   export TORBB=true
@@ -472,10 +472,10 @@ EOF
   echo "Started!" >&2
 } >&2
 
-ref="ADDR_$APP_PORT"
-cert_file="$HOME/$torsslcerts/${!ref}/fullchain.pem"
+ref="ADDR_${APP_PORT}"
+cert_file="${HOME}/${torsslcerts}/${!ref}/fullchain.pem"
 DOMAIN="${!ref}"
-LOGIN_LINK="https://$DOMAIN/login?token=$LOGIN_TOKEN"
-echo "$LOGIN_LINK" > "$CONFIG_DIR/login.link"
+LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
+echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
 echo "Login link for Tor hidden service BB instance:" >&2
 echo "$LOGIN_LINK"
