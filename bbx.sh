@@ -1,6 +1,5 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
-set -x
 ##########################################################
 #  ____                                  ____
 # | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
@@ -2140,7 +2139,7 @@ usage() {
     printf "\n"
     printf "  ${BOLD}\t\t  setup options:${NC}\n"
     printf "         \t        ${GREEN}--zeta, -z${NC}       Expose each service as a unique hostname. Useful for nginx,\n"
-    printf "         \t                         ngrok, localhost.run, or similar layers. Expects hosts.env\n"
+    printf "         \t                         ngrok, similar layers, or standard HTTP/S ports. Expects hosts.env\n"
     printf "  ${GREEN}certify${NC}        Check your license\n"
     printf "  ${GREEN}run${NC}            Run BrowserBox \t\t\t${BOLD}bbx run [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
     printf "  ${GREEN}stop${NC}           Stop BrowserBox (current user)\n"
