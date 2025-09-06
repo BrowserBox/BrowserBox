@@ -401,35 +401,37 @@ jobs:
           set -euo pipefail
           LOG_JSON="${HOME}/localhostrun.jsonl"
           : > "$LOG_JSON"
-          if command -v stdbuf >/dev/null 2>&1; then
-            STD="stdbuf -o0 -e0"
-          else
-            STD=""
-          fi
-          $STD ssh -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes -v -f \
+          if command -v stdbuf >/dev/null 2>&1; then STD="stdbuf -o0 -e0"; else STD=""; fi
+
+          SSH_OPTS=(
+            -o StrictHostKeyChecking=no
+            -o ExitOnForwardFailure=yes
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=3
+            -o TCPKeepAlive=yes
+          )
+
+          # NOTE: no -N (per your request)
+          $STD ssh "${SSH_OPTS[@]}" -v -f \
             -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json \
             &> "$LOG_JSON" || true
+
           exec 3< <(tail -n +1 -F "$LOG_JSON")
           start_epoch=$(date +%s)
-          found_url=""
-          lineno=0
+          found_url=""; lineno=0
           while true; do
             if ! IFS= read -r -t 1 line <&3; then
-              now=$(date +%s)
-              if (( now - start_epoch >= 90 )); then
-                break
-              fi
-              continue
+              now=$(date +%s); (( now - start_epoch >= 90 )) && break; continue
             fi
             lineno=$((lineno+1))
             tsv=$(printf '%s\n' "$line" | jq -Rr '
               fromjson?
               | select(.event=="tcpip-forward" and .status=="success")
               | [(.address // .listen_host // ""),
-                (if .tls_termination then "true" else "false" end),
-                (.message // "")]
+                 (if .tls_termination then "true" else "false" end),
+                 (.message // "")]
               | @tsv
-              ' || true)
+            ' || true)
             [[ -z "$tsv" ]] && continue
             host=$(printf '%s' "$tsv" | cut -f1)
             tls=$(printf '%s' "$tsv" | cut -f2)
@@ -442,8 +444,7 @@ jobs:
             fi
             if [[ -n "$message" ]]; then
               msg_url=$(printf '%s' "$message" \
-                | grep -oE 'https://[[:alnum:].-]+(:[0-9]+)?(/[[:graph:]]*)?' \
-                | head -n1 || true)
+                | grep -oE 'https://[[:alnum:].-]+(:[0-9]+)?(/[[:graph:]]*)?' | head -n1 || true)
               if [[ -n "$msg_url" ]]; then
                 found_url="$msg_url"
                 echo "FOUND (message at line $lineno): $found_url"
@@ -451,9 +452,10 @@ jobs:
               fi
             fi
           done
+          exec 3<&-
+
           if [[ -n "$found_url" ]]; then
             echo "::add-mask::$found_url"
-            echo "Discovered tunnel URL (JSON): $found_url"
             echo "url=$found_url" >> "$GITHUB_OUTPUT"
             {
               echo "SSH_URL=${found_url}"
@@ -465,6 +467,7 @@ jobs:
             echo "::add-mask::${{ steps.setup.outputs.token }}"
             exit 0
           fi
+
           echo "FAILED to discover public URL from mixed log after 90s."
           echo "--- Mixed log (tail) ---"; tail -n 200 "$LOG_JSON" || true
           exit 1
@@ -732,19 +735,189 @@ jobs:
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
 
-      - name: Keep alive with OFF monitoring
+      - name: Watchdog — OFF monitoring + SSH tunnel auto-restart (edits status)
         if: github.event_name != 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_PORT: ${{ env.BBX_PORT }}
+          SESSION_MINUTES: ${{ env.SESSION_MINUTES }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+          REPO: ${{ env.REPO }}
+          ACCESS_SUFFIX: ${{ env.ACCESS_SUFFIX }}
+          SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
+          ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
+
           secs=$(( ${SESSION_MINUTES} * 60 ))
-          issue_api="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}"
           end=$(( $(date +%s) + secs ))
+          issue_api="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}"
+          comments_api="${issue_api}/comments"
+          header="### BrowserBox Status"
+
+          SSH_OPTS=(
+            -o StrictHostKeyChecking=no
+            -o ExitOnForwardFailure=yes
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=3
+            -o TCPKeepAlive=yes
+          )
+
+          LOG_JSON="${HOME}/localhostrun.jsonl"
+
+          get_status_comment() {
+            curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+              "${comments_api}?per_page=100" \
+            | jq -c --arg h "$header" '[.[] | select(.user.type=="Bot" and (.body // "") | contains($h))] | .[0]'
+          }
+
+          update_comment_body() { # $1: comment_id, $2: new_body
+            curl -sfL -X PATCH -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+              -d "$(jq -nc --arg b "$2" '{body:$b}')" \
+              "https://api.github.com/repos/${REPO}/issues/comments/$1" >/dev/null || true
+          }
+
+          reencrypt_blob() { # echoes new base64 blob to stdout
+            set -euo pipefail
+            mkdir -p .secure
+            printf '%s' "${ACCESS_FULL}" > .secure/url.txt
+
+            # fetch first RSA key for ACTOR
+            curl -sfL -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/users/${ACTOR}/keys" -o .secure/keys.json || true
+            rsa_from_json="$(jq -r '.[] | .key' .secure/keys.json 2>/dev/null | awk '/^ssh-rsa /{print; exit}' || true)"
+            if [[ -z "$rsa_from_json" ]]; then
+              curl -sfL "https://github.com/${ACTOR}.keys" -o .secure/keys.plain || true
+              rsa_from_plain="$(awk '/^ssh-rsa /{print; exit}' .secure/keys.plain || true)"
+            else
+              rsa_from_plain=""
+            fi
+            rsa_line="${rsa_from_json:-$rsa_from_plain}"
+            [[ -z "$rsa_line" ]] && { echo ""; return 0; }
+
+            printf '%s\n' "$rsa_line" > .secure/actor_rsa.pub
+            ssh-keygen -f .secure/actor_rsa.pub -e -m pem > .secure/actor_rsa.pem
+            openssl pkeyutl -encrypt -pubin -inkey .secure/actor_rsa.pem \
+              -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 \
+              -in .secure/url.txt -out .secure/url.bin
+            base64 -w 0 .secure/url.bin
+          }
+
+          start_tunnel() {
+            : > "$LOG_JSON"
+            if command -v stdbuf >/dev/null 2>&1; then STD="stdbuf -o0 -e0"; else STD=""; fi
+            # NOTE: no -N (per your request)
+            $STD ssh "${SSH_OPTS[@]}" -v -f \
+              -R 80:127.0.0.1:${BBX_PORT} nokey@localhost.run -- --output json \
+              &> "$LOG_JSON" || true
+
+            local found_url=""; local start_epoch=$(date +%s)
+            exec 3< <(tail -n +1 -F "$LOG_JSON")
+            while true; do
+              if ! IFS= read -r -t 1 line <&3; then
+                now=$(date +%s); (( now - start_epoch >= 60 )) && break; continue
+              fi
+              tsv=$(printf '%s\n' "$line" | jq -Rr '
+                fromjson?
+                | select(.event=="tcpip-forward" and .status=="success")
+                | [(.address // .listen_host // ""),
+                   (if .tls_termination then "true" else "false" end),
+                   (.message // "")]
+                | @tsv
+              ' || true)
+              [[ -z "$tsv" ]] && continue
+              host=$(printf '%s' "$tsv" | cut -f1)
+              tls=$(printf '%s' "$tsv" | cut -f2)
+              message=$(printf '%s' "$tsv" | cut -f3-)
+              if [[ -n "$host" ]]; then
+                scheme="http"; [[ "$tls" == "true" ]] && scheme="https"
+                found_url="${scheme}://${host}"
+                break
+              fi
+              if [[ -n "$message" ]]; then
+                msg_url=$(printf '%s' "$message" \
+                  | grep -oE 'https://[[:alnum:].-]+(:[0-9]+)?(/[[:graph:]]*)?' | head -n1 || true)
+                [[ -n "$msg_url" ]] && { found_url="$msg_url"; break; }
+              fi
+            done
+            exec 3<&-
+
+            if [[ -n "$found_url" ]]; then
+              echo "::add-mask::$found_url"
+              export SSH_URL="$found_url"
+              export ACCESS_FULL="${SSH_URL}${ACCESS_SUFFIX}"
+              echo "Re-established tunnel: $SSH_URL"
+
+              # -------- Update the existing status comment (no new comment) --------
+              sc="$(get_status_comment)"
+              cid="$(printf '%s' "$sc" | jq -r '.id // empty')"
+              body="$(printf '%s' "$sc" | jq -r '.body // empty')"
+              if [[ -n "$cid" && -n "$body" ]]; then
+                ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+                # prefer encrypted update if the comment currently uses encryption
+                if printf '%s' "$body" | grep -q 'Encrypted blob (base64):'; then
+                  newb64="$(reencrypt_blob)"
+                  if [[ -n "$newb64" ]]; then
+                    body="$(printf '%s' "$body" \
+                      | sed -E "s#(\*\*Stages:\*\*.*)- ✅ Ready#\1- ✅ Ready\n⚠️ **(Tunnel address updated at ${ts})**#; t;")"
+                    body="$(printf '%s\n' "$body" \
+                      | awk '
+                          BEGIN{p=1}
+                          /^```$/ && code==1 {code=0; print; next}
+                          /^```$/ && code==0 && block==1 {code=1; print; next}
+                          /Encrypted blob \(base64\):/ {print; print "```"; print ENVIRON["NEWB64"]; print "```"; block=1; skip=1; next}
+                          { if(!skip) print }
+                          END{}
+                        ' NEWB64="$newb64")"
+                    update_comment_body "$cid" "$body"
+                  else
+                    # fallback: plaintext line (actor had no RSA key now)
+                    body="$(printf '%s' "$body" \
+                      | sed -E "s#(\*\*Stages:\*\*.*)- ✅ Ready#\1- ✅ Ready\n⚠️ **(Tunnel address updated at ${ts})**#; t;")"
+                    if printf '%s' "$body" | grep -q '\*\*Login link:\*\*'; then
+                      body="$(printf '%s' "$body" | sed -E "s#(\*\*Login link:\*\*\s*).*#\1${ACCESS_FULL}#")"
+                    else
+                      body="${body}\n**Login link:**\n${ACCESS_FULL}\n"
+                    end
+                    update_comment_body "$cid" "$body"
+                  fi
+                else
+                  # plaintext update
+                  body="$(printf '%s' "$body" \
+                    | sed -E "s#(\*\*Stages:\*\*.*)- ✅ Ready#\1- ✅ Ready\n⚠️ **(Tunnel address updated at ${ts})**#; t;")"
+                  if printf '%s' "$body" | grep -q '\*\*Login link:\*\*'; then
+                    body="$(printf '%s' "$body" | sed -E "s#(\*\*Login link:\*\*\s*).*#\1${ACCESS_FULL}#")"
+                  else
+                    body="${body}\n**Login link:**\n${ACCESS_FULL}\n"
+                  fi
+                  update_comment_body "$cid" "$body"
+                fi
+              fi
+              # --------------------------------------------------------------------
+
+              return 0
+            fi
+            echo "Failed to obtain tunnel URL after restart attempt."
+            return 1
+          }
+
+          tunnel_ok() {
+            pgrep -f 'ssh .*localhost\.run' >/dev/null 2>&1 || return 1
+            if [[ -n "${SSH_URL:-}" ]]; then
+              code=$(curl -i -L -sS -o /dev/null -w '%{http_code}' "${SSH_URL}${ACCESS_SUFFIX}" || true)
+              [[ "$code" != "000" ]] || return 1
+            fi
+            return 0
+          }
+
+          bbx_alive() {
+            curl -sS "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" -m 3 -o /dev/null >/dev/null 2>&1
+          }
+
           off_count=0
           while (( $(date +%s) < end )); do
-            body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" \
-              | jq -r '.body // ""')"
+            # OFF monitoring
+            body="$(curl -sfL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "$issue_api" | jq -r '.body // ""')"
             clean="$(printf '%s' "$body" | tr -d '\r' | sed -E 's/<!--[^>]*-->//g')"
             if printf '%s\n' "$clean" | grep -Eqi '(^|\n)[[:space:]]*-[[:space:]]*\[x\][[:space:]]*on([[:space:]]|$)'; then
               off_count=0
@@ -756,6 +929,17 @@ jobs:
                 exit 0
               fi
             fi
+
+            # Tunnel health → restart + status-edit
+            if bbx_alive; then
+              if ! tunnel_ok; then
+                echo "Tunnel missing/unhealthy — attempting restart…"
+                start_tunnel || echo "Restart attempt failed; will retry."
+              fi
+            else
+              echo "bbx seems down (no local integrity). Not restarting tunnel."
+            fi
+
             sleep 10
           done
 
