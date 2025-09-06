@@ -720,7 +720,7 @@
           }
           settingUp = true;
           try {
-            const AUDIO = CONFIG.isOnion ? new URL(
+            const AUDIO = (CONFIG.isOnion || CONFIG.zetaMode) ? new URL(
                 `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
               ) 
               : 
@@ -728,7 +728,7 @@
             ;
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
             const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
-            AUDIO.port = (CONFIG.isOnion || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
+            AUDIO.port = (CONFIG.isOnion || CONFIG.zetaMode || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
             if ( CONFIG.isDNSFacade ) {
               const subs = location.hostname.split('.');
               if ( subs?.[0]?.match?.(FACADE_HOST_REGEX)?.index == 0 ) {
@@ -1514,6 +1514,12 @@
                 url.port = url.protocol == 'https:' ? 443 : 80;
                 url.hostname = subs.join('.');
               }
+              /*
+              // this may not be needed as url may be correct on server
+              if ( CONFIG.zetaMode ) {
+                url = new URL(`${location.protocol}//${localStorage.getItem(CONFIG.docsServiceFileName)}`)
+              }
+              */
               if ( DEBUG.useWindowOpenForSecureView ) {
                 globalThis.window.open(url);
               } else {
