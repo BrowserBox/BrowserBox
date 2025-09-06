@@ -384,7 +384,7 @@ export const CONFIG = Object.freeze({
   audioDropPossiblySilentFrames: true,
   hostPerService: process.env.HOST_PER_SERVICE,
   sslcerts: port => {
-    if ( process.env.TORBB || process.env.HOST_PER_SERVICE ) {
+    if ( process.env.TORBB ) {
       DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`]);
       return path.join(os.homedir(), process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
     } else {

@@ -1853,7 +1853,7 @@
           });
 
           queue.addMetaListener('resource', ({ resource }) => {
-              embedComms.sendMessageToParent('did-start-loading', { tabId: resource.targetInfo.targetId, url: resource.params.request.url });
+              embedComms.sendMessageToParent('did-start-loading', { tabId: resource.targetId });
           });
 
           queue.addMetaListener('navigated', ({ navigated }) => {

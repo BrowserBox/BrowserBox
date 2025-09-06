@@ -1,6 +1,6 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
-
+set -x
 ##########################################################
 #  ____                                  ____
 # | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
@@ -354,6 +354,7 @@ LICENSE_KEY="${_LIC_TO_WRITE}"
 BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
+HOST_PER_SERVICE="${HOST_PER_SERVICE}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
@@ -736,20 +737,35 @@ setup() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          exit 1
+        fi
         port="$2"
         shift 2
         ;;
       --hostname|-h)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          exit 1
+        fi
         hostname="$2"
         shift 2
         ;;
       --token|-t)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          exit 1
+        fi
         token="$2"
         shift 2
         ;;
       --zeta|-z)
         zeta_mode="true"
-        shift 1
+        shift
         ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
@@ -830,10 +846,20 @@ run() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+          exit 1
+        fi
         port="$2"
         shift 2
         ;;
       --hostname|-h)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+          exit 1
+        fi
         hostname="$2"
         shift 2
         ;;
@@ -1102,6 +1128,11 @@ docker_run() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+          exit 1
+        fi
         port="$2"
         shift 2
         ;;
@@ -1993,12 +2024,17 @@ run_as() {
                 shift
                 ;;
             --port|-p)
+                if [ -z "$2" ]; then
+                    printf "${RED}Error: Option $1 requires an argument${NC}\n"
+                    printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
+                    exit 1
+                fi
                 port="$2"
                 shift 2
                 ;;
             *)
                 if [ -z "$user" ]; then
-                    user="$1"  # First non-flag argument is the username
+                    user="$1" # First non-flag argument is the username
                 else
                     printf "${RED}Unknown or extra argument: $1${NC}\n"
                     printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
