@@ -23,6 +23,7 @@ const excludedPaths = new Set([
   '/image.html',
   '/extensions',
   '/isTor',
+  '/isZeta',
   '/torExit',
   '/torca/rootCA.pem',
   '/settings_modal',

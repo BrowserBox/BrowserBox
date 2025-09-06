@@ -1623,6 +1623,23 @@
           }
           res.end(JSON.stringify(data));
         });
+        app.get(`/isZeta`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const data = {};
+          if ( CONFIG.hostPerService ) {
+            data.isZeta = true;
+          } else {
+            data.isZeta = false;
+          }
+          res.end(JSON.stringify(data));
+        });
         app.get(`/torExit`, wrap(async (req, res) => {
           res.type('json');
           const data = {};

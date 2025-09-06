@@ -382,6 +382,7 @@ export const CONFIG = Object.freeze({
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
+  hostPerService: process.env.HOST_PER_SERVICE,
   sslcerts: port => {
     if ( process.env.TORBB || process.env.HOST_PER_SERVICE ) {
       DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`]);
