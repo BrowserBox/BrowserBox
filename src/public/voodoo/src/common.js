@@ -214,6 +214,9 @@ export const DEBUG = Object.freeze({
 export const CONFIG = Object.freeze({
   hearingProtectionMaxGain: 1.3,
   alwaysSendTopLevel: false,
+  get isTor() {
+    return this.isOnion || globalThis.comingFromTOR
+  },
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
   },
@@ -263,6 +266,7 @@ export const CONFIG = Object.freeze({
   magicBar: false,
   audioServiceFileName: 'audio.srv',
   devtoolsServiceFileName: 'devtools.srv',
+  docsServiceFileName: 'chai.srv',
   sessionTokenFileName: 'session.tkn',
   get isOnion() {
     return globalThis?.location?.host?.endsWith?.('.onion')
