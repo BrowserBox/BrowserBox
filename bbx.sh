@@ -39,8 +39,6 @@ banner() {
    ███████████  █████    ░░██████   ░░████░████    ██████ ░░██████  █████     ███████████ ░░██████  █████ █████
   ░░░░░░░░░░░  ░░░░░      ░░░░░░     ░░░░ ░░░░    ░░░░░░   ░░░░░░  ░░░░░     ░░░░░░░░░░░   ░░░░░░  ░░░░░ ░░░░░
   
- 
-
 EOF
     printf "${NC}\n"
 }
@@ -2339,7 +2337,7 @@ version() {
 
 usage() {
     banner
-    printf "${BLUE}\tWelcome to the ${CYAN}bbx${BLUE} CLI tool for BrowserBox!${NC}\n"
+    printf "${BLUE}\t\t\t\t Welcome to the ${CYAN}bbx${BLUE} CLI tool for BrowserBox!${NC}\n"
     printf "\n"
     printf "${BOLD}Usage:${NC}\n\t\t ${BOLD}bbx ${NC}<command> [options]\n"
     printf "\n"
@@ -2359,7 +2357,7 @@ usage() {
     printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
     printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
-    printf "  ${GREEN}update${NC}         Update BrowserBox \t\t${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
+    printf "  ${GREEN}update${NC}         Update BrowserBox       \t\t${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox on Tor      \t\t${BOLD}bbx tor-run [--no-darkweb] [--no-onion]${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
