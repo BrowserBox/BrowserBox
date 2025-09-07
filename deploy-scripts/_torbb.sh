@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
+# Debug
 if [[ -n "${BBX_DEBUG}" ]]; then
   set -x
 fi
+set -euo pipefail
 
-# Global Variables
+# -----------------------------
+# Global Variables / Defaults
+# -----------------------------
 OS_TYPE=""
 TOR_INSTALLED=false
 SUDO=""
@@ -12,61 +16,73 @@ TORRC=""
 TORDIR=""
 TOR_USER=""
 TOR_GROUP=""
-TOR_SERVICE="tor@default"  # Added for Linux instance-based setups
+TOR_SERVICE="tor@default"  # Linux instance-based setups
 torsslcerts="tor-sslcerts"
+COOKIE_AUTH_FILE=""
 
 if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
 fi
 
-# Set the correct Tor group based on the OS
+# -----------------------------
+# OS Detection & Paths
+# -----------------------------
 detect_os() {
-  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    if [ -f /etc/debian_version ]; then
-      OS_TYPE="debian"
-      TOR_USER="debian-tor"
-      TOR_GROUP="debian-tor"
-    elif [ -f /etc/centos-release ] || [ -f /etc/redhat-release ]; then
-      OS_TYPE="centos"
-      TOR_USER="toranon"
-      TOR_GROUP="toranon"
-    elif [ -f /etc/arch-release ]; then
-      OS_TYPE="arch"
-      TOR_USER="tor"
-      TOR_GROUP="tor"
-    elif [ -f /etc/amazon-linux-release ]; then
-      OS_TYPE="centos"  # Treat Amazon Linux as CentOS-like
-      TOR_USER="toranon"
-      TOR_GROUP="toranon"
-    else
-      echo "Unsupported Linux distribution" >&2
-      exit 1
-    fi
-    TORRC="/etc/tor/torrc"
-    TORDIR="/var/lib/tor"
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
-    TOR_USER="$USERNAME"
-    TOR_GROUP="admin"
-    prefix=$(brew --prefix)
-    TORRC="$prefix/etc/tor/torrc"
-    TORDIR="$prefix/var/lib/tor"
+    TOR_USER="$USER"
+    TOR_GROUP="staff"  # Homebrew services typically run as the login user
+    local bprefix
+    bprefix="$(brew --prefix tor 2>/dev/null || true)"
+    if [[ -n "$bprefix" ]]; then
+      # E.g. /opt/homebrew/opt/tor/../../etc/tor/torrc => /opt/homebrew/etc/tor/torrc
+      TORRC="$bprefix/../../etc/tor/torrc"
+      TORDIR="$bprefix/../../var/lib/tor"
+    else
+      bprefix="$(brew --prefix 2>/dev/null || true)"
+      TORRC="$bprefix/etc/tor/torrc"
+      TORDIR="$bprefix/var/lib/tor"
+    fi
     mkdir -p "$TORDIR"
-    [ -f "$TORRC" ] || cp "$prefix/etc/tor/torrc.sample" "$TORRC"
+    [[ -f "$TORRC" ]] || cp "$(dirname "$TORRC")/torrc.sample" "$TORRC" 2>/dev/null || touch "$TORRC"
+  elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if [ -f /etc/debian_version ]; then
+      OS_TYPE="debian"; TOR_USER="debian-tor"; TOR_GROUP="debian-tor"
+    elif [ -f /etc/centos-release ] || [ -f /etc/redhat-release ]; then
+      OS_TYPE="centos"; TOR_USER="toranon"; TOR_GROUP="toranon"
+    elif [ -f /etc/arch-release ]; then
+      OS_TYPE="arch"; TOR_USER="tor"; TOR_GROUP="tor"
+    elif [ -f /etc/amazon-linux-release ]; then
+      OS_TYPE="centos"; TOR_USER="toranon"; TOR_GROUP="toranon"
+    else
+      echo "Unsupported Linux distribution" >&2; exit 1
+    fi
+    TORRC="/etc/tor/torrc"; TORDIR="/var/lib/tor"
   elif [[ "$OSTYPE" == "MINGW"* || "$OSTYPE" == "MSYS"* || "$OSTYPE" == "cygwin"* ]]; then
-    OS_TYPE="win"
-    TOR_USER="$USERNAME"
-    TOR_GROUP=""  # Windows doesn’t use groups this way
-    TORRC="$HOME/tor/torrc"  # Adjust as needed for Windows Tor install
-    TORDIR="$HOME/tor/data"
+    OS_TYPE="win"; TOR_USER="$USER"; TOR_GROUP=""
+    TORRC="$HOME/tor/torrc"; TORDIR="$HOME/tor/data"
   else
-    echo "Unsupported OS" >&2
-    exit 1
+    echo "Unsupported OS" >&2; exit 1
   fi
   COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
 }
 
-# Check if the user is in the Tor group
+find_torrc_path() {
+  if [[ "$OS_TYPE" == "macos" ]]; then
+    mkdir -p "$TORDIR"
+    [[ -f "$TORRC" ]] || cp "$(dirname "$TORRC")/torrc.sample" "$TORRC" 2>/dev/null || touch "$TORRC"
+  elif [[ "$OS_TYPE" == "win" ]]; then
+    TORRC="${HOME}/tor/torrc"; TORDIR="${HOME}/tor/data"; mkdir -p "$TORDIR"; [[ -f "$TORRC" ]] || touch "$TORRC"
+  else
+    TORRC="/etc/tor/torrc"; TORDIR="/var/lib/tor"
+  fi
+  COOKIE_AUTH_FILE="${TORDIR}/control_auth_cookie"
+  echo "$TORRC"
+}
+
+# -----------------------------
+# Group check (Linux only)
+# -----------------------------
 check_tor_group() {
   if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
     echo "No group check needed for $OS_TYPE" >&2
@@ -79,6 +95,9 @@ check_tor_group() {
   fi
 }
 
+# -----------------------------
+# Package Manager
+# -----------------------------
 initialize_package_manager() {
   local package_manager
   if [[ "$OS_TYPE" == "macos" ]]; then
@@ -88,11 +107,11 @@ initialize_package_manager() {
   elif command -v apt &>/dev/null; then
     package_manager=$(command -v apt)
     if command -v apt-get &>/dev/null; then
-      source non-interactive.sh >&2  # Restore legacy dependency
+      source non-interactive.sh >&2 || true
     fi
-  elif command -v dnf >/dev/null; then
+  elif command -v dnf >/dev/null 2>&1; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
-  elif command -v pacman >/dev/null; then
+  elif command -v pacman >/dev/null 2>&1; then
     package_manager=$(command -v pacman)
   else
     echo "No supported package manager found. Exiting." >&2
@@ -102,10 +121,10 @@ initialize_package_manager() {
   export APT=$package_manager
 }
 
-ensure_shutdown() {
-  pm2 delete all
-}
-
+# -----------------------------
+# Utilities
+# -----------------------------
+ensure_shutdown() { pm2 delete all >/dev/null 2>&1 || true; }
 os_type() {
   case "$(uname -s)" in
     Darwin*) echo "macOS";;
@@ -117,54 +136,21 @@ os_type() {
 
 find_mkcert_root_ca() {
   local mkcert_dir=""
-  mkcert_dir="$(mkcert -CAROOT 2>/dev/null)"
-  if [[ -n "$mkcert_dir" ]]; then
-    echo "$mkcert_dir"
-    return 0
-  fi
+  mkcert_dir="$(mkcert -CAROOT 2>/dev/null || true)"
+  if [[ -n "$mkcert_dir" ]]; then echo "$mkcert_dir"; return 0; fi
   case "$(uname)" in
     "Linux") mkcert_dir="${HOME}/.local/share/mkcert";;
     "Darwin") mkcert_dir="${HOME}/Library/Application Support/mkcert";;
     "MINGW"*|"MSYS"*|"CYGWIN"*) mkcert_dir="${HOME}/AppData/Local/mkcert";;
     *) echo "Unsupported OS for mkcert root ca location finding" >&2; return 1;;
   esac
-  if [ -d "$mkcert_dir" ]; then
-    echo "$mkcert_dir"
-  else
-    echo "warning: mkcert directory not found in the expected location." >&2
-    return 1
-  fi
-}
-
-find_torrc_path() {
-  if [[ "$OS_TYPE" == "macos" ]]; then
-    prefix=$(brew --prefix tor)
-    TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
-    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
-    mkdir -p "$TORDIR"
-    if [[ ! -f "$TORRC" ]]; then
-      cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
-    fi
-  elif [[ "$OS_TYPE" == "win" ]]; then
-    TORRC="${HOME}/tor/torrc"
-    TORDIR="${HOME}/tor/data"
-    mkdir -p "$TORDIR"
-    [ -f "$TORRC" ] || touch "$TORRC"
-  else
-    TORRC="/etc/tor/torrc"
-    TORDIR="/var/lib/tor"
-  fi
-  COOKIE_AUTH_FILE="${TORDIR}/control_auth_cookie"
-  echo "$TORRC"
+  if [ -d "$mkcert_dir" ]; then echo "$mkcert_dir"; else echo "warning: mkcert directory not found." >&2; return 1; fi
 }
 
 get_normalized_arch() {
-  local arch=$(dpkg --print-architecture || uname -m)
-  if [ "$arch" = "x86_64" ]; then
-    echo "amd64"
-  else
-    echo "$arch"
-  fi
+  local arch
+  arch="$(dpkg --print-architecture 2>/dev/null || uname -m)"
+  if [ "$arch" = "x86_64" ] || [ "$arch" = "amd64" ]; then echo "amd64"; else echo "$arch"; fi
 }
 
 setup_mkcert() {
@@ -175,33 +161,32 @@ setup_mkcert() {
     elif [ "$OS_TYPE" == "win" ]; then
       choco install mkcert || { scoop bucket add extras && scoop install mkcert; }
     else
-      amd64="$(get_normalized_arch)"
+      local amd64; amd64="$(get_normalized_arch)"
       if [[ "$OS_TYPE" == "centos" ]]; then
-        $SUDO "$APT" install -y nss-tools
+        $SUDO $APT install -y nss-tools
       elif [[ "$OS_TYPE" == "debian" || "$OS_TYPE" == "arch" ]]; then
-        $SUDO "$APT" install -y libnss3-tools
+        $SUDO $APT install -y libnss3-tools
       fi
-      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/${amd64}"
-      chmod +x mkcert-v*-linux-"$amd64"
-      $SUDO cp mkcert-v*-linux-"$amd64" /usr/local/bin/mkcert
-      rm mkcert-v*
+      curl -fsSL -o mkcert "https://dl.filippo.io/mkcert/latest?for=linux/${amd64}"
+      chmod +x mkcert
+      $SUDO mv mkcert /usr/local/bin/mkcert
     fi
     mkcert -install
   fi
 }
 
-# Install Tor
+# -----------------------------
+# Tor Installation
+# -----------------------------
 install_tor() {
   if command -v tor &>/dev/null; then
-    export TOR_INSTALLED=true
-    echo "Tor is installed" >&2
-    return
+    TOR_INSTALLED=true; echo "Tor is installed" >&2; return
   fi
   case $OS_TYPE in
     debian)
       echo "Adding Tor repository for Debian..." >&2
       $SUDO apt-get update
-      $SUDO apt-get install -y apt-transport-https gpg
+      $SUDO apt-get install -y apt-transport-https gpg wget
       wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import
       gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | $SUDO apt-key add -
       echo "deb https://deb.torproject.org/torproject.org $(lsb_release -sc) main" | $SUDO tee /etc/apt/sources.list.d/tor.list
@@ -224,44 +209,112 @@ install_tor() {
       ;;
     win)
       echo "Please install Tor manually on Windows: https://www.torproject.org/download/" >&2
-      exit 1  # Manual install required for Windows
+      exit 1
       ;;
   esac
 }
 
-# Add hidden service via Control Port
+# -----------------------------
+# Netcat helpers (timeout/EOF)
+# -----------------------------
+_nc_detect() {
+  local _nc; _nc="$(command -v nc || true)"
+  [[ -z "$_nc" ]] && return 1
+  echo "$_nc"
+}
+_nc_build_args() {
+  local secs="${1:-5}"
+  local _nc_help; _nc_help="$("$(_nc_detect)" -h 2>&1 || true)"
+  local _eof=""; local _timeflag=(); local _timeout=""
+  if grep -qE "(^|[[:space:]-])-N([[:space:]]|,|$)" <<<"$_nc_help"; then _eof="-N"; fi
+  if grep -q -- "-q" <<<"$_nc_help"; then _eof="-q 0"; fi
+  if command -v timeout >/dev/null 2>&1; then _timeout="timeout ${secs}"
+  elif command -v gtimeout >/dev/null 2>&1; then _timeout="gtimeout ${secs}"
+  elif grep -q -- "-w" <<<"$_nc_help"; then _timeflag=( -w "${secs}" ); fi
+  # print as: timeout_cmd|||eof|||timeflag_csv
+  echo "${_timeout}|||${_eof}|||${_timeflag[*]}"
+}
+
+# -----------------------------
+# macOS Tor control helpers
+# -----------------------------
+macos_tor_control_probe() {
+  local port="$1"
+  local _nc="$(_nc_detect)" || return 1
+  IFS='|' read -r _to _eof _tf <<<"$(_nc_build_args 2 | sed 's/|||/|/g')"
+  local _timeflag=(); [[ -n "${_tf}" ]] && IFS=' ' read -r -a _timeflag <<<"$_tf"
+  printf 'PROTOCOLINFO\r\nQUIT\r\n' | ${_to} "$_nc" "${_timeflag[@]}" ${_eof} 127.0.0.1 "$port" >/dev/null 2>&1
+}
+
+macos_pick_control_port_and_cookie() {
+  local ports=()
+  local conf_port
+  conf_port="$(awk 'BEGIN{IGNORECASE=1} /^ControlPort[[:space:]]+/ {print $2; exit}' "$TORRC" 2>/dev/null || true)"
+  [[ -n "$conf_port" ]] && ports+=("$conf_port")
+  ports+=("9051" "9151")
+  for p in "${ports[@]}"; do
+    if macos_tor_control_probe "$p"; then
+      local cookie="$TORDIR/control_auth_cookie"
+      if [[ ! -f "$cookie" ]]; then
+        local tb_cookie="${HOME}/Library/Application Support/TorBrowser-Data/Tor/control_auth_cookie"
+        [[ -f "$tb_cookie" ]] && cookie="$tb_cookie"
+      fi
+      if [[ -f "$cookie" ]]; then
+        echo "$p|$cookie"; return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+torctl_auth_send() {
+  local port="$1"; local cookie_file="$2"; shift 2
+  local cmd="$*"
+  local _nc="$(_nc_detect)" || { echo "nc missing" >&2; return 1; }
+  IFS='|' read -r _to _eof _tf <<<"$(_nc_build_args 5 | sed 's/|||/|/g')"
+  local _timeflag=(); [[ -n "${_tf}" ]] && IFS=' ' read -r -a _timeflag <<<"$_tf"
+  local cookie_hex; cookie_hex="$(xxd -p "$cookie_file" 2>/dev/null | tr -d '\n')"
+  [[ -z "$cookie_hex" ]] && { echo "empty cookie" >&2; return 1; }
+  local payload; payload=$(printf 'AUTHENTICATE %s\r\n%s\r\nQUIT\r\n' "$cookie_hex" "$cmd")
+  printf '%s' "$payload" | ${_to} "$_nc" "${_timeflag[@]}" ${_eof} 127.0.0.1 "$port"
+}
+
+# -----------------------------
+# Control-port hidden service (Linux path, improved nc)
+# -----------------------------
 add_hidden_service_via_control_port() {
   local service_port="$1"
   local tor_control_port=9051
   local tor_cookie_file="$COOKIE_AUTH_FILE"
-  if ! sudo test -f "$tor_cookie_file" && [[ -f "${HOME}/.tor/control_auth_cookie" ]]; then
+  if ! $SUDO test -f "$tor_cookie_file" && [[ -f "${HOME}/.tor/control_auth_cookie" ]]; then
     tor_cookie_file="${HOME}/.tor/control_auth_cookie"
   fi
   local tor_cookie_hex=""
   if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
-    tor_cookie_hex=$(cat "$tor_cookie_file" | xxd -u -p | tr -d '\n')
+    tor_cookie_hex=$(xxd -u -p "$tor_cookie_file" 2>/dev/null | tr -d '\n')
   else
-    tor_cookie_hex=$($SUDO cat "$tor_cookie_file" | xxd -u -p | tr -d '\n')
+    tor_cookie_hex=$($SUDO xxd -u -p "$tor_cookie_file" 2>/dev/null | tr -d '\n')
   fi
-
   if [[ -z "$tor_cookie_hex" ]]; then
-    echo "Failed to read Tor control cookie from $tor_cookie_file" >&2
-    exit 1
+    echo "Failed to read Tor control cookie from $tor_cookie_file" >&2; exit 1
   fi
-  local control_command=$(printf 'AUTHENTICATE %s\r\nADD_ONION NEW:ED25519-V3 Flags=Detach Port=443,127.0.0.1:%s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_port")
-  echo "Using Tor command: $control_command" >&2
-  local response=$(echo -e "$control_command" | nc localhost $tor_control_port)
+  local control_command; control_command=$(printf 'AUTHENTICATE %s\r\nADD_ONION NEW:ED25519-V3 Flags=Detach Port=443,127.0.0.1:%s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_port")
+  local _nc="$(_nc_detect)" || { echo "nc missing" >&2; exit 1; }
+  IFS='|' read -r _to _eof _tf <<<"$(_nc_build_args 5 | sed 's/|||/|/g')"
+  local _timeflag=(); [[ -n "${_tf}" ]] && IFS=' ' read -r -a _timeflag <<<"$_tf"
+  local response; response=$(printf '%s' "$control_command" | ${_to} "$_nc" "${_timeflag[@]}" ${_eof} 127.0.0.1 "$tor_control_port" || true)
   echo "Got Tor response: $response" >&2
-  local onion_address=$(echo "$response" | grep '^250-ServiceID=' | cut -d'=' -f2)
+  local onion_address; onion_address=$(echo "$response" | grep '^250-ServiceID=' | cut -d'=' -f2 | tr -d '[:space:]')
   if [[ -z "$onion_address" ]]; then
     echo "Failed to obtain Onion address for port $service_port." >&2
-    echo "Response: $response" >&2
     exit 1
   fi
-  addr=$(echo "$onion_address" | sed 's/[[:space:]]//g')
-  echo "${addr}.onion"
+  echo "${onion_address}.onion"
 }
 
+# -----------------------------
+# Wait for hostname files
+# -----------------------------
 wait_for_hostnames() {
   local base_port=$((APP_PORT - 2))
   local all_exist=0
@@ -280,56 +333,75 @@ wait_for_hostnames() {
   done
 }
 
-# Configure Tor and export onion addresses (manual torrc method)
+# -----------------------------
+# Configure Tor (macOS live-reload)
+# -----------------------------
 configure_and_export_tor() {
   local base_port=$((APP_PORT - 2))
   echo "Setting up tor hidden services..." >&2
+
+  # Ensure HS blocks exist and directories are secure
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_${service_port}"
-    local dirLine="HiddenServiceDir $hidden_service_dir"
-    if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
-      $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
-      if ! grep -qF -- "$dirLine" "$TORRC"; then
-        echo "$dirLine" | $SUDO tee -a "$TORRC"
-        echo "HiddenServicePort 443 127.0.0.1:$service_port" | $SUDO tee -a "$TORRC"
-      fi
-      $SUDO mkdir -p "$hidden_service_dir"
-      GROUP="$(id -gn)"
-      $SUDO chown "$USER:$GROUP" "$hidden_service_dir"
+    local dirLine="HiddenServiceDir ${hidden_service_dir}"
+    if ! grep -qF -- "$dirLine" "$TORRC"; then
+      echo "$dirLine" | $SUDO tee -a "$TORRC" >/dev/null
+      echo "HiddenServicePort 443 127.0.0.1:${service_port}" | $SUDO tee -a "$TORRC" >/dev/null
+    fi
+    $SUDO mkdir -p "$hidden_service_dir"
+    if [[ "$OS_TYPE" == "macos" ]]; then
+      $SUDO chown "$USER:staff" "$hidden_service_dir" 2>/dev/null || true
       $SUDO chmod 700 "$hidden_service_dir"
     else
-      $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
-      if ! grep -qF -- "$dirLine" "$TORRC"; then
-        echo "$dirLine" | $SUDO tee -a "$TORRC"
-        echo "HiddenServicePort 443 127.0.0.1:${service_port}" | $SUDO tee -a "$TORRC"
-      fi
-      $SUDO mkdir -p "$hidden_service_dir"
       $SUDO chown "${TOR_USER}:${TOR_GROUP}" "$hidden_service_dir"
       $SUDO chmod 770 "$hidden_service_dir"
     fi
   done
 
-  echo "Restarting tor..." >&2
   if [[ "$OS_TYPE" == "macos" ]]; then
-    brew services restart tor &>/dev/null || ( pkill -x tor || true ) && nohup tor &
-  elif [[ "$OS_TYPE" == "win" ]]; then
-    echo "Restart Tor manually on Windows" >&2
-    # Could add taskkill /IM tor.exe /F && start tor.exe if automated
+    # Try to attach and live-reload first
+    local pick; pick="$(macos_pick_control_port_and_cookie || true)"
+    if [[ -n "$pick" ]]; then
+      local ctrl_port="${pick%%|*}"
+      local cookie_file="${pick##*|}"
+      echo "macOS: Found control port ${ctrl_port}; attempting SIGNAL RELOAD..." >&2
+      if torctl_auth_send "$ctrl_port" "$cookie_file" "SIGNAL RELOAD" >/dev/null 2>&1; then
+        echo "Tor config reloaded without restart." >&2
+      else
+        echo "Reload failed; restarting Homebrew tor service..." >&2
+        brew services restart tor >/dev/null 2>&1 || true
+        sleep 2
+        if ! macos_tor_control_probe "${ctrl_port}"; then
+          pkill -x tor 2>/dev/null || true
+          nohup tor -f "$TORRC" >/dev/null 2>&1 &
+          sleep 2
+        fi
+      fi
+    else
+      echo "macOS: No healthy control port; (re)starting Homebrew tor..." >&2
+      brew services restart tor >/dev/null 2>&1 || brew services start tor >/dev/null 2>&1 || true
+      sleep 2
+      if ! macos_tor_control_probe "9051" && ! macos_tor_control_probe "9151"; then
+        pkill -x tor 2>/dev/null || true
+        nohup tor -f "$TORRC" >/dev/null 2>&1 &
+        sleep 2
+      fi
+    fi
   else
-    $SUDO systemctl restart "$TOR_SERVICE" &>/dev/null
-    if [[ -f /.dockerenv ]] || ! systemctl is-active "$TOR_SERVICE" >/dev/null 2>&1; then
+    echo "Restarting tor..." >&2
+    $SUDO systemctl restart "$TOR_SERVICE" &>/dev/null || true
+    if [[ -f /.dockerenv ]] || ! systemctl is-active "$TOR_SERVICE" >/devnull 2>&1; then
       echo "Detected Docker or systemd failure, starting Tor manually..." >&2
-      $SUDO pkill -x tor 2>/dev/null
+      $SUDO pkill -x tor 2>/dev/null || true
       if [[ "$OS_TYPE" == "centos" ]]; then
-        $SUDO -u "$TOR_GROUP" nohup tor &
+        $SUDO -u "$TOR_GROUP" nohup tor -f "$TORRC" >/dev/null 2>&1 &
       elif [[ "$OS_TYPE" == "debian" || "$OS_TYPE" == "arch" ]]; then
-        $SUDO nohup tor &
+        $SUDO nohup tor -f "$TORRC" >/dev/null 2>&1 &
       fi
       sleep 2
       if ! pgrep -f tor >/dev/null; then
-        echo "Failed to start Tor manually" >&2
-        exit 1
+        echo "Failed to start Tor manually" >&2; exit 1
       fi
     fi
   fi
@@ -337,29 +409,33 @@ configure_and_export_tor() {
   echo "Waiting for onion services to connect..." >&2
   wait_for_hostnames
 
-  read -p "HELLO?"
   echo "Creating HTTPS TLS certs for onion domains..." >&2
   setup_mkcert
   for i in {0..4}; do
     local service_port=$((base_port + i))
-    local hidden_service_dir="$TORDIR/hidden_service_$service_port"
-    local onion_address=$( [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]] && cat "${hidden_service_dir}/hostname" || $SUDO cat "${hidden_service_dir}/hostname" )
+    local hidden_service_dir="$TORDIR/hidden_service_${service_port}"
+    local onion_address
+    if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
+      onion_address="$(cat "${hidden_service_dir}/hostname")"
+    else
+      onion_address="$($SUDO cat "${hidden_service_dir}/hostname")"
+    fi
     export "ADDR_${service_port}=${onion_address}"
     echo "$service_port $onion_address" >&2
     local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "$cert_dir"
-    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
-      echo "mkcert failed for $onion_address" >&2
-      exit 1
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" >/dev/null 2>&1; then
+      echo "mkcert failed for $onion_address" >&2; exit 1
     fi
   done
 }
 
+# -----------------------------
+# Firewall helper
+# -----------------------------
 get_ssh_port() {
-  local ssh_port=$(grep -i '^Port ' /etc/ssh/sshd_config | awk '{print $2}')
-  if [ -z "$ssh_port" ]; then
-    ssh_port=22
-  fi
+  local ssh_port; ssh_port=$(grep -i '^Port ' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
+  [[ -z "$ssh_port" ]] && ssh_port=22
   echo "$ssh_port"
 }
 
@@ -367,8 +443,8 @@ manage_firewall() {
   echo "Closing firewall (except ssh)..." >&2
   case $OS_TYPE in
     debian|centos|arch)
-      $SUDO ufw allow "$(get_ssh_port)" &>/dev/null
-      $SUDO ufw --force enable &>/dev/null
+      $SUDO ufw allow "$(get_ssh_port)" &>/dev/null || true
+      $SUDO ufw --force enable &>/dev/null || true
       ;;
     macos)
       echo "Warning: Please ensure your firewall is enabled in macOS Settings." >&2
@@ -379,7 +455,9 @@ manage_firewall() {
   esac
 }
 
-# Main script execution
+# -----------------------------
+# Main
+# -----------------------------
 {
   if command -v bbpro >/dev/null 2>&1; then
     echo "bbpro installed. proceeding..." >&2
@@ -393,41 +471,37 @@ manage_firewall() {
   detect_os
   check_tor_group
   initialize_package_manager
-  if command -v tor &>/dev/null; then
-    export TOR_INSTALLED=true
-  else
-    install_tor
-  fi
+  if command -v tor &>/dev/null; then TOR_INSTALLED=true; else install_tor; fi
 
+  # bb env
   source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
-  [ -z "$CONFIG_DIR" ] && { echo "CONFIG_DIR not set. Run setup_bbpro again." >&2; exit 1; }
-  [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
+  [ -z "${CONFIG_DIR:-}" ] && { echo "CONFIG_DIR not set. Run setup_bbpro again." >&2; exit 1; }
+  [[ ${APP_PORT:-} =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
 
-  # Source the config file if it exists
+  # Optional repo config
   CONFIG_FILE="${CONFIG_DIR}/config"
   if [[ -f "$CONFIG_FILE" ]]; then
     echo "Sourcing $CONFIG_FILE..." >&2
+    # shellcheck disable=SC1090
     source "$CONFIG_FILE"
   else
     echo "No config file found at ${CONFIG_FILE}. Proceeding without it." >&2
   fi
 
-  # Check for LICENSE_KEY and prompt if not set
-  if [[ -z "$LICENSE_KEY" ]]; then
+  # LICENSE_KEY prompt (unchanged)
+  if [[ -z "${LICENSE_KEY:-}" ]]; then
     echo "LICENSE_KEY is required to proceed." >&2
-    while [[ -z "$LICENSE_KEY" ]]; do
+    while [[ -z "${LICENSE_KEY:-}" ]]; do
       read -p "Please enter your LICENSE_KEY: " LICENSE_KEY
-      if [[ -z "$LICENSE_KEY" ]]; then
-        echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2
-      fi
+      if [[ -z "$LICENSE_KEY" ]]; then echo "ERROR: LICENSE_KEY cannot be empty. Please try again." >&2; fi
     done
-    echo "LICENSE_KEY set to ${LICENSE_KEY}." >&2
+    echo "LICENSE_KEY set." >&2
   else
     echo "LICENSE_KEY is already set." >&2
   fi
 
   echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
-  ensure_shutdown &>/dev/null
+  ensure_shutdown
 
   find_torrc_path
 
@@ -446,37 +520,36 @@ manage_firewall() {
       cert_dir="$HOME/${torsslcerts}/${onion_address}"
       setup_mkcert
       mkdir -p "$cert_dir"
-      if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
-        echo "mkcert failed for $onion_address" >&2
-        exit 1
+      if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" >/dev/null 2>&1; then
+        echo "mkcert failed for $onion_address" >&2; exit 1
       fi
     done
   fi
 
-  cert_root=$(find_mkcert_root_ca)
+  cert_root=$(find_mkcert_root_ca || true)
 
   cat > "${CONFIG_DIR}/torbb.env" <<EOF
 source "${CONFIG_DIR}/test.env"
 export TORBB=true
-export TORCA_CERT_ROOT="$cert_root"
-export SSLCERTS_DIR="$torsslcerts"
+export TORCA_CERT_ROOT="${cert_root}"
+export SSLCERTS_DIR="${torsslcerts}"
 EOF
   base_port=$((APP_PORT - 2))
   for i in {0..4}; do
     service_port=$((base_port + i))
     ref="ADDR_${service_port}"
-    echo "export $ref=${!ref}" >> "${CONFIG_DIR}/torbb.env"
+    echo "export ${ref}=${!ref}" >> "${CONFIG_DIR}/torbb.env"
   done
 
   export TORBB=true
   echo -n "Starting bbpro..." >&2
   if ! bbpro &>/dev/null; then
-    echo "bbpro failed to start..." >&2
-    exit 1
+    echo "bbpro failed to start..." >&2; exit 1
   fi
   echo "Started!" >&2
 } >&2
 
+# Final output
 ref="ADDR_${APP_PORT}"
 cert_file="${HOME}/${torsslcerts}/${!ref}/fullchain.pem"
 DOMAIN="${!ref}"
