@@ -21,6 +21,7 @@ if [[ -z "$INSTALL_DOC_VIEWER" ]]; then
   INSTALL_DOC_VIEWER="false"
 fi
 export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER}"
+export BBX_NO_UPDATE="true"
 
 # Safely handle bbcertify output
 if command -v bbcertify; then
