@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ -n "${BBX_DEBUG}" ]]; then
+  set -x
+fi
+
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false

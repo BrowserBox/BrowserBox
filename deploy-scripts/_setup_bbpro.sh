@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ -n "${BBX_DEBUG}" ]]; then
+  set -x
+fi
+
 trap 'echo "Got an error. Bailing this section..." >&2' ERR
 trap 'echo "Exiting..." >&2' EXIT
 

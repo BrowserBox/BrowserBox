@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-source ~/.nvm/nvm.sh
+if ! command -v nvm &>/dev/null && test -f ~/.nvm/nvm.sh; then
+  source ~/.nvm/nvm.sh
+fi
+
+if [[ -n "${BBX_DEBUG}" ]]; then
+  set -x
+fi
 
 if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
