@@ -761,7 +761,7 @@ setup() {
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
-  local zeta_mode="${HOST_PER_SERVICE}"
+  local zeta_mode=""
   local http_only="${BBX_HTTP_ONLY}"
 
   while [ $# -gt 0 ]; do
@@ -1720,7 +1720,7 @@ check_and_prepare_update() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
   fi
-  # Skip for uninstall to avoid unnecessary checks
+  # Skip update checks for these commands
   ([ "$1" = "uninstall" ] || [ "$1" = "update" ] || [ "$1" = "install" ] || [ "$1" = "update-background" ]) && return 0
 
   load_config
@@ -1728,34 +1728,48 @@ check_and_prepare_update() {
   chmod 700 "$BB_CONFIG_DIR"
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
-  # Get current and repo versions
-  local current_tag=$(get_version_info "$VERSION_FILE")
-  local repo_tag=$(get_latest_repo_version stable)
+  # ---------- NEW: install prepared update synchronously, before running the command ----------
+  if [ -f "$PREPARED_FILE" ] && [ -d "$BBX_NEW_DIR/BrowserBox" ]; then
+    local prepared_dir
+    prepared_dir=$(sed -n '2p' "$PREPARED_FILE")
+    if [ "$prepared_dir" = "$BBX_NEW_DIR" ]; then
+      local prepared_tag
+      prepared_tag=$(get_version_info "$PREPARED_VERSION_FILE")
+      if [ "$prepared_tag" != "unknown" ]; then
+        printf "${YELLOW}Detected prepared update (${prepared_tag}). Installing before '%s'...${NC}\n" "$1"
+        if check_prepare_and_install "$prepared_tag"; then
+          # Stage 2 finished; proceed to user's command.
+          return 0
+        fi
+      fi
+    fi
+  fi
+  # -------------------------------------------------------------------------------------------
 
-  # Check if repo version fetch failed
+  # Normal background prep flow (only stage 1 happens in background)
+  local current_tag repo_tag
+  current_tag=$(get_version_info "$VERSION_FILE")
+  repo_tag=$(get_latest_repo_version stable)
+
   if [ "$repo_tag" = "unknown" ]; then
-    printf "${YELLOW}Skipping update due to timeout or failure in fetching latest version.${NC}\n"
+    printf "${YELLOW}Skipping update due to timeout or fetch failure.${NC}\n"
     return 0
   fi
 
   printf "${BLUE}Current: $current_tag${NC}\n"
   printf "${BLUE}Latest: $repo_tag${NC}\n"
 
-  # Check if update is needed
   if [ "$current_tag" = "$repo_tag" ]; then
     printf "${GREEN}Already on the latest version ($repo_tag).${NC}\n"
-    # Clean up BBX_NEW_DIR if it exists
     [ -d "$BBX_NEW_DIR" ] && $SUDO rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
     return 0
   fi
 
-  # No prepared update, start background preparation
-  # Run update in background unless debug
   if [ -n "$BBX_DEBUG" ]; then
     printf "${GREEN}Background update starting...${NC}\n"
-    update_background 
+    update_background "$repo_tag"
   else
-    update_background &
+    update_background "$repo_tag" &
     printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
   fi
   return 0
