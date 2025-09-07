@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ -n "${BBX_DEBUG}" ]]; then
+  export BBX_DEBUG
   set -x
 fi
-set -euo pipefail
 
 # Colors (safe defaults)
 RED=${RED:-$'\e[31m'}

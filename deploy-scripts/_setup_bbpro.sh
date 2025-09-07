@@ -552,16 +552,17 @@ echo "Done!">&2
 echo -n "Creating test.env...">&2
 
 sslcertpath="sslcerts";
-if [[ -n "$ONTOR" ]]; then
+if $ONTOR; then
   sslcertpath="tor-sslcerts";
 fi
 sslcerts="${HOME}/${sslcertpath}"
-if [[ ! -d "$sslcerts" ]] || ([[ -z "$ONTOR" ]] && [[ ! -f "${sslcerts}/fullchain.pem" ]]); then
+mkdir -p "$sslcerts"
+if [[ ! -d "$sslcerts" ]] || (! $ONTOR && [[ ! -f "${sslcerts}/fullchain.pem" ]]); then
   sslcerts="/usr/local/share/dosyago/sslcerts"
 fi
 
 cert_file="${sslcerts}/fullchain.pem"
-if [[ -z "$ONTOR" ]]  && [[ ! -f $cert_file ]]; then 
+if ! $ONTOR  && [[ ! -f $cert_file ]]; then 
   echo "========"
   echo "WARNING: SSL certificates are not installed in $sslcerts or /usr/local/share/dosyago/sslcerts. Things will not work." >&2
   echo "========"
