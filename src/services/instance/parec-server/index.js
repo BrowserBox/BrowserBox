@@ -240,7 +240,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         scriptSrc: [
           "'self'", 
           "'unsafe-eval'",
-          ...(process.env.TORBB ? [
+          ...(process.env.TORBB || process.env.HOST_PER_SERVICE ? [ // probably need unsafe-inline for the login/setup path in host per service mode
             "'unsafe-inline'"
           ] : []),
         ],
@@ -270,7 +270,7 @@ app.use((req,res,next) => {
   next();
 });
 
-if ( process.env.TORBB ) {
+if ( process.env.TORBB || process.env.HOST_PER_SERVICE ) { // probably need this path for different hostnames in HOST_PER_SERVICE
   app.get('/', wrap(async (request, response) => {
     const {token, activateOnly} = request.query; 
     const cookie = request.cookies[COOKIENAME+PORT] || request.headers['x-browserbox-local-auth'] || request.query['localCookie'];
@@ -594,7 +594,7 @@ server.on('upgrade', (req, socket) => {
   const {pathname} = url.parse(req.url);
   switch(pathname) {
     case "/stream": {
-      if ( process.env.TORBB ) {  // reject all audio websocket connections in TOR
+      if ( process.env.TORBB ) {  // reject all audio websocket connections in TOR because Tor browser has no WebAudio
         console.log('Destroying socket as tor mode cannot use webaudio for streaming, need a raw (and laggy) audio tag only)', pathname);
         sockets.delete(socket);
         socket.destroy();

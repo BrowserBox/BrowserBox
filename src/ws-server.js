@@ -205,7 +205,7 @@
         `${GO_SECURE ? 'https:' : 'http:'}//localhost:*`,
         `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`,
         `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
-        ...(process.env.TORBB ? [
+        ...((process.env.TORBB || process.env.HOST_PER_SERVICE) ? [
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
@@ -223,7 +223,7 @@
         `${GO_SECURE ? 'https:' : 'http:'}//link.local:*`,
         `${GO_SECURE ? 'https:' : 'http:'}//browse.cloudtabs.net:*`,
         `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:*`,
-        ...(process.env.TORBB ? [
+        ...((process.env.TORBB || process.env.HOST_PER_SERVICE) ? [
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
@@ -249,7 +249,7 @@
         `${GO_SECURE ? 'https:' : 'http:'}//link.local:${server_port-1}`,
         `${GO_SECURE ? 'https:' : 'http:'}//link.local:${server_port+1}`,
         ...CONFIG.connectivityTests,
-        ...(process.env.TORBB ? [
+        ...((process.env.TORBB || process.env.HOST_PER_SERVICE) ? [
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}:*`, // main service 
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 1}`]}:*`, // devtools
@@ -432,10 +432,11 @@
           DEBUG.debugCookie && console.log('set cookie', COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
           let url;
           url = `/?ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
-          if ( process.env.TORBB ) {
+          if ( process.env.TORBB || process.env.HOST_PER_SERVICE ) {
             const zVal = encodeURIComponent(btoa(JSON.stringify({
-              x: process.env[`ADDR_${server_port-2}`],  // audio port onion service
-              y: process.env[`ADDR_${server_port+1}`],  // devtools port onion service
+              x: process.env[`ADDR_${server_port-2}`],  // audio port service hostname
+              y: process.env[`ADDR_${server_port+1}`],  // devtools port service hostname
+              z: process.env[`ADDR_${server_port+2}`],  // docs port service hostname
             })));
             if ( !! Url ) {
               url = `/?url=${encodeURIComponent(Url)}&z=${zVal}&ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
@@ -521,11 +522,9 @@
         res.sendFile(path.resolve(APP_ROOT,...(DEBUG.mode === 'dev' ? ['public', 'assets'] : ['..', 'dist', 'assets']),'SPL2.html'));
       });
     }
-    /*
     if ( process.env.TORBB ) {
-      app.get("/torca/rootCA.pem", (req, res) => res.sendFile(path.resolve(process.env.TORCA_CERT_ROOT, 'rootCA.pem')));
+      app.get("/torca/rootCA.pem", VeryConstrainedRateLimiter, (req, res) => res.sendFile(path.resolve(process.env.TORCA_CERT_ROOT, 'rootCA.pem')));
     }
-    */
     app.use(express.static(path.resolve(APP_ROOT, ...(DEBUG.mode === 'dev' ? ['public'] : ['..', 'dist']))));
 
     try {
@@ -1621,6 +1620,23 @@
             data.isTor = true;
           } else {
             data.isTor = false;
+          }
+          res.end(JSON.stringify(data));
+        });
+        app.get(`/isZeta`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const data = {};
+          if ( CONFIG.hostPerService ) {
+            data.isZeta = true;
+          } else {
+            data.isZeta = false;
           }
           res.end(JSON.stringify(data));
         });

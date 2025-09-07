@@ -22,6 +22,8 @@ const MIN_WAIT = 50;
 const MAX_WAITS = 200;
 const OPEN_SERVICES_IN_BROWSER = false; // true is within BrowserBox tabs, false is in the regular browser's new tabs
 let authToken;
+let zetaModeChecked = false;
+let zetaMode;
 
 export const OPTIONS = {
   audioGain: 1.0,
@@ -214,6 +216,19 @@ export const DEBUG = Object.freeze({
 export const CONFIG = Object.freeze({
   hearingProtectionMaxGain: 1.3,
   alwaysSendTopLevel: false,
+  get zetaMode() {
+    if ( zetaModeChecked ) {
+      return zetaMode;
+    } else {
+      return uberFetch('/isZeta').then(r => r.json()).then(({zeta}) => {
+        zetaModeChecked = true;
+        zetaMode = zeta;
+      }).catch(e => { console.warn(`Issue checking zeta mode.`, e); });
+    }
+  },
+  get isTor() {
+    return this.isOnion || globalThis.comingFromTOR
+  },
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
   },
@@ -263,6 +278,7 @@ export const CONFIG = Object.freeze({
   magicBar: false,
   audioServiceFileName: 'audio.srv',
   devtoolsServiceFileName: 'devtools.srv',
+  docsServiceFileName: 'chai.srv',
   sessionTokenFileName: 'session.tkn',
   get isOnion() {
     return globalThis?.location?.host?.endsWith?.('.onion')

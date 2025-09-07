@@ -1,6 +1,5 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
-
 ##########################################################
 #  ____                                  ____
 # | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
@@ -30,11 +29,17 @@ BOLD='\033[1m'
 banner() {
     printf "${banner_color}${BOLD}"
     cat << 'EOF'
-   ____                                  ____
-  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
-  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
-  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
-  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
+  
+   ███████████                                                                ███████████
+  ░░███░░░░░███                                                              ░░███░░░░░███
+   ░███    ░███ ████████   ██████  █████ ███ █████  █████   ██████  ████████  ░███    ░███  ██████  █████ █████
+   ░██████████ ░░███░░███ ███░░███░░███ ░███░░███  ███░░   ███░░███░░███░░███ ░██████████  ███░░███░░███ ░░███
+   ░███░░░░░███ ░███ ░░░ ░███ ░███ ░███ ░███ ░███ ░░█████ ░███████  ░███ ░░░  ░███░░░░░███░███ ░███ ░░░█████░
+   ░███    ░███ ░███     ░███ ░███ ░░███████████   ░░░░███░███░░░   ░███      ░███    ░███░███ ░███  ███░░░███
+   ███████████  █████    ░░██████   ░░████░████    ██████ ░░██████  █████     ███████████ ░░██████  █████ █████
+  ░░░░░░░░░░░  ░░░░░      ░░░░░░     ░░░░ ░░░░    ░░░░░░   ░░░░░░  ░░░░░     ░░░░░░░░░░░   ░░░░░░  ░░░░░ ░░░░░
+  
+ 
 
 EOF
     printf "${NC}\n"
@@ -348,6 +353,8 @@ LICENSE_KEY="${_LIC_TO_WRITE}"
 BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
+HOST_PER_SERVICE="${HOST_PER_SERVICE}"
+BBX_HTTP_ONLY="${BBX_HTTP_ONLY}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
@@ -725,24 +732,49 @@ setup() {
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
+  local zeta_mode="${HOST_PER_SERVICE}"
+  local http_only="${BBX_HTTP_ONLY}"
 
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          exit 1
+        fi
         port="$2"
         shift 2
         ;;
       --hostname|-h)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          exit 1
+        fi
         hostname="$2"
         shift 2
         ;;
       --token|-t)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          exit 1
+        fi
         token="$2"
         shift 2
         ;;
+      --zeta|-z)
+        zeta_mode="true"
+        shift
+        ;;
+      --http-only|-o)
+        http_only="true"
+        shift
+        ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
-        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
+        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
         exit 1
         ;;
     esac
@@ -757,6 +789,16 @@ setup() {
   BBX_HOSTNAME="$hostname"
   TOKEN="${token:-$(openssl rand -hex 16)}"
   BB_TOKEN="${TOKEN}"
+  HOST_PER_SERVICE=""
+  BBX_HTTP_ONLY=""
+  if [[ -n "$zeta_mode" ]]; then
+    HOST_PER_SERVICE="true"
+    echo "WARNING: You need to implement the addition of the Z-VAL (z=) parameter to the login URL"
+  fi
+
+  if [[ -n "$http_only" ]]; then
+    BBX_HTTP_ONLY="true"
+  fi
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
@@ -782,7 +824,7 @@ setup() {
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_HTTP_ONLY="${BBX_HTTP_ONLY}" HOST_PER_SERVICE="${HOST_PER_SERVICE}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
@@ -794,11 +836,19 @@ run() {
   load_config
 
   # Ensure setup has been run
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
   fi
+
+  if [[ ! -f "${BB_CONFIG_DIR}/hosts.env" ]]; then
+    printf "${RED}No hosts file: --zeta mode requires a hosts.env file in your config directory (${BB_CONFIG_DIR}).${NC}\n"
+    exit 1
+  fi
+
+  local zeta_mode="${HOST_PER_SERVICE}"
+  local http_only="${BBX_HTTP_ONLY}"
 
   # Default values (should be set by setup, but fallback for safety)
   local port="${PORT}"
@@ -808,10 +858,20 @@ run() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+          exit 1
+        fi
         port="$2"
         shift 2
         ;;
       --hostname|-h)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+          exit 1
+        fi
         hostname="$2"
         shift 2
         ;;
@@ -849,10 +909,11 @@ run() {
     fi
   fi
 
+  export HOST_PER_SERVICE BBX_HTTP_ONLY;
   bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  local login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
-  draw_box "Login Link: $login_link"
+  source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  local login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
+  draw_box "Login Link: ${login_link}"
   save_config
 }
 
@@ -865,6 +926,8 @@ tor_run() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --anonymize) anonymize=true; shift ;;
+      --clearnet-only) anonymize=false; shift ;;
+      --no-darkweb) anonymize=false; shift ;;
       --no-anonymize) anonymize=false; shift ;;
       --onion) onion=true; shift ;;
       --no-onion) onion=false; shift ;;
@@ -877,7 +940,7 @@ tor_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
@@ -1077,6 +1140,11 @@ docker_run() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: Option $1 requires an argument${NC}\n"
+          printf "Usage: bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+          exit 1
+        fi
         port="$2"
         shift 2
         ;;
@@ -1968,12 +2036,17 @@ run_as() {
                 shift
                 ;;
             --port|-p)
+                if [ -z "$2" ]; then
+                    printf "${RED}Error: Option $1 requires an argument${NC}\n"
+                    printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
+                    exit 1
+                fi
                 port="$2"
                 shift 2
                 ;;
             *)
                 if [ -z "$user" ]; then
-                    user="$1"  # First non-flag argument is the username
+                    user="$1" # First non-flag argument is the username
                 else
                     printf "${RED}Unknown or extra argument: $1${NC}\n"
                     printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
@@ -2061,34 +2134,40 @@ run_as() {
 }
 
 version() {
-    printf "${GREEN}bbx version $BBX_VERSION${NC}\n"
+    printf "${GREEN}bbx version ${BBX_VERSION}${NC}\n"
 }
 
 usage() {
     banner
-    printf "${BOLD}Usage:${NC} bbx <command> [options]\n"
+    printf "${BLUE}\tWelcome to the ${CYAN}bbx${BLUE} CLI tool for BrowserBox!${NC}\n"
+    printf "\n"
+    printf "${BOLD}Usage:${NC}\n\t\t ${BOLD}bbx ${NC}<command> [options]\n"
+    printf "\n"
     printf "${BOLD}Commands:${NC}\n"
-    printf "  ${GREEN}install${NC}        Install BrowserBox and bbx CLI\n"
-    printf "  ${GREEN}uninstall${NC}      Remove BrowserBox, config, and all related files\n"
-    printf "  ${CYAN}activate${NC}       Activate your copy of BrowserBox by purchasing a product key for 1 or more people\n"
-    printf "                   \t\t\t\t\t${BOLD}${CYAN}bbx activate [number of people]${NC}\n"
-    printf "  ${GREEN}setup${NC}          Set up BrowserBox \t\t\t${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>]${NC}\n"
-    printf "  ${GREEN}certify${NC}        Certify your license\n"
+    printf "\n"
+    printf "  ${GREEN}install${NC}        Install BrowserBox + ${BOLD}bbx${NC} CLI\n"
+    printf "  ${GREEN}uninstall${NC}      Remove everything\n"
+    printf "  ${CYAN}activate${NC}       Purchase a license\t\t\t${BOLD}${CYAN}bbx activate [number of people]${NC}\n"
+    printf "  ${GREEN}setup${NC}          Configure options \t\t\t${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]${NC}\n"
+    printf "\n"
+    printf "  ${BOLD}\t\t   setup options:${NC}\n"
+    printf "         \t         ${GREEN}--zeta, -z${NC}       Expose each service as a unique hostname. Useful for nginx,\n"
+    printf "         \t                          ngrok, similar layers, or standard HTTP/S ports. Expects hosts.env\n"
+    printf "  ${GREEN}certify${NC}        Check your license\n"
     printf "  ${GREEN}run${NC}            Run BrowserBox \t\t\t${BOLD}bbx run [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
     printf "  ${GREEN}stop${NC}           Stop BrowserBox (current user)\n"
     printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
     printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
-    printf "  ${GREEN}update${NC}         Force and explicit update to latest BrowserBox\n"
+    printf "  ${GREEN}update${NC}         Trigger an update manually\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
-    printf "  ${PURPLE}tor-run${NC}        Run BrowserBox with Tor \t\t${BOLD}bbx tor-run [--no-anonymize] [--no-onion]${NC}\n"
+    printf "  ${PURPLE}tor-run${NC}        Run BrowserBox on Tor      \t\t${BOLD}bbx tor-run [--no-darkweb] [--no-onion]${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
     printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
-    printf "  ${BLUE}${BOLD}console*${NC}       See and interact with the BrowserBox command stream\n"
-    printf "  ${BLUE}${BOLD}automate*${NC}      Run pptr or playwright scripts in a running BrowserBox\n"
-    printf "  ${GREEN}--version${NC}      Show bbx version\n"
+    printf "  ${BLUE}${BOLD}automate*${NC}      Drive with script, MCP or REPL\n"
+    printf "  ${GREEN}--version${NC}      Show version\n"
     printf "  ${GREEN}--help${NC}         Show this help\n"
-    printf "\n${BLUE}${BOLD}*Coming Soon${NC}\n"
+    printf "\n${BLUE}${BOLD}*Coming Soon${NC}\n\n"
 }
 
 check_agreement() {

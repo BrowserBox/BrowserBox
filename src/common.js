@@ -382,6 +382,7 @@ export const CONFIG = Object.freeze({
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
+  hostPerService: process.env.HOST_PER_SERVICE,
   sslcerts: port => {
     if ( process.env.TORBB ) {
       DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`]);
@@ -472,7 +473,7 @@ if ( DEBUG.noSecurityHeaders ) {
 }
 //export const APP_ROOT = APP_ROOT;
 
-export const GO_SECURE = !process.env.WIN9X_COMPATIBILITY_MODE && fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
+export const GO_SECURE = !(process.env.WIN9X_COMPATIBILITY_MODE || process.env.BBX_HTTP_ONLY) && fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 

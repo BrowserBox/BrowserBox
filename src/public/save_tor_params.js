@@ -27,8 +27,9 @@ function saveTorParams() {
     const z = JSON.parse(atob(decodeURIComponent(zVal)));
     localStorage.setItem(CONFIG.audioServiceFileName, z.x);
     localStorage.setItem(CONFIG.devtoolsServiceFileName, z.y);
+    localStorage.setItem(CONFIG.docsServiceFileName, z.z);
 
-    if ( ! z.x || ! z.y ) {
+    if ( ! z.x || ! z.y || ! z.z ) {
       console.warn(`Missing tor addresses for services`, z);
     } else {
       // pre fetch to warm up cache in case they open it
@@ -36,7 +37,7 @@ function saveTorParams() {
       const audioURI = `${location.protocol}//${z.x}/?token=${encodeURIComponent(token)}`;
       const activateOnly = audioURI + '&activateOnly=true';
       fetch(activateOnly, OPTS).catch(async err => {
-        const getAudio = confirm(`Would you like to active audio?\n\nIf you want to, hit OK, and allow the audio window to open. You will see a security error on that popup relating to the self-signed HTTPS certificates we use.\n\nIf you want to enable audio, you need to click "Advanced" and "Accept the Risk and Continue".\n\nOnce you have done that, we will close that window and reload this page to activate audio.\n\nWant to proceed to activate audio?`);
+        const getAudio = confirm(`Would you like audio?\n\nIf yes, tap 'Confirm' or 'OK', and a window will open that will auto-set it up.\nLook out for a message that a 'popup was blocked'. If you see that message, click it to allow popups.` + CONFIG.isTor ? `\n\nAlso, when this popup loads you might see a security error because we use an extra-encryption (HTTPS) not widely available for Tor. You need to click through this if you want audio ("Advanced" and "Accept the Risk and Continue").\n\nActivate audio?` : '');
         if ( getAudio ) {
           let ref;
           if ( ! ref ) {
@@ -77,6 +78,9 @@ function saveTorParams() {
       });
       fetch(`${location.protocol}//${z.y}/?token=${encodeURIComponent(token)}`, OPTS).catch(err => {
         console.warn(`DevTools is not yet activated`);
+      });
+      fetch(`${location.protocol}//${z.z}/?token=${encodeURIComponent(token)}`, OPTS).catch(err => {
+        console.warn(`Docs is not yet activated`);
       });
     }
   }
