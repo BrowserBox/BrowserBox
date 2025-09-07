@@ -1080,7 +1080,7 @@ tor_run() {
   fi
 
   [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-  printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+  printf "${YELLOW}Starting BrowserBox with ${NC}${PURPLE}Tor${NC}${YELLOW}...${NC}\n"
   ensure_setup_tor "$(whoami)"
 
   # Determine Tor group and cookie file dynamically

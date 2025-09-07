@@ -386,8 +386,9 @@ export const CONFIG = Object.freeze({
   hostPerService: process.env.HOST_PER_SERVICE,
   sslcerts: port => {
     if ( process.env.TORBB ) {
-      DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`]);
-      return path.join(os.homedir(), process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
+      const certPath = path.join(process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
+      DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`], certPath);
+      return certPath;
     } else {
       return process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts';
     }
@@ -474,7 +475,7 @@ if ( DEBUG.noSecurityHeaders ) {
 }
 //export const APP_ROOT = APP_ROOT;
 
-export const GO_SECURE = !(process.env.WIN9X_COMPATIBILITY_MODE || process.env.BBX_HTTP_ONLY) && fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
+export const GO_SECURE = !(process.env.WIN9X_COMPATIBILITY_MODE || process.env.BBX_HTTP_ONLY) && fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'fullchain.pem'));
 
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
