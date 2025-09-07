@@ -223,8 +223,10 @@ _better_than() {
 }
 
 
-# --- in get_latest_tag(), pass the new flag into comparator ------------------
-get_latest_tag() {
+# get_latest_tag_filtered <channel>
+# channel: "stable" (default), "rc", or "any"
+get_latest_tag_filtered() {
+  local channel="${1:-stable}"
   local best_tag=""
   local bestMaj=0 bestMin=0 bestPat=0 bestStable=0 bestRc=0 bestHP=0
   local _hash ref tag
@@ -235,6 +237,14 @@ get_latest_tag() {
     [[ "$tag" == *^{} ]] && continue
 
     if _parse_tag "$tag"; then
+      # Filter by requested channel without changing the comparator
+      # stable -> skip rc; rc -> only rc; any -> no filter
+      if [[ "$channel" == "stable" && $PAR_STABLE -eq 0 ]]; then
+        continue
+      elif [[ "$channel" == "rc" && $PAR_STABLE -ne 0 ]]; then
+        continue
+      fi
+
       local cMaj=$PAR_MAJ cMin=$PAR_MIN cPat=$PAR_PAT cSt=$PAR_STABLE cRc=$PAR_RCNUM cHP=$PAR_HASPATCH
       if [[ -z "$best_tag" ]] || _better_than \
           "$cMaj" "$cMin" "$cPat" "$cSt" "$cRc" "$cHP" \
@@ -245,26 +255,45 @@ get_latest_tag() {
     fi
   done
 
-  if [[ -n "$best_tag" ]]; then
-    echo "$best_tag"; return 0
-  else
-    echo "unknown"; return 1
-  fi
+  [[ -n "$best_tag" ]] && { echo "$best_tag"; return 0; } || { echo "unknown"; return 1; }
+}
+
+# --- in get_latest_tag(), pass the new flag into comparator ------------------
+# Back-compat: previous behavior was "latest (stable-preferred but could be rc)".
+# We now default to "stable" to satisfy the new requirement.
+get_latest_tag() {
+  get_latest_tag_filtered "stable"
 }
 
 
 # Query remote and select latest tag. Returns 0 on success; 1 on failure/timeout/empty.
+# get_latest_repo_version [stable|rc|any]
 get_latest_repo_version() {
+  local channel="${1:-stable}"
   local out
-  # --refs avoids peeled ref duplicates
-  if out=$(timeout 7s git ls-remote --tags --refs "$REPO_URL" 2>/dev/null | get_latest_tag); then
-    echo "$out"
-    return 0
+  if out=$(timeout 7s git ls-remote --tags --refs "$REPO_URL" 2>/dev/null | get_latest_tag_filtered "$channel"); then
+    echo "$out"; return 0
   else
-    # get_latest_tag already echoed "unknown" if nothing valid
-    echo "$out"
-    return 1
+    echo "$out"; return 1
   fi
+}
+
+# normalize a user-supplied version to a tag with 'v' prefix
+normalize_tag() {
+  local v="$1"
+  if [[ "$v" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?(-rc(\.[0-9]+)?)?$ ]]; then
+    echo "$v"
+  elif [[ "$v" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-rc(\.[0-9]+)?)?$ ]]; then
+    echo "v$v"
+  else
+    echo ""
+  fi
+}
+
+# returns 0 if tag exists in remote
+tag_exists_remote() {
+  local tag="$1"
+  git ls-remote --tags --refs "$REPO_URL" "refs/tags/$tag" >/dev/null 2>&1
 }
 
 
@@ -1701,7 +1730,7 @@ check_and_prepare_update() {
 
   # Get current and repo versions
   local current_tag=$(get_version_info "$VERSION_FILE")
-  local repo_tag=$(get_latest_repo_version)
+  local repo_tag=$(get_latest_repo_version stable)
 
   # Check if repo version fetch failed
   if [ "$repo_tag" = "unknown" ]; then
@@ -1767,7 +1796,6 @@ check_prepare_and_install() {
   return 1
 }
 
-# Modified update function
 update() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
@@ -1776,28 +1804,62 @@ update() {
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
-  printf "${YELLOW}Updating BrowserBox to latest...${NC}\n"
 
-  # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
+  # Arg parsing: none | --latest-rc | <version>
+  local arg="${1:-}"
+  local repo_tag=""
+
+  if [[ -z "$arg" ]]; then
+    printf "${YELLOW}Updating BrowserBox to latest stable...${NC}\n"
+    repo_tag="$(get_latest_repo_version stable)"
+  elif [[ "$arg" == "--latest-rc" ]]; then
+    printf "${YELLOW}Updating BrowserBox to latest release candidate...${NC}\n"
+    repo_tag="$(get_latest_repo_version rc)"
+    if [[ "$repo_tag" == "unknown" ]]; then
+      printf "${RED}No RC releases found.${NC}\n"; return 1
+    fi
+  else
+    # explicit version/tag
+    local tag="$(normalize_tag "$arg")"
+    if [[ -z "$tag" ]]; then
+      printf "${RED}Invalid version: '%s'${NC}\n" "$arg"
+      printf "Expected formats: v1.2.3 | 1.2.3 | v1.2.3-rc | v1.2.3-rc.1\n"
+      return 1
+    fi
+    if ! tag_exists_remote "$tag"; then
+      printf "${RED}Tag '%s' not found in remote.%s${NC}\n" "$tag" ""
+      return 1
+    fi
+    repo_tag="$tag"
+    printf "${YELLOW}Updating BrowserBox to %s...${NC}\n" "$repo_tag"
+  fi
+
+  # If no installed tree, fall back to install (preserves your behavior)
   if [ ! -d "$BBX_HOME" ] || [ ! -d "$BBX_HOME/BrowserBox" ] || [ ! -d "$BBX_SHARE/BrowserBox" ]; then
     printf "${YELLOW}No BrowserBox installation found. Running interactive install...${NC}\n"
     install
     return $?
   fi
-  
-  update_background
-  local repo_tag=$(get_latest_repo_version)
+
+  # Prepare in background to $repo_tag, then try install
+  update_background "$repo_tag"
   [ -n "$BBX_NO_UPDATE" ] || check_prepare_and_install "$repo_tag"
 }
 
-# Background update function
 update_background() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
   fi
 
   load_config
-  local repo_tag="$(get_latest_repo_version)"
+  local requested_tag="${1:-}"               # <--- NEW
+  local repo_tag
+  if [[ -n "$requested_tag" ]]; then
+    repo_tag="$requested_tag"
+  else
+    # default channel = stable
+    repo_tag="$(get_latest_repo_version stable)"
+  fi
   local tagdoo="${repo_tag#v}"
 
   printf "${YELLOW}Checking update lock...${NC}\n" >> "$LOG_FILE"
@@ -2159,7 +2221,7 @@ usage() {
     printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
     printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
-    printf "  ${GREEN}update${NC}         Trigger an update manually\n"
+    printf "  ${GREEN}update${NC}         Update BrowserBox \t\t${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox on Tor      \t\t${BOLD}bbx tor-run [--no-darkweb] [--no-onion]${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
