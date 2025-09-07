@@ -146,7 +146,7 @@ test_install() {
   if [[ "$(uname -s)" == "Darwin" ]]; then
     brew install coreutils
   fi
-  yes yes | timeout -k 10s 10m ./bbx.sh install
+  yes yes | timeout -k 10s 10m ./bbx.sh install --latest-rc
   if [ $? -eq 0 ]; then
     echo -e "${GREEN}✔ Success${NC}"
     ((passed++))
@@ -158,7 +158,7 @@ test_install() {
   # if we just installed as root, then we have created a correct user called something or yes so let's hand off install script to them :)
   if [ "$(id -u)" -eq 0 ]; then
     sudo -u yes bash -c "cd; cp -r .bbx/BrowserBox . ;"
-    install_user="$(cat "$BB_CONFIG_DIR"/.install_user)"
+    install_user="$(cat "${BB_CONFIG_DIR}"/.install_user)"
     exec su - "${install_user:-yes}" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -cl 'cd; cd BrowserBox; ./tests/test-bbx.sh ;'"
   fi
 }
