@@ -1840,7 +1840,7 @@ check_and_prepare_update() {
   fi
 
   # If a prepared build exists, only install it if it matches the live latest
-  if [ -f "$PREPARED_FILE" ] && [ -d "$BBX_NEW_DIR/BrowserBox" ]; then
+  if [ -f "$PREPARED_FILE" ] && [ -d "${BBX_NEW_DIR}/BrowserBox" ]; then
     local prepared_tag
     prepared_tag="$(get_version_info "$PREPARED_VERSION_FILE")"
     if [[ "$prepared_tag" == "$repo_tag" ]]; then
@@ -1888,7 +1888,11 @@ check_prepare_and_install() {
   if [ -f "$PREPARED_FILE" ]; then
     local prepared_location
     prepared_location=$(sed -n '2p' "$PREPARED_FILE")
-    if [ "$prepared_location" = "$BBX_NEW_DIR" ] && [[ -d "$BBX_NEW_DIR/BrowserBox" ]]; then
+    if [ "$prepared_location" = "$BBX_NEW_DIR" ] && [[ -d "${BBX_NEW_DIR}/BrowserBox" ]]; then
+      if [ ! -d "${BBX_NEW_DIR}/BrowserBox" ] || [ ! -f "$PREPARED_VERSION_FILE" ]; then
+        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" "$PREPARING_FILE"
+        return 1
+      fi
       local new_tag=""
       # Prefer tag recorded during prepare (line 3)
       new_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
