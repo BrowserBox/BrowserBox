@@ -20,9 +20,12 @@ if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
 fi
 
+OS="$(uname -s 2>/dev/null || echo)"
+
 # Determine Tor group and cookie file dynamically
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    TOR_GROUP="admin"  # Homebrew default (often 'staff', but 'admin' is common in your env)
+if [[ "$OS" == "Darwin" ]]; then
+    # Homebrew installs typically use group 'staff'; you had 'admin' — keep your default if set
+    TOR_GROUP="${TOR_GROUP:-admin}"
     TORDIR="$(brew --prefix)/var/lib/tor"
     COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
 else
@@ -91,7 +94,52 @@ pulseaudio -k || true
 login_link_file="$HOME/.config/dosyago/bbpro/login.link"
 torbb_env_file="$HOME/.config/dosyago/bbpro/torbb.env"
 
-# Helper: nc timeout/EOF handling + listen check + DEL_ONION + cert cleanup
+# -----------------------------
+# OS-pinned timeout + nc helpers
+# -----------------------------
+TIMEOUT_CMD=""
+require_timeout() {
+  if [[ "$OS" == "Darwin" ]]; then
+    command -v gtimeout >/dev/null 2>&1 || { command -v brew >/dev/null 2>&1 && (brew list coreutils >/dev/null 2>&1 || brew install coreutils); }
+    command -v gtimeout >/dev/null 2>&1 || { echo "gtimeout missing (brew install coreutils)"; return 1; }
+    TIMEOUT_CMD="gtimeout"
+  else
+    command -v timeout >/dev/null 2>&1 || { echo "timeout missing (install coreutils)"; return 1; }
+    TIMEOUT_CMD="timeout"
+  fi
+}
+
+build_nc_cmd() {
+  local secs="${1:-5}"
+  if [[ "$OS" == "Darwin" ]]; then
+    NC_CMD=( /usr/bin/nc -w "$secs" )      # macOS nc: -w works; avoid -N/-q
+  else
+    NC_CMD=( nc -q 0 -w "$secs" )          # GNU nc: -q 0 + -w works on Linux
+  fi
+}
+
+# Probe (optional here; used only for macOS 9151 fallback)
+nc_probe() {
+  local host="$1" port="$2" secs="${3:-5}"
+  require_timeout || return 1
+  build_nc_cmd "$secs"
+  printf 'PROTOCOLINFO\r\nQUIT\r\n' | "$TIMEOUT_CMD" "$secs" "${NC_CMD[@]}" "$host" "$port" >/dev/null 2>&1 && return 0
+  if [[ "$OS" != "Darwin" ]]; then
+    NC_CMD=( nc -w "$secs" )
+    printf 'PROTOCOLINFO\r\nQUIT\r\n' | "$TIMEOUT_CMD" "$secs" "${NC_CMD[@]}" "$host" "$port" >/dev/null 2>&1 && return 0
+  fi
+  return 1
+}
+
+# Send payload to control port (reads stdin). Returns nc exit status.
+nc_send() {
+  local host="$1" port="$2" secs="${3:-5}"
+  require_timeout || return 1
+  build_nc_cmd "$secs"
+  "$TIMEOUT_CMD" "$secs" "${NC_CMD[@]}" "$host" "$port"
+}
+
+# Helper: nc timeout + listen check + DEL_ONION + cert cleanup
 cleanup_script() {
   # Load env (expects ADDR_*, SSLCERTS_DIR, etc.)
   # shellcheck disable=SC1090
@@ -104,37 +152,6 @@ cleanup_script() {
   _certs_root="${SSLCERTS_DIR:-tor-sslcerts}"
   if [[ "${_certs_root}" != /* ]]; then
     _certs_root="${HOME}/${_certs_root}"
-  fi
-
-  # ---- Timeout / nc flags ----------------------------------------------------
-  _timeout_cmd=""
-  if command -v timeout >/dev/null 2>&1; then
-    _timeout_cmd="timeout"
-  elif command -v gtimeout >/dev/null 2>&1; then
-    _timeout_cmd="gtimeout"
-  fi
-
-  _nc="${NC_PATH:-nc}"
-  if ! command -v "$_nc" >/dev/null 2>&1; then
-    echo "Error: 'nc' (netcat) is required." >&2
-    return 1
-  fi
-  _nc_help="$("$_nc" -h 2>&1 || true)"
-  _nc_has_flag() { printf '%s' "$_nc_help" | grep -qE "(^|[[:space:]-])$1([[:space:]]|,|$)"; }
-
-  _nc_eof_flag=""
-  if _nc_has_flag "-N"; then
-    _nc_eof_flag="-N"
-  elif printf '%s' "$_nc_help" | grep -q -- "-q"; then
-    _nc_eof_flag="-q 0"
-  fi
-
-  _nc_time_prefix=()
-  _nc_time_flag=()
-  if [[ -n "$_timeout_cmd" ]]; then
-    _nc_time_prefix=("$_timeout_cmd" "$NC_TIMEOUT")
-  elif printf '%s' "$_nc_help" | grep -q -- "-w"; then
-    _nc_time_flag=("-w" "$NC_TIMEOUT")
   fi
 
   # ---- Listen check ----------------------------------------------------------
@@ -162,9 +179,16 @@ cleanup_script() {
     return 1
   fi
 
-  if ! _is_listening; then
-    echo "Tor control port ${control_port} does not appear to be listening." >&2
-    # We still attempt cert cleanup, but DEL_ONION commands will be skipped
+  # macOS convenience: if 9051 not listening but 9151 is, use 9151
+  if [[ "$OS" == "Darwin" ]] && ! _is_listening; then
+    old="$control_port"
+    control_port="9151"
+    if _is_listening; then
+      echo "macOS: switching control port ${old} -> ${control_port}" >&2
+    else
+      # restore; both were not listening
+      control_port="$old"
+    fi
   fi
 
   # ---- Collect all onion addresses first (so we can also delete certs) -------
@@ -176,14 +200,14 @@ cleanup_script() {
     service_id="${onion_address%.onion}"
     echo "Removing onion service: $service_id"
 
-    control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
-
     if _is_listening; then
-      if ! printf '%s' "$control_command" \
-        | "${_nc_time_prefix[@]}" "$_nc" "${_nc_time_flag[@]}" $_nc_eof_flag localhost "$control_port" >/dev/null 2>&1
-      then
-        echo "Warning: netcat control command failed/timed out for $service_id." >&2
-      fi
+      {
+        printf 'AUTHENTICATE %s\r\n' "$tor_cookie_hex"
+        printf 'DEL_ONION %s\r\n' "$service_id"
+        printf 'QUIT\r\n'
+      } | nc_send 127.0.0.1 "$control_port" "$NC_TIMEOUT" >/dev/null 2>&1 || {
+        echo "Warning: control command failed/timed out for $service_id." >&2
+      }
     else
       echo "Skipping DEL_ONION for $service_id (control port not listening)." >&2
     fi
@@ -234,46 +258,44 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
       cleanup_script
     elif command -v sg >/dev/null 2>&1; then
       # Export variables needed in the heredoc
-      export TORDIR SUDO torbb_env_file
-      $SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env TORDIR='$TORDIR' SUDO='$SUDO' torbb_env_file='$torbb_env_file' bash" << 'EOF'
+      export TORDIR SUDO torbb_env_file OS
+      $SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env TORDIR='$TORDIR' SUDO='$SUDO' torbb_env_file='$torbb_env_file' OS='$OS' bash" << 'EOF'
 set -euo pipefail
 # shellcheck disable=SC1090
 source "$torbb_env_file"
 
+# -------- OS-pinned timeout + nc ----------
+TIMEOUT_CMD=""
+require_timeout() {
+  if [[ "${OS:-$(uname -s)}" == "Darwin" ]]; then
+    command -v gtimeout >/dev/null 2>&1 || { command -v brew >/dev/null 2>&1 && (brew list coreutils >/dev/null 2>&1 || brew install coreutils); }
+    command -v gtimeout >/dev/null 2>&1 || { echo "gtimeout missing (brew install coreutils)"; return 1; }
+    TIMEOUT_CMD="gtimeout"
+  else
+    command -v timeout >/dev/null 2>&1 || { echo "timeout missing (install coreutils)"; return 1; }
+    TIMEOUT_CMD="timeout"
+  fi
+}
+build_nc_cmd() {
+  local secs="${1:-5}"
+  if [[ "${OS:-$(uname -s)}" == "Darwin" ]]; then
+    NC_CMD=( /usr/bin/nc -w "$secs" )
+  else
+    NC_CMD=( nc -q 0 -w "$secs" )
+  fi
+}
+nc_send() {
+  local host="$1" port="$2" secs="${3:-5}"
+  require_timeout || return 1
+  build_nc_cmd "$secs"
+  "$TIMEOUT_CMD" "$secs" "${NC_CMD[@]}" "$host" "$port"
+}
+
+# -------- Config & helpers ----------------
 control_port="${TOR_CONTROL_PORT:-9051}"
 NC_TIMEOUT="${NC_TIMEOUT:-5}"
 _certs_root="${SSLCERTS_DIR:-tor-sslcerts}"
 if [[ "${_certs_root}" != /* ]]; then _certs_root="${HOME}/${_certs_root}"; fi
-
-_timeout_cmd=""
-if command -v timeout >/dev/null 2>&1; then
-  _timeout_cmd="timeout"
-elif command -v gtimeout >/dev/null 2>&1; then
-  _timeout_cmd="gtimeout"
-fi
-
-_nc="${NC_PATH:-nc}"
-if ! command -v "$_nc" >/dev/null 2>&1; then
-  echo "Error: 'nc' (netcat) is required." >&2
-  exit 1
-fi
-_nc_help="$("$_nc" -h 2>&1 || true)"
-_nc_has_flag() { printf '%s' "$_nc_help" | grep -qE "(^|[[:space:]-])$1([[:space:]]|,|$)"; }
-
-_nc_eof_flag=""
-if _nc_has_flag "-N"; then
-  _nc_eof_flag="-N"
-elif printf '%s' "$_nc_help" | grep -q -- "-q"; then
-  _nc_eof_flag="-q 0"
-fi
-
-_nc_time_prefix=()
-_nc_time_flag=()
-if [[ -n "$_timeout_cmd" ]]; then
-  _nc_time_prefix=("$_timeout_cmd" "$NC_TIMEOUT")
-elif printf '%s' "$_nc_help" | grep -q -- "-w"; then
-  _nc_time_flag=("-w" "$NC_TIMEOUT")
-fi
 
 _is_listening() {
   if command -v lsof >/dev/null 2>&1; then
@@ -298,6 +320,16 @@ if [[ -z "$tor_cookie_hex" ]]; then
   exit 1
 fi
 
+# macOS convenience: if 9051 not listening but 9151 is, use 9151
+if [[ "${OS:-$(uname -s)}" == "Darwin" ]] && ! _is_listening; then
+  old="$control_port"; control_port="9151"
+  if _is_listening; then
+    echo "macOS: switching control port ${old} -> ${control_port}" >&2
+  else
+    control_port="$old"
+  fi
+fi
+
 # Gather onions up front (for DEL_ONION and cert removal)
 mapfile -t _onions < <(compgen -A variable | grep '^ADDR_' | while read -r v; do printf '%s\n' "${!v}"; done | sed '/^$/d')
 
@@ -306,11 +338,13 @@ if _is_listening; then
     [[ -z "$onion_address" ]] && continue
     service_id="${onion_address%.onion}"
     echo "Removing onion service: $service_id"
-    control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
-    if ! printf '%s' "$control_command" \
-        | "${_nc_time_prefix[@]}" "$_nc" "${_nc_time_flag[@]}" $_nc_eof_flag localhost "$control_port" >/dev/null 2>&1; then
+    {
+      printf 'AUTHENTICATE %s\r\n' "$tor_cookie_hex"
+      printf 'DEL_ONION %s\r\n' "$service_id"
+      printf 'QUIT\r\n'
+    } | nc_send 127.0.0.1 "$control_port" "$NC_TIMEOUT" >/dev/null 2>&1 || {
       echo "Warning: control command failed or timed out for $service_id." >&2
-    fi
+    }
   done
 else
   echo "Tor control port ${control_port} is not listening; skipping DEL_ONION." >&2

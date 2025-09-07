@@ -10,8 +10,8 @@
 ##########################################################
 
 if [[ -n "$BBX_DEBUG" ]]; then
+  export BBX_DEBUG
   set -x
-  export BBX_DEBUG="${BBX_DEBUG}"
 fi
 
 # ANSI color codes
