@@ -222,9 +222,101 @@ _better_than() {
   return 1
 }
 
+# get_latest_release_tag_filtered <channel>
+# channel: "stable" (default), "rc", or "any"
+# Returns the *release* tag (not just a git tag). For "stable" we use the
+# /releases/latest endpoint (non-draft, non-prerelease). For "rc" we scan
+# releases for prerelease entries (or tags containing -rc). For "any" we
+# scan all non-draft releases and pick the best by semver (stable > rc).
+get_latest_release_tag_filtered() {
+  local channel="${1:-stable}"
+
+  # Derive owner/repo from REPO_URL (e.g. https://github.com/BrowserBox/BrowserBox)
+  local owner_repo="${REPO_URL#https://github.com/}"
+  local owner="${owner_repo%%/*}"
+  local repo="${owner_repo#*/}"
+  local api="https://api.github.com/repos/${owner}/${repo}"
+
+  # Curl opts (use token if present)
+  local -a CURL_OPTS=( -sS --connect-timeout 8 -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" )
+  [[ -n "$GITHUB_TOKEN" ]] && CURL_OPTS+=( -H "Authorization: Bearer $GITHUB_TOKEN" )
+  [[ -z "$GITHUB_TOKEN" && -n "$GH_TOKEN" ]] && CURL_OPTS+=( -H "Authorization: Bearer $GH_TOKEN" )
+
+  # Helper to safely parse tag_name (jq preferred, sed fallback)
+  _extract_tag_name() {
+    if command -v jq >/dev/null 2>&1; then
+      jq -r '.tag_name // empty'
+    else
+      sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1
+    fi
+  }
+
+  if [[ "$channel" == "stable" ]]; then
+    # GitHub's "latest" is the newest non-draft, non-prerelease release.
+    local resp tag
+    resp="$(curl "${CURL_OPTS[@]}" "$api/releases/latest" 2>/dev/null)" || true
+    tag="$(printf '%s' "$resp" | _extract_tag_name)"
+    # Filter out any accidental "-rc" tag names just in case
+    if [[ -n "$tag" && "$tag" != "null" && "$tag" != *-rc* ]]; then
+      # Validate with our semver parser to be safe
+      if _parse_tag "$tag" && (( PAR_STABLE == 1 )); then
+        echo "$tag"
+        return 0
+      fi
+    fi
+    # If nothing found, fall through to failure (caller will fallback to tags)
+    echo "unknown"; return 1
+  fi
+
+  # For "rc" and "any" we need to list releases and pick the best.
+  # We’ll iterate through all non-draft releases, filtering by channel.
+  local resp tags best_tag=""
+  resp="$(curl "${CURL_OPTS[@]}" "$api/releases?per_page=100" 2>/dev/null)" || true
+
+  if command -v jq >/dev/null 2>&1; then
+    if [[ "$channel" == "rc" ]]; then
+      tags="$(printf '%s' "$resp" | jq -r '.[] | select(.draft==false) | select(.prerelease==true or (.tag_name|test("-rc($|\\.)"))) | .tag_name')"
+    else
+      # any
+      tags="$(printf '%s' "$resp" | jq -r '.[] | select(.draft==false) | .tag_name')"
+    fi
+  else
+    # Very light fallback without jq: grab all tag_name lines then filter
+    tags="$(printf '%s' "$resp" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p')"
+    if [[ "$channel" == "rc" ]]; then
+      tags="$(printf '%s\n' "$tags" | grep -E -- '-rc(\.|$)' || true)"
+    fi
+  fi
+
+  # Walk tags with your semver comparator
+  local bestMaj=0 bestMin=0 bestPat=0 bestStable=0 bestRc=0 bestHP=0
+  local t
+  while IFS= read -r t; do
+    [[ -z "$t" ]] && continue
+    if _parse_tag "$t"; then
+      # For "any" we allow both; for "rc" we require rc; (stable handled above)
+      if [[ "$channel" == "rc" && $PAR_STABLE -ne 0 ]]; then
+        continue
+      fi
+      local cMaj=$PAR_MAJ cMin=$PAR_MIN cPat=$PAR_PAT cSt=$PAR_STABLE cRc=$PAR_RCNUM cHP=$PAR_HASPATCH
+      if [[ -z "$best_tag" ]] || _better_than \
+        "$cMaj" "$cMin" "$cPat" "$cSt" "$cRc" "$cHP" \
+        "$bestMaj" "$bestMin" "$bestPat" "$bestStable" "$bestRc" "$bestHP"; then
+        best_tag="$t"
+        bestMaj=$cMaj; bestMin=$cMin; bestPat=$cPat; bestStable=$cSt; bestRc=$cRc; bestHP=$cHP
+      fi
+    fi
+  done <<< "$tags"
+
+  if [[ -n "$best_tag" ]]; then
+    echo "$best_tag"; return 0
+  fi
+
+  echo "unknown"; return 1
+}
 
 # get_latest_tag_filtered <channel>
-# channel: "stable" (default), "rc", or "any"
+# (unchanged logic; still scans git tags. Kept here in case you want the updated copy.)
 get_latest_tag_filtered() {
   local channel="${1:-stable}"
   local best_tag=""
@@ -237,14 +329,12 @@ get_latest_tag_filtered() {
     [[ "$tag" == *^{} ]] && continue
 
     if _parse_tag "$tag"; then
-      # Filter by requested channel without changing the comparator
-      # stable -> skip rc; rc -> only rc; any -> no filter
+      # Filter by requested channel
       if [[ "$channel" == "stable" && $PAR_STABLE -eq 0 ]]; then
         continue
       elif [[ "$channel" == "rc" && $PAR_STABLE -ne 0 ]]; then
         continue
       fi
-
       local cMaj=$PAR_MAJ cMin=$PAR_MIN cPat=$PAR_PAT cSt=$PAR_STABLE cRc=$PAR_RCNUM cHP=$PAR_HASPATCH
       if [[ -z "$best_tag" ]] || _better_than \
           "$cMaj" "$cMin" "$cPat" "$cSt" "$cRc" "$cHP" \
@@ -265,17 +355,23 @@ get_latest_tag() {
   get_latest_tag_filtered "stable"
 }
 
-
-# Query remote and select latest tag. Returns 0 on success; 1 on failure/timeout/empty.
 # get_latest_repo_version [stable|rc|any]
+# Prefer *releases*; if unavailable, fall back to raw tags so the CLI still works.
 get_latest_repo_version() {
   local channel="${1:-stable}"
   local out
+
+  # 1) Try GitHub Releases (exactly what we want)
+  if out="$(get_latest_release_tag_filtered "$channel")" && [[ "$out" != "unknown" ]]; then
+    echo "$out"; return 0
+  fi
+
+  # 2) Fall back to git tags (legacy behavior)
   if out=$(timeout 7s git ls-remote --tags --refs "$REPO_URL" 2>/dev/null | get_latest_tag_filtered "$channel"); then
     echo "$out"; return 0
-  else
-    echo "$out"; return 1
   fi
+
+  echo "unknown"; return 1
 }
 
 # normalize a user-supplied version to a tag with 'v' prefix
@@ -871,13 +967,13 @@ run() {
     load_config
   fi
 
-  if [[ ! -f "${BB_CONFIG_DIR}/hosts.env" ]]; then
+  local zeta_mode="${HOST_PER_SERVICE}"
+  local http_only="${BBX_HTTP_ONLY}"
+
+  if [[ -n "$zeta_mode" ]] && [[ ! -f "${BB_CONFIG_DIR}/hosts.env" ]]; then
     printf "${RED}No hosts file: --zeta mode requires a hosts.env file in your config directory (${BB_CONFIG_DIR}).${NC}\n"
     exit 1
   fi
-
-  local zeta_mode="${HOST_PER_SERVICE}"
-  local http_only="${BBX_HTTP_ONLY}"
 
   # Default values (should be set by setup, but fallback for safety)
   local port="${PORT}"
@@ -1728,14 +1824,19 @@ check_and_prepare_update() {
   chmod 700 "$BB_CONFIG_DIR"
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
-  # ---------- NEW: install prepared update synchronously, before running the command ----------
+  # ---------- Install a prepared update synchronously, before running the command ----------
   if [ -f "$PREPARED_FILE" ] && [ -d "$BBX_NEW_DIR/BrowserBox" ]; then
     local prepared_dir
     prepared_dir=$(sed -n '2p' "$PREPARED_FILE")
     if [ "$prepared_dir" = "$BBX_NEW_DIR" ]; then
-      local prepared_tag
-      prepared_tag=$(get_version_info "$PREPARED_VERSION_FILE")
-      if [ "$prepared_tag" != "unknown" ]; then
+      local prepared_tag=""
+      # Prefer exact git tag recorded at prepare-time (line 3)
+      prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
+      # Back-compat: fall back to version.json if missing
+      if [ -z "$prepared_tag" ] || [ "$prepared_tag" = "unknown" ]; then
+        prepared_tag=$(get_version_info "$PREPARED_VERSION_FILE")
+      fi
+      if [ -n "$prepared_tag" ] && [ "$prepared_tag" != "unknown" ]; then
         printf "${YELLOW}Detected prepared update (${prepared_tag}). Installing before '%s'...${NC}\n" "$1"
         if check_prepare_and_install "$prepared_tag"; then
           # Stage 2 finished; proceed to user's command.
@@ -1744,7 +1845,7 @@ check_and_prepare_update() {
       fi
     fi
   fi
-  # -------------------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------------------
 
   # Normal background prep flow (only stage 1 happens in background)
   local current_tag repo_tag
@@ -1779,27 +1880,40 @@ check_prepare_and_install() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
   fi
-  repo_tag="$1"
+  local repo_tag="$1"
+
   # Check if BBX_NEW_DIR has a prepared version
   if [ -f "$PREPARED_FILE" ]; then
-    local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
+    local prepared_location
+    prepared_location=$(sed -n '2p' "$PREPARED_FILE")
     if [ "$prepared_location" = "$BBX_NEW_DIR" ] && [[ -d "$BBX_NEW_DIR/BrowserBox" ]]; then
-      local new_tag=$(get_version_info "$PREPARED_VERSION_FILE")
+      local new_tag=""
+      # Prefer tag recorded during prepare (line 3)
+      new_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
+      # Back-compat: fall back to version.json if no line-3 tag
+      if [ -z "$new_tag" ] || [ "$new_tag" = "unknown" ]; then
+        new_tag=$(get_version_info "$PREPARED_VERSION_FILE")
+      fi
+
       if [ "$new_tag" = "$repo_tag" ]; then
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n" >> "$LOG_FILE"
-        # we execute outside ourselves to avoid overwriting the bbx script when we finally move the prepared install into place
+
+        # Avoid self-overwrite while moving tree into place
         is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
+
         # Move prepared version
         $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
         mv "$BBX_NEW_DIR/BrowserBox" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n" >> "$LOG_FILE"; return 1; }
 
         # Run copy_install.sh
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n" >> "$LOG_FILE"; return 1; }
+
         # Clean up lock files
         $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n" >> "$LOG_FILE"
+
         printf "${GREEN}Update to $repo_tag complete.${NC}\n" >> "$LOG_FILE"
-        printf "${GREEN}Update to $repo_tag complete.${NC}\n" 
+        printf "${GREEN}Update to $repo_tag complete.${NC}\n"
         return 0
       else
         printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n" >> "$LOG_FILE"
@@ -1866,7 +1980,7 @@ update_background() {
   fi
 
   load_config
-  local requested_tag="${1:-}"               # <--- NEW
+  local requested_tag="${1:-}"
   local repo_tag
   if [[ -n "$requested_tag" ]]; then
     repo_tag="$requested_tag"
@@ -1890,13 +2004,16 @@ update_background() {
   printf "${YELLOW}Requesting update lock...${NC}\n" >> "$LOG_FILE"
   # Create preparing lock file
   $SUDO mkdir -p "$BBX_SHARE" || { printf "${RED}Failed to create install directory $BBX_SHARE ... ${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
-  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+  # Lines: 1=timestamp, 2=prepared_dir, 3=git_tag (exact, incl. -rc if present)
+  printf "%s\n%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" "$repo_tag" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+
   printf "${YELLOW}Starting background update to $repo_tag...${NC}\n" >> "$LOG_FILE"
   # Clean up any existing BBX_NEW_DIR
   $SUDO rm -rf "$BBX_NEW_DIR" || { printf "${RED}Failed to clean $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   mkdir -p "$BBX_NEW_DIR" || { printf "${RED}Failed to create $BBX_NEW_DIR/BrowserBox${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   DLURL="${REPO_URL}/archive/refs/tags/${repo_tag}.zip";
   echo "Getting: $DLURL" >> "$LOG_FILE"
+
   curl -sSL --connect-timeout 8 "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || {
     printf "${YELLOW}Skipping update due to timeout or failure in connecting to BrowserBox repo${NC}\n" >> "$LOG_FILE"
     $SUDO rm -f "$PREPARING_FILE"
@@ -1904,22 +2021,29 @@ update_background() {
     $SUDO rm -rf "$BBX_NEW_DIR" 2>/dev/null
     return 1
   }
+
   printf "${YELLOW}Unzipping archive for $repo_tag...${NC}\n" >> "$LOG_FILE"
   unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+
   printf "${YELLOW}Moving folder into place...${NC}\n" >> "$LOG_FILE"
   mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$tagdoo" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
   $SUDO rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
+
   chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+
   printf "${YELLOW}Preparing update...${NC}\n" >> "$LOG_FILE"
   cd "$BBX_NEW_DIR/BrowserBox"
   export BBX_NO_COPY=1
   yes yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL" >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
-    # Mark as prepared
+
+  # Mark as prepared (record the exact git tag)
   printf "${YELLOW}Marking update as prepared...${NC}\n" >> "$LOG_FILE"
-  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+  printf "%s\n%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" "$repo_tag" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
+
   # Remove preparing lock file
   printf "${YELLOW}Completing preparation step (removing update lock)...${NC}\n" >> "$LOG_FILE"
   $SUDO rm -f "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARING_FILE${NC}\n" >> "$LOG_FILE"
+
   printf "${GREEN}Background update prepared in $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"
 }
 
