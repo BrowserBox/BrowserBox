@@ -296,7 +296,7 @@ jobs:
         run: |
           set -euo pipefail
           if ! command -v bbx >/dev/null 2>&1; then
-            bash <(curl -fsSL https://bbx.sh.dosaygo.com) install
+            ./bbx.sh install
           fi
           bbx --version || true
 

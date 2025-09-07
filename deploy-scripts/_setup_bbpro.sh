@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-#set -x
-
 trap 'echo "Got an error. Bailing this section..." >&2' ERR
 trap 'echo "Exiting..." >&2' EXIT
 
@@ -140,7 +138,7 @@ is_port_free() {
   fi
 
   if [[ $(uname) == "Darwin" ]]; then
-    if lsof -i tcp:"$port" > /dev/null 2>&1; then
+    if lsof -i tcp:"$port" -sTCP:LISTEN > /dev/null 2>&1; then
       # If lsof returns a result, the port is in use
       return 1
     fi
