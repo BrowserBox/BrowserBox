@@ -3,8 +3,14 @@
 NODEVERSION="22"
 NODE_V="v${NODEVERSION}"
 
+if [[ -n "${BBX_DEBUG}" ]]; then
+  set -x
+fi
+
 install_nvm() {
-  source ~/.nvm/nvm.sh
+  if ! command -v nvm &>/dev/null && test -f ~/.nvm/nvm.sh; then
+    source ~/.nvm/nvm.sh
+  fi
   if ! command -v nvm &>/dev/null; then
     echo "Installing nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash

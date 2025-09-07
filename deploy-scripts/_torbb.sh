@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ -n "${BBX_DEBUG}" ]]; then
+  set -x
+fi
+
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false
@@ -479,3 +483,4 @@ LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
 echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
 echo "Login link for Tor hidden service BB instance:" >&2
 echo "$LOGIN_LINK"
+

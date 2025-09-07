@@ -11,6 +11,8 @@
 
 REDIRECT=">/dev/null"
 if [[ -n "$BBX_DEBUG" ]]; then
+  export BBX_DEBUG="${BBX_DEBUG}"
+  set -x
   REDIRECT=""
 fi
 
@@ -1108,154 +1110,154 @@ tor_run() {
       printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
   fi
 
-    local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
-    if $anonymize; then
-        setup_cmd="$setup_cmd --ontor"
+  local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
+  if $anonymize; then
+      setup_cmd="$setup_cmd --ontor"
+  fi
+  if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
+      "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving${NC}\n"; exit 1; }
+  elif ! $onion; then
+      ensure_hosts_entry "$BBX_HOSTNAME"
+  fi
+  LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  # Validate existing product key
+  export LICENSE_KEY;
+  certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
+  if [[ "$?" -ne 0 ]]; then
+    printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+    echo "Certification output: $certout"
+    exit 1
+  else
+    printf "${GREEN}Certification complete.${NC}\n"
+    if [[ -f "$CERT_META_FILE" ]]; then
+      # shellcheck disable=SC1090
+      source "$CERT_META_FILE"
+      export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
     fi
-    if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving${NC}\n"; exit 1; }
-    elif ! $onion; then
-        ensure_hosts_entry "$BBX_HOSTNAME"
-    fi
-    LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    # Validate existing product key
-    export LICENSE_KEY;
-    certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
-    if [[ "$?" -ne 0 ]]; then
-      printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
-      echo "Certification output: $certout"
-      exit 1
-    else
-      printf "${GREEN}Certification complete.${NC}\n"
-      if [[ -f "$CERT_META_FILE" ]]; then
-        # shellcheck disable=SC1090
-        source "$CERT_META_FILE"
-        export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
+  fi
+
+  local login_link=""
+  if $onion; then
+      printf "${YELLOW}Running as onion site...${NC}\n"
+      if $in_tor_group; then
+          #echo "Run torbb directly as in TOR_GROU"
+          login_link="$(torbb)"
+      elif command -v sg >/dev/null 2>&1; then
+          #echo "Use safe heredoc with env"
+          export BB_CONFIG_DIR BBX_DEBUG
+          login_link="$($SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env PATH=\"$PATH\" BB_CONFIG_DIR=\"$BB_CONFIG_DIR\" BBX_RESERVATION_CODE=\"$BBX_RESERVATION_CODE\" BBX_RESERVED_SEAT_ID=\"$BBX_RESERVED_SEAT_ID\" BBX_TICKET_ID=\"$BBX_TICKET_ID\" BBX_TICKET_SLOT=\"$BBX_TICKET_SLOT\" bash -cl torbb")"
+      else
+          #echo "Fallback without sg"
+          login_link="$(torbb)"
       fi
-    fi
+      [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "${BB_CONFIG_DIR}/torbb_errors.txt"; echo "$login_link"; exit 1; }
+      TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
+  else
+      pkill ncat
+      for i in {-2..2}; do
+          test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
+      done
+      test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
+      bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+      login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
+  fi
+  sleep 2
+  printf "${GREEN}BrowserBox with Tor started.${NC}\n"
+  draw_box "Login Link: $login_link"
+  save_config
 
-    local login_link=""
-    if $onion; then
-        printf "${YELLOW}Running as onion site...${NC}\n"
-        if $in_tor_group; then
-            # Run torbb directly if user is in TOR_GROUP
-            login_link="$(torbb)"
-        elif command -v sg >/dev/null 2>&1; then
-            # Use safe heredoc with env
-            export BB_CONFIG_DIR
-            login_link="$($SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env PATH=\"$PATH\" BB_CONFIG_DIR=\"$BB_CONFIG_DIR\" bash -cl torbb")"
-        else
-            # Fallback without sg
-            login_link="$(torbb)"
-        fi
-        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$BB_CONFIG_DIR/torbb_errors.txt"; echo "$login_link"; exit 1; }
-        TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
-    else
-        pkill ncat
-        for i in {-2..2}; do
-            test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
-        done
-        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
-        bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-        login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
-    fi
-    sleep 2
-    printf "${GREEN}BrowserBox with Tor started.${NC}\n"
-    draw_box "Login Link: $login_link"
-    save_config
+  # Tor status display functions
+  get_tor_status() {
+      local cookie_hex=""
+      if [ -r "$COOKIE_AUTH_FILE" ]; then
+          cookie_hex=$(xxd -u -p -c32 "$COOKIE_AUTH_FILE" | tr -d '\n')
+      elif $SUDO test -r "$COOKIE_AUTH_FILE"; then
+          cookie_hex=$($SUDO xxd -u -p -c32 "$COOKIE_AUTH_FILE" | tr -d '\n')
+      fi
+      if [ -z "$cookie_hex" ]; then
+          printf "${YELLOW}Warning: Failed to read Tor cookie${NC}\n" >&2
+          return 1
+      fi
 
-    # Tor status display functions
-    get_tor_status() {
-        local cookie_hex=""
-        if [ -r "$COOKIE_AUTH_FILE" ]; then
-            cookie_hex=$(xxd -u -p -c32 "$COOKIE_AUTH_FILE" | tr -d '\n')
-        elif $SUDO test -r "$COOKIE_AUTH_FILE"; then
-            cookie_hex=$($SUDO xxd -u -p -c32 "$COOKIE_AUTH_FILE" | tr -d '\n')
-        fi
-        if [ -z "$cookie_hex" ]; then
-            printf "${YELLOW}Warning: Failed to read Tor cookie${NC}\n" >&2
-            return 1
-        fi
+      local cmd=$(printf 'AUTHENTICATE %s\r\nGETINFO status/bootstrap-phase\r\nQUIT\r\n' "$cookie_hex")
+      local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 9051 2>/dev/null)
 
-        local cmd=$(printf 'AUTHENTICATE %s\r\nGETINFO status/bootstrap-phase\r\nQUIT\r\n' "$cookie_hex")
-        local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 9051 2>/dev/null)
+      if [ -z "$response" ]; then
+          printf "${YELLOW}Warning: Tor control port not responding${NC}\n" >&2
+          return 1
+      fi
 
-        if [ -z "$response" ]; then
-            printf "${YELLOW}Warning: Tor control port not responding${NC}\n" >&2
-            return 1
-        fi
+      local status_line=$(echo "$response" | grep "250-status/bootstrap-phase=")
+      if [ -z "$status_line" ]; then
+          printf "${YELLOW}Warning: Invalid response from Tor control port${NC}\n" >&2
+          return 1
+      fi
 
-        local status_line=$(echo "$response" | grep "250-status/bootstrap-phase=")
-        if [ -z "$status_line" ]; then
-            printf "${YELLOW}Warning: Invalid response from Tor control port${NC}\n" >&2
-            return 1
-        fi
+      if echo "$status_line" | grep -q "SUMMARY=\"Done\""; then
+          echo "100"
+      else
+          local progress=$(echo "$status_line" | grep -o "PROGRESS=[0-9]*" | cut -d'=' -f2)
+          [ -n "$progress" ] && echo "$progress" || echo "0"
+      fi
+  }
 
-        if echo "$status_line" | grep -q "SUMMARY=\"Done\""; then
-            echo "100"
-        else
-            local progress=$(echo "$status_line" | grep -o "PROGRESS=[0-9]*" | cut -d'=' -f2)
-            [ -n "$progress" ] && echo "$progress" || echo "0"
-        fi
-    }
+  draw_progress_bar() {
+      local percent=$1
+      local bar_width=30
+      local filled=$((percent * bar_width / 100))
+      local empty=$((bar_width - filled))
 
-    draw_progress_bar() {
-        local percent=$1
-        local bar_width=30
-        local filled=$((percent * bar_width / 100))
-        local empty=$((bar_width - filled))
+      printf "\rTor Progress: [${GREEN}"
+      for ((i = 0; i < filled; i++)); do printf "█"; done
+      printf "${NC}"
+      for ((i = 0; i < empty; i++)); do printf " "; done
+      printf "] %3d%%" "$percent"
+  }
 
-        printf "\rTor Progress: [${GREEN}"
-        for ((i = 0; i < filled; i++)); do printf "█"; done
-        printf "${NC}"
-        for ((i = 0; i < empty; i++)); do printf " "; done
-        printf "] %3d%%" "$percent"
-    }
+  show_tor_status() {
+      local max_attempts=240  # 120 seconds total with 0.5s sleep
+      local poll_interval=10  # Check every 5 seconds (10 * 0.5s)
+      local spinner_chars="|/-\|"
+      local attempts=0
+      local counter=0
+      local spinner_idx=0
+      local percent=0
 
-    show_tor_status() {
-        local max_attempts=240  # 120 seconds total with 0.5s sleep
-        local poll_interval=10  # Check every 5 seconds (10 * 0.5s)
-        local spinner_chars="|/-\|"
-        local attempts=0
-        local counter=0
-        local spinner_idx=0
-        local percent=0
+      printf "${YELLOW}Checking Tor connection status...${NC}\n" >&2
+      while [ $attempts -lt "$max_attempts" ]; do
+          if [ $((counter % 2)) -eq 0 ]; then
+              spinner_idx=$(( (spinner_idx + 1) % 4 ))
+              local spinner="${spinner_chars:$spinner_idx:1}"
+          fi
 
-        printf "${YELLOW}Checking Tor connection status...${NC}\n" >&2
-        while [ $attempts -lt "$max_attempts" ]; do
-            if [ $((counter % 2)) -eq 0 ]; then
-                spinner_idx=$(( (spinner_idx + 1) % 4 ))
-                local spinner="${spinner_chars:$spinner_idx:1}"
-            fi
+          if [ $((counter % poll_interval)) -eq 0 ]; then
+              percent=$(get_tor_status) || percent=0
+              attempts=$((attempts + 1))
+              if [ "$percent" -eq 100 ]; then
+                  draw_progress_bar 100
+                  printf "\n${GREEN}Tor is fully connected and ready.${NC}\n" >&2
+                  return 0
+              fi
+          fi
 
-            if [ $((counter % poll_interval)) -eq 0 ]; then
-                percent=$(get_tor_status) || percent=0
-                attempts=$((attempts + 1))
-                if [ "$percent" -eq 100 ]; then
-                    draw_progress_bar 100
-                    printf "\n${GREEN}Tor is fully connected and ready.${NC}\n" >&2
-                    return 0
-                fi
-            fi
+          draw_progress_bar "$percent"
+          sleep 0.5
+          counter=$((counter + 1))
+      done
 
-            draw_progress_bar "$percent"
-            sleep 0.5
-            counter=$((counter + 1))
-        done
+      draw_progress_bar "$percent"
+      printf "\n${YELLOW}Warning: Tor not fully connected after 120 seconds (progress at $percent%%).${NC}\n" >&2
+      printf "${YELLOW}BrowserBox may still work, but Tor connectivity might be incomplete.${NC}\n" >&2
+      return 1
+  }
 
-        draw_progress_bar "$percent"
-        printf "\n${YELLOW}Warning: Tor not fully connected after 120 seconds (progress at $percent%%).${NC}\n" >&2
-        printf "${YELLOW}BrowserBox may still work, but Tor connectivity might be incomplete.${NC}\n" >&2
-        return 1
-    }
-
-    # Display Tor status without restarting
-    if ! [ -r "$COOKIE_AUTH_FILE" ] && ! $SUDO test -r "$COOKIE_AUTH_FILE"; then
-        printf "${YELLOW}Warning: Tor cookie file ($COOKIE_AUTH_FILE) not accessible. Skipping status check.${NC}\n"
-    else
-        show_tor_status
-    fi
+  # Display Tor status without restarting
+  if ! [ -r "$COOKIE_AUTH_FILE" ] && ! $SUDO test -r "$COOKIE_AUTH_FILE"; then
+      printf "${YELLOW}Warning: Tor cookie file ($COOKIE_AUTH_FILE) not accessible. Skipping status check.${NC}\n"
+  else
+      show_tor_status
+  fi
 }
 
 docker_run() {

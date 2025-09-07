@@ -4,7 +4,7 @@ INSTALL_DIR="${1:-$(pwd)}"
 SUDO=""
 COMMAND_DIR=""
 
-if [[ -f ~/.nvm/nvm.sh ]]; then
+if ! command -v nvm &>/dev/null && [[ -f ~/.nvm/nvm.sh ]]; then
   source ~/.nvm/nvm.sh
 fi
 
