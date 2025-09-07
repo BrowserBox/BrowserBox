@@ -137,7 +137,7 @@ check_port() {
   if [[ "$OS" = "Darwin" ]]; then
     # lsof usually works unprivileged for LISTEN; try it; fallback to netstat/ss
     if command -v lsof >/dev/null 2>&1; then
-      lsof -iTCP -P -n 2>/dev/null | grep -q "LISTEN.*:$p" && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
+      lsof -iTCP:$p -P -n -sTCP:LISTEN 2>/dev/null && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
     elif command -v netstat >/dev/null 2>&1; then
       netstat -anv -p tcp 2>/dev/null | grep -q "\.$p .*LISTEN" && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
     elif command -v ss >/dev/null 2>&1; then
