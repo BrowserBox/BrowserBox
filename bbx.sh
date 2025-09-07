@@ -9,11 +9,9 @@
 # 
 ##########################################################
 
-REDIRECT=">/dev/null"
 if [[ -n "$BBX_DEBUG" ]]; then
-  export BBX_DEBUG="${BBX_DEBUG}"
+  export BBX_DEBUG
   set -x
-  REDIRECT=""
 fi
 
 # ANSI color codes
@@ -116,6 +114,14 @@ clean_temp_installers() {
 is_running_in_official() {
   local TMPDIR="$HOME/.cache/myscript-installer"
   [[ "$0" != "$TMPDIR/"* ]]
+}
+
+run_quietly() {
+  if [[ -n ${BBX_DEBUG:-} ]]; then
+    BBX_DEBUG="$BBX_DEBUG" "$@"
+  else
+    { BBX_DEBUG="$BBX_DEBUG" "$@"; } &>/dev/null
+  fi
 }
 
 # Elevate to a temp copy (if not already in temp); will not return if elevation happens
@@ -1043,7 +1049,7 @@ run() {
   fi
 
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
-  bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+  run_quietly bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   local login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
   draw_box "Login Link: ${login_link}"
@@ -1080,7 +1086,7 @@ tor_run() {
   fi
 
   [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-  printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+  printf "${YELLOW}Starting BrowserBox with ${NC}${PURPLE}Tor${NC}${YELLOW}...${NC}\n"
   ensure_setup_tor "$(whoami)"
 
   # Determine Tor group and cookie file dynamically
@@ -1761,7 +1767,7 @@ certify() {
 stop() {
     load_config
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
-    stop_bbpro &>/dev/null || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
+    run_quietly stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
 }
 
