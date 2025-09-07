@@ -70,6 +70,7 @@ fi
 
 # env
 export BBX_DONT_KILL_CHROME_ON_STOP="true"
+export BBX_REQUIRE_RELEASE=1
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
@@ -355,22 +356,29 @@ get_latest_tag() {
 
 # get_latest_repo_version [stable|rc|any]
 # Prefer *releases*; if unavailable, fall back to raw tags so the CLI still works.
+# OPTIONAL: make tag-fallback opt-in to avoid picking non-released tags
 get_latest_repo_version() {
   local channel="${1:-stable}"
   local out
 
-  # 1) Try GitHub Releases (exactly what we want)
+  # 1) Releases first
   if out="$(get_latest_release_tag_filtered "$channel")" && [[ "$out" != "unknown" ]]; then
     echo "$out"; return 0
   fi
 
-  # 2) Fall back to git tags (legacy behavior)
+  # 2) If you want to REQUIRE releases, bail out here
+  if [[ -n "$BBX_REQUIRE_RELEASE" ]]; then
+    echo "unknown - cannot find any releases"; return 1
+  fi
+
+  # 3) Otherwise, fall back to tags
   if out=$(timeout 7s git ls-remote --tags --refs "$REPO_URL" 2>/dev/null | get_latest_tag_filtered "$channel"); then
     echo "$out"; return 0
   fi
 
   echo "unknown"; return 1
 }
+
 
 # normalize a user-supplied version to a tag with 'v' prefix
 normalize_tag() {
@@ -1810,6 +1818,7 @@ is_lock_file_recent() {
   fi
 }
 
+# Prefer releases; roll back or forward to whatever /releases/latest says.
 check_and_prepare_update() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
@@ -1822,54 +1831,49 @@ check_and_prepare_update() {
   chmod 700 "$BB_CONFIG_DIR"
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
-  # ---------- Install a prepared update synchronously, before running the command ----------
-  if [ -f "$PREPARED_FILE" ] && [ -d "$BBX_NEW_DIR/BrowserBox" ]; then
-    local prepared_dir
-    prepared_dir=$(sed -n '2p' "$PREPARED_FILE")
-    if [ "$prepared_dir" = "$BBX_NEW_DIR" ]; then
-      local prepared_tag=""
-      # Prefer exact git tag recorded at prepare-time (line 3)
-      prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
-      # Back-compat: fall back to version.json if missing
-      if [ -z "$prepared_tag" ] || [ "$prepared_tag" = "unknown" ]; then
-        prepared_tag=$(get_version_info "$PREPARED_VERSION_FILE")
-      fi
-      if [ -n "$prepared_tag" ] && [ "$prepared_tag" != "unknown" ]; then
-        printf "${YELLOW}Detected prepared update (${prepared_tag}). Installing before '%s'...${NC}\n" "$1"
-        if check_prepare_and_install "$prepared_tag"; then
-          # Stage 2 finished; proceed to user's command.
-          return 0
-        fi
-      fi
-    fi
-  fi
-  # ----------------------------------------------------------------------------------------
-
-  # Normal background prep flow (only stage 1 happens in background)
-  local current_tag repo_tag
-  current_tag=$(get_version_info "$VERSION_FILE")
-  repo_tag=$(get_latest_repo_version stable)
-
-  if [ "$repo_tag" = "unknown" ]; then
-    printf "${YELLOW}Skipping update due to timeout or fetch failure.${NC}\n"
+  # Determine the live latest release BEFORE touching any prepared bits
+  local repo_tag
+  repo_tag="$(get_latest_repo_version stable)"
+  if [[ "$repo_tag" == "unknown" ]]; then
+    printf "${YELLOW}Skipping update: could not determine latest release.${NC}\n"
     return 0
   fi
 
+  # If a prepared build exists, only install it if it matches the live latest
+  if [ -f "$PREPARED_FILE" ] && [ -d "$BBX_NEW_DIR/BrowserBox" ]; then
+    local prepared_tag
+    prepared_tag="$(get_version_info "$PREPARED_VERSION_FILE")"
+    if [[ "$prepared_tag" == "$repo_tag" ]]; then
+      printf "${YELLOW}Prepared update (${prepared_tag}) matches latest. Installing...${NC}\n"
+      is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
+      if check_prepare_and_install "$repo_tag"; then
+        return 0
+      fi
+    else
+      printf "${YELLOW}Prepared update (${prepared_tag}) is stale vs latest (${repo_tag}); removing it.${NC}\n"
+      $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" "$PREPARING_FILE" 2>/dev/null
+    fi
+  fi
+
+  # Compare installed vs latest release (works for roll-forward or roll-back)
+  local current_tag
+  current_tag="$(get_version_info "$VERSION_FILE")"
   printf "${BLUE}Current: $current_tag${NC}\n"
   printf "${BLUE}Latest: $repo_tag${NC}\n"
 
-  if [ "$current_tag" = "$repo_tag" ]; then
-    printf "${GREEN}Already on the latest version ($repo_tag).${NC}\n"
+  if [[ "$current_tag" == "$repo_tag" ]]; then
+    printf "${GREEN}Already on the latest version (${repo_tag}).${NC}\n"
     [ -d "$BBX_NEW_DIR" ] && $SUDO rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
     return 0
   fi
 
-  if [ -n "$BBX_DEBUG" ]; then
-    printf "${GREEN}Background update starting...${NC}\n"
+  # Prepare target version in background; installation will run after prep
+  if [[ -n "$BBX_DEBUG" ]]; then
+    printf "${GREEN}Background update starting to ${repo_tag}...${NC}\n"
     update_background "$repo_tag"
   else
     update_background "$repo_tag" &
-    printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
+    printf "${GREEN}Background update started to ${repo_tag}. Check $LOG_FILE for progress.${NC}\n"
   fi
   return 0
 }
@@ -2365,7 +2369,7 @@ usage() {
     printf "  ${BLUE}${BOLD}automate*${NC}      Drive with script, MCP or REPL\n"
     printf "  ${GREEN}--version${NC}      Show version\n"
     printf "  ${GREEN}--help${NC}         Show this help\n"
-    printf "\n${BLUE}${BOLD}*Coming Soon${NC}\n\n"
+    printf "\n${BLUE}${BOLD}*coming soon${NC}\n\n"
 }
 
 check_agreement() {
