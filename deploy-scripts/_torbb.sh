@@ -337,6 +337,7 @@ configure_and_export_tor() {
   echo "Waiting for onion services to connect..." >&2
   wait_for_hostnames
 
+  read -p "HELLO?"
   echo "Creating HTTPS TLS certs for onion domains..." >&2
   setup_mkcert
   for i in {0..4}; do

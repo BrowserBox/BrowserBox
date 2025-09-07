@@ -76,6 +76,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugSecure: true,
   SPECIAL_CASE_FOR_META_KEY: false,
   debug9x: false,
   debug9xFrames: false,
@@ -476,6 +477,8 @@ if ( DEBUG.noSecurityHeaders ) {
 export const GO_SECURE = !(process.env.WIN9X_COMPATIBILITY_MODE || process.env.BBX_HTTP_ONLY) && fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
+
+DEBUG.debugSecure && console.log({GO_SECURE});
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
 export const EXTENSION_INSTALL_SCRIPT = 'add-extension';

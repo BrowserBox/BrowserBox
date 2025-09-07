@@ -157,7 +157,7 @@ const pageContextInjectionsScroll = `(function () {
         }
       });
     } catch(e) {
-      console.warn(`Error collecting users installed extensions`, e);
+      DEBUG.debugExtensions && console.warn(`Error collecting users installed extensions`, e);
     }
   }
 

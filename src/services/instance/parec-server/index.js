@@ -240,7 +240,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         scriptSrc: [
           "'self'", 
           "'unsafe-eval'",
-          ...(process.env.TORBB || process.env.HOST_PER_SERVICE ? [ // probably need unsafe-inline for the login/setup path in host per service mode
+          ...((process.env.TORBB || process.env.HOST_PER_SERVICE) ? [ // probably need unsafe-inline for the login/setup path in host per service mode
             "'unsafe-inline'"
           ] : []),
         ],

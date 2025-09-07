@@ -551,13 +551,20 @@ echo "Done!">&2
 
 echo -n "Creating test.env...">&2
 
-sslcerts="${HOME}/sslcerts"
-if [[ ! -d $sslcerts ]] || [[ ! -f "${sslcerts}/fullchain.pem" ]]; then
+sslcertpath="sslcerts";
+if [[ -n "$ONTOR" ]]; then
+  sslcertpath="tor-sslcerts";
+fi
+sslcerts="${HOME}/${sslcertpath}"
+if [[ ! -d "$sslcerts" ]] || [[ ! -f "${sslcerts}/fullchain.pem" ]]; then
   sslcerts="/usr/local/share/dosyago/sslcerts"
 fi
+
 cert_file="${sslcerts}/fullchain.pem"
 if [[ ! -f $cert_file ]]; then 
-  echo "Warning: SSL certificates are not installed in $HOME/sslcerts or /usr/local/share/dosyago/sslcerts. Things will not work." >&2
+  echo "========"
+  echo "WARNING: SSL certificates are not installed in $sslcerts or /usr/local/share/dosyago/sslcerts. Things will not work." >&2
+  echo "========"
 fi
 
 sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
