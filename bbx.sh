@@ -354,6 +354,7 @@ BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
 HOST_PER_SERVICE="${HOST_PER_SERVICE}"
+BBX_HTTP_ONLY="${BBX_HTTP_ONLY}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
@@ -732,6 +733,7 @@ setup() {
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
   local zeta_mode="${HOST_PER_SERVICE}"
+  local http_only="${BBX_HTTP_ONLY}"
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -766,6 +768,10 @@ setup() {
         zeta_mode="true"
         shift
         ;;
+      --http-only|-o)
+        http_only="true"
+        shift
+        ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
         printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
@@ -784,9 +790,14 @@ setup() {
   TOKEN="${token:-$(openssl rand -hex 16)}"
   BB_TOKEN="${TOKEN}"
   HOST_PER_SERVICE=""
+  BBX_HTTP_ONLY=""
   if [[ -n "$zeta_mode" ]]; then
     HOST_PER_SERVICE="true"
     echo "WARNING: You need to implement the addition of the Z-VAL (z=) parameter to the login URL"
+  fi
+
+  if [[ -n "$http_only" ]]; then
+    BBX_HTTP_ONLY="true"
   fi
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
@@ -813,7 +824,7 @@ setup() {
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  HOST_PER_SERVICE="${HOST_PER_SERVICE}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_HTTP_ONLY="${BBX_HTTP_ONLY}" HOST_PER_SERVICE="${HOST_PER_SERVICE}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
@@ -837,6 +848,7 @@ run() {
   fi
 
   local zeta_mode="${HOST_PER_SERVICE}"
+  local http_only="${BBX_HTTP_ONLY}"
 
   # Default values (should be set by setup, but fallback for safety)
   local port="${PORT}"
@@ -897,7 +909,7 @@ run() {
     fi
   fi
 
-  export HOST_PER_SERVICE;
+  export HOST_PER_SERVICE BBX_HTTP_ONLY;
   bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   local login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
