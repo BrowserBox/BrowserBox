@@ -1161,6 +1161,7 @@
               aif.addEventListener('load', () => {
                 DEBUG.debugAudio && console.log(`Iframe 'load' event. But this provides no information on whether Audio login is successful.`);
               });
+              console.log({audioLogin: src});
               aif.src = src;
               DEBUG.debugAudio && console.log(`Initial connect attempt started`);
             }
