@@ -11,6 +11,7 @@
 
 REDIRECT=">/dev/null"
 if [[ -n "$BBX_DEBUG" ]]; then
+  export BBX_DEBUG="${BBX_DEBUG}"
   set -x
   REDIRECT=""
 fi
