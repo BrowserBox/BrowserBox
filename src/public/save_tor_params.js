@@ -37,7 +37,12 @@ function saveTorParams() {
       const audioURI = `${location.protocol}//${z.x}/?token=${encodeURIComponent(token)}`;
       const activateOnly = audioURI + '&activateOnly=true';
       fetch(activateOnly, OPTS).catch(async err => {
-        const getAudio = confirm(`Would you like audio?\n\nIf yes, tap 'Confirm' or 'OK', and a window will open that will auto-set it up.\nLook out for a message that a 'popup was blocked'. If you see that message, click it to allow popups.` + CONFIG.isTor ? `\n\nAlso, when this popup loads you might see a security error because we use an extra-encryption (HTTPS) not widely available for Tor. You need to click through this if you want audio ("Advanced" and "Accept the Risk and Continue").\n\nActivate audio?` : '');
+        const getAudio = confirm(`Would you like audio?\n\nIf yes, tap 'Confirm' or 'OK', and a window will open that will auto-set it up.\nLook out for a message that a 'popup was blocked'. If you see that message, click it to allow popups.` + (
+          CONFIG.isTor ? 
+            `\n\nAlso, when this popup loads you might see a security error because we use an extra-encryption (HTTPS) not widely available for Tor. You need to click through this if you want audio ("Advanced" and "Accept the Risk and Continue").\n\nActivate audio?` 
+              : ''
+          )
+        );
         if ( getAudio ) {
           let ref;
           if ( ! ref ) {
