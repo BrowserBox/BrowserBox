@@ -11,6 +11,7 @@
 
 REDIRECT=">/dev/null"
 if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
   REDIRECT=""
 fi
 
