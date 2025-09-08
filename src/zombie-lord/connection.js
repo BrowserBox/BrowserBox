@@ -693,7 +693,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   });
 
-  on("Target.attachedToTarget", async ({sessionId,targetInfo,waitingForDebugger}) => {
+  on("Target.attachedToTarget", doAttachedToTarget);
+
+  async function doAttachedToTarget({sessionId,targetInfo,waitingForDebugger}) {
     try {
       const {targetId,url} = targetInfo;
       DEBUG.debugSetupTab && console.log(`Attached now to target ${targetId}`);
@@ -755,7 +757,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     } catch(err) {
       console.error(`Big error during attach`, err);
     }
-  });
+  }
 
   on("Target.detachedFromTarget", ({sessionId}) => {
     console.log("Detached", sessionId);

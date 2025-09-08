@@ -211,7 +211,7 @@ export const DEBUG = Object.freeze({
   debugFaviconsSend: false,
   debugFavicon: false,
   neverWait: true, /* for commands */
-  attachImmediately: true,
+  attachImmediately: false,
   manuallyInjectIntoEveryCreatedContext: false,
   ignoreCertificateErrors: false,
   debugNavigator: false,
