@@ -27,6 +27,51 @@ BrowserBox delivers cutting-edge remote browser isolation (RBI) technology, prot
 
 Unlock advanced security, ensure compliance, and boost productivity today!
 
+```ansi
+
+   ███████████                                                                ███████████
+  ░░███░░░░░███                                                              ░░███░░░░░███
+   ░███    ░███ ████████   ██████  █████ ███ █████  █████   ██████  ████████  ░███    ░███  ██████  █████ █████
+   ░██████████ ░░███░░███ ███░░███░░███ ░███░░███  ███░░   ███░░███░░███░░███ ░██████████  ███░░███░░███ ░░███
+   ░███░░░░░███ ░███ ░░░ ░███ ░███ ░███ ░███ ░███ ░░█████ ░███████  ░███ ░░░  ░███░░░░░███░███ ░███ ░░░█████░
+   ░███    ░███ ░███     ░███ ░███ ░░███████████   ░░░░███░███░░░   ░███      ░███    ░███░███ ░███  ███░░░███
+   ███████████  █████    ░░██████   ░░████░████    ██████ ░░██████  █████     ███████████ ░░██████  █████ █████
+  ░░░░░░░░░░░  ░░░░░      ░░░░░░     ░░░░ ░░░░    ░░░░░░   ░░░░░░  ░░░░░     ░░░░░░░░░░░   ░░░░░░  ░░░░░ ░░░░░
+
+
+				 Welcome to the bbx CLI tool for BrowserBox!
+
+Usage:
+		 bbx <command> [options]
+
+Commands:
+
+  install        Install BrowserBox + bbx CLI
+  uninstall      Remove everything
+  activate       Purchase a license			bbx activate [number of people]
+  setup          Configure options 			bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]
+
+  		   setup options:
+         	         --zeta, -z       Expose each service as a unique hostname. Useful for nginx,
+         	                          ngrok, similar layers, or standard HTTP/S ports. Expects hosts.env
+  certify        Check your license
+  run            Run BrowserBox 			bbx run [--port|-p <port>] [--hostname|-h <hostname>]
+  stop           Stop BrowserBox (current user)
+  run-as         Run as a specific user 		bbx run-as [--temporary] [username] [port]
+  stop-user      Stop BrowserBox for a specific user 	bbx stop-user <username> [delay_seconds]
+  logs           Show BrowserBox logs
+  update         Update BrowserBox       		bbx update [<version>|--latest-rc]
+  status         Check BrowserBox status
+  tor-run        Run BrowserBox on Tor      		bbx tor-run [--no-darkweb] [--no-onion]
+  docker-run     Run BrowserBox using Docker 		bbx docker-run [nickname] [--port|-p <port>]
+  docker-stop    Stop a Dockerized BrowserBox 		bbx docker-stop <nickname>
+  automate*      Drive with script, MCP or REPL
+  --version      Show version
+  --help         Show this help
+
+*coming soon
+```
+
 ---
 
 ## Table of Contents
@@ -212,7 +257,7 @@ Access BrowserBox using the **Login Link** provided in your console. For public 
 
 ## Meet `bbx`: Your BrowserBox Command Center
 
-<a href="#meet-bbx-your-browserbox-command-center"><img width="1204" alt="Get our New bbx tool" src="https://github.com/user-attachments/assets/4d549f18-1fbb-463d-bf6a-4b2ce121dea2" /></a>
+<a href="#meet-bbx-your-browserbox-command-center"><img width="1204" alt="BrowserBox v13 CLI - bbx" title="bbx" src="readme-files/v13-cli-screenshot.png" /></a>
 
 The `bbx` CLI simplifies every aspect of BrowserBox management:
 
