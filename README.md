@@ -353,16 +353,10 @@ Visit us at [dosaygo.com](https://dosaygo.com).
 
 ---
 
-## Sponsors
-
-We are grateful for the support of our sponsors. If you're interested in sponsoring BrowserBox development, please contact [sales@dosaygo.com](mailto:sales@dosaygo.com).
-
----
-
 ## Copyright & Licensing
 
 BrowserBox™ is &copy; 2018-2025 DOSAYGO Corporation USA. All rights reserved.
-The `bbx` CLI tool and other specified components are open source under the [LICENSE.md](LICENSE.md) in this repository. The core BrowserBox server product requires a commercial license.
+The `bbx` CLI tool and other specified components are under the [LICENSE.md](LICENSE.md) in this repository. You need a license agreement to use this product. Purchase licenses online at: https://dosaygo.com/commerce or reach out to sales@dosaygo.com to discuss your needs. The BrowserBox product requires a validly purchased license (either commercial for business and personal use, or non-commercial for public sector and non-profit). Your license comes with one or more license keys and a number of seats. 
 
 ---
 
