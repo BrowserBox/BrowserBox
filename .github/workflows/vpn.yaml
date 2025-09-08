@@ -620,6 +620,24 @@ jobs:
             sleep 10
           done
 
+      - name: Upload integrity debug bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrity-debug
+          path: /tmp/int_debug.txt
+          if-no-files-found: ignore
+
+      - name: Upload localhost.run logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: localhostrun-logs
+          path: |
+            ~/localhostrun.jsonl
+            ~/localhostrun.err
+          if-no-files-found: ignore
+
       - name: Status → Closed
         if: always() && github.event_name != 'push'
         uses: actions/github-script@v7
@@ -646,4 +664,74 @@ jobs:
           pkill -f 'ssh -f -N .*localhost\.run' || true
           pkill -f 'ssh .*localhost\.run' || true
           pkill -f 'ssh .*@.*' || true
+
+  # -------------------------------------------------
+  # Debug job: opens a tmate shell if run_bbx fails
+  # -------------------------------------------------
+  debug_tmate:
+    needs: [run_bbx]
+    if: failure()
+    runs-on: ubuntu-latest
+    # Give the session a hard cap (includes setup/teardown buffer)
+    timeout-minutes: 7
+
+    steps:
+      - name: Comment tmate instructions (issue runs)
+        if: ${{ github.event_name == 'issues' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const header = "### BrowserBox Status";
+            const note = [
+              "⚠️ **Debug session starting (tmate)**",
+              "",
+              "- Open this run’s logs and expand **Setup tmate session** to see the SSH & Web URLs.",
+              "- Only the actor has access (locked to you).",
+              "- Session will auto-close shortly."
+            ].join("\n");
+            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
+            const mine = comments.find(c => c.user.type === "Bot" && (c.body||"").includes(header));
+            if (mine) {
+              const base = (mine.body || "").split("\n**Stages:**")[0];
+              const body = `${base}
+            **Stages:** (updated automatically)
+            - ❌ Failure detected
+            - 🧩 Opening tmate debug…
+
+            ${note}
+            `;
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body: note });
+            }
+
+      - name: Setup tmate session (actor-only)
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+        # The step blocks until timeout or you exit the session.
+        timeout-minutes: 6
+
+      - name: Close-out comment (issue runs)
+        if: ${{ always() && github.event_name == 'issues' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const header = "### BrowserBox Status";
+            const note = "🔒 tmate session closed.";
+            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number, per_page: 100 });
+            const mine = comments.find(c => c.user.type === "Bot" && (c.body||"").includes(header));
+            if (mine) {
+              const base = (mine.body || "").split("\n**Stages:**")[0];
+              const body = `${base}
+            **Stages:** (updated automatically)
+            - ❌ Failure detected
+            - 🧩 tmate debug (closed)
+            `;
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number, body: note });
+            }
 
