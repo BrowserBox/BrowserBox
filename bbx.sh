@@ -2378,10 +2378,10 @@ usage() {
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox on Tor      \t\t${BOLD}bbx tor-run [--no-darkweb] [--no-onion]${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
     printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
-    printf "  ${BLUE}${BOLD}automate*${NC}      Drive with script, MCP or REPL\n"
+    printf "  ${BLUE}${BOLD}automate${NC}      *Drive with script, MCP or REPL\n"
     printf "  ${GREEN}--version${NC}      Show version\n"
     printf "  ${GREEN}--help${NC}         Show this help\n"
-    printf "\n${BLUE}${BOLD}*coming soon${NC}\n\n"
+    printf "\n${BLUE}${BOLD}*automate coming soon${NC}\n\n"
 }
 
 check_agreement() {
