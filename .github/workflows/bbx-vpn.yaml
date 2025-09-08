@@ -584,24 +584,42 @@ jobs:
           LOCAL_HTTP_FULL: ${{ env.LOCAL_HTTP_FULL }}
         run: |
           set +e
+
+          # helper: add SOCKS only for .onion hosts
+          tor_flag_for() { # url -> echo curl args or nothing
+            u="$1"
+            host="$(printf '%s' "$u" | sed -E 's|^https?://([^/]+).*|\1|')"
+            case "$host" in
+              *.onion) echo "--socks5-hostname 127.0.0.1:9050" ;;
+              *)       echo "" ;;
+            esac
+          }
+
           echo "Probing LOCAL login link (HTTP): ${LOCAL_HTTP_FULL}"
-          for i in $(seq 1 12); do
-            code=$(curl -i -L -sS -o /tmp/probe_local.$$ -w '%{http_code}' "${LOCAL_HTTP_FULL}")
-            echo "LOCAL attempt $i — HTTP $code"
-            head -n 200 /tmp/probe_local.$$; echo
-            [[ "$code" != "000" ]] && break
-            sleep 2
-          done
+          code=$(curl -i -L -sS -o /tmp/probe_local.$$ -w '%{http_code}' "${LOCAL_HTTP_FULL}")
+          echo "LOCAL attempt — HTTP $code"
+          head -n 200 /tmp/probe_local.$$; echo
           rm -f /tmp/probe_local.$$
-          echo "Probing EDGE login link (HTTPS via localhost.run): ${ACCESS_FULL}"
-          for i in $(seq 1 20); do
-            code=$(curl -i -L -sS -o /tmp/probe_edge.$$ -w '%{http_code}' "${ACCESS_FULL}")
-            echo "EDGE attempt $i — HTTP $code"
-            head -n 200 /tmp/probe_edge.$$; echo
-            [[ "$code" != "000" ]] && break
-            sleep 2
-          done
+
+          echo "Probing EDGE/REMOTE login link: ${ACCESS_FULL}"
+          CURL_SOCKS="$(tor_flag_for "${ACCESS_FULL}")"
+          code=$(curl ${CURL_SOCKS} -i -L -sS -o /tmp/probe_edge.$$ -w '%{http_code}' "${ACCESS_FULL}")
+          echo "EDGE/REMOTE attempt — HTTP $code"
+          head -n 200 /tmp/probe_edge.$$; echo
           rm -f /tmp/probe_edge.$$
+
+          # Try /integrity via the same path (uses Tor if .onion)
+          origin="$(printf '%s' "${ACCESS_FULL}" | sed -E 's|(https?://[^/]+).*|\1|')"
+          integ_url="${origin}/integrity"
+          if [[ -n "${SESSION_TOKEN:-}" ]]; then
+            integ_url="${integ_url}?session_token=${SESSION_TOKEN}"
+          fi
+          echo "Probing REMOTE integrity: ${integ_url}"
+          CURL_SOCKS_INTEG="$(tor_flag_for "${integ_url}")"
+          code=$(curl ${CURL_SOCKS_INTEG} -i -L -sS -o /tmp/probe_edge_int.$$ -w '%{http_code}' "${integ_url}")
+          echo "REMOTE integrity attempt — HTTP $code"
+          head -n 200 /tmp/probe_edge_int.$$; echo
+          rm -f /tmp/probe_edge_int.$$
 
       - name: Verify integrity (debug; 5m hold on failure)
         if: ${{ success() }}
@@ -611,7 +629,19 @@ jobs:
           SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
         run: |
           set +euo pipefail
+
           normalize(){ sed -e 's/[\r\n]*$//'; }
+
+          # Add SOCKS only when URL host ends with .onion
+          tor_flag_for() { # url -> echoes curl SOCKS args if onion, else nothing
+            u="$1"
+            host="$(printf '%s' "$u" | sed -E 's|^https?://([^/]+).*|\1|')"
+            case "$host" in
+              *.onion) echo "--socks5-hostname 127.0.0.1:9050" ;;
+              *)       echo "" ;;
+            esac
+          }
+
           WANT="$HOME/BBPRO.INTEGRITY"; [[ -s "$WANT" ]] || WANT="$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
           want="$(cat "$WANT" 2>/dev/null || true)"; want_norm="$(printf %s "$want" | normalize)"
           {
@@ -624,10 +654,12 @@ jobs:
             echo "Integrity file (cat): ${want}"
             echo "want_len=$(printf %s "$want" | wc -c)"
           } | tee /tmp/int_debug.txt
+
           req(){ # label url
             label="$1"; url="$2"
             printf "\n--- %s ---\nURL: %s\n" "$label" "$url" | tee -a /tmp/int_debug.txt
-            code=$(curl -sSL -D /tmp/h.$$ -o /tmp/b.$$ -w '%{http_code}' "$url" || true)
+            CURL_SOCKS="$(tor_flag_for "$url")"
+            code=$(curl ${CURL_SOCKS} -sSL -D /tmp/h.$$ -o /tmp/b.$$ -w '%{http_code}' "$url" || true)
             clen=$(wc -c < /tmp/b.$$ | tr -d ' ')
             head -c 200 /tmp/b.$$ | sed '1s/^/Body head (200 bytes): /' | tee -a /tmp/int_debug.txt
             echo -e "\nHTTP $code, body_len=$clen" | tee -a /tmp/int_debug.txt
@@ -637,11 +669,16 @@ jobs:
             rm -f /tmp/h.$$ /tmp/b.$$
             return $rc
           }
+
           ok=0
           req "local /integrity?session_token=…" "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" && ok=1
-          if [[ $ok -eq 0 && -n "${SSH_URL:-}" ]]; then
-            req "edge /integrity?session_token=…" "${SSH_URL}/integrity?session_token=${SESSION_TOKEN}" && ok=1
+
+          # Try remote: prefer SSH_URL (if present), otherwise ACCESS_FULL from earlier steps
+          remote_base="${SSH_URL:-${ACCESS_FULL:-}}"
+          if [[ $ok -eq 0 && -n "${remote_base}" ]]; then
+            req "remote /integrity?session_token=…" "${remote_base}/integrity?session_token=${SESSION_TOKEN}" && ok=1
           fi
+
           if [[ $ok -eq 1 ]]; then
             echo "Integrity verified successfully."
             exit 0
