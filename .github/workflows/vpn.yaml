@@ -623,7 +623,10 @@ jobs:
         run: |
           set +e
 
-          has_socks(){ ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'; }
+          has_socks(){
+            command -v ss >/dev/null 2>&1 || return 1
+            ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'
+          }
           tor_flag(){ has_socks && echo "--socks5-hostname 127.0.0.1:9050"; }
 
           if ! has_socks; then
@@ -631,15 +634,19 @@ jobs:
             exit 0
           fi
 
-          # retry helpers
+          # retry helpers (pure bash/awk)
           MAX_ATTEMPTS=6
           BASE_SLEEP=2
-          jitter(){ python3 - <<'PY' 2>/dev/null || awk 'BEGIN{srand();printf("%.2f\n", rand())}'; import random; print(f"{random.random():.2f}") ; PY; }
-          backoff_sleep(){ n="$1"; j="$(jitter)"; secs="$(python3 - <<PY 2>/dev/null || echo $(( BASE_SLEEP * (2**(n-1)) )) )"
-          import math, os
-          b=int(os.environ.get("BASE_SLEEP","2")); n=int(os.environ.get("N","1")); print(b*(2**(n-1)))
-          PY
-          "; N="$n" BASE_SLEEP="$BASE_SLEEP"; printf "Backoff: %ss (+ jitter)\n" "$secs"; sleep "$(printf "%s" "$secs")"; sleep "$(printf "%s" "$(jitter)")"; }
+          jitter(){ awk 'BEGIN{srand(); printf("%.2f\n", rand())}'; }  # 0.00–1.00 seconds
+          backoff_sleep(){
+            n="$1"
+            # 2,4,8,12,16,20 (+ jitter)
+            secs=$(( BASE_SLEEP * (1 << (n-1)) ))
+            jit="$(jitter)"
+            echo "Backoff: ${secs}s + ${jit}s"
+            sleep "$secs"
+            sleep "$jit"
+          }
 
           try_curl(){
             url="$1"
@@ -650,7 +657,7 @@ jobs:
               head -n 200 /tmp/probe.$$ || true
               echo "HTTP ${code}"
               rm -f /tmp/probe.$$
-              # consider any non-000 as a "probe succeeded" (we just want reachability here)
+              # any non-000 means we reached *something* (good enough for probe)
               if [[ "$code" != "000" ]]; then
                 return 0
               fi
@@ -676,7 +683,10 @@ jobs:
         run: |
           set +euo pipefail
 
-          has_socks(){ ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'; }
+          has_socks(){
+            command -v ss >/dev/null 2>&1 || return 1
+            ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'
+          }
           tor_flag(){ has_socks && echo "--socks5-hostname 127.0.0.1:9050"; }
 
           normalize(){ sed -e 's/[[:space:]]*$//'; }
@@ -685,9 +695,7 @@ jobs:
 
           : > /tmp/int_debug.txt
           WANT="$HOME/BBPRO.INTEGRITY"; [[ -s "$WANT" ]] || WANT="$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
-          want="$(cat "$WANT" 2>/dev/null || true)"
-          want_norm="$(printf %s "$want" | normalize)"
-          want_sha="$(sha "$want_norm")"
+          want="$(cat "$WANT" 2>/dev/null || true)"; want_norm="$(printf %s "$want" | normalize)"; want_sha="$(sha "$want_norm")"
 
           origin="$(printf '%s' "${TOR_URL}" | sed -E 's|(https?://[^/]+).*|\1|')"
           url="$(mkurl "${origin}/integrity" "${SESSION_TOKEN}")"
@@ -700,7 +708,7 @@ jobs:
 
           if ! has_socks; then
             echo "No local Tor SOCKS at 127.0.0.1:9050; skipping Tor HTTP verify from runner." | tee -a /tmp/int_debug.txt
-            # Not a hard failure; your .onion will be usable by Tor clients.
+            # Not a hard failure; .onion is for Tor clients.
             exit 0
           fi
 
@@ -713,17 +721,14 @@ jobs:
             echo "verify attempt ${attempt}/${MAX_ATTEMPTS}" | tee -a /tmp/int_debug.txt
             code=$(curl $(tor_flag) -sSL -o /tmp/got.$$ -w '%{http_code}' "$url" || true)
             got="$(cat /tmp/got.$$ 2>/dev/null || true)"; rm -f /tmp/got.$$
-            got_norm="$(printf %s "$got" | normalize)"
-            got_sha="$(sha "$got_norm")"
+            got_norm="$(printf %s "$got" | normalize)"; got_sha="$(sha "$got_norm")"
             echo "HTTP $code GOT sha256=${got_sha} head=$(printf %s "$got" | head -c 80)" | tee -a /tmp/int_debug.txt
             if [[ "$code" == "200" && "$got_sha" == "$want_sha" ]]; then ok=1; break; fi
-            # backoff with jitter
-            # 2,4,8,12,16,20 (+~0-1s jitter)
-            sleep_secs=$(( BASE_SLEEP * (2**(attempt-1)) ))
-            python3 - <<PY 2>/dev/null || true
-          import random, time
-          time.sleep(${sleep_secs} + random.random())
-          PY
+            # backoff with jitter (2,4,8,12,16,20 + ~0-1s)
+            secs=$(( BASE_SLEEP * (1 << (attempt-1)) ))
+            jit="$(awk 'BEGIN{srand(); printf("%.2f\n", rand())}')"
+            echo "Backoff: ${secs}s + ${jit}s" | tee -a /tmp/int_debug.txt
+            sleep "$secs"; sleep "$jit"
           done
 
           if [[ $ok -eq 1 ]]; then
