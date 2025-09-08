@@ -91,7 +91,7 @@
     "bang.html": "latest",
     "binary-bliss": "latest",
     "body-parser": "latest",
-    "compression": "^1.7.4",
+    "compression": "latest",
     "cookie-parser": "latest",
     "cors": "latest",
     "entities": "latest",
@@ -108,14 +108,14 @@
     "socks-proxy-agent": "latest",
     "spdy": "latest",
     "sshpk": "^1.18.0",
-    "terminal-kit": "^3.1.2",
+    "terminal-kit": "latest",
     "tonegenerator": "^0.3.3",
     "ws": "latest",
     "yargs": "latest"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",
-    "@mapbox/node-pre-gyp": "latest",
+    "@mapbox/node-pre-gyp": "^1.0.1",
     "@types/body-parser": "latest",
     "@types/cookie-parser": "latest",
     "@types/current-git-branch": "latest",
@@ -125,7 +125,7 @@
     "@types/terminal-kit": "^2.5.7",
     "@types/ws": "latest",
     "@vertx/core": "latest",
-    "eslint": "^9.25.1",
+    "eslint": "^9.35.0",
     "globals": "^16.0.0",
     "whatwg-fetch": "^3.6.20"
   }
