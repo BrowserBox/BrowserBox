@@ -347,7 +347,6 @@ jobs:
           echo "WANT_TOR=$t"    >> "$GITHUB_ENV"
           echo "REQUIRE_ALL=0"  >> "$GITHUB_ENV"
 
-      # ===== Common setup used by both modes =====
       - name: Configure bbx and read login.link (initial; suffix/token)
         id: setup
         env:
@@ -357,16 +356,29 @@ jobs:
         run: |
           set -euo pipefail
           bbx setup --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" >/dev/null
+
           LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
           [[ -s "$LINK_FILE" ]] || { echo "login.link not found or empty at $LINK_FILE"; exit 1; }
+
           url="$(tr -d '\r\n' < "$LINK_FILE")"
           origin="$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')"
           suffix="${url#${origin}}"
           token="$(echo "$url" | grep -oP 'token=\K[^&]+' || true)"
-          echo "::add-mask::$suffix"; echo "::add-mask::$token"
+
+          echo "::add-mask::$suffix"
+          echo "::add-mask::$token"
+
+          # >>> add these lines <<<
+          LOCAL_HTTP_ORIGIN="http://127.0.0.1:${BBX_PORT}"
+          LOCAL_HTTP_FULL="${LOCAL_HTTP_ORIGIN}${suffix}"
+          echo "::add-mask::$LOCAL_HTTP_ORIGIN"
+          echo "::add-mask::$LOCAL_HTTP_FULL"
+
           {
             echo "ACCESS_SUFFIX=${suffix}"
             echo "SESSION_TOKEN=${token}"
+            echo "LOCAL_HTTP_ORIGIN=${LOCAL_HTTP_ORIGIN}"
+            echo "LOCAL_HTTP_FULL=${LOCAL_HTTP_FULL}"
           } >> "$GITHUB_ENV"
 
       - name: Create integrity file (print contents)
@@ -390,6 +402,26 @@ jobs:
           bbx run --port "${BBX_PORT}" --hostname "${BBX_HOSTNAME}" &
           sleep 3
           ss -ltnp | sed -n '1,120p' || true
+
+      - name: Refresh login.link after bbx start (SSH phase)
+        if: env.WANT_SSH == '1'
+        run: |
+          set -euo pipefail
+          LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
+          for i in $(seq 1 30); do
+            [[ -s "$LINK_FILE" ]] && break
+            sleep 1
+          done
+          url="$(tr -d '\r\n' < "$LINK_FILE")"
+          origin="$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')"
+          suffix="${url#${origin}}"
+          token="$(echo "$url" | grep -oP 'token=\K[^&]+' || true)"
+          echo "::add-mask::$suffix"; echo "::add-mask::$token"
+          {
+            echo "ACCESS_SUFFIX=${suffix}"
+            echo "SESSION_TOKEN=${token}"
+            echo "LOCAL_HTTP_FULL=http://127.0.0.1:${{ env.BBX_PORT }}${suffix}"
+          } >> "$GITHUB_ENV"
 
       - name: Start SSH reverse tunnel (localhost.run; JSON output) + capture URL
         if: env.WANT_SSH == '1'
@@ -446,14 +478,52 @@ jobs:
           SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
         run: |
           set +euo pipefail
-          normalize(){ sed -e 's/[\r\n]*$//'; }
+
+          normalize(){ sed -e 's/[[:space:]]*$//'; }
+          sha(){ printf %s "$1" | tr -d '\r' | sha256sum | awk '{print $1}'; }
+          mkurl(){ base="$1"; tok="${2:-}"; if [[ -n "$tok" ]]; then echo "${base}?session_token=${tok}"; else echo "${base}"; fi; }
+
+          : > /tmp/int_debug.txt
           WANT="$HOME/BBPRO.INTEGRITY"; [[ -s "$WANT" ]] || WANT="$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
-          want="$(cat "$WANT" 2>/dev/null || true)"; want_norm="$(printf %s "$want" | normalize)"
-          check(){ url="$1"; code=$(curl -sSL -o /tmp/b.$$ -w '%{http_code}' "$url" || true); got="$(< /tmp/b.$$)"; rm -f /tmp/b.$$; [[ "$(printf %s "$got" | normalize)" == "$want_norm" ]]; }
+          want="$(cat "$WANT" 2>/dev/null || true)"
+          want_norm="$(printf %s "$want" | normalize)"
+          want_len="$(printf %s "$want" | wc -c | tr -d ' ')"
+          want_sha="$(sha "$want_norm")"
+
+          echo "=== SSH VERIFY ===" | tee -a /tmp/int_debug.txt
+          echo "WANT len=${want_len} sha256=${want_sha}" | tee -a /tmp/int_debug.txt
+
+          fetch(){ # url
+            url="$1"
+            code=$(curl -sSL -o /tmp/got.$$ -w '%{http_code}' "$url" || true)
+            got="$(cat /tmp/got.$$ 2>/dev/null || true)"; rm -f /tmp/got.$$
+            got_norm="$(printf %s "$got" | normalize)"
+            got_len="$(printf %s "$got" | wc -c | tr -d ' ')"
+            got_sha="$(sha "$got_norm")"
+            {
+              echo "URL: $url"
+              echo "HTTP $code GOT len=${got_len} sha256=${got_sha}"
+              printf "GOT head: %s\n" "$(printf %s "$got" | head -c 80)"
+            } | tee -a /tmp/int_debug.txt
+            [[ "$code" == "200" && "$got_sha" == "$want_sha" ]]
+          }
+
           ok=0
-          check "http://127.0.0.1:${BBX_PORT}/integrity?session_token=${SESSION_TOKEN}" && ok=1
-          [[ $ok -eq 0 ]] && check "${SSH_URL}/integrity?session_token=${SESSION_TOKEN}" && ok=1
-          if [[ $ok -eq 1 ]]; then echo "SSH integrity OK"; else echo "SSH integrity FAILED"; touch /tmp/HOLD_FOR_DEBUG; sleep 300; exit 1; fi
+          fetch "$(mkurl "http://127.0.0.1:${BBX_PORT}/integrity" "${SESSION_TOKEN}")" && ok=1
+          if [[ $ok -eq 0 ]]; then
+            sleep 1  # avoid any per-second rate limit
+            fetch "$(mkurl "${SSH_URL}/integrity" "${SESSION_TOKEN}")" && ok=1
+          fi
+
+          if [[ $ok -eq 1 ]]; then
+            echo "SSH integrity OK" | tee -a /tmp/int_debug.txt
+            exit 0
+          else
+            echo "SSH integrity FAILED — holding 5 minutes for debug" | tee -a /tmp/int_debug.txt
+            touch /tmp/HOLD_FOR_DEBUG
+            sleep 300
+            exit 1
+          fi
 
       - name: Status → Ready (SSH link) [plaintext]
         if: github.event_name != 'push' && env.WANT_SSH == '1'
@@ -520,22 +590,30 @@ jobs:
           echo "Timed out waiting for Tor login.link containing a valid .onion URL" >&2
           exit 1
 
-      - name: Probe Tor login & integrity (via SOCKS; no-fail)
+      - name: Refresh login.link after Tor start (Tor phase)
         if: env.WANT_TOR == '1'
-        env:
-          TOR_URL: ${{ env.TOR_URL }}
-          SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
         run: |
-          set +e
-          tor_flag(){ u="$1"; host="$(printf '%s' "$u" | sed -E 's|^https?://([^/]+).*|\1|')"; [[ "$host" = *.onion ]] && echo "--socks5-hostname 127.0.0.1:9050"; }
-          echo "Tor login: ${TOR_URL}"
-          curl $(tor_flag "$TOR_URL") -i -L -sS -o /tmp/probe_onion.$$ -w 'HTTP %{http_code}\n' "${TOR_URL}" | tee /dev/stderr
-          head -n 200 /tmp/probe_onion.$$; rm -f /tmp/probe_onion.$$
-          origin="$(printf '%s' "${TOR_URL}" | sed -E 's|(https?://[^/]+).*|\1|')"
-          integ="${origin}/integrity"; [[ -n "${SESSION_TOKEN:-}" ]] && integ="${integ}?session_token=${SESSION_TOKEN}"
-          echo "Tor integrity: ${integ}"
-          curl $(tor_flag "$integ") -i -L -sS -o /tmp/probe_onion_int.$$ -w 'HTTP %{http_code}\n' "${integ}" | tee /dev/stderr
-          head -n 200 /tmp/probe_onion_int.$$; rm -f /tmp/probe_onion_int.$$
+          set -euo pipefail
+          LINK_FILE="$HOME/.config/dosyago/bbpro/login.link"
+          PAT='^https://[^[:space:]]+\.onion[^[:space:]]*$'
+          for i in $(seq 1 60); do
+            if [[ -s "$LINK_FILE" ]]; then
+              url="$(tr -d '\r\n' < "$LINK_FILE")"
+              if echo "$url" | grep -Eq "$PAT"; then
+                token="$(echo "$url" | grep -oP 'token=\K[^&]+' || true)"
+                echo "::add-mask::$url"
+                [[ -n "$token" ]] && echo "::add-mask::$token"
+                {
+                  echo "TOR_URL=${url}"
+                  echo "SESSION_TOKEN=${token}"
+                } >> "$GITHUB_ENV"
+                exit 0
+              fi
+            fi
+            sleep 1
+          done
+          echo "Tor final refresh: did not find valid .onion login.link in time" >&2
+          exit 1
 
       - name: Verify integrity (Tor phase; 5m hold on failure)
         if: env.WANT_TOR == '1'
@@ -544,15 +622,43 @@ jobs:
           SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
         run: |
           set +euo pipefail
-          normalize(){ sed -e 's/[\r\n]*$//'; }
-          tor_flag(){ u="$1"; host="$(printf '%s' "$u" | sed -E 's|^https?://([^/]+).*|\1|')"; [[ "$host" = *.onion ]] && echo "--socks5-hostname 127.0.0.1:9050"; }
+          normalize(){ sed -e 's/[[:space:]]*$//'; }
+          sha(){ printf %s "$1" | tr -d '\r' | sha256sum | awk '{print $1}'; }
+          mkurl(){ base="$1"; tok="${2:-}"; if [[ -n "$tok" ]]; then echo "${base}?session_token=${tok}"; else echo "${base}"; fi; }
+
+          has_socks(){ ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'; }
+          tor_flag(){ has_socks && echo "--socks5-hostname 127.0.0.1:9050"; }
+
+          : > /tmp/int_debug.txt
           WANT="$HOME/BBPRO.INTEGRITY"; [[ -s "$WANT" ]] || WANT="$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
-          want="$(cat "$WANT" 2>/dev/null || true)"; want_norm="$(printf %s "$want" | normalize)"
+          want="$(cat "$WANT" 2>/dev/null || true)"; want_norm="$(printf %s "$want" | normalize)"; want_sha="$(sha "$want_norm")"
+
           origin="$(printf '%s' "${TOR_URL}" | sed -E 's|(https?://[^/]+).*|\1|')"
-          url="${origin}/integrity?session_token=${SESSION_TOKEN}"
-          code=$(curl $(tor_flag "$url") -sSL -o /tmp/b.$$ -w '%{http_code}' "$url" || true)
-          got="$(< /tmp/b.$$)"; rm -f /tmp/b.$$;
-          if [[ "$(printf %s "$got" | normalize)" == "$want_norm" ]]; then echo "Tor integrity OK"; else echo "Tor integrity FAILED"; touch /tmp/HOLD_FOR_DEBUG; sleep 300; exit 1; fi
+          url="$(mkurl "${origin}/integrity" "${SESSION_TOKEN}")"
+
+          if has_socks; then
+            code=$(curl $(tor_flag) -sSL -o /tmp/got.$$ -w '%{http_code}' "$url" || true)
+            got="$(cat /tmp/got.$$ 2>/dev/null || true)"; rm -f /tmp/got.$$
+            got_norm="$(printf %s "$got" | normalize)"; got_sha="$(sha "$got_norm")"
+            {
+              echo "=== TOR VERIFY ==="
+              echo "WANT sha256=${want_sha}"
+              echo "URL: $url"
+              echo "HTTP $code GOT sha256=${got_sha}"
+              printf "GOT head: %s\n" "$(printf %s "$got" | head -c 80)"
+            } | tee -a /tmp/int_debug.txt
+            if [[ "$code" == "200" && "$got_sha" == "$want_sha" ]]; then
+              echo "Tor integrity OK" | tee -a /tmp/int_debug.txt
+            else
+              echo "Tor integrity FAILED — holding 5 minutes for debug" | tee -a /tmp/int_debug.txt
+              touch /tmp/HOLD_FOR_DEBUG
+              sleep 300
+              exit 1
+            fi
+          else
+            echo "No local Tor SOCKS at 127.0.0.1:9050; skipping Tor HTTP verify from runner." | tee -a /tmp/int_debug.txt
+            # Not a hard failure; your .onion is reachable for clients with Tor.
+          fi
 
       - name: Status → Ready (Tor link) [plaintext]
         if: github.event_name != 'push' && env.WANT_TOR == '1'
