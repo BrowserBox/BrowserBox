@@ -133,7 +133,7 @@
     });
     
     const ConstrainedRateLimiter = rateLimit({ windowMs: 10000,
-      max: 1,
+      max: 3,
       message: `
         Too many requests from this IP. Please try again in a little while.
       `

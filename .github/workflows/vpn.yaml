@@ -511,7 +511,7 @@ jobs:
           ok=0
           fetch "$(mkurl "http://127.0.0.1:${BBX_PORT}/integrity" "${SESSION_TOKEN}")" && ok=1
           if [[ $ok -eq 0 ]]; then
-            sleep 1  # avoid any per-second rate limit
+            sleep 4  # avoid any per-second rate limit
             fetch "$(mkurl "${SSH_URL}/integrity" "${SESSION_TOKEN}")" && ok=1
           fi
 
@@ -615,49 +615,125 @@ jobs:
           echo "Tor final refresh: did not find valid .onion login.link in time" >&2
           exit 1
 
-      - name: Verify integrity (Tor phase; 5m hold on failure)
+      - name: Probe Tor login & integrity (via SOCKS; retry, no-fail)
+        if: env.WANT_TOR == '1'
+        env:
+          TOR_URL: ${{ env.TOR_URL }}
+          SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
+        run: |
+          set +e
+
+          has_socks(){ ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'; }
+          tor_flag(){ has_socks && echo "--socks5-hostname 127.0.0.1:9050"; }
+
+          if ! has_socks; then
+            echo "No local Tor SOCKS (127.0.0.1:9050); skipping Tor HTTP probes from runner."
+            exit 0
+          fi
+
+          # retry helpers
+          MAX_ATTEMPTS=6
+          BASE_SLEEP=2
+          jitter(){ python3 - <<'PY' 2>/dev/null || awk 'BEGIN{srand();printf("%.2f\n", rand())}'; import random; print(f"{random.random():.2f}") ; PY; }
+          backoff_sleep(){ n="$1"; j="$(jitter)"; secs="$(python3 - <<PY 2>/dev/null || echo $(( BASE_SLEEP * (2**(n-1)) )) )"
+        import math, os
+        b=int(os.environ.get("BASE_SLEEP","2")); n=int(os.environ.get("N","1")); print(b*(2**(n-1)))
+        PY
+        "; N="$n" BASE_SLEEP="$BASE_SLEEP"; printf "Backoff: %ss (+ jitter)\n" "$secs"; sleep "$(printf "%s" "$secs")"; sleep "$(printf "%s" "$(jitter)")"; }
+
+          try_curl(){
+            url="$1"
+            label="$2"
+            for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+              echo "[$label] attempt $attempt/${MAX_ATTEMPTS}: $url"
+              code=$(curl $(tor_flag) -i -L -sS -o /tmp/probe.$$ -w '%{http_code}' "$url" || true)
+              head -n 200 /tmp/probe.$$ || true
+              echo "HTTP ${code}"
+              rm -f /tmp/probe.$$
+              # consider any non-000 as a "probe succeeded" (we just want reachability here)
+              if [[ "$code" != "000" ]]; then
+                return 0
+              fi
+              backoff_sleep "$attempt"
+            done
+            return 1
+          }
+
+          echo "Tor login: ${TOR_URL}"
+          try_curl "${TOR_URL}" "login" || echo "Tor login probe did not stabilize (continuing)."
+
+          origin="$(printf '%s' "${TOR_URL}" | sed -E 's|(https?://[^/]+).*|\1|')"
+          integ="${origin}/integrity"
+          [[ -n "${SESSION_TOKEN:-}" ]] && integ="${integ}?session_token=${SESSION_TOKEN}"
+          echo "Tor integrity (probe only): ${integ}"
+          try_curl "${integ}" "integrity-probe" || echo "Tor integrity probe did not stabilize (continuing to verify step)."
+
+      - name: Verify integrity (Tor phase; retry; 5m hold on failure)
         if: env.WANT_TOR == '1'
         env:
           TOR_URL: ${{ env.TOR_URL }}
           SESSION_TOKEN: ${{ env.SESSION_TOKEN }}
         run: |
           set +euo pipefail
-          normalize(){ sed -e 's/[[:space:]]*$//'; }
-          sha(){ printf %s "$1" | tr -d '\r' | sha256sum | awk '{print $1}'; }
-          mkurl(){ base="$1"; tok="${2:-}"; if [[ -n "$tok" ]]; then echo "${base}?session_token=${tok}"; else echo "${base}"; fi; }
 
           has_socks(){ ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE '(^|:)127\.0\.0\.1:9050$'; }
           tor_flag(){ has_socks && echo "--socks5-hostname 127.0.0.1:9050"; }
 
+          normalize(){ sed -e 's/[[:space:]]*$//'; }
+          sha(){ printf %s "$1" | tr -d '\r' | sha256sum | awk '{print $1}'; }
+          mkurl(){ base="$1"; tok="${2:-}"; if [[ -n "$tok" ]]; then echo "${base}?session_token=${tok}"; else echo "${base}"; fi; }
+
           : > /tmp/int_debug.txt
           WANT="$HOME/BBPRO.INTEGRITY"; [[ -s "$WANT" ]] || WANT="$HOME/.config/dosyago/bbpro/BBPRO.INTEGRITY"
-          want="$(cat "$WANT" 2>/dev/null || true)"; want_norm="$(printf %s "$want" | normalize)"; want_sha="$(sha "$want_norm")"
+          want="$(cat "$WANT" 2>/dev/null || true)"
+          want_norm="$(printf %s "$want" | normalize)"
+          want_sha="$(sha "$want_norm")"
 
           origin="$(printf '%s' "${TOR_URL}" | sed -E 's|(https?://[^/]+).*|\1|')"
           url="$(mkurl "${origin}/integrity" "${SESSION_TOKEN}")"
 
-          if has_socks; then
+          {
+            echo "=== TOR VERIFY (with retry) ==="
+            echo "WANT sha256=${want_sha}"
+            echo "URL: $url"
+          } | tee -a /tmp/int_debug.txt
+
+          if ! has_socks; then
+            echo "No local Tor SOCKS at 127.0.0.1:9050; skipping Tor HTTP verify from runner." | tee -a /tmp/int_debug.txt
+            # Not a hard failure; your .onion will be usable by Tor clients.
+            exit 0
+          fi
+
+          MAX_ATTEMPTS=6
+          BASE_SLEEP=2
+          attempt=0
+          ok=0
+          while (( attempt < MAX_ATTEMPTS )); do
+            attempt=$((attempt+1))
+            echo "verify attempt ${attempt}/${MAX_ATTEMPTS}" | tee -a /tmp/int_debug.txt
             code=$(curl $(tor_flag) -sSL -o /tmp/got.$$ -w '%{http_code}' "$url" || true)
             got="$(cat /tmp/got.$$ 2>/dev/null || true)"; rm -f /tmp/got.$$
-            got_norm="$(printf %s "$got" | normalize)"; got_sha="$(sha "$got_norm")"
-            {
-              echo "=== TOR VERIFY ==="
-              echo "WANT sha256=${want_sha}"
-              echo "URL: $url"
-              echo "HTTP $code GOT sha256=${got_sha}"
-              printf "GOT head: %s\n" "$(printf %s "$got" | head -c 80)"
-            } | tee -a /tmp/int_debug.txt
-            if [[ "$code" == "200" && "$got_sha" == "$want_sha" ]]; then
-              echo "Tor integrity OK" | tee -a /tmp/int_debug.txt
-            else
-              echo "Tor integrity FAILED — holding 5 minutes for debug" | tee -a /tmp/int_debug.txt
-              touch /tmp/HOLD_FOR_DEBUG
-              sleep 300
-              exit 1
-            fi
+            got_norm="$(printf %s "$got" | normalize)"
+            got_sha="$(sha "$got_norm")"
+            echo "HTTP $code GOT sha256=${got_sha} head=$(printf %s "$got" | head -c 80)" | tee -a /tmp/int_debug.txt
+            if [[ "$code" == "200" && "$got_sha" == "$want_sha" ]]; then ok=1; break; fi
+            # backoff with jitter
+            # 2,4,8,12,16,20 (+~0-1s jitter)
+            sleep_secs=$(( BASE_SLEEP * (2**(attempt-1)) ))
+            python3 - <<PY 2>/dev/null || true
+        import random, time
+        time.sleep(${sleep_secs} + random.random())
+        PY
+          done
+
+          if [[ $ok -eq 1 ]]; then
+            echo "Tor integrity OK" | tee -a /tmp/int_debug.txt
+            exit 0
           else
-            echo "No local Tor SOCKS at 127.0.0.1:9050; skipping Tor HTTP verify from runner." | tee -a /tmp/int_debug.txt
-            # Not a hard failure; your .onion is reachable for clients with Tor.
+            echo "Tor integrity FAILED after ${MAX_ATTEMPTS} attempts — holding 5 minutes for debug" | tee -a /tmp/int_debug.txt
+            touch /tmp/HOLD_FOR_DEBUG
+            sleep 300
+            exit 1
           fi
 
       - name: Status → Ready (Tor link) [plaintext]
