@@ -1,0 +1,62 @@
+# Containerfile
+# By using this Containerfile/image you agree to BrowserBox License.
+
+FROM debian:latest
+LABEL org.opencontainers.image.title="BrowserBox" \
+  org.opencontainers.image.description="Embeddable remote browser isolation with vettable source https://dosaygo.com" \
+  org.opencontainers.image.version="10.4.15" \
+  org.opencontainers.image.authors="DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
+  org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
+
+SHELL ["/bin/bash", "-c"]
+
+ARG IS_DOCKER_BUILD=true
+ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Los_Angeles
+
+# install dependencies (compact & cache-friendly)
+RUN set -eux; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends tzdata ca-certificates curl jq vim \
+    libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 \
+    libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 \
+    libpangocairo-1.0-0 libgtk-3-0 sudo git; \
+  ln -fs /usr/share/zoneinfo/$TZ /etc/localtime; \
+  dpkg-reconfigure --frontend noninteractive tzdata; \
+  rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -ms /bin/bash bbpro && \
+  echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+  groupadd browsers && groupadd renice && \
+  usermod -a -G browsers bbpro && usermod -a -G renice bbpro
+
+# Install NVM/Node/PM2 (system-level under bbpro)
+USER bbpro
+ENV HOME=/home/bbpro
+ENV NVM_DIR=$HOME/.nvm
+RUN set -eux; \
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; \
+  . "$NVM_DIR/nvm.sh"; \
+  nvm install v22; \
+  nvm alias default v22; \
+  npm i -g npm@latest pm2@latest
+
+# Ensure Node available in non-login shells
+ENV PATH="$NVM_DIR/versions/node/v22.0.0/bin:$PATH"
+
+# Workdir & copy (switch to root to preserve perms, then chown back)
+WORKDIR $HOME/bbpro/
+USER root
+COPY . $HOME/bbpro/
+RUN chown -R bbpro:bbpro $HOME/bbpro/
+
+USER bbpro
+
+# Install application
+RUN yes | ./deploy-scripts/global_install.sh localhost
+
+# Run
+CMD ["./deploy-scripts/run.sh"]
+
