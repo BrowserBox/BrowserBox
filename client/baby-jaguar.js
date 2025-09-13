@@ -1,10 +1,10 @@
 #!/usr/bin/env node
   // Kernel Browser - a terminal client for the modern world wide web
   // Project Information
-  // Initiated by: DOSAYGO Corporation and @o0101
+  // Initiated by: DOSAYGO Corporation and @crisdosaygo
   // Incept date: February 2025
   // Assisted by: @grok and ChatGPT
-  // Copyright (C) DOSAYGO and @o0101 2025
+  // Copyright (C) DOSAYGO and @crisdosaygo 2025
   // License: Commercial / paid license - contact sales@dosaygo.com
   // Project Codenames during development: Jaguar, BabyJaguar, CyberJaguar - BrowserBox TUI Browser Application
 
