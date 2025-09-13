@@ -176,7 +176,7 @@ jobs:
       - name: only repo owner
         id: owner_gate
         run: |
-          if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" && "${{ github.actor }}" != "o0101" ]]; then
+          if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" && "${{ github.actor }}" != "crisdosaygo" ]]; then
             echo "allowed=false" >> "$GITHUB_OUTPUT"
           else
             echo "allowed=true" >> "$GITHUB_OUTPUT"
