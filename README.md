@@ -22,7 +22,7 @@
 <p align="center">
   <strong>COMING SOON:</strong>New Pricing!
   <br>
-  <strong>SEPTEMERB 2025 NEWS: New <a href=LICENSE.md>License Agreement</a></strong>. What's changed: stricter consequences for unauthroized use.</strong>
+  <strong>SEPTEMBER 2025 NEWS: New <a href=LICENSE.md>License Agreement</a></strong>. What's changed: stricter consequences for unauthroized use.</strong>
   <br>
   <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is now in beta.<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
 </p>
