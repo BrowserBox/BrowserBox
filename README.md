@@ -86,20 +86,21 @@ Commands:
 4.  [Who Needs BrowserBox?](#who-needs-browserbox)
 5.  [Core Features](#core-features)
 6.  [See It In Action](#see-it-in-action)
-7.  [Platform Compatibility](#platform-compatibility)
-8.  [Get Started in 3 Steps](#get-started-in-3-steps)
+7.  [Supported Network Topologies](#supported-network-topologies)
+8.  [Platform Compatibility](#platform-compatibility)
+9.  [Get Started in 3 Steps](#get-started-in-3-steps)
     *   [1. Install the `bbx` CLI](#1-install-the-bbx-cli)
     *   [2. Purchase & Obtain Your Product Key](#2-purchase--obtain-your-product-key)
     *   [3. Activate & Run BrowserBox](#3-activate--run-browserbox)
-9.  [Meet `bbx`: Your BrowserBox Command Center](#meet-bbx-your-browserbox-command-center)
-10. [Embed BrowserBox Anywhere](#embed-browserbox-anywhere)
-11. [Advanced Usage](#advanced-usage)
-12. [License Compliance & Usage Data](#license-compliance--usage-data)
-13. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
-14. [Support](#support)
-15. [About DOSAYGO](#about-dosaygo)
-16. [Sponsors](#sponsors)
-17. [Copyright & Licensing](#copyright--licensing)
+10.  [Meet `bbx`: Your BrowserBox Command Center](#meet-bbx-your-browserbox-command-center)
+11. [Embed BrowserBox Anywhere](#embed-browserbox-anywhere)
+12. [Advanced Usage](#advanced-usage)
+13. [License Compliance & Usage Data](#license-compliance--usage-data)
+14. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
+15. [Support](#support)
+16. [About DOSAYGO](#about-dosaygo)
+17. [Sponsors](#sponsors)
+18. [Copyright & Licensing](#copyright--licensing)
 
 ---
 
@@ -173,6 +174,39 @@ BrowserBox provides a full-featured, secure browsing experience:
   </figure>
 </div>
 
+# Supported Network Topologies
+
+🌐 **Unlock Any Network Scenario with BrowserBox** – Whether you're a SD-WAN architect optimizing enterprise connectivity, a NAT traversal expert punching through firewalls, a WiFi specialist ensuring seamless access on the go, or a NOC pro managing mission-critical operations, BrowserBox delivers unmatched flexibility. From massive country-scale deployments to secure homelab setups, our platform adapts to virtually every operating system, client device, and networking topology you'll encounter. Run it headless on servers without a graphical display or GPU for efficient, low-footprint ops—or leverage full GPU acceleration and manual graphical displays when you need visual power. BrowserBox isn't just software; it's an all-in-one toolkit for secure, scalable remote browser access that fits *your* environment, not the other way around. From mesh to edge, from overlay to backbone — BrowserBox works with it all. 🚀
+
+### Comprehensive Topology Compatibility at a Glance
+
+Here's the core of what makes BrowserBox a networking powerhouse—a detailed table of our supported topologies. We've got you covered from simple HTTP setups to advanced overlay networks, with zero-compromise reliability across platforms. (And stay tuned: Native support via the `bbx` CLI is coming soon for NGINX, Cloudflare Tunnels, and ZeroTier on all platforms, plus automated SSH port forwarding with built-in certificate management and orchestration. Get ready for even smoother integrations! 🎉)
+
+| Topology | Description | Public Access? | Key Features & Benefits | OS Support (Ubuntu/macOS/Windows) | Best For |
+|----------|-------------|----------------|--------------------------|------------------------------------|----------|
+| **HTTP Only** | Basic unencrypted HTTP connections for quick, lightweight access. | Yes (if exposed) | Simple setup; ideal for internal testing or low-security demos. Supports custom ports (e.g., 8080, 9999, 11111) or standard (80). | ✅ / ✅ / ✅ | Rapid prototyping in trusted networks. |
+| **HTTP/WS** | HTTP with WebSocket support for real-time bidirectional communication. | Yes (if exposed) | Enables interactive apps; pairs with custom/standard ports for flexibility. | ✅ / ✅ / ✅ | Chat apps, live updates, or collaborative tools. |
+| **HTTPS/WSS/WebRTC** | Secure HTTPS with WebSocket Secure and WebRTC for encrypted, peer-to-peer media streaming. | Yes (if exposed) | End-to-end encryption; auto-cert handling; custom/standard ports (443 default). | ✅ / ✅ / ✅ | Video calls, secure file sharing, or real-time collaboration in production. |
+| **Tor/HTTP** | Tor onion service over HTTP for pseudonymous access. | Yes (via .onion) | High privacy; bypasses censorship; slow but reliable. Requires Tor Browser. | ✅ / ✅ / ✅ | Privacy-focused demos or restricted environments. |
+| **Tor/HTTPS** | Secure Tor onion service with HTTPS encryption. | Yes (via .onion) | Adds TLS to Tor for extra security; reliable NAT traversal. | ✅ / ✅ / ✅ | Anonymous secure access in high-threat scenarios. |
+| **SSH Port Forward, HTTP** | SSH-based port forwarding tunneling HTTP traffic. | No (private) | Secure, low-latency; forwards to custom/standard ports. Upcoming auto-cert orchestration. | ✅ / ✅ / ✅ | Private homelab access or secure internal routing. |
+| **SSH Port Forward, HTTPS** | SSH forwarding with HTTPS for encrypted tunnels. | No (private) | Combines SSH reliability with TLS; flexible port options. Native enhancements incoming. | ✅ / ✅ / ✅ | Enterprise-grade secure remote sessions. |
+| **Custom Ports** | User-defined ports (e.g., 8080, 9999, 11111) across any protocol. | Varies | Total control; avoids conflicts; integrates with all topologies. | ✅ / ✅ / ✅ | Tailored setups for specialized apps or multi-service hosts. |
+| **Standard Ports** | Default ports (e.g., 80 for HTTP, 443 for HTTPS) for seamless compatibility. | Varies | Plug-and-play; reduces config overhead in standard environments. | ✅ / ✅ / ✅ | Quick deployments matching common infrastructure. |
+| **Cloudflare Tunnel** | HTTPS DNS facade with port relay via Cloudflare's edge network. | Yes (*.trycloudflare.com) | Auto-install; high reliability; great perf. Native `bbx cf-run` support soon. | ✅ / ✅ / ✅ | Quick public demos with origin privacy. |
+| **localhost.run** | SSH reverse tunnel with HTTPS facade. | Yes (http(s)://…lhr.life) | Zero-config; medium reliability; occasional interstitials. | ✅ / ✅ / ✅ | Free, easy links for casual sharing. |
+| **ngrok** | Port relay with HTTPS and auth token for secure exposure. | Yes (*.ngrok-free.app) | High perf; webhooks ready; free tier limits (1 tunnel). Token required. | ✅ / ✅ / ✅ | Shareable demos and webhook testing. |
+| **Pinggy** | Port relay with HTTPS; may have interstitials. | Yes (*.pinggy.io) | Fair reliability; okay perf. | ✅ / ✅ / ℹ️ (Limited on Windows) | Budget-friendly webhooks and demos. |
+| **Tailscale** | Overlay network for private, LAN-like access. | No (private tailnet) | Very high reliability; low latency. SSH forwarding; token required. Less stable on Windows/VPN. | ✅ / ✅ / ℹ️ (SSH not upstream-supported on Windows) | Private team debugging and access. |
+| **Tor** | Onion routing for pseudonymous, reliable access. | Yes (.onion) | Extremely reliable (but slow); privacy-first. We already have `bbx tor-run`. | ✅ / ✅ / ✅ | Censorship-resistant, anonymous deployments. |
+| **Tunnelmole** | OSS ngrok-style relay with HTTPS. | Yes (https://…tunnelmole.net/.com) | High reliability; good perf; auto-install. | ✅ / ✅ / ✅ | Open-source demos with easy URLs. |
+| **ZeroTier** | Overlay network for peer-to-peer private access. | No (private network) | LAN-like; very high reliability. Native `bbx zt-run` support soon. Tokens required; client on access device. | ✅ / ✅ / ✅ | Secure P2P demos in overlays. |
+
+**Notes on Flexibility & Power:**
+- **Headless or Graphical? Your Call.** BrowserBox thrives on headless machines—no display or GPU needed for core ops—making it perfect for servers or cloud instances. But when you want it, tap into GPU acceleration for heavy rendering or enable manual graphical displays for hands-on control. Scale from a single homelab box to nationwide rollouts without missing a beat. 💪
+- **Why BrowserBox Wins Networks:** In a world of rigid tools, BrowserBox stands out by embracing *every* topology. Punch through NAT with ease, integrate with SD-WAN for optimized routing, ensure WiFi stability for mobile pros, and give NOC teams the configurability to monitor and manage at scale. It's not just supported—it's battle-tested for real-world wins. Ready to deploy? Fork, configure, and conquer! 🌍
+
+  
 ## Platform Compatibility
 
 BrowserBox runs seamlessly across a wide range of operating systems and containerization technologies:
