@@ -222,7 +222,7 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 | NixOS                    | ✅        | <img src="readme-files/nixos.png" alt="NixOS" width="100" title="NixOS">                             |
 | Docker                   | ✅        | <img src="readme-files/docker.png" alt="Docker" width="100" title="Docker">                           |
 | LXC                      | ✅        | <img src="readme-files/LXC.png" alt="LXC" height="64" title="LXC">                                   |
-| Podman\‡                 | 🚧        | <img src="readme-files/Podman.png" alt="Podman" width="64" title="Podman">                           |
+| Podman‡                  | 🚧        | <img src="readme-files/Podman.png" alt="Podman" width="64" title="Podman">                           |
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.png" alt="Windows 9x" width="64" title="Windows 9x">              |
 
 >[!NOTE]
