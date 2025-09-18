@@ -19,7 +19,11 @@ NGINX_SITE_STEM=""  # set later to <user>-<mid_fqdn>.conf
 
 # ---- Logging ----
 log() { printf '[%s] %s\n' "$APP_NAME" "$*" >&2; }
-die() { printf '[%s:error] %s\n' "$APP_NAME" "$*" >&2; exit 1; }
+die() {
+  printf '[%s:error] %s\n' "$APP_NAME" "$*" >&2
+  { full_cleanup >/dev/null 2>&1 || true; }
+  exit 1
+}
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # ---- Global platform detection (run once) ----
@@ -72,10 +76,10 @@ detect_platform() {
 pkg_install() {
   [[ -n "$PKG_MGR" ]] || die "No supported package manager found."
   case "$PKG_MGR" in
-    apt-get) sudo apt-get update -y && sudo apt-get install -y "$@" ;;
-    dnf)     sudo dnf install -y "$@" ;;
-    yum)     sudo yum install -y "$@" ;;
-    brew)    brew install "$@" ;;
+    apt-get) sudo apt-get update -y 1>&2 && sudo apt-get install -y "$@" 1>&2 ;;
+    dnf)     sudo dnf install -y "$@" 1>&2 ;;
+    yum)     sudo yum install -y "$@" 1>&2 ;;
+    brew)    brew install "$@" 1>&2 ;;
     *)       die "Unsupported package manager: $PKG_MGR" ;;
   esac
 }
@@ -139,7 +143,7 @@ ensure_nginx() {
     apt-get) pkg_install nginx ;;
     dnf)     pkg_install nginx ;;
     yum)     pkg_install nginx ;;
-    brew)    brew install nginx ;;
+    brew)    brew install nginx 1>&2 ;;
     *)       die "Cannot install nginx automatically on this system." ;;
   esac
   have nginx || die "nginx installation failed."
@@ -164,10 +168,10 @@ domain_has_public_a() {
 ensure_mkcert() {
   if have mkcert; then return 0; fi
   case "$PKG_MGR" in
-    brew)    brew install mkcert ;;
-    apt-get) sudo apt-get update -y && sudo apt-get install -y mkcert libnss3-tools ;;
-    dnf)     sudo dnf install -y mkcert nss-tools || { have brew && brew install mkcert nss || die "mkcert not available via dnf; install manually."; } ;;
-    yum)     sudo yum install -y mkcert nss-tools || { have brew && brew install mkcert nss || die "mkcert not available via yum; install manually."; } ;;
+    brew)    brew install mkcert 1>&2 ;;
+    apt-get) sudo apt-get update -y 1>&2 && sudo apt-get install -y mkcert libnss3-tools 1>&2 ;;
+    dnf)     { sudo dnf install -y mkcert nss-tools 1>&2 || { have brew && brew install mkcert nss 1>&2 || die "mkcert not available via dnf; install manually."; }; } ;;
+    yum)     { sudo yum install -y mkcert nss-tools 1>&2 || { have brew && brew install mkcert nss 1>&2 || die "mkcert not available via yum; install manually."; }; } ;;
     *)       die "Don't know how to install mkcert on this platform." ;;
   esac
   have mkcert || die "mkcert installation failed."
@@ -181,7 +185,7 @@ gen_mkcert_into_sslout() {
   mkcert -install >/dev/null 2>&1 || true
   mkcert -cert-file "${SSL_OUT_DIR}/fullchain.pem" \
          -key-file  "${SSL_OUT_DIR}/privkey.pem" \
-         "${d}" "*.${d}"
+         "${d}" "*.${d}" >/dev/stderr
   [[ -s "${SSL_OUT_DIR}/fullchain.pem" && -s "${SSL_OUT_DIR}/privkey.pem" ]] || die "mkcert failed to generate cert files"
   chmod 600 "${SSL_OUT_DIR}/fullchain.pem" "${SSL_OUT_DIR}/privkey.pem"
   log "mkcert-generated certs in ${SSL_OUT_DIR}/ (fullchain.pem, privkey.pem)."
@@ -278,12 +282,36 @@ random_label() { LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 16; }
 # ---- sed helper ----
 _sed_inplace() { if [[ "$OS_KIND" == "darwin" ]]; then sed -i '' -E "$1" "$2"; else sed -i -E "$1" "$2"; fi; }
 
+# ---- config integrity helpers (preserve non-mapping vars like HTTP_ONLY, DOMAIN, etc.) ----
+_cfg_non_mapping_view() {
+  [[ -f "$CONFIG_FILE" ]] || return 0
+  awk -v app="$APP_NAME" -v user="$USER" '
+    $0 ~ "^ADDR_[0-9]+=" { next }                         # drop numeric ADDR lines
+    $0 ~ "^# --- "app":"user" mappings " { next }         # drop our stamped header
+    { print }
+  ' "$CONFIG_FILE"
+}
+
+_cfg_fingerprint() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum
+  elif command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 | awk '{print $NF}'
+  elif command -v md5 >/dev/null 2>&1; then
+    md5 | awk '{print $NF}'
+  else
+    awk '{s+=length($0)} END{print "len:"s}'
+  fi
+}
+
 # ---- Config mappings writer ----
 write_mappings_to_config() {
   local p0="$1" p1="$2" p2="$3" p3="$4" p4="$5"
   local h0="$6" h1="$7" h2="$8" h3="$9" h4="${10}"
   mkdir -p "$CONFIG_DIR"; touch "$CONFIG_FILE"
-  # remove any prior mappings for these ports
+  # remove any prior mappings for these ports only
   _sed_inplace "/^ADDR_${p0}=.*/d" "$CONFIG_FILE"
   _sed_inplace "/^ADDR_${p1}=.*/d" "$CONFIG_FILE"
   _sed_inplace "/^ADDR_${p2}=.*/d" "$CONFIG_FILE"
@@ -345,10 +373,10 @@ cleanup_user_hosts_and_config() {
   else
     log "No ADDR_* hostnames found in ${CONFIG_FILE}; skipping /etc/hosts removal."
   fi
-  # Remove ADDR_* lines from config (reset)
+  # Remove only ADDR_* lines (numeric) and our stamped header; preserve everything else
   if [[ -f "$CONFIG_FILE" ]]; then
     _sed_inplace '/^ADDR_[0-9]+=.*/d' "$CONFIG_FILE"
-    _sed_inplace "# --- ${APP_NAME}:${USER} mappings .*#d" "$CONFIG_FILE" || true
+    _sed_inplace '/^# --- '"${APP_NAME}"':'"${USER}"' mappings .*/d' "$CONFIG_FILE"
   fi
   log "Cleared ADDR_* mappings for user ${USER} from ${CONFIG_FILE}"
 }
@@ -384,13 +412,13 @@ enable_nginx_site() {
     printf '%s\n' "$config_text" | sudo tee "$target_file" >/dev/null
   fi
 
-  sudo nginx -t
+  sudo nginx -t >/dev/null 2>&1 || die "nginx config test failed."
   if have systemctl; then
-    sudo systemctl reload nginx
+    sudo systemctl reload nginx >/dev/null 2>&1 || die "nginx reload failed."
   elif [[ "$OS_KIND" == "darwin" ]] && have brew; then
-    sudo brew services restart nginx >/dev/null 2>&1 || true
+    sudo brew services restart nginx >/dev/null 2>&1 || die "nginx restart failed."
   else
-    sudo nginx -s reload
+    sudo nginx -s reload >/dev/null 2>&1 || die "nginx reload failed."
   fi
   log "Installed nginx site: ${target_file}"
 }
@@ -429,7 +457,7 @@ wildcard_routes() {
                          backend_scheme="http"; shift;;
       --write-hosts)     WRITE_HOSTS="true"; shift;;
       -h|--help)
-        cat <<USAGE
+        cat >&2 <<USAGE
 Usage:
   $0 --cleanup
   $0 --domain example.com --email you@example.com --center-port 8080 [--backend https|http] [--no-preclean]
@@ -453,16 +481,22 @@ USAGE
   done
 
   mkdir -p "$CONFIG_DIR"
-  if [[ -f "$CONFIG_FILE" ]]; then
-    # shellcheck disable=SC1090
-    . "$CONFIG_FILE"
-    domain="${domain:-${DOMAIN:-}}"
-    email="${email:-${EMAIL:-}}"
-    center_port="${center_port:-${CENTER_PORT:-}}"
-    backend_scheme="${backend_scheme:-${BACKEND_SCHEME:-}}"
-    if [[ "${HTTP_ONLY:-}" == "true" && -z "${backend_scheme:-}" ]]; then backend_scheme="http"; fi
-    WRITE_HOSTS="${WRITE_HOSTS:-${WRITE_HOSTS:-true}}"
-  fi
+  [[ -f "$CONFIG_FILE" ]] || : >"$CONFIG_FILE"
+
+  # Load defaults from hosts.env with explicit precedence:
+  # CLI > exported env > config file values
+  # shellcheck disable=SC1090
+  . "$CONFIG_FILE"
+  domain="${domain:-${DOMAIN:-$domain}}"
+  email="${email:-${EMAIL:-$email}}"
+  center_port="${center_port:-${CENTER_PORT:-$center_port}}"
+  backend_scheme="${backend_scheme:-${BACKEND_SCHEME:-$backend_scheme}}"
+  if [[ "${HTTP_ONLY:-}" == "true" && -z "${backend_scheme:-}" ]]; then backend_scheme="http"; fi
+  WRITE_HOSTS="${WRITE_HOSTS:-${WRITE_HOSTS:-true}}"
+
+  # Snapshot non-mapping content to ensure we never clobber unrelated keys
+  local pre_fp
+  pre_fp="$(_cfg_non_mapping_view | _cfg_fingerprint)"
 
   detect_platform
 
@@ -531,7 +565,7 @@ GUIDE
       log "Requesting Let's Encrypt wildcard (*.${domain}, ${domain}) via DNS-01..."
       sudo certbot certonly --manual --preferred-challenges dns \
         -d "*.${domain}" -d "${domain}" \
-        --agree-tos -m "${email}" --no-eff-email --manual-public-ip-logging-ok
+        --agree-tos -m "${email}" --no-eff-email --manual-public-ip-logging-ok 1>&2
       le_dir="$(le_live_dir_for_domain "$domain")"; [[ -d "$le_dir" ]] || die "certbot finished but live dir missing."
     else
       log "Existing LE cert found at ${le_dir}; skipping issuance."
@@ -653,24 +687,35 @@ EOF
   # Persist mappings
   write_mappings_to_config "$p0" "$p1" "$p2" "$p3" "$p4" "$h0" "$h1" "$h2" "$h3" "$h4"
 
-  cat <<DONE
+  # Verify we did not touch non-mapping config (HTTP_ONLY, DOMAIN, etc.)
+  local post_fp
+  post_fp="$(_cfg_non_mapping_view | _cfg_fingerprint)"
+  if [[ "$pre_fp" != "$post_fp" ]]; then
+    log "Integrity check failed: non-mapping keys changed unexpectedly in ${CONFIG_FILE}."
+    die "Aborting to avoid clobbering non-ADDR_* config."
+  fi
 
-✅ All set.
+  { # Human-facing summary → STDERR
+    echo
+    echo "✅ All set."
+    echo
+    echo "Host → Port mappings (HTTPS listeners → ${bscheme^^} backends):"
+    echo "  https://${h0}  →  ${bscheme}://127.0.0.1:${p0}"
+    echo "  https://${h1}  →  ${bscheme}://127.0.0.1:${p1}"
+    echo "  https://${h2}  →  ${bscheme}://127.0.0.1:${p2}"
+    echo "  https://${h3}  →  ${bscheme}://127.0.0.1:${p3}"
+    echo "  https://${h4}  →  ${bscheme}://127.0.0.1:${p4}"
+    echo
+    echo "Config updated: ${CONFIG_FILE}"
+    echo "  (added: ADDR_${p0}..ADDR_${p4})"
+    echo
+    echo "Certs:"
+    echo "  • Live (nginx uses): ${le_dir}/fullchain.pem , ${le_dir}/privkey.pem"
+    echo "  • Copied for user:   ${SSL_OUT_DIR}/fullchain.pem , ${SSL_OUT_DIR}/privkey.pem"
+  } >&2
 
-Host → Port mappings (HTTPS listeners → ${bscheme^^} backends):
-  https://${h0}  →  ${bscheme}://127.0.0.1:${p0}
-  https://${h1}  →  ${bscheme}://127.0.0.1:${p1}
-  https://${h2}  →  ${bscheme}://127.0.0.1:${p2}
-  https://${h3}  →  ${bscheme}://127.0.0.1:${p3}
-  https://${h4}  →  ${bscheme}://127.0.0.1:${p4}
-
-Config updated: ${CONFIG_FILE}
-  (added: ADDR_${p0}..ADDR_${p4})
-
-Certs:
-  • Live (nginx uses): ${le_dir}/fullchain.pem , ${le_dir}/privkey.pem
-  • Copied for user:   ${SSL_OUT_DIR}/fullchain.pem , ${SSL_OUT_DIR}/privkey.pem
-DONE
+  # Machine-facing success: only absolute path on STDOUT
+  printf '%s\n' "$(cd "$(dirname "$CONFIG_FILE")" && pwd)/$(basename "$CONFIG_FILE")"
 }
 
 # ---- entrypoint ----
@@ -680,5 +725,6 @@ main() {
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  main "$@"
+  main "$@" || exit $?
 fi
+
