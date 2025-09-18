@@ -4,7 +4,8 @@
 # copy it to ~/sslcerts/, and configure nginx to reverse-proxy 5 adjacent ports via 5 random subdomains.
 # Default backend is HTTPS to 127.0.0.1:<port>; optionally HTTP if requested.
 
-#set -euo pipefail
+# (kept as-is per your testing)
+# set -euo pipefail
 IFS=$'\n\t'
 
 APP_NAME="wildcard-routes"
@@ -44,7 +45,7 @@ detect_platform() {
     NGINX_SERVERS_DIR="${BREW_PREFIX}/etc/nginx/servers"
     # Do NOT mkdir or require existence here; ensure_nginx() will handle it after install
   else
-    # ... keep your existing Linux block unchanged ...
+    # Linux block (kept, with mkdirs as you had them)
     OS_KIND="linux"
     if [[ -r /etc/os-release ]]; then
       . /etc/os-release
@@ -159,6 +160,75 @@ ensure_nginx() {
   if [[ -n "$NGINX_SITES_AVAILABLE" ]]; then sudo mkdir -p "$NGINX_SITES_AVAILABLE"; fi
   if [[ -n "$NGINX_SITES_ENABLED" ]]; then sudo mkdir -p "$NGINX_SITES_ENABLED"; fi
   if [[ -n "$NGINX_CONFD_DIR" ]]; then sudo mkdir -p "$NGINX_CONFD_DIR"; fi
+}
+
+# ---- Local-mode helpers (NEW) ----
+is_special_tld() {  # <<< NEW
+  # $1: domain
+  case "$1" in
+    *.local|*.lan|*.home|*.internal|*.test|localhost|*.localhost) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+domain_has_public_a() {  # <<< NEW
+  local d="$1"
+  local tool
+  tool="$(ensure_dns_tool)"
+  if [[ "$tool" == "dig" ]]; then
+    dig +time=2 +tries=1 +short A "$d" @1.1.1.1 2>/dev/null | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'
+  else
+    host "$d" 2>/dev/null | awk '/has address/{print $NF}' | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'
+  fi
+}
+
+ensure_mkcert() {  # <<< NEW
+  if have mkcert; then return 0; fi
+  case "$PKG_MGR" in
+    brew)
+      brew install mkcert
+      ;;
+    apt-get)
+      sudo apt-get update -y
+      sudo apt-get install -y mkcert libnss3-tools
+      ;;
+    dnf)
+      if ! sudo dnf install -y mkcert nss-tools ; then
+        if have brew; then brew install mkcert nss; else die "mkcert not available via dnf; install Homebrew (or mkcert) manually."; fi
+      fi
+      ;;
+    yum)
+      if ! sudo yum install -y mkcert nss-tools ; then
+        if have brew; then brew install mkcert nss; else die "mkcert not available via yum; install Homebrew (or mkcert) manually."; fi
+      fi
+      ;;
+    *)
+      die "Don't know how to install mkcert on this platform."
+      ;;
+  esac
+  have mkcert || die "mkcert installation failed."
+}
+
+gen_mkcert_into_sslout() {  # <<< NEW
+  local d="$1"
+  ensure_mkcert
+  mkdir -p "${SSL_OUT_DIR}"
+  chmod 700 "${SSL_OUT_DIR}"
+  mkcert -install >/dev/null 2>&1 || true
+  local tdir; tdir="$(mktemp -d)"
+  (
+    cd "$tdir"
+    mkcert "${d}" "*.${d}" >/dev/null
+    local crt key
+    crt="$(ls -1t *.pem *.crt 2>/dev/null | head -n1)"
+    key="$(ls -1t *.key 2>/dev/null | head -n1)"
+    [[ -f "$crt" && -f "$key" ]] || die "mkcert did not produce key/cert."
+    cp -f "$crt" "${SSL_OUT_DIR}/fullchain.pem"
+    cp -f "$key" "${SSL_OUT_DIR}/privkey.pem"
+  )
+  rm -rf "$tdir"
+  chmod 600 "${SSL_OUT_DIR}/fullchain.pem" "${SSL_OUT_DIR}/privkey.pem"
+  log "mkcert-generated certs in ${SSL_OUT_DIR}/ (fullchain.pem, privkey.pem)."
 }
 
 # ---- IP discovery ----
@@ -299,9 +369,11 @@ Reads defaults from ${CONFIG_FILE} if present:
   HTTP_ONLY=true                # sets BACKEND_SCHEME=http
 
 Behavior:
-  * Discover public IP (fallback to first non-loopback IPv4)
-  * Verify wildcard DNS by resolving a random subdomain to that IP (with retries)
-  * Run 'certbot certonly --manual' for *.\$DOMAIN and \$DOMAIN (interactive DNS-01)
+  * Auto-detect local domains (.local/.lan/.home/.internal/.test/localhost) → local mode (mkcert)
+  * In public mode:
+      - Discover public IP (fallback to first non-loopback local IPv4)
+      - Verify wildcard DNS by resolving a random subdomain to that IP (with retries)
+      - Run 'certbot certonly --manual' for *.\$DOMAIN and \$DOMAIN (DNS-01)
   * Copy certs to ${SSL_OUT_DIR}/ (fullchain.pem, privkey.pem)
   * Install nginx (if needed) and add HTTPS vhosts for 5 adjacent ports (P-2..P+2)
   * Proxy to backend over HTTPS by default; switch to HTTP with --backend http or HTTP_ONLY=true
@@ -337,57 +409,77 @@ USAGE
   fi
   log "Backend scheme: ${backend_scheme^^}"
 
-  # Deps
+  # Deps common to both modes
   ensure_dep curl apt:curl dnf:curl yum:curl brew:curl
   ensure_dns_tool >/dev/null
-  ensure_certbot
   ensure_nginx
 
-  # IP
-  local ip
-  ip="$(choose_machine_ip)"
-  log "Chosen IP: ${ip}"
+  # ---------- Local-mode detection (NEW) ----------
+  local LOCAL_MODE=0
+  if is_special_tld "$domain"; then
+    LOCAL_MODE=1
+    log "Local mode: '${domain}' matches a special TLD; skipping public IP & DNS/LE; using mkcert."
+  elif ! domain_has_public_a "$domain"; then
+    LOCAL_MODE=1
+    log "Local mode: '${domain}' has no public A record on a public resolver; using mkcert."
+  fi
 
-  # Wildcard DNS verify
-  local label fqdn try=1 ok="no"
-  label="$(random_label)"
-  fqdn="${label}.${domain}"
-  log "Verifying wildcard DNS: expecting ${fqdn} -> ${ip}"
-  while (( try <= RETRY_MAX )); do
-    mapfile -t addrs < <(dns_a_records "$fqdn")
-    if ((${#addrs[@]})); then
-      if printf '%s\n' "${addrs[@]}" | grep -Fxq "$ip"; then ok="yes"; break; fi
-    fi
-    if (( try == 1 )); then
-      cat >&2 <<GUIDE
+  # IP (public mode only)
+  local ip=""
+  if (( LOCAL_MODE == 0 )); then
+    ip="$(choose_machine_ip)"
+    log "Chosen IP: ${ip}"
+  fi
+
+  # Certs
+  local le_dir
+  if (( LOCAL_MODE == 0 )); then
+    # ---------- Public mode: wildcard verify + Let's Encrypt ----------
+    local label fqdn try=1 ok="no"
+    label="$(random_label)"
+    fqdn="${label}.${domain}"
+    log "Verifying wildcard DNS: expecting ${fqdn} -> ${ip}"
+    while (( try <= RETRY_MAX )); do
+      mapfile -t addrs < <(dns_a_records "$fqdn")
+      if ((${#addrs[@]})); then
+        if printf '%s\n' "${addrs[@]}" | grep -Fxq "$ip"; then ok="yes"; break; fi
+      fi
+      if (( try == 1 )); then
+        cat >&2 <<GUIDE
 Action needed (only if this keeps failing):
   • Ensure wildcard A record:  *.${domain} -> ${ip}
   • Ensure apex A record:      ${domain} -> ${ip}
   • If using IPv6, use AAAA records accordingly.
 GUIDE
-    fi
-    log "Attempt ${try}/${RETRY_MAX}: not resolved yet; retrying in ${RETRY_SLEEP}s..."
-    ((try++)); sleep "$RETRY_SLEEP"
-  done
-  [[ "$ok" == "yes" ]] || die "Wildcard DNS did not resolve to ${ip} after ${RETRY_MAX} tries."
+      fi
+      log "Attempt ${try}/${RETRY_MAX}: not resolved yet; retrying in ${RETRY_SLEEP}s..."
+      ((try++)); sleep "$RETRY_SLEEP"
+    done
+    [[ "$ok" == "yes" ]] || die "Wildcard DNS did not resolve to ${ip} after ${RETRY_MAX} tries."
 
-  # Certs
-  local le_dir
-  le_dir="$(le_live_dir_for_domain "$domain")"
-  if [[ -z "$le_dir" ]]; then
-    log "Requesting Let's Encrypt wildcard certificate for *.${domain} and ${domain} (manual DNS-01)..."
-    log "You'll be prompted to create TXT records. Keep this terminal open."
-    sudo certbot certonly \
-      --manual --preferred-challenges dns \
-      -d "*.${domain}" -d "${domain}" \
-      --agree-tos -m "${email}" --no-eff-email \
-      --manual-public-ip-logging-ok
+    ensure_certbot
     le_dir="$(le_live_dir_for_domain "$domain")"
-    [[ -d "$le_dir" ]] || die "Certbot completed but live dir not found for ${domain}."
+    if [[ -z "$le_dir" ]]; then
+      log "Requesting Let's Encrypt wildcard certificate for *.${domain} and ${domain} (manual DNS-01)..."
+      log "You'll be prompted to create TXT records. Keep this terminal open."
+      sudo certbot certonly \
+        --manual --preferred-challenges dns \
+        -d "*.${domain}" -d "${domain}" \
+        --agree-tos -m "${email}" --no-eff-email \
+        --manual-public-ip-logging-ok
+      le_dir="$(le_live_dir_for_domain "$domain")"
+      [[ -d "$le_dir" ]] || die "Certbot completed but live dir not found for ${domain}."
+    else
+      log "Existing cert found at ${le_dir}; skipping issuance."
+    fi
+    copy_certs_to_home "$le_dir"
+
   else
-    log "Existing cert found at ${le_dir}; skipping issuance."
+    # ---------- Local mode: mkcert ----------
+    log "Generating locally trusted certificate via mkcert."
+    gen_mkcert_into_sslout "$domain"
+    le_dir="${SSL_OUT_DIR}"
   fi
-  copy_certs_to_home "$le_dir"
 
   # Ports & random hosts
   local p0 p1 p2 p3 p4
