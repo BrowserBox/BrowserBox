@@ -414,6 +414,7 @@ copy_certs_to_home() {
   log "Copied certs to ${SSL_OUT_DIR}/ (fullchain.pem, privkey.pem)."
 }
 # ---- Main worker ----
+# ---- Main worker ----
 wildcard_routes() {
   local domain="" email="" center_port=""
   local backend_scheme="" # "https" (default) or "http"
@@ -455,6 +456,7 @@ USAGE
     esac
   done
   mkdir -p "$CONFIG_DIR"
+  # Create config file if it doesn't exist, then source it.
   [[ -f "$CONFIG_FILE" ]] || : >"$CONFIG_FILE"
   # Load defaults from hosts.env with explicit precedence:
   # CLI > exported env > config file values
@@ -466,9 +468,13 @@ USAGE
   backend_scheme="${backend_scheme:-${BACKEND_SCHEME:-$backend_scheme}}"
   if [[ "${HTTP_ONLY:-}" == "true" && -z "${backend_scheme:-}" ]]; then backend_scheme="http"; fi
   WRITE_HOSTS="${WRITE_HOSTS:-${WRITE_HOSTS:-true}}"
-  # Snapshot non-mapping content to ensure we never clobber unrelated keys
-  local pre_fp
-  pre_fp="$(_cfg_non_mapping_view | _cfg_fingerprint)"
+
+  # **FIX**: Capture all non-mapping config lines to preserve them.
+  local other_config=""
+  if [[ -f "$CONFIG_FILE" ]]; then
+    other_config="$(grep -vE '^ADDR_[0-9]+=|^# --- '"${APP_NAME}"':'"${USER}"' mappings' "$CONFIG_FILE" || true)"
+  fi
+
   detect_platform
   if [[ "$DO_CLEANUP_ONLY" == "true" ]]; then
     full_cleanup
@@ -640,15 +646,23 @@ ${proxy_ssl_directives}
 }
 EOF
   enable_nginx_site "$NCONF" "$mid_fqdn"
-  # Persist mappings
-  write_mappings_to_config "$p0" "$p1" "$p2" "$p3" "$p4" "$h0" "$h1" "$h2" "$h3" "$h4"
-  # Verify we did not touch non-mapping config (HTTP_ONLY, DOMAIN, etc.)
-  local post_fp
-  post_fp="$(_cfg_non_mapping_view | _cfg_fingerprint)"
-  if [[ "$pre_fp" != "$post_fp" ]]; then
-    log "Integrity check failed: non-mapping keys changed unexpectedly in ${CONFIG_FILE}."
-    die "Aborting to avoid clobbering non-ADDR_* config."
-  fi
+
+  # **FIX**: Atomically write the new config file, preserving other variables.
+  {
+    # Write the preserved config if it's not empty
+    if [[ -n "$other_config" ]]; then
+      printf '%s\n' "$other_config"
+    fi
+    # Write the new mappings
+    echo "# --- ${APP_NAME}:${USER} mappings $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "ADDR_${p0}=${h0}"
+    echo "ADDR_${p1}=${h1}"
+    echo "ADDR_${p2}=${h2}"
+    echo "ADDR_${p3}=${h3}"
+    echo "ADDR_${p4}=${h4}"
+  } > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+  log "Wrote host mappings to ${CONFIG_FILE}"
+
   { # Human-facing summary → STDERR
     echo
     echo "✅ All set."
