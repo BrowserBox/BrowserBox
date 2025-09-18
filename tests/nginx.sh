@@ -8,9 +8,10 @@
 # set -euo pipefail
 IFS=$'\n\t'
 
-APP_NAME="wildcard-routes"
-CONFIG_DIR="${HOME}/.config/${APP_NAME}"
-CONFIG_FILE="${CONFIG_DIR}/config.env"
+CORP_NAME="dosyago"
+APP_NAME="bbpro"
+CONFIG_DIR="${HOME}/.config/${CORP_NAME}/${APP_NAME}"
+CONFIG_FILE="${CONFIG_DIR}/hosts.env"
 SSL_OUT_DIR="${HOME}/sslcerts"
 RETRY_MAX=${RETRY_MAX:-20}
 RETRY_SLEEP=${RETRY_SLEEP:-6}
@@ -45,7 +46,7 @@ detect_platform() {
     NGINX_SERVERS_DIR="${BREW_PREFIX}/etc/nginx/servers"
     # Do NOT mkdir or require existence here; ensure_nginx() will handle it after install
   else
-    # Linux block (kept, with mkdirs as you had them)
+    # Linux block (kept)
     OS_KIND="linux"
     if [[ -r /etc/os-release ]]; then
       . /etc/os-release
@@ -163,15 +164,14 @@ ensure_nginx() {
 }
 
 # ---- Local-mode helpers (NEW) ----
-is_special_tld() {  # <<< NEW
-  # $1: domain
+is_special_tld() {  # local-ish TLDs → treat as local mode
   case "$1" in
     *.local|*.lan|*.home|*.internal|*.test|localhost|*.localhost) return 0 ;;
     *) return 1 ;;
   esac
 }
 
-domain_has_public_a() {  # <<< NEW
+domain_has_public_a() {
   local d="$1"
   local tool
   tool="$(ensure_dns_tool)"
@@ -182,7 +182,7 @@ domain_has_public_a() {  # <<< NEW
   fi
 }
 
-ensure_mkcert() {  # <<< NEW
+ensure_mkcert() {
   if have mkcert; then return 0; fi
   case "$PKG_MGR" in
     brew)
@@ -209,26 +209,44 @@ ensure_mkcert() {  # <<< NEW
   have mkcert || die "mkcert installation failed."
 }
 
-gen_mkcert_into_sslout() {  # <<< NEW
+gen_mkcert_into_sslout() {
   local d="$1"
   ensure_mkcert
   mkdir -p "${SSL_OUT_DIR}"
   chmod 700 "${SSL_OUT_DIR}"
   mkcert -install >/dev/null 2>&1 || true
-  local tdir; tdir="$(mktemp -d)"
-  (
-    cd "$tdir"
-    mkcert "${d}" "*.${d}" >/dev/null
-    local crt key
-    crt="$(ls -1t *.pem *.crt 2>/dev/null | head -n1)"
-    key="$(ls -1t *.key 2>/dev/null | head -n1)"
-    [[ -f "$crt" && -f "$key" ]] || die "mkcert did not produce key/cert."
-    cp -f "$crt" "${SSL_OUT_DIR}/fullchain.pem"
-    cp -f "$key" "${SSL_OUT_DIR}/privkey.pem"
-  )
-  rm -rf "$tdir"
+
+  # Write directly to filenames nginx expects (fixes “+1.pem” issue)
+  mkcert -cert-file "${SSL_OUT_DIR}/fullchain.pem" \
+         -key-file  "${SSL_OUT_DIR}/privkey.pem" \
+         "${d}" "*.${d}"
+
+  [[ -s "${SSL_OUT_DIR}/fullchain.pem" && -s "${SSL_OUT_DIR}/privkey.pem" ]] \
+    || die "mkcert failed to generate ${SSL_OUT_DIR}/fullchain.pem / privkey.pem"
+
   chmod 600 "${SSL_OUT_DIR}/fullchain.pem" "${SSL_OUT_DIR}/privkey.pem"
   log "mkcert-generated certs in ${SSL_OUT_DIR}/ (fullchain.pem, privkey.pem)."
+}
+
+write_hosts_entries() {
+  # $1: ip (e.g., 127.0.0.1 or LAN IP); $2..$6: five hostnames
+  local ip="$1"; shift
+  local hosts_file="/etc/hosts"
+  local tag="# ${APP_NAME} generated"
+  local updated=0
+  for h in "$@"; do
+    # Remove any existing line for this host to avoid duplicates
+    sudo sed -i.bak "/[[:space:]]${h//./\\.}[[:space:]]\|[[:space:]]${h//./\\.}\$/d" "$hosts_file" 2>/dev/null || true
+    echo "${ip} ${h} ${tag}" | sudo tee -a "$hosts_file" >/dev/null
+    updated=1
+  done
+  if (( updated )); then
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      dscacheutil -flushcache >/dev/null 2>&1 || true
+      killall -HUP mDNSResponder >/dev/null 2>&1 || true
+    fi
+    log "Added host mappings to ${hosts_file}."
+  fi
 }
 
 # ---- IP discovery ----
@@ -320,8 +338,9 @@ enable_nginx_site() {
   if have systemctl; then
     sudo systemctl reload nginx
   elif [[ "$OS_KIND" == "darwin" ]] && have brew; then
-    brew services start nginx >/dev/null 2>&1 || true
-    brew services restart nginx
+    sudo brew services stop nginx >/dev/null 2>&1 || true
+    sudo brew services start nginx >/dev/null 2>&1 || true
+    sudo brew services restart nginx
   else
     sudo nginx -s reload
   fi
@@ -346,7 +365,8 @@ copy_certs_to_home() {
 # ---- Main worker ----
 wildcard_routes() {
   local domain="" email="" center_port=""
-  local backend_scheme=""  # "https" (default) or "http"
+  local backend_scheme=""        # "https" (default) or "http"
+  local WRITE_HOSTS="true"           # optional flag
 
   while (($#)); do
     case "$1" in
@@ -356,17 +376,17 @@ wildcard_routes() {
       --backend)         backend_scheme="${2:-}"; shift 2;;   # http|https
       --backend-http|--backend-http-only)
                          backend_scheme="http"; shift;;
+      --write-hosts)     WRITE_HOSTS="true"; shift;;
       -h|--help)
         cat <<USAGE
-Usage: $0 --domain example.com --email you@example.com --center-port 8080 [--backend https|http]
+Usage: $0 --domain example.com --email you@example.com --center-port 8080 [--backend https|http] [--no-write-hosts]
 Reads defaults from ${CONFIG_FILE} if present:
   DOMAIN=example.com
   EMAIL=you@example.com
   CENTER_PORT=8080
-  # Backend scheme (default https)
   BACKEND_SCHEME=https          # or "http"
-  # Compatibility toggle:
   HTTP_ONLY=true                # sets BACKEND_SCHEME=http
+  WRITE_HOSTS=true              # add the 5 hostnames to /etc/hosts (best with non-.local TLDs)
 
 Behavior:
   * Auto-detect local domains (.local/.lan/.home/.internal/.test/localhost) → local mode (mkcert)
@@ -394,6 +414,7 @@ USAGE
     if [[ "${HTTP_ONLY:-}" == "true" && -z "${backend_scheme:-}" ]]; then
       backend_scheme="http"
     fi
+    WRITE_HOSTS="${WRITE_HOSTS:-${WRITE_HOSTS:-}}"
   fi
 
   [[ -n "${domain:-}" ]] || die "Missing --domain and no DOMAIN in ${CONFIG_FILE}."
@@ -414,7 +435,7 @@ USAGE
   ensure_dns_tool >/dev/null
   ensure_nginx
 
-  # ---------- Local-mode detection (NEW) ----------
+  # ---------- Local-mode detection ----------
   local LOCAL_MODE=0
   if is_special_tld "$domain"; then
     LOCAL_MODE=1
@@ -498,6 +519,12 @@ GUIDE
   local h2="${l2}.${domain}"   # middle → filename key
   local h3="${l3}.${domain}"
   local h4="${l4}.${domain}"
+
+  # Optional: write /etc/hosts in local mode (macOS may ignore *.local due to mDNS)
+  if (( LOCAL_MODE == 1 )) && [[ "${WRITE_HOSTS:-}" == "true" ]]; then
+    local hosts_ip="127.0.0.1"
+    write_hosts_entries "$hosts_ip" "$h0" "$h1" "$h2" "$h3" "$h4"
+  fi
 
   # Nginx config (HTTPS listeners; proxy to HTTP/HTTPS backend)
   local cert="${le_dir}/fullchain.pem"
