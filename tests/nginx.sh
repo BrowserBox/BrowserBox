@@ -469,12 +469,6 @@ USAGE
   if [[ "${HTTP_ONLY:-}" == "true" && -z "${backend_scheme:-}" ]]; then backend_scheme="http"; fi
   WRITE_HOSTS="${WRITE_HOSTS:-${WRITE_HOSTS:-true}}"
 
-  # **FIX**: Capture all non-mapping config lines to preserve them.
-  local other_config=""
-  if [[ -f "$CONFIG_FILE" ]]; then
-    other_config="$(grep -vE '^ADDR_[0-9]+=|^# --- '"${APP_NAME}"':'"${USER}"' mappings' "$CONFIG_FILE" || true)"
-  fi
-
   detect_platform
   if [[ "$DO_CLEANUP_ONLY" == "true" ]]; then
     full_cleanup
@@ -496,7 +490,12 @@ USAGE
   if [[ "$SKIP_PRECLEAN" != "true" ]]; then
     log "Pre-cleaning previous ${APP_NAME} config for user ${USER}..."
     cleanup_user_nginx
-    cleanup_user_hosts_and_config
+    # **MODIFICATION**: We no longer need cleanup_user_hosts_and_config because we are overwriting the file.
+    # We just need to clear the /etc/hosts entries.
+    mapfile -t hosts < <(parse_hosts_from_config)
+    if ((${#hosts[@]})); then
+      remove_hosts_entries "${hosts[@]}"
+    fi
   fi
   # Local/public mode detection
   local LOCAL_MODE=0
@@ -574,86 +573,21 @@ PSL
 # Primary (filename key): ${mid_fqdn}
 # Created: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
 # Backend scheme: ${bscheme}
-server {
-    listen 443 ssl;
-    server_name ${h0};
-    ssl_certificate ${cert};
-    ssl_certificate_key ${key};
-    location / {
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-${proxy_ssl_directives}
-        proxy_pass ${bscheme}://127.0.0.1:${p0};
-    }
-}
-server {
-    listen 443 ssl;
-    server_name ${h1};
-    ssl_certificate ${cert};
-    ssl_certificate_key ${key};
-    location / {
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-${proxy_ssl_directives}
-        proxy_pass ${bscheme}://127.0.0.1:${p1};
-    }
-}
-server {
-    listen 443 ssl;
-    server_name ${h2};
-    ssl_certificate ${cert};
-    ssl_certificate_key ${key};
-    location / {
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-${proxy_ssl_directives}
-        proxy_pass ${bscheme}://127.0.0.1:${p2};
-    }
-}
-server {
-    listen 443 ssl;
-    server_name ${h3};
-    ssl_certificate ${cert};
-    ssl_certificate_key ${key};
-    location / {
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-${proxy_ssl_directives}
-        proxy_pass ${bscheme}://127.0.0.1:${p3};
-    }
-}
-server {
-    listen 443 ssl;
-    server_name ${h4};
-    ssl_certificate ${cert};
-    ssl_certificate_key ${key};
-    location / {
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-${proxy_ssl_directives}
-        proxy_pass ${bscheme}://127.0.0.1:${p4};
-    }
-}
+server { listen 443 ssl; server_name ${h0}; ssl_certificate ${cert}; ssl_certificate_key ${key}; location / { proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto https; ${proxy_ssl_directives} proxy_pass ${bscheme}://127.0.0.1:${p0}; } }
+server { listen 443 ssl; server_name ${h1}; ssl_certificate ${cert}; ssl_certificate_key ${key}; location / { proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto https; ${proxy_ssl_directives} proxy_pass ${bscheme}://127.0.0.1:${p1}; } }
+server { listen 443 ssl; server_name ${h2}; ssl_certificate ${cert}; ssl_certificate_key ${key}; location / { proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto https; ${proxy_ssl_directives} proxy_pass ${bscheme}://127.0.0.1:${p2}; } }
+server { listen 443 ssl; server_name ${h3}; ssl_certificate ${cert}; ssl_certificate_key ${key}; location / { proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto https; ${proxy_ssl_directives} proxy_pass ${bscheme}://127.0.0.1:${p3}; } }
+server { listen 443 ssl; server_name ${h4}; ssl_certificate ${cert}; ssl_certificate_key ${key}; location / { proxy_set_header Host \$host; proxy_set_header X-Real-IP \$remote_addr; proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto https; ${proxy_ssl_directives} proxy_pass ${bscheme}://127.0.0.1:${p4}; } }
 EOF
   enable_nginx_site "$NCONF" "$mid_fqdn"
 
-  # **FIX**: Atomically write the new config file, preserving other variables.
+  # **FIX**: Atomically write the new config file, persisting the effective settings.
   {
-    # Write the preserved config if it's not empty
-    if [[ -n "$other_config" ]]; then
-      printf '%s\n' "$other_config"
-    fi
-    # Write the new mappings
+    echo "DOMAIN=${domain}"
+    echo "EMAIL=${email}"
+    echo "CENTER_PORT=${center_port}"
+    echo "BACKEND_SCHEME=${backend_scheme}"
+    echo
     echo "# --- ${APP_NAME}:${USER} mappings $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     echo "ADDR_${p0}=${h0}"
     echo "ADDR_${p1}=${h1}"
@@ -661,7 +595,7 @@ EOF
     echo "ADDR_${p3}=${h3}"
     echo "ADDR_${p4}=${h4}"
   } > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
-  log "Wrote host mappings to ${CONFIG_FILE}"
+  log "Wrote effective configuration to ${CONFIG_FILE}"
 
   { # Human-facing summary → STDERR
     echo
@@ -675,7 +609,6 @@ EOF
     echo " https://${h4} → ${bscheme}://127.0.0.1:${p4}"
     echo
     echo "Config updated: ${CONFIG_FILE}"
-    echo " (added: ADDR_${p0}..ADDR_${p4})"
     echo
     echo "Certs:"
     echo " • Live (nginx uses): ${le_dir}/fullchain.pem , ${le_dir}/privkey.pem"
