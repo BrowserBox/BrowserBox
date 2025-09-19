@@ -250,10 +250,11 @@
         `${GO_SECURE ? 'https:' : 'http:'}//link.local:${server_port+1}`,
         ...CONFIG.connectivityTests,
         ...((process.env.TORBB || process.env.HOST_PER_SERVICE) ? [
-          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}:*`, // main service 
-          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
-          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 1}`]}:*`, // devtools
-          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}`, // main service 
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}`, // audio onion service
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 1}`]}`, // devtools
+          `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 2}`]}`, // docs
+          `wss://*.${process.env.DOMAIN}`, // main service (for data: urls seemingly)
         ] : [
           `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)

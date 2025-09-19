@@ -62,7 +62,6 @@ envFile="${CONFIG_DIR}/test.env"
 
 if [ -f "$envFile" ]; then
   echo "bbpro has been setup. Starting..."
-  start_bbpro
 else
   echo "Please run setup_bbpro before running the first time"
   exit 1
