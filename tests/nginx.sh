@@ -180,7 +180,7 @@ gen_mkcert_into_sslout() {
 # Parse hostnames from hosts.env (ADDR_<PORT>=<host>)
 parse_hosts_from_config() {
   [[ -f "$CONFIG_FILE" ]] || return 0
-  awk -F= '/^ADDR_[0-9]+=/ { if ($2 != "") print $2 }' "$CONFIG_FILE" 2>/dev/null
+  awk -F= '/^export ADDR_[0-9]+=/ { if ($2 != "") print $2 }' "$CONFIG_FILE" 2>/dev/null
 }
 # Add /etc/hosts entries (with metadata tag) — tag is informational only
 write_hosts_entries() {
@@ -263,7 +263,7 @@ _sed_inplace() { if [[ "$OS_KIND" == "darwin" ]]; then sed -i '' -E "$1" "$2"; e
 _cfg_non_mapping_view() {
   [[ -f "$CONFIG_FILE" ]] || return 0
   awk -v app="$APP_NAME" -v user="$USER" '
-    $0 ~ "^ADDR_[0-9]+=" { next } # drop numeric ADDR lines
+    $0 ~ "^export ADDR_[0-9]+=" { next } # drop numeric ADDR lines
     $0 ~ "^# --- "app":"user" mappings " { next } # drop our stamped header
     { print }
   ' "$CONFIG_FILE"
@@ -287,11 +287,11 @@ write_mappings_to_config() {
   local h0="$6" h1="$7" h2="$8" h3="$9" h4="${10}"
   mkdir -p "$CONFIG_DIR"; touch "$CONFIG_FILE"
   # Remove any prior mappings for these ports and the stamped header
-  _sed_inplace "/^ADDR_${p0}=.*/d" "$CONFIG_FILE"
-  _sed_inplace "/^ADDR_${p1}=.*/d" "$CONFIG_FILE"
-  _sed_inplace "/^ADDR_${p2}=.*/d" "$CONFIG_FILE"
-  _sed_inplace "/^ADDR_${p3}=.*/d" "$CONFIG_FILE"
-  _sed_inplace "/^ADDR_${p4}=.*/d" "$CONFIG_FILE"
+  _sed_inplace "/^export ADDR_${p0}=.*/d" "$CONFIG_FILE"
+  _sed_inplace "/^export ADDR_${p1}=.*/d" "$CONFIG_FILE"
+  _sed_inplace "/^export ADDR_${p2}=.*/d" "$CONFIG_FILE"
+  _sed_inplace "/^export ADDR_${p3}=.*/d" "$CONFIG_FILE"
+  _sed_inplace "/^export ADDR_${p4}=.*/d" "$CONFIG_FILE"
   _sed_inplace '/^# --- '"${APP_NAME}"':'"${USER}"' mappings .*/d' "$CONFIG_FILE"
   # Snapshot existing non-mapping content
   local non_mapping_content
@@ -301,16 +301,16 @@ write_mappings_to_config() {
     echo "$non_mapping_content"
     echo "# --- ${APP_NAME}:${USER} mappings $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
     # Write non-mapping variables if set
-    [[ -n "${DOMAIN:-}" ]] && echo "DOMAIN=${DOMAIN}"
-    [[ -n "${EMAIL:-}" ]] && echo "EMAIL=${EMAIL}"
-    [[ -n "${HTTP_ONLY:-}" ]] && echo "HTTP_ONLY=${HTTP_ONLY}"
-    [[ -n "${CENTER_PORT:-}" ]] && echo "CENTER_PORT=${CENTER_PORT}"
-    [[ -n "${BACKEND_SCHEME:-}" ]] && echo "BACKEND_SCHEME=${BACKEND_SCHEME}"
-    echo "ADDR_${p0}=${h0}"
-    echo "ADDR_${p1}=${h1}"
-    echo "ADDR_${p2}=${h2}"
-    echo "ADDR_${p3}=${h3}"
-    echo "ADDR_${p4}=${h4}"
+    [[ -n "${DOMAIN:-}" ]] && echo "export DOMAIN=${DOMAIN}"
+    [[ -n "${EMAIL:-}" ]] && echo "export EMAIL=${EMAIL}"
+    [[ -n "${HTTP_ONLY:-}" ]] && echo "export HTTP_ONLY=${HTTP_ONLY}"
+    [[ -n "${CENTER_PORT:-}" ]] && echo "export CENTER_PORT=${CENTER_PORT}"
+    [[ -n "${BACKEND_SCHEME:-}" ]] && echo "export BACKEND_SCHEME=${BACKEND_SCHEME}"
+    echo "export ADDR_${p0}=${h0}"
+    echo "export ADDR_${p1}=${h1}"
+    echo "export ADDR_${p2}=${h2}"
+    echo "export ADDR_${p3}=${h3}"
+    echo "export ADDR_${p4}=${h4}"
   } > "$CONFIG_FILE".tmp
   mv "$CONFIG_FILE".tmp "$CONFIG_FILE"
   log "Wrote host mappings and configuration to ${CONFIG_FILE}"
@@ -361,7 +361,7 @@ cleanup_user_hosts_and_config() {
   fi
   # Remove only ADDR_* lines (numeric) and our stamped header; preserve everything else
   if [[ -f "$CONFIG_FILE" ]]; then
-    _sed_inplace '/^ADDR_[0-9]+=.*/d' "$CONFIG_FILE"
+    _sed_inplace '/^export ADDR_[0-9]+=.*/d' "$CONFIG_FILE"
     _sed_inplace '/^# --- '"${APP_NAME}"':'"${USER}"' mappings .*/d' "$CONFIG_FILE"
   fi
   log "Cleared ADDR_* mappings for user ${USER} from ${CONFIG_FILE}"
@@ -614,17 +614,17 @@ EOF
 
   # Atomically write the new config file, persisting the effective settings.
   {
-    echo "DOMAIN=${domain}"
-    echo "EMAIL=${email}"
-    echo "CENTER_PORT=${center_port}"
-    echo "BACKEND_SCHEME=${backend_scheme}"
+    echo "export DOMAIN=${domain}"
+    echo "export EMAIL=${email}"
+    echo "export CENTER_PORT=${center_port}"
+    echo "export BACKEND_SCHEME=${backend_scheme}"
     echo
     echo "# --- ${APP_NAME}:${USER} mappings $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    echo "ADDR_${p0}=${h0}"
-    echo "ADDR_${p1}=${h1}"
-    echo "ADDR_${p2}=${h2}"
-    echo "ADDR_${p3}=${h3}"
-    echo "ADDR_${p4}=${h4}"
+    echo "export ADDR_${p0}=${h0}"
+    echo "export ADDR_${p1}=${h1}"
+    echo "export ADDR_${p2}=${h2}"
+    echo "export ADDR_${p3}=${h3}"
+    echo "export ADDR_${p4}=${h4}"
   } > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
   log "Wrote effective configuration to ${CONFIG_FILE}"
 
