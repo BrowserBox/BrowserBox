@@ -203,6 +203,7 @@ export const DEBUG = Object.freeze({
   neonMode: false,
   resetCache: false,
   exposeState: false,
+  exposeConfig: true,
   fullScope: false,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },
@@ -326,7 +327,11 @@ export const AttachmentTypes = new Set([
 // Cache the token outside the uberFetch function
 authToken = globalThis?.localStorage?.getItem?.('localCookie');
 
-Object.assign(globalThis, { uberFetch });
+Object.assign(globalThis, { uberFetch, CONFIG });
+
+if ( DEBUG.exposeConfig ) {
+  Object.assign(globalThis, {VOODOO_CONFIG: CONFIG});
+}
 
 export async function uberFetch (url, options = {}) {
   // Check if uberFetch should be used
