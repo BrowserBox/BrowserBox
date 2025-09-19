@@ -222,8 +222,8 @@ export const CONFIG = Object.freeze({
       return zetaMode;
     } else {
       return uberFetch('/isZeta').then(r => r.json()).then(({isZeta}) => {
+        zetaMode = isZeta;
         zetaModeChecked = true;
-        zetaMode = zeta;
       }).catch(e => { console.warn(`Issue checking zeta mode.`, e); });
     }
   },
