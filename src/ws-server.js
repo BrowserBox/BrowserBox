@@ -191,6 +191,9 @@
     const app = express();
     app.set('etag', 'strong');
     app.use(compression());
+    if ( process.env.HOST_PER_SERVICE ) {
+      app.enable('trust proxy');
+    }
     const server_port = parseInt(port);
     const StandardCSP = {
       defaultSrc: ["'self'"],
@@ -337,7 +340,26 @@
               `${GO_SECURE ? 'https:' : 'http:'}//*.dosaygo.com:${server_port+1}`,
               `${GO_SECURE ? 'https:' : 'http:'}//localhost:${server_port-1}`,
               `${GO_SECURE ? 'https:' : 'http:'}//localhost:${server_port+1}`,
-              ...CONFIG.connectivityTests
+              ...CONFIG.connectivityTests,
+              ...((process.env.TORBB || process.env.HOST_PER_SERVICE) ? [
+                `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port}`]}`, // main service 
+                `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port - 2}`]}`, // audio onion service
+                `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 1}`]}`, // devtools
+                `${GO_SECURE ? 'https:' : 'http:'}//${process.env[`ADDR_${server_port + 2}`]}`, // docs
+                `wss://*.${process.env.DOMAIN}`, // main service (for data: urls seemingly)
+              ] : [
+                `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+                `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+              ]),
+              ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+                `${GO_SECURE ? 'https:' : 'http:'}//${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+                `wss://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+              ] : [
+                `${GO_SECURE ? 'https:' : 'http:'}//*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+                `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+              ]),
+              // for checking if access via TOR
+              "https://check.torproject.org/"
             ],
             fontSrc: [
               "'self'", 
@@ -437,7 +459,7 @@
             const zVal = encodeURIComponent(btoa(JSON.stringify({
               x: process.env[`ADDR_${server_port-2}`],  // audio port service hostname
               y: process.env[`ADDR_${server_port+1}`],  // devtools port service hostname
-              z: process.env[`ADDR_${server_port+2}`],  // docs port service hostname
+              z: process.env[`ADDR_${server_port-1}`],  // docs port service hostname
             })));
             if ( !! Url ) {
               url = `/?url=${encodeURIComponent(Url)}&z=${zVal}&ran=${ran||Math.random()}&ui=${ui}#${session_token}`;

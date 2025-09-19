@@ -58,10 +58,13 @@ echo "Finding bbpro config..."
 CONFIG_DIR="$(get_config_dir)"
 echo "Found bbpro at: ${CONFIG_DIR}"
 
+confFile="${CONFIG_DIR}/config"
 envFile="${CONFIG_DIR}/test.env"
 
 if [ -f "$envFile" ]; then
   echo "bbpro has been setup. Starting..."
+  . "$confFile"
+  . "$envFile"
 else
   echo "Please run setup_bbpro before running the first time"
   exit 1
