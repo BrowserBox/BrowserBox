@@ -717,6 +717,8 @@
             }
             settingUp = true;
             try {
+              alert((await CONFIG.zetaMode()));
+              alert(localStorage.getItem(CONFIG.audioServiceFileName));
               const AUDIO = (CONFIG.isOnion || (await CONFIG.zetaMode())) ? new URL(
                   `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
                 ) 
