@@ -19,6 +19,8 @@ PORT=""
 TOKEN=""
 COOKIE=""
 DOC_API_KEY=""
+ZETA_MODE=false
+BACKEND_SCHEME="https" # Default to https
 
 # Function to check if a command exists
 command_exists() {
@@ -381,6 +383,8 @@ OPTIONS:
   -t, --token TOKEN           Provide a specific login token.
   -c, --cookie COOKIE         Set a custom cookie value for BrowserBox.
   -d, --doc-api-key KEY       Provide a document viewer API key.
+  -z, --zeta                  Enable host-per-service mode (for reverse proxies, etc.).
+      --backend SCHEME        Set backend scheme to 'http' or 'https'.
       --ontor                 Enable Tor support for BrowserBox.
       --inject PATH           Inject a JavaScript file into every browsed page.
 
@@ -392,6 +396,7 @@ EXAMPLES:
 EOF
 }
 
+# Parse options with getopts
 # Parse options with getopts
 while :; do
   case "$1" in
@@ -413,6 +418,14 @@ while :; do
       ;;
     -d|--doc-api-key)
       DOC_API_KEY="$2"
+      shift 2
+      ;;
+    -z|--zeta)
+      ZETA_MODE=true
+      shift
+      ;;
+    --backend)
+      BACKEND_SCHEME="$2"
       shift 2
       ;;
     --ontor)
@@ -441,6 +454,12 @@ done
 # Validate required options
 if [[ -z "$PORT" ]]; then
   echo "ERROR: --port option is required." >&2
+  exit 1
+fi
+
+# Validate backend scheme
+if [[ "$BACKEND_SCHEME" != "http" && "$BACKEND_SCHEME" != "https" ]]; then
+  echo "ERROR: --backend value must be 'http' or 'https'." >&2
   exit 1
 fi
 
@@ -585,6 +604,16 @@ elif [[ "$OS_TYPE" == "win" ]]; then
   open_firewall_port_windows "$AUDIO_PORT"
 fi
 
+HOST_PER_SERVICE_VALUE=""
+if [ "$ZETA_MODE" = true ]; then
+  HOST_PER_SERVICE_VALUE="true"
+fi
+
+BBX_HTTP_ONLY_VALUE=""
+if [ "$BACKEND_SCHEME" = "http" ]; then
+  BBX_HTTP_ONLY_VALUE="true"
+fi
+
 cat > "${CONFIG_DIR}/test.env" <<EOF
 export APP_PORT=$PORT
 export AUDIO_PORT=$AUDIO_PORT
@@ -594,13 +623,15 @@ export DEVTOOLS_PORT=$DT_PORT
 export DOCS_PORT=$SV_PORT
 export DOCS_KEY=$DOC_API_KEY
 export INJECT_SCRIPT="${INJECT_SCRIPT}"
+export HOST_PER_SERVICE=${HOST_PER_SERVICE_VALUE}
+export BBX_HTTP_ONLY=${BBX_HTTP_ONLY_VALUE}
 
 # true runs within a 'browsers' group
 #export BB_POOL=true
 
 export RENICE_VALUE=-18
 
-# used for building or for installing from repo on macos m1 
+# used for building or for installing from repo on macos m1
 # (because of some dependencies with native addons that do not support m1)
 # export TARGET_ARCH=x64
 
