@@ -217,7 +217,7 @@ export const DEBUG = Object.freeze({
 export const CONFIG = Object.freeze({
   hearingProtectionMaxGain: 1.3,
   alwaysSendTopLevel: false,
-  get zetaMode() {
+  async zetaMode() {
     if ( zetaModeChecked ) {
       return zetaMode;
     } else {
@@ -228,7 +228,7 @@ export const CONFIG = Object.freeze({
     }
   },
   get isTor() {
-    return this.isOnion || globalThis.comingFromTOR
+    return this.isOnion || globalThis.comingFromTOR || false;
   },
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');

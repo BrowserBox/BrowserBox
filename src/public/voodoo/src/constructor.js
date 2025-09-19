@@ -717,7 +717,7 @@
             }
             settingUp = true;
             try {
-              const AUDIO = (CONFIG.isOnion || (await CONFIG.zetaMode)) ? new URL(
+              const AUDIO = (CONFIG.isOnion || (await CONFIG.zetaMode())) ? new URL(
                   `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
                 ) 
                 : 
@@ -725,7 +725,7 @@
               ;
               AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
               const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
-              AUDIO.port = (CONFIG.isOnion || (await CONFIG.zetaMode) || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
+              AUDIO.port = (CONFIG.isOnion || (await CONFIG.zetaMode()) || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
               if ( CONFIG.isDNSFacade ) {
                 const subs = location.hostname.split('.');
                 if ( subs?.[0]?.match?.(FACADE_HOST_REGEX)?.index == 0 ) {

@@ -130,7 +130,7 @@ class BBContextMenu extends Base {
       }
       state.emulateActive(currentTab);
 
-      const url = state.CONFIG.isOnion ? new URL(
+      const url = (state.CONFIG.isOnion || (await state.CONFIG.zetaMode())) ? new URL(
           `${location.protocol}//${localStorage.getItem(state.CONFIG.devtoolsServiceFileName)}`
         ) 
         : 
@@ -145,7 +145,7 @@ class BBContextMenu extends Base {
         url.hostname = subs.join('.');
         console.log({url});
       } else {
-        url.port = state.CONFIG.isOnion ? 443 : (parseInt(state.CONFIG.mainPort) + 1);
+        url.port = (state.CONFIG.isOnion || (await state.CONFIG.zetaMode())) ? 443 : (parseInt(state.CONFIG.mainPort) + 1);
       }
 
       url.pathname = "login";
