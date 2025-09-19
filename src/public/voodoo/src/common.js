@@ -60,7 +60,7 @@ export const DEBUG = Object.freeze({
   showAudioInstructions: false,
   showStableSizeOnResize: false,
   debugUntilTrue: false,
-  debugUberFetch: true,
+  debugUberFetch: false,
   useUberFetch: true,
   logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: false,  // there's no point because we only request perms on mobile and 
@@ -219,12 +219,12 @@ export const CONFIG = Object.freeze({
   alwaysSendTopLevel: false,
   async zetaMode() {
     if ( zetaModeChecked ) {
-      alert('checked' + zetaMode);
       return zetaMode;
     } else {
       return uberFetch('/isZeta').then(r => r.json()).then(({isZeta}) => {
         zetaMode = isZeta;
         zetaModeChecked = true;
+        return zetaMode;
       }).catch(e => { console.warn(`Issue checking zeta mode.`, e); });
     }
   },
