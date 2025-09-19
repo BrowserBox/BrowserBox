@@ -220,7 +220,7 @@ export const CONFIG = Object.freeze({
     if ( zetaModeChecked ) {
       return zetaMode;
     } else {
-      return uberFetch('/isZeta').then(r => r.json()).then(({zeta}) => {
+      return uberFetch('/isZeta').then(r => r.json()).then(({isZeta}) => {
         zetaModeChecked = true;
         zetaMode = zeta;
       }).catch(e => { console.warn(`Issue checking zeta mode.`, e); });
