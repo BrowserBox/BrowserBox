@@ -16,7 +16,7 @@ TORDIR=""
 TOR_USER=""
 TOR_GROUP=""
 TOR_SERVICE="tor@default"  # Linux instance-based setups
-torsslcerts="tor-sslcerts"
+torsslcerts="${HOME}/tor-sslcerts"
 COOKIE_AUTH_FILE=""
 
 # Timeouts (seconds)
@@ -537,7 +537,7 @@ configure_and_export_tor() {
     fi
     export "ADDR_${service_port}=${onion_address}"
     log_inf "$service_port $onion_address"
-    local cert_dir="$HOME/${torsslcerts}/${onion_address}"
+    local cert_dir="${torsslcerts}/${onion_address}"
     mkdir -p "$cert_dir"
     if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" >/dev/null 2>&1; then
       log_err "mkcert failed for $onion_address"; exit 1
@@ -647,7 +647,7 @@ manage_firewall() {
       onion_address="$(add_hidden_service_via_control_port "$service_port")"
       export "ADDR_${service_port}=${onion_address}"
       log_inf "Onion address for port ${service_port}: ${onion_address}"
-      cert_dir="$HOME/${torsslcerts}/${onion_address}"
+      cert_dir="${torsslcerts}/${onion_address}"
       setup_mkcert
       mkdir -p "$cert_dir"
       if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" >/dev/null 2>&1; then
@@ -681,7 +681,7 @@ EOF
 
 # Final output
 ref="ADDR_${APP_PORT}"
-cert_file="${HOME}/${torsslcerts}/${!ref}/fullchain.pem"
+cert_file="${torsslcerts}/${!ref}/fullchain.pem"
 DOMAIN="${!ref}"
 LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
 echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
