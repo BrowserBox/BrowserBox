@@ -1,5 +1,5 @@
 const USW = true; // service worker
-export const VERSION = '12.2.0';
+export const VERSION = '13.0.0';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -203,6 +203,7 @@ export const DEBUG = Object.freeze({
   neonMode: false,
   resetCache: false,
   exposeState: false,
+  exposeConfig: true,
   fullScope: false,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },
@@ -216,18 +217,19 @@ export const DEBUG = Object.freeze({
 export const CONFIG = Object.freeze({
   hearingProtectionMaxGain: 1.3,
   alwaysSendTopLevel: false,
-  get zetaMode() {
+  async zetaMode() {
     if ( zetaModeChecked ) {
       return zetaMode;
     } else {
-      return uberFetch('/isZeta').then(r => r.json()).then(({zeta}) => {
+      return uberFetch('/isZeta').then(r => r.json()).then(({isZeta}) => {
+        zetaMode = isZeta;
         zetaModeChecked = true;
-        zetaMode = zeta;
+        return zetaMode;
       }).catch(e => { console.warn(`Issue checking zeta mode.`, e); });
     }
   },
   get isTor() {
-    return this.isOnion || globalThis.comingFromTOR
+    return this.isOnion || globalThis.comingFromTOR || false;
   },
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
@@ -326,7 +328,11 @@ export const AttachmentTypes = new Set([
 // Cache the token outside the uberFetch function
 authToken = globalThis?.localStorage?.getItem?.('localCookie');
 
-Object.assign(globalThis, { uberFetch });
+Object.assign(globalThis, { uberFetch, CONFIG });
+
+if ( DEBUG.exposeConfig ) {
+  Object.assign(globalThis, {VOODOO_CONFIG: CONFIG});
+}
 
 export async function uberFetch (url, options = {}) {
   // Check if uberFetch should be used

@@ -463,6 +463,7 @@ load_config
 # Trap EXIT signal to save config on script termination
 trap save_config EXIT
 
+
 save_config() {
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"  # Restrict to owner only
@@ -492,12 +493,9 @@ LICENSE_KEY="${_LIC_TO_WRITE}"
 BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
-HOST_PER_SERVICE="${HOST_PER_SERVICE}"
-BBX_HTTP_ONLY="${BBX_HTTP_ONLY}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
-
 
 ensure_nvm() {
     if [ -f "$HOME/.nvm/nvm.sh" ]; then
@@ -872,14 +870,14 @@ setup() {
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
   local zeta_mode=""
-  local http_only="${BBX_HTTP_ONLY}"
+  local backend_scheme="" # Will be 'http' or 'https'
 
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
           exit 1
         fi
         port="$2"
@@ -888,7 +886,7 @@ setup() {
       --hostname|-h)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
           exit 1
         fi
         hostname="$2"
@@ -897,7 +895,7 @@ setup() {
       --token|-t)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+          printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
           exit 1
         fi
         token="$2"
@@ -907,13 +905,21 @@ setup() {
         zeta_mode="true"
         shift
         ;;
-      --http-only|-o)
-        http_only="true"
+      --http-only|-o) # Kept for backward compatibility
+        backend_scheme="http"
         shift
+        ;;
+      --backend)
+        if [[ "$2" != "http" && "$2" != "https" ]]; then
+            printf "${RED}Error: --backend value must be 'http' or 'https'${NC}\n"
+            exit 1
+        fi
+        backend_scheme="$2"
+        shift 2
         ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
-        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>] [--zeta|-z]\n"
+        printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
         exit 1
         ;;
     esac
@@ -928,15 +934,9 @@ setup() {
   BBX_HOSTNAME="$hostname"
   TOKEN="${token:-$(openssl rand -hex 16)}"
   BB_TOKEN="${TOKEN}"
-  HOST_PER_SERVICE=""
-  BBX_HTTP_ONLY=""
-  if [[ -n "$zeta_mode" ]]; then
-    HOST_PER_SERVICE="true"
-    echo "WARNING: You need to implement the addition of the Z-VAL (z=) parameter to the login URL"
-  fi
 
-  if [[ -n "$http_only" ]]; then
-    BBX_HTTP_ONLY="true"
+  if [[ -n "$zeta_mode" ]]; then
+    echo "WARNING: You need to implement the addition of the Z-VAL (z=) parameter to the login URL"
   fi
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
@@ -951,8 +951,6 @@ setup() {
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
-    #printf "${YELLOW}Setting up a new product key...${NC}\n"
-    #validate_license_key "true"  # Force prompt if invalid or missing
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
   fi
 
@@ -963,7 +961,18 @@ setup() {
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  BBX_HTTP_ONLY="${BBX_HTTP_ONLY}" HOST_PER_SERVICE="${HOST_PER_SERVICE}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+
+  # Build the command arguments for setup_bbpro
+  local setup_args=("--port" "$port" "--token" "$TOKEN")
+  if [[ -n "$zeta_mode" ]]; then
+    setup_args+=("--zeta")
+  fi
+  if [[ -n "$backend_scheme" ]]; then
+    setup_args+=("--backend" "$backend_scheme")
+  fi
+
+  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"

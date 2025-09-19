@@ -62,7 +62,7 @@ envFile="${CONFIG_DIR}/test.env"
 
 if [ -f "$envFile" ]; then
   echo "bbpro has been setup. Starting..."
-  start_bbpro
+  . "$envFile"
 else
   echo "Please run setup_bbpro before running the first time"
   exit 1
@@ -77,9 +77,7 @@ fi
 if [[ -n "$HOST_PER_SERVICE" ]]; then
   echo "Running 1 host per service..."
   # load both env file as hosts are just the host facades (under say nginx, or ngrok, or localhost.run, etc)
-  . "$envFile"
-  envFile="${CONFIG_DIR}/hosts.env"
-  . "$envFile"
+  . "${CONFIG_DIR}/hosts.env"
 fi
 
 if [ -f "$envFile" ]; then

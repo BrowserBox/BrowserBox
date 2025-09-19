@@ -717,15 +717,18 @@
             }
             settingUp = true;
             try {
-              const AUDIO = (CONFIG.isOnion || (await CONFIG.zetaMode)) ? new URL(
+              //alert((await CONFIG.zetaMode()));
+              //alert(localStorage.getItem(CONFIG.audioServiceFileName));
+              const AUDIO = (CONFIG.isOnion || (await CONFIG.zetaMode())) ? new URL(
                   `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
                 ) 
                 : 
                 new URL(location)
               ;
+              //alert(AUDIO.href);
               AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
               const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
-              AUDIO.port = (CONFIG.isOnion || (await CONFIG.zetaMode) || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
+              AUDIO.port = (CONFIG.isOnion || (await CONFIG.zetaMode()) || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
               if ( CONFIG.isDNSFacade ) {
                 const subs = location.hostname.split('.');
                 if ( subs?.[0]?.match?.(FACADE_HOST_REGEX)?.index == 0 ) {
@@ -737,6 +740,7 @@
               AUDIO.searchParams.set('ran', Math.random());
 
               AUDIO.searchParams.set('localCookie', await state.localCookie);
+              //alert(AUDIO.href);
               if ( ! state.useCookies ) {
                 // due to 3rd-party cookie restrictions in for example
                 // modern browsers post 2024, incognitor or private browsing, or Tor browser 
@@ -1166,6 +1170,7 @@
                   console.error(`
                     BrowserBox configuration error: audio service origin is the same as main service origin. 
                     Will not log in audio, canceling any retry loop.
+                    ${JSON.stringify(localStorage)}
                   `);
                   retry = MAX_RETRIES + 1;
                 }
@@ -1523,20 +1528,25 @@
             DEBUG.val && console.log('secureview', secureview);
             let {url} = secureview;
             if ( url ) {
+              // legacy for CT
               if ( CONFIG.isDNSFacade ) {
-                url = new URL(url);
+                url = new URL(secureview.url);
                 const subs = url.hostname.split('.');
                 const port = url.port;
-                subs.unshift(`p${port}`);
-                url.port = url.protocol == 'https:' ? 443 : 80;
-                url.hostname = subs.join('.');
+                if ( !! port ) {
+                  subs.unshift(`p${port}`);
+                  url.port = url.protocol == 'https:' ? 443 : 80;
+                  url.hostname = subs.join('.');
+                }
               }
-              /*
               // this may not be needed as url may be correct on server
-              if ( await CONFIG.zetaMode ) {
-                url = new URL(`${location.protocol}//${localStorage.getItem(CONFIG.docsServiceFileName)}`)
+              if ( await CONFIG.zetaMode() ) {
+                url = new URL(secureview.url);
+                const canonHost = localStorage.getItem(CONFIG.docsServiceFileName);
+                if ( !!canonHost && url.host !== canonHost ) {
+                  url.host = canonHost;
+                }
               }
-              */
               if ( DEBUG.useWindowOpenForSecureView ) {
                 globalThis.window.open(url);
               } else {
