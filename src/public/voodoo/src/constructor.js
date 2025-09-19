@@ -1528,20 +1528,25 @@
             DEBUG.val && console.log('secureview', secureview);
             let {url} = secureview;
             if ( url ) {
+              // legacy for CT
               if ( CONFIG.isDNSFacade ) {
-                url = new URL(url);
+                url = new URL(secureview.url);
                 const subs = url.hostname.split('.');
                 const port = url.port;
-                subs.unshift(`p${port}`);
-                url.port = url.protocol == 'https:' ? 443 : 80;
-                url.hostname = subs.join('.');
+                if ( !! port ) {
+                  subs.unshift(`p${port}`);
+                  url.port = url.protocol == 'https:' ? 443 : 80;
+                  url.hostname = subs.join('.');
+                }
               }
-              /*
               // this may not be needed as url may be correct on server
-              if ( await CONFIG.zetaMode ) {
-                url = new URL(`${location.protocol}//${localStorage.getItem(CONFIG.docsServiceFileName)}`)
+              if ( await CONFIG.zetaMode() ) {
+                url = new URL(secureview.url);
+                const canonHost = localStorage.getItem(CONFIG.docsServiceFileName);
+                if ( !!canonHost && url.host !== canonHost ) {
+                  url.host = canonHost;
+                }
               }
-              */
               if ( DEBUG.useWindowOpenForSecureView ) {
                 globalThis.window.open(url);
               } else {
