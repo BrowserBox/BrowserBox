@@ -723,6 +723,7 @@
                 : 
                 new URL(location)
               ;
+              alert(AUDIO.href);
               AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
               const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
               AUDIO.port = (CONFIG.isOnion || (await CONFIG.zetaMode()) || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
@@ -737,6 +738,7 @@
               AUDIO.searchParams.set('ran', Math.random());
 
               AUDIO.searchParams.set('localCookie', await state.localCookie);
+              alert(AUDIO.href);
               if ( ! state.useCookies ) {
                 // due to 3rd-party cookie restrictions in for example
                 // modern browsers post 2024, incognitor or private browsing, or Tor browser 
@@ -1166,6 +1168,7 @@
                   console.error(`
                     BrowserBox configuration error: audio service origin is the same as main service origin. 
                     Will not log in audio, canceling any retry loop.
+                    ${JSON.stringify(localStorage)}
                   `);
                   retry = MAX_RETRIES + 1;
                 }
