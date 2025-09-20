@@ -935,10 +935,6 @@ setup() {
   TOKEN="${token:-$(openssl rand -hex 16)}"
   BB_TOKEN="${TOKEN}"
 
-  if [[ -n "$zeta_mode" ]]; then
-    echo "WARNING: You need to implement the addition of the Z-VAL (z=) parameter to the login URL"
-  fi
-
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -977,6 +973,9 @@ setup() {
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
   draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
+  if [[ -n "$zeta_mode" ]]; then
+    printf "${PURPLE}[ZETA MODE]${NC}${BOLD} Your login link above WILL change. Await the run command for your correct login link.\n"
+  fi
 }
 
 run() {
@@ -1033,6 +1032,7 @@ run() {
 
   PORT="$port"
   BBX_HOSTNAME="$hostname"
+  printf "${PURPLE}[ZETA MODE] BrowserBox is running with a tunnel or reverse-proxy.${NC}\n"
   printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -1060,8 +1060,38 @@ run() {
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
   run_quietly bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  local login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
+
+  local login_link=""
+  # Check for zeta mode, which was determined at the start of the function
+  if [[ -n "$zeta_mode" ]]; then
+    # Source the hosts file to load the ADDR_... variables
+    source "${BB_CONFIG_DIR}/hosts.env"
+    
+    # Dynamically construct the variable name for the main service port (e.g., ADDR_8080)
+    local addr_var_name="ADDR_${PORT}"
+    
+    # Use indirect expansion to get the hostname from the dynamically named variable
+    local zeta_host="${!addr_var_name}"
+
+    if [[ -z "$zeta_host" ]]; then
+      printf "${RED}Error: Could not find host for port ${PORT} in hosts.env file (variable ${addr_var_name}).${NC}\n" >&2
+      exit 1
+    fi
+    
+    # Construct the final login link
+    login_link="https://${zeta_host}/login?token=${TOKEN}"
+    
+    # Overwrite login.link file with the correct zeta mode URL
+    echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+  else
+    # Fallback to existing logic for standard mode
+    login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
+  fi
+
   draw_box "Login Link: ${login_link}"
+  if [[ -n "$zeta_mode" ]]; then
+    printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
+  fi
   save_config
 }
 
@@ -2401,7 +2431,7 @@ check_agreement() {
     return 0
   fi
   if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-      printf "${BLUE}BrowserBox v12 Terms:${NC} https://dosaygo.com/terms.txt\n"
+      printf "${BLUE}BrowserBox v13 Terms:${NC} https://dosaygo.com/terms.txt\n"
       printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
       printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
       read -r -p " Agree? (yes/no): " AGREE

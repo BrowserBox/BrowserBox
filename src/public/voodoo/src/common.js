@@ -1,5 +1,5 @@
 const USW = true; // service worker
-export const VERSION = '13.0.0';
+export const VERSION = '13.2.0';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -12,7 +12,7 @@ export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const GO_SECURE = globalThis?.location?.protocol == 'https:';
-export const version = 'v12';
+export const version = 'v13';
 export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
 
@@ -203,7 +203,7 @@ export const DEBUG = Object.freeze({
   neonMode: false,
   resetCache: false,
   exposeState: false,
-  exposeConfig: true,
+  exposeConfig: false,
   fullScope: false,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },
@@ -328,7 +328,7 @@ export const AttachmentTypes = new Set([
 // Cache the token outside the uberFetch function
 authToken = globalThis?.localStorage?.getItem?.('localCookie');
 
-Object.assign(globalThis, { uberFetch, CONFIG });
+Object.assign(globalThis, { uberFetch });
 
 if ( DEBUG.exposeConfig ) {
   Object.assign(globalThis, {VOODOO_CONFIG: CONFIG});

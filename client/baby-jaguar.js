@@ -105,7 +105,7 @@
   const proxyPort = port + 1;
   const proxyBaseUrl = `${urlObj.protocol}//${urlObj.hostname}:${proxyPort}`;
   const loginUrl = `${baseUrl}/login?token=${token}`;
-  const apiUrl = `${baseUrl}/api/v12/tabs`;
+  const apiUrl = `${baseUrl}/api/v13/tabs`;
 
   if (DEBUG) {
     const ox = process.exit.bind(process);

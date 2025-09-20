@@ -669,4 +669,8 @@ DOMAIN=$HOST
 echo https://$DOMAIN:$PORT/login?token=$TOKEN > $CONFIG_DIR/login.link
 echo https://$DOMAIN:$PORT/login?token=$TOKEN
 
+if [[ -n "$HOST_PER_SERVICE_VALUE" ]]; then
+  echo "[Zeta Mode] Your login link will change. Await the run command for the correct login link.">&2
+fi
+
 echo "Setup complete.">&2

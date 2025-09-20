@@ -459,7 +459,9 @@
         let modaler;
         state.latestRequestId = requestId;
 
-      DEBUG.exposeState && (self.state = state);
+      if ( DEBUG.exposeState ) {
+        Object.assign(globalThis, { VOODOO_STATE: state } );
+      } 
 
       patchGlobals();
 
