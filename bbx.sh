@@ -1072,6 +1072,11 @@ run() {
     
     # Use indirect expansion to get the hostname from the dynamically named variable
     local zeta_host="${!addr_var_name}"
+
+    if [[ -z "$zeta_host" ]]; then
+      printf "${RED}Error: Could not find host for port ${PORT} in hosts.env file (variable ${addr_var_name}).${NC}\n" >&2
+      exit 1
+    fi
     
     # Construct the final login link
     login_link="https://${zeta_host}/login?token=${TOKEN}"
