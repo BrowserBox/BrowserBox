@@ -1032,6 +1032,7 @@ run() {
 
   PORT="$port"
   BBX_HOSTNAME="$hostname"
+  printf "${PURPLE}[ZETA MODE] BrowserBox is running with a tunnel or reverse-proxy.${NC}\n"
   printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -1083,6 +1084,7 @@ run() {
   fi
 
   draw_box "Login Link: ${login_link}"
+  printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
   save_config
 }
 
