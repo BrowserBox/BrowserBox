@@ -1803,6 +1803,29 @@ certify() {
   printf "${GREEN}Certification complete.${NC}\n"
 }
 
+ng_run() {
+  banner
+  load_config
+  ensure_deps
+
+  # Trigger setup if not fully configured
+  if [ -z "$HOST_PER_SERVICE" ] || [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
+    setup -z "$@" # Pass any arguments like --port to setup
+    load_config
+  fi
+
+  printf "${YELLOW}Starting Nginx setup...${NC}\n"
+  if ! setup_nginx; then
+    printf "${RED}Nginx setup failed. Aborting.${NC}\n"
+    exit 1
+  fi
+  printf "${GREEN}Nginx setup complete.${NC}\n"
+
+  # Now, call the main run command
+  run "$@"
+}
+
 stop() {
     load_config
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
@@ -2418,6 +2441,7 @@ usage() {
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
     printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
     printf "  ${BLUE}${BOLD}automate${NC}      *Drive with script, MCP or REPL\n"
+    printf "  ${GREEN}ng-run${NC}         Run BrowserBox with Nginx proxy\t${BOLD}bbx ng-run${NC}\n"
     printf "  ${GREEN}--version${NC}      Show version\n"
     printf "  ${GREEN}--help${NC}         Show this help\n"
     printf "\n${BLUE}${BOLD}*automate coming soon${NC}\n\n"
@@ -2547,6 +2571,7 @@ case "$1" in
     status) shift 1; status "$@";;
     run-as) shift 1; run_as "$@";;
     tor-run) shift 1; banner_color=$PURPLE; tor_run "$@";;
+    ng-run) shift 1; banner_color=$GREEN; ng_run "$@";;
     docker-run) shift 1; docker_run "$@";;
     docker-stop) shift 1; docker_stop "$@";;
     --version|-v) shift 1; version "$@";;
