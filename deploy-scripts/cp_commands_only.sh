@@ -6,8 +6,6 @@ INSTALL_DIR="${1:-$(pwd)}"
 SUDO=""
 COMMAND_DIR=""
 
-source ~/.nvm/nvm.sh
-
 if command -v sudo &> /dev/null; then
   SUDO="sudo -n"
 fi
@@ -24,90 +22,34 @@ else
   mkdir -p $COMMAND_DIR
 fi
 
-echo -n "Copying install_node command to $COMMAND_DIR/ ..."
+echo "Copying commands to $COMMAND_DIR..."
 
-$SUDO cp $INSTALL_DIR/deploy-scripts/install_node.sh $COMMAND_DIR/install_node.sh
+commands=(
+  "setup_bbpro"
+  "bbpro"
+  "stop_bbpro"
+  "torbb"
+  "setup_tor"
+  "bbcertify"
+  "bbrevalidate"
+  "bbclear"
+  "bbupdate"
+  "msgme"
+  "win9x_bbpro"
+  "setup_nginx"
+)
 
-echo "Copied!"
+for cmd in "${commands[@]}"; do
+  if [[ -f "./deploy-scripts/_${cmd}.sh" ]]; then
+    echo "Copying ${cmd}..."
+    $SUDO cp "./deploy-scripts/_${cmd}.sh" "${COMMAND_DIR}/${cmd}"
+    $SUDO chmod +x "${COMMAND_DIR}/${cmd}"
+  else
+    echo "Warning: Script for command '${cmd}' not found at ./deploy-scripts/_${cmd}.sh"
+  fi
+done
 
-echo -n "Copying bbcertify command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_bbcertify.sh $COMMAND_DIR/bbcertify
-
-echo "Copied!"
-
-echo -n "Copying bbrevalidate command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_bbrevalidate.sh $COMMAND_DIR/bbrevalidate
-
-echo "Copied!"
-
-echo -n "Copying bbpro command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh $COMMAND_DIR/bbpro
-
-echo "Copied!"
-
-echo -n "Copying win9x_bbpro command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_win9x_bbpro.sh $COMMAND_DIR/win9x_bbpro
-
-echo "Copied!"
-
-echo -n "Copying setup_bbpro and stop_bbpro commands to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh $COMMAND_DIR/setup_bbpro
-$SUDO cp $INSTALL_DIR/deploy-scripts/_stop_bbpro.sh $COMMAND_DIR/stop_bbpro
-
-echo "Copied!"
-
-echo -n "Copying msgme command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_msgme.sh $COMMAND_DIR/msgme
-
-echo "Copied!"
-
-echo -n "Copying bbclear command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_bbclear.sh $COMMAND_DIR/bbclear
-
-echo "Copied!"
-
-echo -n "Copying torbb command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_torbb.sh $COMMAND_DIR/torbb
-
-echo "Copied!"
-
-echo -n "Copying setup_tor command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_setup_tor.sh $COMMAND_DIR/setup_tor
-
-echo "Copied!"
-
-echo -n "Copying non-interactive.sh config to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/non-interactive.sh $COMMAND_DIR/
-
-echo "Copied!"
-
-echo -n "Copying cp_certs command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/cp_certs $COMMAND_DIR/
-
-echo "Copied!"
-
-echo -n "Copying monitoring commands to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/monitor-scripts/* $COMMAND_DIR/
-
-echo "Copied!"
-
-echo -n "Copying bbx command to $COMMAND_DIR/ ..."
-
-$SUDO cp $INSTALL_DIR/bbx.sh $COMMAND_DIR/bbx
-
-echo "Copied!"
+echo "Commands copied successfully."
 
 echo -n "Copying sslcerts to /usr/local/share/dosyago/sslcerts ..."
 
