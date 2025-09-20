@@ -3,7 +3,7 @@
 time="$(date)"
 
 source ~/.nvm/nvm.sh
-nvm use v12.10.0
+nvm use v13.10.0
 
 exit
 
