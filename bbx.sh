@@ -1089,7 +1089,9 @@ run() {
   fi
 
   draw_box "Login Link: ${login_link}"
-  printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
+  if [[ -n "$zeta_mode" ]]; then
+    printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
+  fi
   save_config
 }
 
