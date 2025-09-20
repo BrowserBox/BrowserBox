@@ -213,6 +213,46 @@ test_run() {
   ./bbx.sh stop
 }
 
+test_ng_run() {
+  # This test is only reliable on macOS where nginx setup is more predictable for local testing
+  if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "Skipping Nginx run test (only runs on macOS for now)"
+    ((passed++))
+    return 0
+  fi
+
+  echo "Running bbx with Nginx... "
+  output="$(./bbx.sh ng-run 2>&1)"
+  exit_code=$?
+  login_link="$(extract_login_link "$output" | tail -n 1)"
+  if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
+    echo -e "${RED}✘ Failed (No login link or ng-run failed)${NC}"
+    echo "$output"
+    ((failed++))
+    ./bbx.sh stop
+    return 1
+  fi
+  echo -e "${GREEN}✔ Success (Nginx run completed)${NC}"
+  ((passed++))
+
+  # Test login link immediately
+  if ! test_login_link "$login_link"; then
+    ./bbx.sh stop
+    return 1
+  fi
+
+  # Wait 25 seconds and test again
+  echo "Waiting 25 seconds to check instance activity... "
+  sleep 25
+  echo -e "${GREEN}✔ Wait complete${NC}"
+  ((passed++))
+  if ! test_login_link "$login_link"; then
+    ./bbx.sh stop
+    return 1
+  fi
+  ./bbx.sh stop
+}
+
 test_tor_run() {
   echo "Running bbx with Tor... "
   ./bbx.sh tor-run 2>&1
@@ -309,6 +349,7 @@ test_uninstall
 test_install || exit 1
 test_setup || exit 1
 test_run || exit 1
+test_ng_run || exit 1
 test_tor_run || exit 1
 test_docker_run || exit 1
 
