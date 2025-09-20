@@ -12,7 +12,7 @@ import { rainstormHash } from '@dosyago/rainsum';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
-export const version = 'v12';
+export const version = 'v13';
 export const scratchState = {
   cameFromTOR: false,
   slowConnection: false,

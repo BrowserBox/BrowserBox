@@ -226,7 +226,7 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.png" alt="Windows 9x" width="64" title="Windows 9x">              |
 
 >[!NOTE]
->Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v12+) with all fixes and features.
+>Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v13+) with all fixes and features.
 
 **Notes**
 

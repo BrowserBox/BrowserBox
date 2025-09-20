@@ -48,7 +48,7 @@ if [ "$EUID" -ne 0 ] && ! have_sudo; then
   echo "INFO: No root or passwordless sudo; will try unprivileged path where possible." >&2
 fi
 # License Agreement & Key (OG behavior; still interactive)
-echo "BrowserBox v12 Terms: https://dosaygo.com/terms.txt | License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md | Privacy: https://dosaygo.com/privacy.txt"
+echo "BrowserBox v13 Terms: https://dosaygo.com/terms.txt | License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md | Privacy: https://dosaygo.com/privacy.txt"
 [ "${AGREE:-no}" = "yes" ] || read -r -p " Agree? (yes/no): " AGREE
 [ "$AGREE" = "yes" ] || { echo "ERROR: Must agree to terms!" >&2; exit 1; }
 # LICENSE_KEY (OG)

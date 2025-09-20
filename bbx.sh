@@ -2424,7 +2424,7 @@ check_agreement() {
     return 0
   fi
   if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-      printf "${BLUE}BrowserBox v12 Terms:${NC} https://dosaygo.com/terms.txt\n"
+      printf "${BLUE}BrowserBox v13 Terms:${NC} https://dosaygo.com/terms.txt\n"
       printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
       printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
       read -r -p " Agree? (yes/no): " AGREE
