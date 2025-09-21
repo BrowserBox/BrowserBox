@@ -222,7 +222,7 @@ test_ng_run() {
   fi
 
   echo "Running bbx with Nginx... "
-  output="$(./bbx.sh ng-run 2>&1)"
+  output="$(timeout -k 10s 3m ./bbx.sh ng-run 2>&1)"
   exit_code=$?
   login_link="$(extract_login_link "$output" | tail -n 1)"
   if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
@@ -255,7 +255,7 @@ test_ng_run() {
 
 test_tor_run() {
   echo "Running bbx with Tor... "
-  ./bbx.sh tor-run 2>&1
+  timeout -k 10s 5m ./bbx.sh tor-run 2>&1
   exit_code=$?
   output="$(cat "${BB_CONFIG_DIR}/login.link")"
   login_link="$(extract_login_link "$output" | tail -n 1)"
@@ -296,7 +296,7 @@ test_docker_run() {
 
   echo "Running Dockerized bbx... "
   nickname="test-docker"
-  output="$(./bbx.sh docker-run $nickname 2>&1)"
+  output="$(timeout -k 10s 10m ./bbx.sh docker-run $nickname 2>&1)"
   echo "$output"
   exit_code=$?
   login_link="$(extract_login_link "$output" | tail -n 1)"
