@@ -265,8 +265,7 @@ dns_a_records() {
   fi
 }
 random_label() { 
-  export LC_ALL=C LC_CTYPE=C
-  label="$(cat /dev/urandom | tr -dc "a-z0-9" | head -c 16)"
+  label="$(openssl rand -base64 32 | tr -dc 'a-z0-9' | cut -c1-25)"
   echo "$label"
 }
 # ---- sed helper ----
