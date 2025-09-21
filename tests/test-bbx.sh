@@ -222,12 +222,14 @@ test_ng_run() {
   fi
 
   echo "Running bbx with Nginx... "
-  output="$(timeout -k 10s 3m ./bbx.sh ng-run 2>&1)"
+  # use wildcard-able hostname for ng-run
+  ./bbx.sh setup --hostname ci.test
+  timeout -k 10s 3m ./bbx.sh ng-run 2>&1
   exit_code=$?
+  output="$(cat "${BB_CONFIG_DIR}/login.link")"
   login_link="$(extract_login_link "$output" | tail -n 1)"
   if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
     echo -e "${RED}✘ Failed (No login link or ng-run failed)${NC}"
-    echo "$output"
     ((failed++))
     ./bbx.sh stop
     return 1

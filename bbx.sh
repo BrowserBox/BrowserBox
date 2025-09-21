@@ -1025,6 +1025,7 @@ setup() {
   else
     ensure_hosts_entry "$hostname"
   fi
+  "$BBX_HOME/BrowserBox/deploy-scripts/tls" "$hostname" || { printf "${RED}Hostname $hostname certificate not acquired${NC}\n"; exit 1; }
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
