@@ -61,7 +61,7 @@ export BBX_HOSTNAME="${BBX_HOSTNAME:-localhost}"
 export EMAIL="${EMAIL:-test@example.com}"
 export LICENSE_KEY="${LICENSE_KEY:-TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR}"
 export BBX_TEST_AGREEMENT="${BBX_TEST_AGREEMENT:-true}"
-export BBX_DEBUG=true
+export BBX_DEBUG=false
 
 # Function to extract login link from bbx output (cross-platform)
 extract_login_link() {
