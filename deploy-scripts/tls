@@ -3,6 +3,10 @@
 sudo="$(command -v sudo)"
 SUDO="$sudo"
 
+if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
+fi
+
 os_type() {
   case "$(uname -s)" in
     Darwin*) echo "macOS";;
