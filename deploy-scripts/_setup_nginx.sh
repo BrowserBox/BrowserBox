@@ -9,9 +9,6 @@ if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
 
-# debug this time
-set -x
-
 IFS=$'\n\t'
 CORP_NAME="dosyago"
 APP_NAME="bbpro"
