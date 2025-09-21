@@ -179,7 +179,7 @@ gen_mkcert_into_sslout() {
   ensure_mkcert
   mkdir -p "${SSL_OUT_DIR}"
   chmod 700 "${SSL_OUT_DIR}"
-  mkcert -install >/dev/null 2>&1 || true
+  timeout 8s mkcert -install >/dev/null 2>&1 || true
   mkcert -cert-file "${SSL_OUT_DIR}/fullchain.pem" \
          -key-file "${SSL_OUT_DIR}/privkey.pem" \
          "${d}" "*.${d}" >/dev/stderr

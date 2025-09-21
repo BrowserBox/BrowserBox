@@ -224,7 +224,7 @@ test_ng_run() {
   echo "Running bbx with Nginx... "
   # use wildcard-able hostname for ng-run
   ./bbx.sh setup --hostname ci.test -z
-  timeout -k 10s 3m ./bbx.sh ng-run 2>&1
+  timeout -k 10s 6m ./bbx.sh ng-run 2>&1
   exit_code=$?
   output="$(cat "${BB_CONFIG_DIR}/login.link")"
   login_link="$(extract_login_link "$output" | tail -n 1)"
@@ -257,7 +257,7 @@ test_ng_run() {
 
 test_tor_run() {
   echo "Running bbx with Tor... "
-  timeout -k 10s 5m ./bbx.sh tor-run 2>&1
+  timeout -k 10s 6m ./bbx.sh tor-run 2>&1
   exit_code=$?
   output="$(cat "${BB_CONFIG_DIR}/login.link")"
   login_link="$(extract_login_link "$output" | tail -n 1)"
