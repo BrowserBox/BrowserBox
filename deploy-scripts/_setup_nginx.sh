@@ -5,7 +5,13 @@
 # Default backend is HTTPS to 127.0.0.1:<port>; optionally HTTP if requested.
 # This script is designed to be called from the bbx environment and sources its config.
 
-set -o errtrace
+if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
+fi
+
+# debug this time
+set -x
+
 IFS=$'\n\t'
 CORP_NAME="dosyago"
 APP_NAME="bbpro"
@@ -179,7 +185,7 @@ gen_mkcert_into_sslout() {
          "${d}" "*.${d}" >/dev/stderr
   [[ -s "${SSL_OUT_DIR}/fullchain.pem" && -s "${SSL_OUT_DIR}/privkey.pem" ]] || die "mkcert failed to generate cert files"
   chmod 600 "${SSL_OUT_DIR}/fullchain.pem" "${SSL_OUT_DIR}/privkey.pem"
-  log "mkcert-generated certs in ${SSL_OUT_DIR}/ (fullchain.pem, privkey.pem)."
+  log "mkcert-generated certs in ${SSL_OUT_DIR} / (fullchain.pem, privkey.pem)."
 }
 # ---- /etc/hosts helpers ----
 # Parse hostnames from hosts.env (ADDR_<PORT>=<host>)
