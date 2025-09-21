@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if ! command -v nvm &>/dev/null && test -f ~/.nvm/nvm.sh; then
+  # shellcheck disable=SC1090
+  source ~/.nvm/nvm.sh
+fi
+
 if [[ -n "${BBX_DEBUG}" ]]; then
   export BBX_DEBUG
   set -x
@@ -9,11 +14,6 @@ fi
 RED=${RED:-$'\e[31m'}
 YELLOW=${YELLOW:-$'\e[33m'}
 NC=${NC:-$'\e[0m'}
-
-if ! command -v nvm &>/dev/null && test -f ~/.nvm/nvm.sh; then
-  # shellcheck disable=SC1090
-  source ~/.nvm/nvm.sh
-fi
 
 SUDO=""
 if command -v sudo &>/dev/null; then

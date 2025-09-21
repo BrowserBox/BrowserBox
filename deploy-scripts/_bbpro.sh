@@ -3,10 +3,6 @@
 NODEVERSION="22"
 NODE_V="v${NODEVERSION}"
 
-if [[ -n "${BBX_DEBUG}" ]]; then
-  set -x
-fi
-
 install_nvm() {
   if ! command -v nvm &>/dev/null && test -f ~/.nvm/nvm.sh; then
     source ~/.nvm/nvm.sh
@@ -26,6 +22,10 @@ install_node() {
 }
 
 install_node
+
+if [[ -n "${BBX_DEBUG}" ]]; then
+  set -x
+fi
 
 profile="network-latency"
 
