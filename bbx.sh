@@ -2010,7 +2010,7 @@ check_and_prepare_update() {
   # Determine the live latest release BEFORE touching any prepared bits
   local repo_tag
   repo_tag="$(get_latest_repo_version stable)"
-  if [[ "$repo_tag" == "unknown" ]]; then
+  if [[ "$repo_tag" == unknown* ]]; then
     printf "${YELLOW}Skipping update: could not determine latest release.${NC}\n"
     return 0
   fi
@@ -2142,6 +2142,11 @@ update() {
     fi
     repo_tag="$tag"
     printf "${YELLOW}Updating BrowserBox to %s...${NC}\n" "$repo_tag"
+  fi
+
+  if [[ "$repo_tag" == unknown* ]]; then
+    printf "${RED}Could not determine version to update to. Check network or GH API rate limits.${NC}\n"
+    return 1
   fi
 
   # If no installed tree, fall back to install (preserves your behavior)
