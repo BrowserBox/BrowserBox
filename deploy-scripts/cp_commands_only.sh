@@ -41,20 +41,25 @@ commands=(
 
 for cmd in "${commands[@]}"; do
   if [[ -f "./deploy-scripts/_${cmd}.sh" ]]; then
-    echo "Copying ${cmd}..."
+    echo -n "Copying ${cmd}..."
     $SUDO cp "./deploy-scripts/_${cmd}.sh" "${COMMAND_DIR}/${cmd}"
     $SUDO chmod +x "${COMMAND_DIR}/${cmd}"
+    echo "Copied!"
   else
     echo "Warning: Script for command '${cmd}' not found at ./deploy-scripts/_${cmd}.sh"
   fi
 done
 
+echo -n "Copying bbx CLI..."
+$SUDO cp "./bbx.sh" "${COMMAND_DIR}/bbx"
+echo "Copied!"
+
 echo "Commands copied successfully."
 
 echo -n "Copying sslcerts to /usr/local/share/dosyago/sslcerts ..."
 
-$SUDO mkdir -p /usr/local/share/dosyago/sslcerts/
 $SUDO rm -rf /usr/local/share/dosaygo/sslcerts/*
+$SUDO mkdir -p /usr/local/share/dosyago/sslcerts/
 $SUDO cp $HOME/sslcerts/* /usr/local/share/dosyago/sslcerts/
 $SUDO chmod -R 755 /usr/local/share/dosyago/sslcerts/*
 

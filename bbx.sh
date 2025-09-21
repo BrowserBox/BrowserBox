@@ -1025,6 +1025,7 @@ setup() {
   else
     ensure_hosts_entry "$hostname"
   fi
+  "$BBX_HOME/BrowserBox/deploy-scripts/tls" "$hostname" || { printf "${RED}Hostname $hostname certificate not acquired${NC}\n"; exit 1; }
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
@@ -1980,7 +1981,26 @@ check_and_prepare_update() {
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
+
+  # Define the last update check file and time constraints
+  local last_update_check_file="${BB_CONFIG_DIR}/last_update_check"
+  local current_time
+  current_time=$(date +%s)
+  local one_hour_ago=$((current_time - 3600))
+
+  # Check if we should perform an update check
+  if [ -f "$last_update_check_file" ]; then
+    local last_check_time
+    last_check_time=$(cat "$last_update_check_file")
+    if [[ "$last_check_time" -gt "$one_hour_ago" ]]; then
+      # It's been less than an hour, so skip the check
+      return 0
+    fi
+  fi
+
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+  # Proceed with the update check and record the time
+  echo "$current_time" > "$last_update_check_file"
 
   # Determine the live latest release BEFORE touching any prepared bits
   local repo_tag
