@@ -9,9 +9,6 @@ if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
 
-# debug this time
-set -x
-
 IFS=$'\n\t'
 CORP_NAME="dosyago"
 APP_NAME="bbpro"
@@ -267,7 +264,7 @@ dns_a_records() {
     host "$fqdn" 2>/dev/null | awk '/has address/{print $NF}' || true
   fi
 }
-random_label() { LC_ALL=C cat /dev/urandom | tr -dc 'a-z0-9' | head -c 16; }
+random_label() { label="$(cat /dev/urandom | tr -dc 'a-z0-9' | head -c 16)"; echo "$label"; }
 # ---- sed helper ----
 _sed_inplace() { if [[ "$OS_KIND" == "darwin" ]]; then sed -i '' -E "$1" "$2"; else sed -i -E "$1" "$2"; fi; }
 
