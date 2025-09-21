@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 ##########################################################
 #  ____                                  ____
@@ -59,6 +59,87 @@ protecc_win_sysadmins() {
 
 # Call the function right away
 protecc_win_sysadmins
+
+ensure_modern_bash() {
+  : "${MIN_BASH_MAJOR:=5}"
+
+  # Only run this bootstrap on macOS (Darwin)
+  case "$(uname -s)" in
+    Darwin) ;;  # proceed
+    *) return 0 ;;  # not macOS, skip entirely
+  esac
+
+  # If we're not in bash at all, try to exec the best bash we have first.
+  if [ -z "${BASH_VERSION:-}" ]; then
+    for b in /opt/homebrew/bin/bash /usr/local/bin/bash /bin/bash; do
+      [ -x "$b" ] && exec "$b" "$0" "$@"
+    done
+  fi
+
+  # Avoid infinite loops
+  if [ -n "${__ENSURE_BASH_REEXECED:-}" ]; then
+    return 0
+  fi
+
+  # Version check
+  if [ -n "${BASH_VERSINFO:-}" ] && [ "${BASH_VERSINFO[0]}" -ge "$MIN_BASH_MAJOR" ]; then
+    return 0
+  fi
+
+  _log() { printf '[ensure-bash] %s\n' "$*" >&2; }
+
+  _find_new_bash() {
+    if command -v brew >/dev/null 2>&1; then
+      local p
+      p="$(brew --prefix 2>/dev/null || true)"
+      [ -n "$p" ] && [ -x "$p/bin/bash" ] && { printf '%s/bin/bash\n' "$p"; return 0; }
+    fi
+    for b in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+      [ -x "$b" ] && { printf '%s\n' "$b"; return 0; }
+    done
+    return 1
+  }
+
+  _install_brew_if_needed() {
+    if command -v brew >/dev/null 2>&1; then
+      return 0
+    fi
+    _log "Homebrew not found; installing non-interactively…"
+    NONINTERACTIVE=1 CI=1 /bin/bash -c \
+      "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || {
+      _log "Homebrew install failed."
+      return 1
+    }
+    if [ -x /opt/homebrew/bin/brew ]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
+    command -v brew >/dev/null 2>&1
+  }
+
+  _install_bash_if_needed() {
+    if _find_new_bash >/dev/null 2>&1; then
+      return 0
+    fi
+    _log "Installing modern Bash with Homebrew…"
+    brew list bash >/dev/null 2>&1 || brew install bash || return 1
+    return 0
+  }
+
+  _log "Current bash: ${BASH_VERSION:-unknown}; upgrading to Bash >= ${MIN_BASH_MAJOR}…"
+
+  _install_brew_if_needed || { _log "Cannot proceed without Homebrew."; exit 1; }
+  _install_bash_if_needed || { _log "Installing bash failed."; exit 1; }
+
+  newbash="$(_find_new_bash)" || { _log "New bash not found after install."; exit 1; }
+
+  __ENSURE_BASH_REEXECED=1 exec "$newbash" "$0" "$@"
+}
+
+# Call the guard immediately
+ensure_modern_bash "$@"
+
 
 # Sudo check
 SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
