@@ -1017,6 +1017,10 @@ setup() {
   BB_TOKEN="${TOKEN}"
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
+  if [[ -n "$zeta_mode" ]] && [[ "$hostname" == "localhost" ]]; then
+    printf "${YELLOW}localhost is incompatible with zeta mode due to widespread conventions against *.localhost subdomains. Changing hostname to bbx.test\n"
+    hostname="bbx.test"
+  fi
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
     curl --connect-timeout 8 -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
