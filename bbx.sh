@@ -1064,7 +1064,7 @@ setup() {
 
   pkill ncat
   for i in {-2..2}; do
-    test_port_access $((setup_port+i)) || { printf "${RED}Adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
+    test_port_access $((setup_port+i)) || { printf "${RED}Quit software using these ports, or adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked${NC}\n"; exit 1; }
 
@@ -1327,7 +1327,7 @@ tor_run() {
   else
       pkill ncat
       for i in {-2..2}; do
-          test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
+          test_port_access $((PORT+i)) || { printf "${RED}Quit software using these ports, or adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
       done
       test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
       bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
@@ -1933,6 +1933,13 @@ ng_run() {
   load_config
   ensure_deps
 
+  # Trigger setup if not fully configured
+  if [ -z "$HOST_PER_SERVICE" ] || [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
+    setup -z "$@" # Pass any arguments like --port to setup
+    load_config
+  fi
+
   # Always run setup_nginx for ng-run
   printf "${YELLOW}Starting Nginx setup...${NC}\n"
   if ! setup_nginx; then
@@ -2521,7 +2528,7 @@ run_as() {
     # Test port accessibility
     pkill ncat
     for i in {-2..2}; do
-        test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+        test_port_access $((port+i)) || { printf "${RED}Quit software using these ports or adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
 
