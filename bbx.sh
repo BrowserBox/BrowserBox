@@ -427,7 +427,7 @@ get_latest_tag_filtered() {
       if [[ -z "$best_tag" ]] || _better_than \
           "$cMaj" "$cMin" "$cPat" "$cSt" "$cRc" "$cHP" \
           "$bestMaj" "$bestMin" "$bestPat" "$bestStable" "$bestRc" "$bestHP"; then
-        best_tag="$tag"
+        best_tag="$t"
         bestMaj=$cMaj; bestMin=$cMin; bestPat=$cPat; bestStable=$cSt; bestRc=$cRc; bestHP=$cHP
       fi
     fi
@@ -856,16 +856,31 @@ find_free_port_block() {
 test_port_access() {
     local port="$1"
     printf "${YELLOW}Testing port $port accessibility...${NC}\n"
+
+    # Start ncat in the background
     (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" >/dev/null 2>&1) &
     local pid=$!
-    sleep 1
+    # Ensure ncat is killed on exit
+    trap "kill $pid &>/dev/null" RETURN
+
+    # Wait for the port to become available, with a timeout
+    local attempts=0
+    local max_attempts=10 # 5 seconds max wait (10 * 0.5s)
+    while ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$port" 2>/dev/null; do
+        ((attempts++))
+        if [ "$attempts" -ge "$max_attempts" ]; then
+            printf "${RED}Port $port did not become available in time.${NC}\n"
+            return 1
+        fi
+        sleep 0.5
+    done
+
+    # Now that the port is confirmed open, run the curl test
     if curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; then
         printf "${GREEN}Port $port is accessible.${NC}\n"
-        kill $pid &>/dev/null
         return 0
     else
-        printf "${RED}Port $port is blocked by firewall. Open with ufw/firewall-cmd.${NC}\n"
-        kill $pid &>/dev/null
+        printf "${RED}Port $port is blocked by firewall or unreachable. Open with ufw/firewall-cmd.${NC}\n"
         return 1
     fi
 }
@@ -1072,12 +1087,6 @@ setup() {
   draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$setup_hostname:$setup_port/login?token=$setup_token")"
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE]${NC}${BOLD} Your login link above WILL change. Await the run command for your correct login link.\n"
-  fi
-  
-  # If setup was called from ng_run, we need to continue to the run step
-  if [[ "${FUNCNAME[1]}" == "ng_run" ]]; then
-    # Pass the original arguments from ng_run to the run command
-    run "${original_args[@]}"
   fi
 }
 
@@ -1924,30 +1933,7 @@ ng_run() {
   load_config
   ensure_deps
 
-  # Capture the port if provided, to pass to run()
-  local port_arg=""
-  local run_args=()
-  local temp_args=("$@")
-  
-  # Simple parsing to find --port
-  for i in "${!temp_args[@]}"; do
-    if [[ "${temp_args[$i]}" == "--port" || "${temp_args[$i]}" == "-p" ]]; then
-      local next_i=$((i + 1))
-      if [[ -n "${temp_args[$next_i]}" ]]; then
-        port_arg="--port ${temp_args[$next_i]}"
-      fi
-    fi
-    run_args+=("${temp_args[$i]}")
-  done
-
-  # Trigger setup if not fully configured
-  if [ -z "$HOST_PER_SERVICE" ] || [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
-    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
-    # Pass all original args to setup, including --zeta
-    setup --zeta "${run_args[@]}"
-    load_config
-  fi
-
+  # Always run setup_nginx for ng-run
   printf "${YELLOW}Starting Nginx setup...${NC}\n"
   if ! setup_nginx; then
     printf "${RED}Nginx setup failed. Aborting.${NC}\n"
@@ -1955,8 +1941,9 @@ ng_run() {
   fi
   printf "${GREEN}Nginx setup complete.${NC}\n"
 
-  # Now, call the main run command, ensuring the port is passed if specified
-  run "${run_args[@]}"
+  # Now, call the main run command, passing all original arguments.
+  # The run command will handle calling setup if it's the very first run.
+  run "$@"
 }
 
 stop() {
@@ -2736,4 +2723,3 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
-
