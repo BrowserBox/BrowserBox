@@ -854,11 +854,12 @@ find_free_port_block() {
 
 # Test port accessibility via firewall
 test_port_access() {
+    set -x
     local port="$1"
     printf "${YELLOW}Testing port $port accessibility...${NC}\n"
 
     # Start ncat in the background
-    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" >/dev/null 2>&1) &
+    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -kl "$port" >/dev/null 2>&1) &
     local pid=$!
     # Ensure ncat is killed on exit
     trap "kill $pid &>/dev/null" RETURN
@@ -866,7 +867,7 @@ test_port_access() {
     # Wait for the port to become available, with a timeout
     local attempts=0
     local max_attempts=10 # 5 seconds max wait (10 * 0.5s)
-    while ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$port" 2>/dev/null; do
+    while ! curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; do
         ((attempts++))
         if [ "$attempts" -ge "$max_attempts" ]; then
             printf "${RED}Port $port did not become available in time.${NC}\n"
