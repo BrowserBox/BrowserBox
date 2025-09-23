@@ -580,7 +580,6 @@ save_config() {
   cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
 LICENSE_KEY="${_LIC_TO_WRITE}"
-BBX_HOSTNAME="${BBX_HOSTNAME:-}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
@@ -1041,7 +1040,6 @@ setup() {
     ensure_hosts_entry "$setup_hostname"
   fi
   
-  BBX_HOSTNAME="$setup_hostname"
   EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" "$BBX_HOME/BrowserBox/deploy-scripts/tls" "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
 
   # Ensure we have a valid product key
@@ -1426,8 +1424,7 @@ tor_run() {
 
 docker_run() {
   banner
-  load_config  # Load existing config, including LICENSE_KEY
-  ensure_deps
+  load_config
 
   local nickname=""
   local port="${PORT:-$(find_free_port_block)}"
@@ -1947,7 +1944,7 @@ ng_run() {
   if [ -z "$HOST_PER_SERVICE" ] || [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     # Pass all original args to setup, including --zeta
-    setup -z "$@"
+    setup --zeta "${run_args[@]}"
     load_config
   fi
 
@@ -2739,3 +2736,4 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
+
