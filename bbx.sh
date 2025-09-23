@@ -427,7 +427,7 @@ get_latest_tag_filtered() {
       if [[ -z "$best_tag" ]] || _better_than \
           "$cMaj" "$cMin" "$cPat" "$cSt" "$cRc" "$cHP" \
           "$bestMaj" "$bestMin" "$bestPat" "$bestStable" "$bestRc" "$bestHP"; then
-        best_tag="$tag"
+        best_tag="$t"
         bestMaj=$cMaj; bestMin=$cMin; bestPat=$cPat; bestStable=$cSt; bestRc=$cRc; bestHP=$cHP
       fi
     fi
@@ -535,9 +535,16 @@ else
 fi
 
 load_config() {
+    # Load persistent config first
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
-    # Override with test.env if it exists
-    [ -f "$BB_CONFIG_DIR/test.env" ] && source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
+    # Then load runtime config, which can override for the session
+    if [ -f "${BB_CONFIG_DIR}/test.env" ]; then
+        source "$BB_CONFIG_DIR/test.env"
+        # For backward compatibility, ensure top-level vars are set from test.env
+        PORT="${APP_PORT:-$PORT}"
+        TOKEN="${LOGIN_TOKEN:-$TOKEN}"
+        BBX_HOSTNAME="${DOMAIN:-$BBX_HOSTNAME}"
+    fi
 }
 
 load_config
@@ -568,12 +575,11 @@ save_config() {
     _LIC_TO_WRITE=""
   fi
 
+  # Only save persistent, user-level data to the main config file.
+  # Runtime data like PORT, TOKEN, and HOSTNAME now live in test.env.
   cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
 LICENSE_KEY="${_LIC_TO_WRITE}"
-BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
-TOKEN="${TOKEN:-}"
-PORT="${PORT:-}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
@@ -850,18 +856,33 @@ find_free_port_block() {
 test_port_access() {
     local port="$1"
     printf "${YELLOW}Testing port $port accessibility...${NC}\n"
+
+    # Start ncat in the background
     (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" >/dev/null 2>&1) &
     local pid=$!
-    sleep 1
-    if curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; then
-        printf "${GREEN}Port $port is accessible.${NC}\n"
+    # Ensure ncat is killed on exit
+    trap "kill $pid &>/dev/null" RETURN
+
+    # Wait for the port to become available, with a timeout
+    local attempts=0
+    local max_attempts=10 # 5 seconds max wait (10 * 0.5s)
+    while ! curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; do
         kill $pid &>/dev/null
-        return 0
-    else
-        printf "${RED}Port $port is blocked by firewall. Open with ufw/firewall-cmd.${NC}\n"
-        kill $pid &>/dev/null
-        return 1
-    fi
+        ((attempts++))
+        if [ "$attempts" -ge "$max_attempts" ]; then
+            printf "${RED}Port $port did not become available in time.${NC}\n"
+            return 1
+        fi
+        sleep 0.5
+        printf "${YELLOW}Testing port $port accessibility...${NC}\n"
+        (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" >/dev/null 2>&1) &
+        pid=$!
+    done
+
+    kill $pid &>/dev/null
+
+    printf "${GREEN}Port $port is accessible.${NC}\n"
+    return 0
 }
 
 # Ensure setup_tor is run for the user (assume global, check Tor service)
@@ -947,11 +968,15 @@ setup() {
   load_config
   ensure_deps
 
+  # Initialize local variables from config or defaults
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
   local zeta_mode=""
   local backend_scheme="" # Will be 'http' or 'https'
+
+  # Capture original arguments to pass to run() later
+  local original_args=("$@")
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -1011,42 +1036,40 @@ setup() {
     exit 1
   fi
 
-  PORT="$port"
-  BBX_HOSTNAME="$hostname"
-  TOKEN="${token:-$(openssl rand -hex 16)}"
-  BB_TOKEN="${TOKEN}"
+  # These are now local to setup; they will be written to test.env
+  local setup_port="$port"
+  local setup_hostname="$hostname"
+  local setup_token="${token:-$(openssl rand -hex 16)}"
 
-  printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
-  if [[ -n "$zeta_mode" ]] && [[ "$hostname" == "localhost" ]]; then
+  printf "${YELLOW}Setting up BrowserBox on $setup_hostname:$setup_port...${NC}\n"
+  if [[ -n "$zeta_mode" ]] && [[ "$setup_hostname" == "localhost" ]]; then
     printf "${YELLOW}localhost is incompatible with zeta mode due to widespread conventions against *.localhost subdomains. Changing hostname to bbx.test\n"
-    hostname="bbx.test"
+    setup_hostname="bbx.test"
   fi
-  if ! is_local_hostname "$hostname"; then
-    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+  if ! is_local_hostname "$setup_hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
     curl --connect-timeout 8 -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-    "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+    "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$setup_hostname" || { printf "${RED}Hostname $setup_hostname not resolving${NC}\n"; exit 1; }
   else
-    ensure_hosts_entry "$hostname"
+    ensure_hosts_entry "$setup_hostname"
   fi
   
-  BB_USER_EMAIL="${EMAIL}" "$BBX_HOME/BrowserBox/deploy-scripts/tls" "$hostname" || { printf "${RED}Hostname $hostname certificate not acquired${NC}\n"; exit 1; }
+  EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" "$BBX_HOME/BrowserBox/deploy-scripts/tls" "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
   fi
 
-  TOKEN="${BB_TOKEN}"
-
   pkill ncat
   for i in {-2..2}; do
-    test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+    test_port_access $((setup_port+i)) || { printf "${RED}Quit software using these ports, or adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
   done
-  test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
+  test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked${NC}\n"; exit 1; }
 
   # Build the command arguments for setup_bbpro
-  local setup_args=("--port" "$port" "--token" "$TOKEN")
+  local setup_args=("--port" "$setup_port" "--token" "$setup_token")
   if [[ -n "$zeta_mode" ]]; then
     setup_args+=("--zeta")
   fi
@@ -1054,12 +1077,14 @@ setup() {
     setup_args+=("--backend" "$backend_scheme")
   fi
 
+  # Call setup_bbpro, which writes to test.env
   LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
 
-  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  save_config
+  # After setup_bbpro succeeds, reload config to get the new runtime values
+  load_config
+
   printf "${GREEN}Setup complete.${NC}\n"
-  draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
+  draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$setup_hostname:$setup_port/login?token=$setup_token")"
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE]${NC}${BOLD} Your login link above WILL change. Await the run command for your correct login link.\n"
   fi
@@ -1072,8 +1097,15 @@ run() {
   # Ensure setup has been run
   if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
-    setup
+    setup "$@" # Pass arguments to setup
     load_config
+    # After setup, the values in test.env are the source of truth, so we don't need to re-parse args
+    # But if setup calls run (like in ng_run), we need to avoid an infinite loop.
+    # The setup function now handles this flow.
+    # If setup was called, it might have already called run, so we can exit here if not called directly.
+    if [[ "${FUNCNAME[1]}" != "main" && "${FUNCNAME[1]}" != "" ]]; then
+      return 0
+    fi
   fi
 
   local zeta_mode="${HOST_PER_SERVICE}"
@@ -1084,11 +1116,23 @@ run() {
     exit 1
   fi
 
-  # Default values (should be set by setup, but fallback for safety)
+  # Default values from loaded config
   local port="${PORT}"
   local hostname="${BBX_HOSTNAME}"
+  local run_args=() # Store args to pass to bbpro
 
-  # Parse arguments to override if provided
+  # Parse arguments to override config for this run only
+  local temp_args=("$@")
+  local clean_args=()
+  for arg in "${temp_args[@]}"; do
+      # This is a simple way to filter out --port from being passed to bbpro
+      # A more robust solution would handle --port=value too
+      if [[ "$arg" != "--port" && "$arg" != "-p" && ! "$arg" =~ ^[0-9]+$ ]]; then
+          clean_args+=("$arg")
+      fi
+  done
+
+
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
@@ -1110,17 +1154,22 @@ run() {
         shift 2
         ;;
       *)
-        printf "${RED}Unknown option or extra argument: $1${NC}\n"
-        printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
-        exit 1
+        # Pass unknown args to bbpro
+        run_args+=("$1")
+        shift
         ;;
     esac
   done
 
+  # Use the determined port and hostname for this run
   PORT="$port"
   BBX_HOSTNAME="$hostname"
-  printf "${PURPLE}[ZETA MODE] BrowserBox is running with a tunnel or reverse-proxy.${NC}\n"
+
+  if [[ -n "$zeta_mode" ]]; then
+    printf "${PURPLE}[ZETA MODE] BrowserBox is running with a tunnel or reverse-proxy.${NC}\n"
+  fi
   printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
+
   if ! is_local_hostname "$hostname"; then
     printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
     "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
@@ -1145,33 +1194,24 @@ run() {
   fi
 
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
-  run_quietly bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-  source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  # Pass any extra args to bbpro
+  run_quietly bbpro "${run_args[@]}" || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+  # Reload config to get the final token from the newly created test.env
+  load_config
 
   local login_link=""
-  # Check for zeta mode, which was determined at the start of the function
   if [[ -n "$zeta_mode" ]]; then
-    # Source the hosts file to load the ADDR_... variables
     source "${BB_CONFIG_DIR}/hosts.env"
-    
-    # Dynamically construct the variable name for the main service port (e.g., ADDR_8080)
     local addr_var_name="ADDR_${PORT}"
-    
-    # Use indirect expansion to get the hostname from the dynamically named variable
     local zeta_host="${!addr_var_name}"
 
     if [[ -z "$zeta_host" ]]; then
       printf "${RED}Error: Could not find host for port ${PORT} in hosts.env file (variable ${addr_var_name}).${NC}\n" >&2
       exit 1
     fi
-    
-    # Construct the final login link
     login_link="https://${zeta_host}/login?token=${TOKEN}"
-    
-    # Overwrite login.link file with the correct zeta mode URL
     echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   else
-    # Fallback to existing logic for standard mode
     login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
   fi
 
@@ -1179,7 +1219,6 @@ run() {
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
   fi
-  save_config
 }
 
 tor_run() {
@@ -1288,7 +1327,7 @@ tor_run() {
   else
       pkill ncat
       for i in {-2..2}; do
-          test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
+          test_port_access $((PORT+i)) || { printf "${RED}Quit software using these ports, or adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
       done
       test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
       bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
@@ -1394,8 +1433,7 @@ tor_run() {
 
 docker_run() {
   banner
-  load_config  # Load existing config, including LICENSE_KEY
-  ensure_deps
+  load_config
 
   local nickname=""
   local port="${PORT:-$(find_free_port_block)}"
@@ -1902,6 +1940,7 @@ ng_run() {
     load_config
   fi
 
+  # Always run setup_nginx for ng-run
   printf "${YELLOW}Starting Nginx setup...${NC}\n"
   if ! setup_nginx; then
     printf "${RED}Nginx setup failed. Aborting.${NC}\n"
@@ -1909,7 +1948,8 @@ ng_run() {
   fi
   printf "${GREEN}Nginx setup complete.${NC}\n"
 
-  # Now, call the main run command
+  # Now, call the main run command, passing all original arguments.
+  # The run command will handle calling setup if it's the very first run.
   run "$@"
 }
 
@@ -2488,7 +2528,7 @@ run_as() {
     # Test port accessibility
     pkill ncat
     for i in {-2..2}; do
-        test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+        test_port_access $((port+i)) || { printf "${RED}Quit software using these ports or adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
 
