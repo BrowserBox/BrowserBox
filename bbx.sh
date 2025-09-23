@@ -538,7 +538,7 @@ load_config() {
     # Load persistent config first
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
     # Then load runtime config, which can override for the session
-    if [ -f "$BB_CONFIG_DIR/test.env" ]; then
+    if [ -f "${BB_CONFIG_DIR}/test.env" ]; then
         source "$BB_CONFIG_DIR/test.env"
         # For backward compatibility, ensure top-level vars are set from test.env
         PORT="${APP_PORT:-$PORT}"
