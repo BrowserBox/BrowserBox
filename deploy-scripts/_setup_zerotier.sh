@@ -85,6 +85,7 @@ authorize_ssh_key() {
 
   local ssh_dir="$user_home/.ssh"
   local auth_keys_file="$ssh_dir/authorized_keys"
+  local ssl_certs_dir="$user_home/sslcerts"
 
   echo "Authorizing SSH key for $USERNAME..." >&2
   mkdir -p "$ssh_dir"
@@ -93,8 +94,11 @@ authorize_ssh_key() {
       cat "$SSH_KEY_PATH" >> "$auth_keys_file"
   fi
   
-  chown -R "$USERNAME":"$(id -gn "$USERNAME")" "$ssh_dir"
-  chmod 700 "$ssh_dir"
+  # Create the directory for certs
+  mkdir -p "$ssl_certs_dir"
+
+  chown -R "$USERNAME":"$(id -gn "$USERNAME")" "$ssh_dir" "$ssl_certs_dir"
+  chmod 700 "$ssh_dir" "$ssl_certs_dir"
   chmod 600 "$auth_keys_file"
 }
 
