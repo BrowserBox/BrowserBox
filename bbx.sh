@@ -1102,7 +1102,6 @@ run() {
     # After setup, the values in test.env are the source of truth, so we don't need to re-parse args
     # But if setup calls run (like in ng_run), we need to avoid an infinite loop.
     # The setup function now handles this flow.
-    # If setup was called, it might have already called run, so we can exit here if not called directly.
     if [[ "${FUNCNAME[1]}" != "main" && "${FUNCNAME[1]}" != "" ]]; then
       return 0
     fi
@@ -1430,6 +1429,148 @@ tor_run() {
       show_tor_status
   fi
 }
+
+zt_run() {
+    banner
+    load_config
+    ensure_deps
+    printf "${BLUE}Starting BrowserBox with ZeroTier SSH Tunnel...${NC}\n"
+
+    # 1. Ensure BBX is set up; run `setup` if needed.
+    if [[ -z "$PORT" || -z "$BBX_HOSTNAME" || ! -f "${BB_CONFIG_DIR}/test.env" ]]; then
+        printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
+        setup "$@" # Pass original args to setup
+        load_config # Reload config after setup
+    fi
+
+    # 2. Get ZeroTier Network ID from user
+    local zt_network_id
+    read -r -p "Enter your ZeroTier Network ID: " zt_network_id
+    if [[ ! "$zt_network_id" =~ ^[a-fA-F0-9]{16}$ ]]; then
+        printf "${RED}Invalid ZeroTier Network ID format.${NC}\n"
+        exit 1
+    fi
+
+    # 3. Find user's public SSH key
+    local ssh_pub_key_path=""
+    for key_path in "$HOME/.ssh/id_rsa.pub" "$HOME/.ssh/id_ed25519.pub" "$HOME/.ssh/id_ecdsa.pub"; do
+        if [[ -f "$key_path" ]]; then
+            ssh_pub_key_path="$key_path"
+            break
+        fi
+    done
+    if [[ -z "$ssh_pub_key_path" ]]; then
+        printf "${RED}No standard public SSH key found in ~/.ssh/. Please generate one with 'ssh-keygen'.${NC}\n"
+        exit 1
+    fi
+    printf "${YELLOW}Using public key: $ssh_pub_key_path${NC}\n"
+
+    # 4. Run the plumbing script to set up ZT and SSH on the server
+    printf "${YELLOW}Preparing server with ZeroTier and SSH...${NC}\n"
+    # The _setup_zerotier.sh script needs to be available. We assume it's in deploy-scripts.
+    local setup_zt_script="$BBX_HOME/BrowserBox/deploy-scripts/_setup_zerotier.sh"
+    if [[ ! -f "$setup_zt_script" ]]; then
+        printf "${RED}Setup script _setup_zerotier.sh not found. Your installation may be corrupt.${NC}\n"
+        exit 1
+    fi
+    # Use SUDO which is `sudo -n` for passwordless sudo
+    $SUDO "$setup_zt_script" "$(whoami)" "$ssh_pub_key_path" || {
+        printf "${RED}Server-side ZeroTier/SSH setup failed.${NC}\n"
+        exit 1
+    }
+
+    # 5. Join the network and get the IP
+    printf "${YELLOW}Joining ZeroTier network: $zt_network_id...${NC}\n"
+    $SUDO zerotier-cli join "$zt_network_id" || {
+        printf "${RED}Failed to join ZeroTier network.${NC}\n"
+        exit 1
+    }
+
+    local zt_ip=""
+    printf "${YELLOW}Waiting for IP address on ZeroTier network... (You may need to authorize this machine in ZeroTier Central)${NC}\n"
+    for i in {1..60}; do
+        zt_ip=$($SUDO zerotier-cli -j listnetworks | jq -r --arg netid "$zt_network_id" '.[] | select(.nwid==$netid) | .assignedAddresses[]?' | grep -E '^[0-9.]+' | cut -d'/' -f1 | head -n1)
+        if [[ -n "$zt_ip" ]]; then
+            printf "${GREEN}Got ZeroTier IP: $zt_ip${NC}\n"
+            break
+        fi
+        sleep 2
+    done
+    if [[ -z "$zt_ip" ]]; then
+        printf "${RED}Failed to get an IP address from ZeroTier network. Please authorize this machine in your ZeroTier Central dashboard.${NC}\n"
+        exit 1
+    fi
+
+    # 6. Start the BrowserBox application services
+    printf "${YELLOW}Starting BrowserBox services...${NC}\n"
+    run "$@" # Pass along any extra args like --port to the standard run function
+
+    # 7. Construct and display the "single shot" command for the user
+    local client_os
+    case "$(uname -s)" in
+        Linux*)  client_os="linux" ;;
+        Darwin*) client_os="macos" ;;
+        *)       client_os="other" ;;
+    esac
+
+    local install_zt_cmd
+    if [[ "$client_os" == "linux" ]]; then
+        install_zt_cmd="curl -s https://install.zerotier.com | sudo bash"
+    elif [[ "$client_os" == "macos" ]]; then
+        install_zt_cmd="brew install zerotier"
+    else
+        install_zt_cmd="# Please install ZeroTier for your OS from https://www.zerotier.com/download/"
+    fi
+
+    local p_main=$PORT
+    local p_audio=$((PORT - 2))
+    local p_docs=$((PORT - 1))
+    local p_dev=$((PORT + 1))
+    local user_at_host="$(whoami)@$zt_ip"
+
+    printf "\n"
+    draw_box "Your ZeroTier tunnel is ready! Run this on your LOCAL machine:"
+    
+    # Using a HEREDOC for the final command block
+    read -r -d '' final_command <<EOF
+# --- Start of single-shot command ---
+# This command will:
+# 1. Install ZeroTier on your local machine (if not present).
+# 2. Join the same ZeroTier network.
+# 3. Create an SSH tunnel to access BrowserBox on localhost.
+
+set -e
+if ! command -v zerotier-cli >/dev/null; then
+  echo "Installing ZeroTier on your local machine..."
+  $install_zt_cmd
+fi
+echo "Joining ZeroTier network (requires sudo)..."
+sudo zerotier-cli join "$zt_network_id"
+echo "Waiting for local machine to join network..."
+sleep 5
+echo "Starting SSH tunnel in the background... (Enter your SSH key password if prompted)"
+ssh -o StrictHostKeyChecking=no -N \\
+    -L "$p_main:127.0.0.1:$p_main" \\
+    -L "$p_audio:127.0.0.1:$p_audio" \\
+    -L "$p_docs:127.0.0.1:$p_docs" \\
+    -L "$p_dev:127.0.0.1:$p_dev" \\
+    "$user_at_host" &
+sleep 2
+echo "Tunnel established!"
+echo "Access BrowserBox at: ${GREEN}https://localhost:${p_main}/login?token=${TOKEN}${NC}"
+echo "Press Ctrl+C to close this message (the tunnel will keep running)."
+# --- End of single-shot command ---
+EOF
+    
+    # Print the command inside a visually distinct block
+    printf "${YELLOW}--- Copy and paste the entire block below into your local terminal ---${NC}\n"
+    printf "```bash\n%s\n\`\`\`\n" "$final_command"
+
+    # Keep the script running so the server stays up
+    printf "\n${CYAN}Server is running. Press Ctrl+C here to shut down the BrowserBox server.${NC}\n"
+    wait
+}
+
 
 docker_run() {
   banner
@@ -2589,6 +2730,7 @@ usage() {
     printf "  ${GREEN}update${NC}         Update BrowserBox       \t\t${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox on Tor      \t\t${BOLD}bbx tor-run [--no-darkweb] [--no-onion]${NC}\n"
+    printf "  ${BLUE}zt-run${NC}         Run BrowserBox with ZeroTier SSH tunnel\t${BOLD}bbx zt-run${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
     printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
     printf "  ${BLUE}${BOLD}automate${NC}      *Drive with script, MCP or REPL\n"
@@ -2722,6 +2864,7 @@ case "$1" in
     status) shift 1; status "$@";;
     run-as) shift 1; run_as "$@";;
     tor-run) shift 1; banner_color=$PURPLE; tor_run "$@";;
+    zt-run) shift 1; banner_color=$BLUE; zt_run "$@";;
     ng-run) shift 1; banner_color=$GREEN; ng_run "$@";;
     docker-run) shift 1; docker_run "$@";;
     docker-stop) shift 1; docker_stop "$@";;
@@ -2730,3 +2873,4 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
+
