@@ -1439,7 +1439,12 @@ zt_run() {
     # 1. Ensure BBX is set up; run `setup` if needed.
     if [[ -z "$PORT" || -z "$BBX_HOSTNAME" || ! -f "${BB_CONFIG_DIR}/test.env" ]]; then
         printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
-        setup "$@" # Pass original args to setup
+        # Pass only port and hostname args to setup, filter others
+        local setup_args=()
+        for i in "$@"; do
+            [[ "$i" == -p* || "$i" == --port* ]] && setup_args+=("$i")
+        done
+        setup "${setup_args[@]}"
         load_config # Reload config after setup
     fi
 
@@ -1467,12 +1472,10 @@ zt_run() {
 
     # 4. Run the plumbing script to set up ZT and SSH on the server
     printf "${YELLOW}Preparing server with ZeroTier and SSH...${NC}\n"
-    # The _setup_zerotier.sh script needs to be available. We assume it's in deploy-scripts.
     if ! command -v setup_zerotier &>/dev/null; then
-        printf "${RED}Setup script _setup_zerotier.sh not found. Your installation may be corrupt.${NC}\n"
+        printf "${RED}Setup script setup_zerotier not found. Your installation may be corrupt.${NC}\n"
         exit 1
     fi
-    # Use SUDO which is `sudo -n` for passwordless sudo
     $SUDO setup_zerotier "$(whoami)" "$ssh_pub_key_path" || {
         printf "${RED}Server-side ZeroTier/SSH setup failed.${NC}\n"
         exit 1
@@ -1499,74 +1502,96 @@ zt_run() {
         printf "${RED}Failed to get an IP address from ZeroTier network. Please authorize this machine in your ZeroTier Central dashboard.${NC}\n"
         exit 1
     fi
-
-    # 6. Start the BrowserBox application services
-    printf "${YELLOW}Starting BrowserBox services...${NC}\n"
-    run "$@" # Pass along any extra args like --port to the standard run function
+    
+    # 6. Generate a new token for this session
+    local zt_token
+    zt_token=$(openssl rand -hex 16)
 
     # 7. Construct and display the "single shot" command for the user
-    local client_os
-    case "$(uname -s)" in
-        Linux*)  client_os="linux" ;;
-        Darwin*) client_os="macos" ;;
-        *)       client_os="other" ;;
-    esac
-
-    local install_zt_cmd
-    if [[ "$client_os" == "linux" ]]; then
-        install_zt_cmd="curl -s https://install.zerotier.com | sudo bash"
-    elif [[ "$client_os" == "macos" ]]; then
-        install_zt_cmd="brew install zerotier"
-    else
-        install_zt_cmd="# Please install ZeroTier for your OS from https://www.zerotier.com/download/"
-    fi
-
-    local p_main=$PORT
-    local p_audio=$((PORT - 2))
-    local p_docs=$((PORT - 1))
-    local p_dev=$((PORT + 1))
+    local tunnel_hostname="bbx.zt.test"
+    local p_main="${PORT:-8080}" # Use configured port or default
     local user_at_host="$(whoami)@$zt_ip"
 
     printf "\n"
     draw_box "Your ZeroTier tunnel is ready! Run this on your LOCAL machine:"
-    
+
     # Using a HEREDOC for the final command block
     read -r -d '' final_command <<EOF
 # --- Start of single-shot command ---
-# This command will:
-# 1. Install ZeroTier on your local machine (if not present).
-# 2. Join the same ZeroTier network.
-# 3. Create an SSH tunnel to access BrowserBox on localhost.
+# This defines a function 'connect_bbx_zt' in your shell.
+# Run 'connect_bbx_zt' to start the tunnel and BrowserBox.
 
-set -e
-if ! command -v zerotier-cli >/dev/null; then
-  echo "Installing ZeroTier on your local machine..."
-  $install_zt_cmd
-fi
-echo "Joining ZeroTier network (requires sudo)..."
-sudo zerotier-cli join "$zt_network_id"
-echo "Waiting for local machine to join network..."
-sleep 5
-echo "Starting SSH tunnel in the background... (Enter your SSH key password if prompted)"
-ssh -o StrictHostKeyChecking=no -N \\
-    -L "$p_main:127.0.0.1:$p_main" \\
-    -L "$p_audio:127.0.0.1:$p_audio" \\
-    -L "$p_docs:127.0.0.1:$p_docs" \\
-    -L "$p_dev:127.0.0.1:$p_dev" \\
-    "$user_at_host" &
-sleep 2
-echo "Tunnel established!"
-echo "Access BrowserBox at: ${GREEN}https://localhost:${p_main}/login?token=${TOKEN}${NC}"
-echo "Press Ctrl+C to close this message (the tunnel will keep running)."
+connect_bbx_zt() {
+    set -e
+    local tunnel_host="$tunnel_hostname"
+    local remote_user_at_host="$user_at_host"
+    local remote_port="$p_main"
+    local remote_zt_network_id="$zt_network_id"
+    local remote_token="$zt_token"
+    
+    # Check for local dependencies
+    if ! command -v zerotier-cli >/dev/null; then
+        echo "Installing ZeroTier on your local machine..."
+        if [[ "\$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null; then
+            brew install zerotier
+        else
+            curl -s https://install.zerotier.com | sudo bash
+        fi
+    fi
+    if ! command -v mkcert >/dev/null; then
+        echo "Installing mkcert on your local machine..."
+        if [[ "\$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null; then
+            brew install mkcert
+            brew install nss # For Firefox support
+        else
+            echo "Please install mkcert from https://mkcert.dev"
+            return 1
+        fi
+    fi
+    
+    # Generate and install local certs
+    echo "Generating local certificate for \$tunnel_host..."
+    mkcert -install
+    mkcert "\$tunnel_host"
+    
+    # Join the ZeroTier network
+    echo "Joining ZeroTier network (requires sudo)..."
+    if ! sudo zerotier-cli listnetworks | grep -q "\$remote_zt_network_id"; then
+        sudo zerotier-cli join "\$remote_zt_network_id"
+        echo "Waiting for local machine to join network..."
+        sleep 5
+    fi
+    
+    # Securely copy certificates to the server
+    echo "Copying certificates to the server..."
+    scp -o StrictHostKeyChecking=no "./\${tunnel_host}.pem" "./\${tunnel_host}-key.pem" "\${remote_user_at_host}:~/sslcerts/"
+    
+    # Start remote BrowserBox and the SSH tunnel
+    echo "Starting remote BrowserBox and SSH tunnel in the background..."
+    ssh -o StrictHostKeyChecking=no -f -N \\
+        -L "\${remote_port}:127.0.0.1:\${remote_port}" \\
+        -L "\$((remote_port - 2)):127.0.0.1:\$((remote_port - 2))" \\
+        -L "\$((remote_port - 1)):127.0.0.1:\$((remote_port - 1))" \\
+        -L "\$((remote_port + 1)):127.0.0.1:\$((remote_port + 1))" \\
+        "\$remote_user_at_host" \\
+        "export LICENSE_KEY='$LICENSE_KEY' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/\${tunnel_host}.pem' SSL_KEY_PATH='~/sslcerts/\${tunnel_host}-key.pem'; bbx run"
+
+    sleep 3
+    echo "Tunnel established!"
+    printf "\nAccess BrowserBox at: ${GREEN}https://\${tunnel_host}:\${remote_port}/login?token=\${remote_token}${NC}\n\n"
+    echo "To stop the tunnel, run: pkill -f 'ssh -o StrictHostKeyChecking=no -f -N'"
+}
+
 # --- End of single-shot command ---
 EOF
     
     # Print the command inside a visually distinct block
-    printf "${YELLOW}--- Copy and paste the entire block below into your local terminal ---${NC}\n"
-    printf "\n%s\n" "$final_command"
+    printf "${YELLOW}--- Copy, paste, and run the entire block below in your local terminal ---${NC}\n\n"
+    printf "%s\n" "$final_command"
+    printf "${YELLOW}--- After pasting, run 'connect_bbx_zt' to start the connection ---${NC}\n"
 
     # Keep the script running so the server stays up
-    printf "\n${CYAN}Server is running. Press Ctrl+C here to shut down the BrowserBox server.${NC}\n"
+    printf "\n${CYAN}Server is waiting for connection. Press Ctrl+C here to shut down the server process.${NC}\n"
     wait
 }
 
