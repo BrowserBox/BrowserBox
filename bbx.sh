@@ -1468,13 +1468,12 @@ zt_run() {
     # 4. Run the plumbing script to set up ZT and SSH on the server
     printf "${YELLOW}Preparing server with ZeroTier and SSH...${NC}\n"
     # The _setup_zerotier.sh script needs to be available. We assume it's in deploy-scripts.
-    local setup_zt_script="$BBX_HOME/BrowserBox/deploy-scripts/_setup_zerotier.sh"
-    if [[ ! -f "$setup_zt_script" ]]; then
+    if ! command -v setup_zerotier &>/dev/null; then
         printf "${RED}Setup script _setup_zerotier.sh not found. Your installation may be corrupt.${NC}\n"
         exit 1
     fi
     # Use SUDO which is `sudo -n` for passwordless sudo
-    $SUDO "$setup_zt_script" "$(whoami)" "$ssh_pub_key_path" || {
+    $SUDO setup_zerotier "$(whoami)" "$ssh_pub_key_path" || {
         printf "${RED}Server-side ZeroTier/SSH setup failed.${NC}\n"
         exit 1
     }
