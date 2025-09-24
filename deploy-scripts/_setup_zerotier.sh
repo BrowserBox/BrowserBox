@@ -98,8 +98,10 @@ authorize_ssh_key() {
   mkdir -p "$ssl_certs_dir"
 
   chown -R "$USERNAME":"$(id -gn "$USERNAME")" "$ssh_dir" "$ssl_certs_dir"
-  chmod 700 "$ssh_dir" "$ssl_certs_dir"
+  chmod 700 "$ssh_dir"
   chmod 600 "$auth_keys_file"
+  # Set permissions for sslcerts dir separately
+  chmod 755 "$ssl_certs_dir"
 }
 
 # --- Main Execution ---
