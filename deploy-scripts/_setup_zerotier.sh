@@ -7,13 +7,13 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-if [ -z "$1" ] || [ -z "$2" ]; then
-  echo "Usage: sudo $0 <username> <path_to_public_ssh_key>" >&2
+if [ -z "$1" ]; then
+  echo "Usage: sudo $0 <username>" >&2
   exit 1
 fi
 
 USERNAME="$1"
-SSH_KEY_PATH="$2"
+# SSH_KEY_PATH is no longer needed as it's handled by the client script.
 OS_TYPE=""
 
 # --- OS Detection ---
@@ -74,8 +74,8 @@ setup_ssh_server() {
   esac
 }
 
-# --- Authorize User's SSH Key ---
-authorize_ssh_key() {
+# --- Prepare User Directories ---
+prepare_user_dirs() {
   local user_home
   user_home=$(getent passwd "$USERNAME" | cut -d: -f6)
   if [ -z "$user_home" ]; then
@@ -84,23 +84,14 @@ authorize_ssh_key() {
   fi
 
   local ssh_dir="$user_home/.ssh"
-  local auth_keys_file="$ssh_dir/authorized_keys"
   local ssl_certs_dir="$user_home/sslcerts"
 
-  echo "Authorizing SSH key for $USERNAME..." >&2
+  echo "Preparing directories for $USERNAME..." >&2
   mkdir -p "$ssh_dir"
-  # Ensure the key isn't already present before adding
-  if ! grep -q -f "$SSH_KEY_PATH" "$auth_keys_file" 2>/dev/null; then
-      cat "$SSH_KEY_PATH" >> "$auth_keys_file"
-  fi
-  
-  # Create the directory for certs
   mkdir -p "$ssl_certs_dir"
 
   chown -R "$USERNAME":"$(id -gn "$USERNAME")" "$ssh_dir" "$ssl_certs_dir"
   chmod 700 "$ssh_dir"
-  chmod 600 "$auth_keys_file"
-  # Set permissions for sslcerts dir separately to allow user to write to it
   chmod 755 "$ssl_certs_dir"
 }
 
@@ -109,10 +100,9 @@ main() {
   detect_os
   install_zerotier
   setup_ssh_server
-  authorize_ssh_key
+  prepare_user_dirs
 
-  # The bbx script will handle joining the network and getting the IP.
-  echo "ZeroTier and SSH setup complete for user $USERNAME." >&2
+  echo "ZeroTier and SSH server setup complete for user $USERNAME." >&2
 }
 
 main "$@"

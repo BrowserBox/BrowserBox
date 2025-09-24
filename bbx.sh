@@ -1456,32 +1456,20 @@ zt_run() {
         exit 1
     fi
 
-    # 3. Find user's public SSH key
-    local ssh_pub_key_path=""
-    for key_path in "$HOME/.ssh/id_rsa.pub" "$HOME/.ssh/id_ed25519.pub" "$HOME/.ssh/id_ecdsa.pub"; do
-        if [[ -f "$key_path" ]]; then
-            ssh_pub_key_path="$key_path"
-            break
-        fi
-    done
-    if [[ -z "$ssh_pub_key_path" ]]; then
-        printf "${RED}No standard public SSH key found in ~/.ssh/. Please generate one with 'ssh-keygen'.${NC}\n"
-        exit 1
-    fi
-    printf "${YELLOW}Using public key: $ssh_pub_key_path${NC}\n"
-
-    # 4. Run the plumbing script to set up ZT and SSH on the server
-    printf "${YELLOW}Preparing server with ZeroTier and SSH...${NC}\n"
+    # 3. Server-side ZeroTier setup
+    printf "${YELLOW}Preparing server with ZeroTier...${NC}\n"
     if ! command -v setup_zerotier &>/dev/null; then
         printf "${RED}Setup script setup_zerotier not found. Your installation may be corrupt.${NC}\n"
         exit 1
     fi
-    $SUDO setup_zerotier "$(whoami)" "$ssh_pub_key_path" || {
-        printf "${RED}Server-side ZeroTier/SSH setup failed.${NC}\n"
+    # The setup_zerotier script now only handles ZT installation and basic SSH server checks.
+    # Key authorization is handled by the client script.
+    $SUDO setup_zerotier "$(whoami)" "none" || {
+        printf "${RED}Server-side ZeroTier setup failed.${NC}\n"
         exit 1
     }
 
-    # 5. Join the network and get the IP
+    # 4. Join the network and get the IP
     printf "${YELLOW}Joining ZeroTier network: $zt_network_id...${NC}\n"
     $SUDO zerotier-cli join "$zt_network_id" || {
         printf "${RED}Failed to join ZeroTier network.${NC}\n"
@@ -1503,11 +1491,11 @@ zt_run() {
         exit 1
     fi
     
-    # 6. Generate a new token for this session
+    # 5. Generate a new token for this session
     local zt_token
     zt_token=$(openssl rand -hex 16)
 
-    # 7. Construct and save the "single shot" script for the user
+    # 6. Construct and save the "single shot" script for the user
     local tunnel_hostname="bbx.zt.test"
     local p_main="${PORT:-8080}" # Use configured port or default
     local user_at_host="$(whoami)@$zt_ip"
@@ -1535,7 +1523,6 @@ NC='\033[0m'
 # Function to check if a local port is in use
 is_port_in_use() {
     local port=\$1
-    # Check for both TCP and UDP, and for both listening and connected states
     if lsof -i :"\$port" >/dev/null || netstat -an | grep -q "[\.:]\$port "; then
         return 0 # In use
     else
@@ -1543,7 +1530,25 @@ is_port_in_use() {
     fi
 }
 
-# Check for local dependencies
+cleanup() {
+    echo -e "\n\${YELLOW}Cleaning up...${NC}"
+    # Kill the SSH tunnel process
+    if [ -n "\$tunnel_pid" ]; then
+        kill \$tunnel_pid 2>/dev/null
+        echo "SSH tunnel process killed."
+    fi
+    # Remove the /etc/hosts entry
+    if sudo grep -q "127.0.0.1 \$tunnel_host" /etc/hosts; then
+        echo -e "\${YELLOW}Removing '\$tunnel_host' from /etc/hosts (requires sudo)...${NC}"
+        sudo sed -i.bak "/127.0.0.1 \$tunnel_host/d" /etc/hosts
+    fi
+    echo -e "\${GREEN}Cleanup complete.${NC}"
+}
+
+# Trap to run cleanup on exit
+trap cleanup EXIT
+
+# Check for local dependencies (ZT, mkcert)
 if ! command -v zerotier-cli >/dev/null; then
     echo -e "\${YELLOW}Installing ZeroTier on your local machine...\${NC}"
     if [[ "\$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null; then
@@ -1555,15 +1560,14 @@ fi
 if ! command -v mkcert >/dev/null; then
     echo -e "\${YELLOW}Installing mkcert on your local machine...\${NC}"
     if [[ "\$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null; then
-        brew install mkcert
-        brew install nss # For Firefox support
+        brew install mkcert && brew install nss
     else
         echo -e "\${RED}Please install mkcert from https://mkcert.dev\${NC}"
         exit 1
     fi
 fi
 
-# Check if required local ports are available
+# Check for available ports
 for p in "\$remote_port" "\$((remote_port - 2))" "\$((remote_port - 1))" "\$((remote_port + 1))"; do
     if is_port_in_use "\$p"; then
         echo -e "\${RED}Error: Local port \$p is already in use. Please free it up and re-run the command.\${NC}"
@@ -1572,10 +1576,11 @@ for p in "\$remote_port" "\$((remote_port - 2))" "\$((remote_port - 1))" "\$((re
 done
 echo -e "\${GREEN}Required local ports are free.\${NC}"
 
-# Generate and install local certs
-echo -e "\${YELLOW}Generating local certificate for \$tunnel_host...\${NC}"
-mkcert -install
-mkcert "\$tunnel_host"
+# Add hostname to /etc/hosts
+echo -e "\${YELLOW}Adding '\$tunnel_host' to /etc/hosts (requires sudo)...${NC}"
+if ! grep -q "127.0.0.1 \$tunnel_host" /etc/hosts; then
+    echo "127.0.0.1 \$tunnel_host" | sudo tee -a /etc/hosts >/dev/null
+fi
 
 # Join the ZeroTier network
 echo -e "\${YELLOW}Joining ZeroTier network (requires sudo)...\${NC}"
@@ -1585,28 +1590,24 @@ if ! sudo zerotier-cli listnetworks | grep -q "\$remote_zt_network_id"; then
     sleep 5
 fi
 
-# Securely copy certificates to the server with correct names
-echo -e "\${YELLOW}Copying certificates to the server...\${NC}"
-scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "./\${tunnel_host}.pem" "\${remote_user_at_host}:~/sslcerts/fullchain.pem"
-scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "./\${tunnel_host}-key.pem" "\${remote_user_at_host}:~/sslcerts/privkey.pem"
+# Authorize local SSH key on the server
+echo -e "\${YELLOW}Authorizing your local SSH key on the server...${NC}"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" < ~/.ssh/id_rsa.pub
 
 # Start remote BrowserBox and the SSH tunnel in the background
-echo -e "\${YELLOW}Starting remote BrowserBox and SSH tunnel in the background...\${NC}"
-ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
+echo -e "\${YELLOW}Starting remote BrowserBox and SSH tunnel...\${NC}"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
     -L "\${remote_port}:127.0.0.1:\${remote_port}" \\
     -L "\$((remote_port - 2)):127.0.0.1:\$((remote_port - 2))" \\
     -L "\$((remote_port - 1)):127.0.0.1:\$((remote_port - 1))" \\
     -L "\$((remote_port + 1)):127.0.0.1:\$((remote_port + 1))" \\
     "\$remote_user_at_host" \\
-    bash -c "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx stop; bbx run; sleep 12000;" &
+    "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx setup --hostname \$tunnel_host && bbx run; wait" &
 
 tunnel_pid=\$!
 echo "SSH tunnel process started with PID: \$tunnel_pid"
 
-# Trap to kill the tunnel on exit
-trap 'echo "Stopping SSH tunnel..."; kill \${tunnel_pid} 2>/dev/null' EXIT
-
-sleep 5
+sleep 8
 echo -e "\${GREEN}Tunnel established!${NC}"
 printf "\nAccess BrowserBox at: \${GREEN}https://\${tunnel_host}:\${remote_port}/login?token=\${remote_token}\${NC}\n\n"
 echo -e "This script will keep the tunnel alive. Press \${YELLOW}Ctrl+C\${NC} to stop."
@@ -1634,8 +1635,6 @@ EOF
 
     # Keep the script running so the server stays up
     printf "\n${CYAN}Server is waiting for connection. Press Ctrl+C here to shut down the server process and the tunnel.${NC}\n"
-    # This will wait for any background jobs, but since `bbx run` is started by the client's ssh command,
-    # we just need to keep this script alive. A simple `tail` or `sleep` loop works well.
     tail -f /dev/null &
     wait $!
 }
