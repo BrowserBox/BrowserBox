@@ -1434,7 +1434,7 @@ zt_run() {
     banner
     load_config
     ensure_deps
-    printf "${BLUE}Starting BrowserBox with ZeroTier SSH Tunnel...${NC}\n"
+    printf "${BLUE}Starting BrowserBox with ZeroTier SSH tunnel...${NC}\n"
 
     # 1. Ensure BBX is set up; run `setup` if needed.
     if [[ -z "$PORT" || -z "$BBX_HOSTNAME" || ! -f "${BB_CONFIG_DIR}/test.env" ]]; then
@@ -2730,7 +2730,7 @@ usage() {
     printf "  ${GREEN}update${NC}         Update BrowserBox       \t\t${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
     printf "  ${PURPLE}tor-run${NC}        Run BrowserBox on Tor      \t\t${BOLD}bbx tor-run [--no-darkweb] [--no-onion]${NC}\n"
-    printf "  ${BLUE}zt-run${NC}         Run BrowserBox with ZeroTier SSH tunnel\t${BOLD}bbx zt-run${NC}\n"
+    printf "  ${BLUE}zt-run${NC}         Run BrowserBox with ZeroTier tunnel\t${BOLD}bbx zt-run${NC}\n"
     printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
     printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
     printf "  ${BLUE}${BOLD}automate${NC}      *Drive with script, MCP or REPL\n"
