@@ -100,7 +100,7 @@ authorize_ssh_key() {
   chown -R "$USERNAME":"$(id -gn "$USERNAME")" "$ssh_dir" "$ssl_certs_dir"
   chmod 700 "$ssh_dir"
   chmod 600 "$auth_keys_file"
-  # Set permissions for sslcerts dir separately
+  # Set permissions for sslcerts dir separately to allow user to write to it
   chmod 755 "$ssl_certs_dir"
 }
 
