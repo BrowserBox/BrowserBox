@@ -1592,17 +1592,17 @@ fi
 
 # Authorize local SSH key on the server
 echo -e "\${YELLOW}Authorizing your local SSH key on the server...${NC}"
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" < ~/.ssh/id_rsa.pub
+ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" < ~/.ssh/id_rsa.pub
 
 # Start remote BrowserBox and the SSH tunnel in the background
 echo -e "\${YELLOW}Starting remote BrowserBox and SSH tunnel...\${NC}"
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
+ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
     -L "\${remote_port}:127.0.0.1:\${remote_port}" \\
     -L "\$((remote_port - 2)):127.0.0.1:\$((remote_port - 2))" \\
     -L "\$((remote_port - 1)):127.0.0.1:\$((remote_port - 1))" \\
     -L "\$((remote_port + 1)):127.0.0.1:\$((remote_port + 1))" \\
     "\$remote_user_at_host" \\
-    "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx setup --hostname \$tunnel_host && bbx run; wait" &
+    "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx setup --hostname \$tunnel_host --port 8888 && bbx run; sleep 30000" &
 
 tunnel_pid=\$!
 echo "SSH tunnel process started with PID: \$tunnel_pid"
@@ -1627,7 +1627,7 @@ EOF
     draw_box "Your ZeroTier tunnel is ready! Run this on your LOCAL machine:"
 
     # The one-liner command
-    local one_liner="bash <(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${user_at_host} 'cat ${connect_script_path}')"
+    local one_liner="bash <(ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${user_at_host} 'cat ${connect_script_path}')"
     
     # Print the command inside a visually distinct block
     printf "${YELLOW}--- Copy and paste the command below into your local terminal ---${NC}\n\n"
