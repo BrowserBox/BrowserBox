@@ -1598,7 +1598,7 @@ ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
     -L "\$((remote_port - 1)):127.0.0.1:\$((remote_port - 1))" \\
     -L "\$((remote_port + 1)):127.0.0.1:\$((remote_port + 1))" \\
     "\$remote_user_at_host" \\
-    bash -c "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx stop; bbx run" &
+    bash -c "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx stop; bbx run; sleep 12000;" &
 
 tunnel_pid=\$!
 echo "SSH tunnel process started with PID: \$tunnel_pid"
