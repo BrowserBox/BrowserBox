@@ -1564,7 +1564,7 @@ EOF
     
     # Print the command inside a visually distinct block
     printf "${YELLOW}--- Copy and paste the entire block below into your local terminal ---${NC}\n"
-    printf "```bash\n%s\n\`\`\`\n" "$final_command"
+    printf "\n%s\n" "$final_command"
 
     # Keep the script running so the server stays up
     printf "\n${CYAN}Server is running. Press Ctrl+C here to shut down the BrowserBox server.${NC}\n"
