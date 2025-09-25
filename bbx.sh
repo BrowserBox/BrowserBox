@@ -1490,10 +1490,6 @@ zt_run() {
         exit 1
     fi
 
-    # 5. Generate a new token for this session
-    local zt_token
-    zt_token=$(openssl rand -hex 16)
-
     # 6. Generate SSH key pair for secure connection
     local ssh_key_dir="${HOME}/.bbx_zt_ssh"
     local ssh_key_file="${ssh_key_dir}/bbx_zt_key"
@@ -1515,7 +1511,7 @@ zt_run() {
     chmod 700 "${HOME}/sslcerts"
 
     # 8. Setup BrowserBox with correct hostname
-    local tunnel_hostname="bbx.zt.test"
+    local tunnel_hostname="bbx.zerotier.test"
     local p_main="${PORT:-8080}" # Use configured port or default
 
     bbx setup --port $p_main --hostname "$tunnel_hostname"
@@ -1534,7 +1530,6 @@ export tunnel_host="$tunnel_hostname"
 export remote_user_at_host="$user_at_host"
 export remote_port="$p_main"
 export remote_zt_network_id="$zt_network_id"
-export remote_token="$zt_token"
 export bbx_license_key="$LICENSE_KEY"
 
 # ANSI color codes
@@ -1644,14 +1639,15 @@ ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
     -L "\$((remote_port - 1)):127.0.0.1:\$((remote_port - 1))" \\
     -L "\$((remote_port + 1)):127.0.0.1:\$((remote_port + 1))" \\
     "\$remote_user_at_host" \\
-    "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH=~/sslcerts/fullchain.pem SSL_KEY_PATH=~/sslcerts/privkey.pem; bbx run; sleep 30000" &
+    "export LICENSE_KEY='\$bbx_license_key' ; bbx run; sleep 30000" &
 
 tunnel_pid=\$!
 echo "SSH tunnel process started with PID: \$tunnel_pid"
 
 sleep 8
 echo -e "\${GREEN}Tunnel established!${NC}"
-printf "\nAccess BrowserBox at: \${GREEN}https://\${tunnel_host}:\${remote_port}/login?token=\${remote_token}\${NC}\n\n"
+loginLink="\$(ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "cat ~/.config/dosaygo/bbpro/login.link")"
+printf "\nAccess BrowserBox at: \${GREEN}\${loginLink}\${NC}\n\n"
 echo -e "This script will keep the tunnel alive. Press \${YELLOW}Ctrl+C\${NC} to stop."
 
 # Wait for the tunnel process to exit
