@@ -1501,6 +1501,8 @@ zt_run() {
     local user_at_host="$(whoami)@$zt_ip"
     local connect_script_path="$HOME/connect_bbx_zt.sh"
 
+    bbx setup --port $p_main --hostname "$tunnel_hostname"
+
     # Using a HEREDOC to create the script content
     read -r -d '' connect_script <<EOF
 #!/usr/bin/env bash
@@ -1602,7 +1604,7 @@ ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \\
     -L "\$((remote_port - 1)):127.0.0.1:\$((remote_port - 1))" \\
     -L "\$((remote_port + 1)):127.0.0.1:\$((remote_port + 1))" \\
     "\$remote_user_at_host" \\
-    "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx setup --hostname \$tunnel_host --port 8888 && bbx run; sleep 30000" &
+    "export LICENSE_KEY='\$bbx_license_key' BBX_HOSTNAME='\$tunnel_host' PORT='\$remote_port' TOKEN='\$remote_token' SSL_CERT_PATH='~/sslcerts/fullchain.pem' SSL_KEY_PATH='~/sslcerts/privkey.pem'; bbx run; sleep 30000" &
 
 tunnel_pid=\$!
 echo "SSH tunnel process started with PID: \$tunnel_pid"
