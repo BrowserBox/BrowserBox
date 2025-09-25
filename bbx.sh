@@ -1646,7 +1646,7 @@ echo "SSH tunnel process started with PID: \$tunnel_pid"
 
 sleep 8
 echo -e "\${GREEN}Tunnel established!${NC}"
-loginLink="\$(ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "cat ~/.config/dosaygo/bbpro/login.link")"
+loginLink="\$(ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "cat ~/.config/dosyago/bbpro/login.link")"
 printf "\nAccess BrowserBox at: \${GREEN}\${loginLink}\${NC}\n\n"
 echo -e "This script will keep the tunnel alive. Press \${YELLOW}Ctrl+C\${NC} to stop."
 
