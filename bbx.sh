@@ -1569,6 +1569,10 @@ if ! command -v mkcert >/dev/null; then
     fi
 fi
 
+
+mkcert -install
+mkcert --cert-file fullchain.pem --key-file privkey.pem $tunnel_hostname localhost 127.0.0.1
+
 # Check for available ports
 for p in "\$remote_port" "\$((remote_port - 2))" "\$((remote_port - 1))" "\$((remote_port + 1))"; do
     if is_port_in_use "\$p"; then
