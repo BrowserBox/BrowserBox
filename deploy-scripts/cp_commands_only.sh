@@ -37,6 +37,7 @@ commands=(
   "msgme"
   "win9x_bbpro"
   "setup_nginx"
+  "setup_zerotier"
 )
 
 for cmd in "${commands[@]}"; do
