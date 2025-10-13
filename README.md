@@ -27,9 +27,11 @@
   <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is now in beta.<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
 </p>
 
-BrowserBox delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
+BrowserBox&trade; delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
 
 Unlock advanced security, ensure compliance, and boost productivity today!
+
+**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include https://dosaygo.com and https://browse.cloudtabs.net**
 
 ```ansi
 
