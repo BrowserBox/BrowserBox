@@ -55,26 +55,26 @@ Commands:
 
   install        Install BrowserBox + bbx CLI
   uninstall      Remove everything
-  activate       Purchase a license			bbx activate [number of people]
-  setup          Configure options 			bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]
+  activate       Purchase a license						bbx activate [number of people]
+  setup          Configure options 						bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]
 
   		   setup options:
          	         --zeta, -z       Expose each service as a unique hostname. Useful for nginx,
          	                          ngrok, similar layers, or standard HTTP/S ports. Expects hosts.env
   certify        Check your license
-  run            Run BrowserBox 			bbx run [--port|-p <port>] [--hostname|-h <hostname>]
+  run            Run BrowserBox 			       		bbx run [--port|-p <port>] [--hostname|-h <hostname>]
   stop           Stop BrowserBox (current user)
-  run-as         Run as a specific user 		bbx run-as [--temporary] [username] [port]
+  run-as         Run as a specific user 		    	bbx run-as [--temporary] [username] [port]
   stop-user      Stop BrowserBox for a specific user 	bbx stop-user <username> [delay_seconds]
   logs           Show BrowserBox logs
-  update         Update BrowserBox       		bbx update [<version>|--latest-rc]
+  update         Update BrowserBox       		       	bbx update [<version>|--latest-rc]
   status         Check BrowserBox status
-  tor-run        Run BrowserBox on Tor      		bbx tor-run [--no-darkweb] [--no-onion]
+  tor-run        Run BrowserBox on Tor      			bbx tor-run [--no-darkweb] [--no-onion]
   zt-run         Run BrowserBox with ZeroTier tunnel	bbx zt-run
-  docker-run     Run BrowserBox using Docker 		bbx docker-run [nickname] [--port|-p <port>]
-  docker-stop    Stop a Dockerized BrowserBox 		bbx docker-stop <nickname>
+  docker-run     Run BrowserBox using Docker 			bbx docker-run [nickname] [--port|-p <port>]
+  docker-stop    Stop a Dockerized BrowserBox 			bbx docker-stop <nickname>
   automate      *Drive with script, MCP or REPL
-  ng-run         Run BrowserBox with Nginx proxy	bbx ng-run
+  ng-run         Run BrowserBox with Nginx proxy		bbx ng-run
   --version      Show version
   --help         Show this help
 
