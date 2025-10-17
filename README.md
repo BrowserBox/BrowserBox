@@ -35,6 +35,7 @@ Unlock advanced security, ensure compliance, and boost productivity today!
 
 ```ansi
 
+
    ███████████                                                                ███████████
   ░░███░░░░░███                                                              ░░███░░░░░███
    ░███    ░███ ████████   ██████  █████ ███ █████  █████   ██████  ████████  ░███    ░███  ██████  █████ █████
@@ -69,13 +70,15 @@ Commands:
   update         Update BrowserBox       		bbx update [<version>|--latest-rc]
   status         Check BrowserBox status
   tor-run        Run BrowserBox on Tor      		bbx tor-run [--no-darkweb] [--no-onion]
+  zt-run         Run BrowserBox with ZeroTier tunnel	bbx zt-run
   docker-run     Run BrowserBox using Docker 		bbx docker-run [nickname] [--port|-p <port>]
   docker-stop    Stop a Dockerized BrowserBox 		bbx docker-stop <nickname>
-  automate*      Drive with script, MCP or REPL
+  automate      *Drive with script, MCP or REPL
+  ng-run         Run BrowserBox with Nginx proxy	bbx ng-run
   --version      Show version
   --help         Show this help
 
-*coming soon
+*automate coming soon
 ```
 
 ---
