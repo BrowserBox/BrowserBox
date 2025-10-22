@@ -31,7 +31,7 @@ BrowserBox&trade; delivers cutting-edge remote browser isolation (RBI) technolog
 
 Unlock advanced security, ensure compliance, and boost productivity today!
 
-**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include https://dosaygo.com and https://browse.cloudtabs.net**
+**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include https://browserbox.io https://dosaygo.com and https://browse.cloudtabs.net**
 
 ```ansi
 
@@ -104,8 +104,7 @@ Commands:
 14. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
 15. [Support](#support)
 16. [About DOSAYGO](#about-dosaygo)
-17. [Sponsors](#sponsors)
-18. [Copyright & Licensing](#copyright--licensing)
+17. [Copyright & Licensing](#copyright--licensing)
 
 ---
 
@@ -268,7 +267,7 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
 A product key is required.
 *   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://dosaygo.com/commerce).
 *   **Non-Commercial Use:** $39/user/year (for non-profits, government). [Purchase Non-Commercial License](https://dosaygo.com/noncommercial).
-*   **Evaluation:** [Request a Demo](mailto:sales@dosaygo.com?subject=Demo).
+*   **Evaluation:** [Apply for a 7-Day Trial](https://browserbox.io).
 
 You can also purchase directly via the `bbx` CLI on Linux/macOS:
 ```console
@@ -276,7 +275,7 @@ bbx activate [number of people]
 ```
 
 >[!IMPORTANT]
->After purchase, you'll receive an email with a secure link to view your **Product Key**. Save it safely; the link is single-use. Lost keys can be re-issued by contacting [Support](mailto:support@dosaygo.com) (evaluation keys cannot be rolled).
+>After purchase, you'll receive an email with a secure link to view your **Product Key**. Save it safely; the link is single-use. Lost keys can be re-issued by contacting [Support](mailto:support@dosaygo.com).
 
 ### 3. Activate & Run BrowserBox
 
@@ -354,8 +353,11 @@ Please review our [Privacy Policy](https://dosaygo.com/privacy.txt.html) and [Te
 
 ## Frequently Asked Questions (FAQ)
 
+**Q: Can I get an evaluation license?**
+A: You can [Apply for a 7-Day Trial Here](https://browserbox.io).
+
 **Q: Why is a license required for BrowserBox?**
-A: Licensing supports continuous development, maintenance, and the advanced security features BrowserBox provides. It ensures we can deliver a robust, enterprise-grade RBI solution.
+A: Because we're a business not a charity. It ensures you get the best product possible.
 
 **Q: Do you offer perpetual licenses (non-subscription, version-locked)?**
 A: Yes, for enterprise clients with an Annual Contract Value (ACV) of $150K+. Please contact [sales@dosaygo.com](mailto:sales@dosaygo.com) for inquiries.
