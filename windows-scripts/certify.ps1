@@ -189,7 +189,7 @@ function Test-TicketWithServer {
     } catch {
         Write-Warning "Could not get challenge nonce, proceeding without challenge-response: $_"
         # Fallback to non-challenge validation
-        $payload = @{ certificateJson = $ticketObject } | ConvertTo-Json -Depth 10 -Compress
+        $payload = @{ certificateJson = $ticketJson } | ConvertTo-Json -Depth 10 -Compress
         $response = Invoke-RestMethod -Uri $ValidateTicketEndpoint -Method Post -ContentType "application/json" -Body $payload
         $isValid = $response.isValid -eq $true
         if ($isValid) {
@@ -228,7 +228,7 @@ function Test-TicketWithServer {
     
     # Step 3: Send validation request with challenge response
     $payload = @{
-        certificateJson = $ticketObject
+        certificateJson = $ticketJson
         challengeNonce = $nonce
         nonceSignature = $nonceSignature
     } | ConvertTo-Json -Depth 10 -Compress
