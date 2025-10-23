@@ -31,7 +31,7 @@ BrowserBox&trade; delivers cutting-edge remote browser isolation (RBI) technolog
 
 Unlock advanced security, ensure compliance, and boost productivity today!
 
-**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include [https://browserbox.io](https://browserbox.io), [https://dosaygo.com](https://dosaygo.com), and [https://browse.cloudtabs.net](https://browse.cloudtabs.net)**
+**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), and [CloudTabs](https://browse.cloudtabs.net)**
 
 ```ansi
 
