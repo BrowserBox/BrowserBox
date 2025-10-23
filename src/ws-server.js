@@ -1861,6 +1861,29 @@
             stop();
           }
         });
+        app.post("/api/v1/stop_app", ConstrainedRateLimiter, async (req, res) => {
+          res.type('json');
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
+          const qp = url.searchParams.get('session_token');
+          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
+            return res.status(401).send('{"error":"forbidden"}');
+          }
+          
+          console.log('API v1 stop_app endpoint called - initiating graceful shutdown');
+          
+          // Send immediate response to client
+          res.status(200).send('{"status":"shutdown_initiated"}');
+          
+          // Trigger the shutdown process after a brief delay to allow response to be sent
+          setTimeout(async () => {
+            try {
+              await executeShutdownOfBBPRO();
+            } catch(e) {
+              console.error('Error during shutdown:', e);
+            }
+          }, 500);
+        });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
