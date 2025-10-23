@@ -341,11 +341,11 @@ function Reserve-Seat {
     }
     Write-Host "Seat reserved successfully" -ForegroundColor Green
     if ($newTicket) {
-        $newTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
+        $newTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Encoding utf8NoBOM -Force
         Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
         Register-Certificate -Ticket $newTicket
     }
-    @{ reservationCode = $reservation } | ConvertTo-Json -Depth 10 -Compress | Set-Content $ReservationFile -Force
+    @{ reservationCode = $reservation } | ConvertTo-Json -Depth 10 -Compress | Set-Content $ReservationFile -Encoding utf8NoBOM -Force
     "BBX_RESERVATION_CODE=$reservation" | Out-File $CertMetaFile -Encoding utf8 -Force
 }
 
@@ -381,7 +381,7 @@ try {
         $seatId = Get-VacantSeat
         $fullTicket = New-Ticket -SeatId $seatId
         if (-not $ticketValid) {
-          $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
+          $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Encoding utf8NoBOM -Force
           Register-Certificate -Ticket $fullTicket
           if (-not $NoReservation) {
               Reserve-Seat -Ticket $fullTicket
@@ -404,7 +404,7 @@ try {
         } else {
             $seatId = Get-VacantSeat
             $fullTicket = New-Ticket -SeatId $seatId
-            $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Force
+            $fullTicket | ConvertTo-Json -Depth 10 -Compress | Set-Content $TicketFile -Encoding utf8NoBOM -Force
             Register-Certificate -Ticket $fullTicket
             if (-not $NoReservation) {
                 Reserve-Seat -Ticket $fullTicket
