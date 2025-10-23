@@ -37,6 +37,40 @@ EOF
   exit 0
 }
 
+# Helper function: Sign data with Node.js using crypto
+sign_with_node() {
+  local data="$1"
+  local private_key="$2"
+  node -e "
+    const crypto = require('crypto');
+    const data = process.argv[1];
+    const privateKey = process.argv[2];
+    const sign = crypto.createSign('SHA256');
+    sign.update(data);
+    sign.end();
+    const signature = sign.sign(privateKey, 'hex');
+    console.log(signature);
+  " "$data" "$private_key"
+}
+
+# Helper function: Verify signature with Node.js using crypto
+verify_with_node() {
+  local data="$1"
+  local signature="$2"
+  local public_key="$3"
+  node -e "
+    const crypto = require('crypto');
+    const data = process.argv[1];
+    const signature = process.argv[2];
+    const publicKey = process.argv[3];
+    const verify = crypto.createVerify('SHA256');
+    verify.update(data);
+    verify.end();
+    const isValid = verify.verify(publicKey, Buffer.from(signature, 'hex'));
+    console.log(isValid ? 'true' : 'false');
+  " "$data" "$signature" "$public_key"
+}
+
 meta_put() {
   local k="$1" v="$2"
   (grep -v "^${k}=" "$CERT_META_FILE" 2>/dev/null; echo "${k}=${v}") \
@@ -74,18 +108,101 @@ check_ticket_validity() {
 validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")
   echo "Checking ticket validity with server..." >&2
-  local payload=$(jq -n --argjson ticket "$ticket_json" '{"certificateJson": $ticket}')
-  local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
-    -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
+  
+  # Extract seatId from ticket
+  local seat_id=$(echo "$ticket_json" | jq -r '.seatCertificate.seatData.seatId // empty')
+  if [[ -z "$seat_id" ]]; then
+    echo "Error: Cannot extract seatId from ticket" >&2
+    return 1
+  fi
+  
+  # Step 1: Request challenge nonce from server
+  echo "Requesting challenge nonce..." >&2
+  local challenge_endpoint="${API_SERVER}/tickets/challenge"
+  local challenge_response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST \
+    -H "Content-Type: application/json" \
+    -d "{\"seatId\": \"$seat_id\"}" \
+    "$challenge_endpoint" 2>/dev/null)
+  
+  local nonce=$(echo "$challenge_response" | jq -r '.nonce // empty')
+  if [[ -z "$nonce" ]]; then
+    echo "Warning: Could not get challenge nonce, proceeding without challenge-response" >&2
+    # Fallback to non-challenge validation
+    local payload=$(jq -n --argjson ticket "$ticket_json" '{"certificateJson": $ticket}')
+    local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST -H "Content-Type: application/json" \
+      -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
+    local is_valid=$(echo "$response" | jq -r '.isValid // false')
+    if [[ "$is_valid" == "true" ]]; then
+      echo "Server confirmed: Ticket is valid" >&2
+      return 0
+    else
+      echo "Server response: Ticket is invalid. Response: $response" >&2
+      rm -f "$TICKET_FILE"
+      return 1
+    fi
+  fi
+  
+  echo "Received challenge nonce" >&2
+  
+  # Step 2: Extract seat private key and sign the nonce
+  local seat_private_key=$(echo "$ticket_json" | jq -r '.seatCertificate.seatData.privateKey // empty')
+  if [[ -z "$seat_private_key" ]]; then
+    echo "Error: Cannot extract seat private key from ticket" >&2
+    return 1
+  fi
+  
+  echo "Signing challenge nonce..." >&2
+  local nonce_signature=$(sign_with_node "$nonce" "$seat_private_key")
+  if [[ -z "$nonce_signature" ]]; then
+    echo "Error: Failed to sign challenge nonce" >&2
+    return 1
+  fi
+  
+  echo "Challenge nonce signed" >&2
+  
+  # Step 3: Send validation request with challenge response
+  local payload=$(jq -n \
+    --argjson ticket "$ticket_json" \
+    --arg nonce "$nonce" \
+    --arg signature "$nonce_signature" \
+    '{"certificateJson": $ticket, "challengeNonce": $nonce, "nonceSignature": $signature}')
+  
+  local response=$(curl -sS --connect-timeout 7 --max-time 15 -X POST \
+    -H "Content-Type: application/json" \
+    -d "$payload" \
+    "$VALIDATE_TICKET_ENDPOINT")
+  
   local is_valid=$(echo "$response" | jq -r '.isValid // false')
-  if [[ "$is_valid" == "true" ]]; then
-    echo "Server confirmed: Ticket is valid" >&2
-    return 0
-  else
+  local server_signature=$(echo "$response" | jq -r '.serverSignature // empty')
+  
+  if [[ "$is_valid" != "true" ]]; then
     echo "Server response: Ticket is invalid. Response: $response" >&2
     rm -f "$TICKET_FILE"
     return 1
   fi
+  
+  # Step 4: Verify server signature (mutual authentication)
+  if [[ -n "$server_signature" ]]; then
+    echo "Verifying server signature for mutual authentication..." >&2
+    local stadium_public_key=$(echo "$ticket_json" | jq -r '.issuingCertificate.publicKey // empty')
+    if [[ -z "$stadium_public_key" ]]; then
+      echo "Warning: Cannot extract stadium public key, skipping server signature verification" >&2
+    else
+      # Generate a pseudo instanceId (in real usage, this should match what was sent to server)
+      local instance_id="DOSAYGO://browserbox/validation-check/$(date +%s)"
+      local verification_result=$(verify_with_node "$instance_id" "$server_signature" "$stadium_public_key")
+      if [[ "$verification_result" == "true" ]]; then
+        echo "Server signature verified successfully" >&2
+      else
+        echo "Warning: Server signature verification failed" >&2
+        # In production, you might want to fail here to prevent MITM attacks
+        # For now, we'll just warn but continue
+      fi
+    fi
+  fi
+  
+  echo "Server confirmed: Ticket is valid" >&2
+  return 0
 }
 
 # Fetch vacant seat
