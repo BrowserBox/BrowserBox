@@ -31,7 +31,7 @@ BrowserBox&trade; delivers cutting-edge remote browser isolation (RBI) technolog
 
 Unlock advanced security, ensure compliance, and boost productivity today!
 
-**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include https://browserbox.io https://dosaygo.com and https://browse.cloudtabs.net**
+**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include [https://browserbox.io](https://browserbox.io), [https://dosaygo.com](https://dosaygo.com), and [https://browse.cloudtabs.net](https://browse.cloudtabs.net)**
 
 ```ansi
 
@@ -357,7 +357,7 @@ Please review our [Privacy Policy](https://dosaygo.com/privacy.txt.html) and [Te
 A: You can [Apply for a 7-Day Trial Here](https://browserbox.io).
 
 **Q: Why is a license required for BrowserBox?**
-A: Because we're a business not a charity. It ensures you get the best product possible.
+A: Because we provide it to you on the condition you pay us for it. In capitalism, voluntary exchange ensures creators are compensated for the value they provide to others through mutual benefit and respect.
 
 **Q: Do you offer perpetual licenses (non-subscription, version-locked)?**
 A: Yes, for enterprise clients with an Annual Contract Value (ACV) of $150K+. Please contact [sales@dosaygo.com](mailto:sales@dosaygo.com) for inquiries.
