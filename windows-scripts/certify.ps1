@@ -287,7 +287,7 @@ function Get-VacantSeat {
 # Function to issue a ticket
 function New-Ticket {
     param ([string]$SeatId)
-    $timeSlot = [int](Get-Date -UFormat %s)
+    $timeSlot = ([int](Get-Date -UFormat %s)).ToString() # <-- FIX: Cast to string
     $deviceId = $env:COMPUTERNAME
     Write-Host "Issuing ticket for seat $SeatId..." -ForegroundColor Yellow
     $payload = @{
