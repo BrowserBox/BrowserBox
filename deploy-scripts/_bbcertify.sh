@@ -308,7 +308,7 @@ reserve_seat() {
   if [[ -z "$reservation" ]]; then
     echo "Error reserving seat. Response:" >&2
     echo "$response" >&2
-    exit 1
+    return 1
   fi
   echo "Seat reserved successfully" >&2
   # If new ticket issued, save it
@@ -360,9 +360,22 @@ main() {
       ticket_valid=false
     fi
   elif [[ "$FORCE_TICKET" == "false" && "$ticket_valid" == "true" && "$FORCE_LICENSE" == "false" ]]; then
-    echo "Using existing valid ticket" >&2
-    echo "$TICKET_FILE"
-    exit 0
+    # If we have a valid local ticket, don't just exit.
+    # Instead, try to reserve its seat to guarantee it's still ours.
+    echo "Existing ticket is valid. Attempting to reserve seat..." >&2
+    local ticket_json
+    ticket_json=$(cat "$TICKET_FILE")
+
+    # Attempt to reserve the seat for the ticket we already have.
+    if reserve_seat "$ticket_json"; then
+      echo "Seat successfully reserved for existing ticket." >&2
+      echo "$TICKET_FILE"
+      exit 0 # Now we can exit safely, because reservation.json exists.
+    else
+      # The reservation failed! This means someone else took our seat.
+      echo "Failed to reserve seat for existing ticket. Getting a new ticket..." >&2
+      ticket_valid=false # Force the script to fall through and get a new ticket.
+    fi
   fi
 
   if [[ "$FORCE_LICENSE" == "true" ]]; then
