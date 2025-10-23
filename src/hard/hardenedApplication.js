@@ -12,6 +12,7 @@ import { DEBUG, TICKET_DIR, DIST_DIR, DISTRIBUTION_SERVER_URL } from './config.j
 import { rainstormHash } from '@dosyago/rainsum';
 import { revalidate } from './../../branch-bbx-revalidate.js'
 import { sleep } from './../common.js';
+import * as ed from '@noble/ed25519';
 
 export const __filename = () => fileURLToPath(import.meta.url);
 export const __dirname = () => path.dirname(__filename());
@@ -361,13 +362,16 @@ export class HardenedApplication {
 
         console.log('[checkLicense] Received challenge nonce');
 
-        // Step 2: Sign the nonce with the seat's private key
-        const seatPrivateKey = fullChain.seatCertificate?.seatData?.privateKey;
-        if (!seatPrivateKey) {
-          throw new Error('Seat private key not found in certificate chain');
+        // Step 2: Sign the nonce with the ticket's Ed25519 private key
+        const ticketPrivateKeyBase64 = fullChain.ticket?.ticketData?.jwk?.d;
+        if (!ticketPrivateKeyBase64) {
+          throw new Error('Ticket private key not found in certificate chain');
         }
 
-        nonceSignature = this.#signData(Buffer.from(challengeNonce, 'utf8'), seatPrivateKey).toString('hex');
+        // Convert base64url to Buffer for Ed25519 signing
+        const ticketPrivateKey = Buffer.from(ticketPrivateKeyBase64, 'base64url');
+        const signature = await ed.signAsync(Buffer.from(challengeNonce, 'utf8'), ticketPrivateKey);
+        nonceSignature = Buffer.from(signature).toString('hex');
         console.log('[checkLicense] Signed challenge nonce');
       } catch (err) {
         console.warn('[checkLicense] Challenge-response setup failed:', err.message);
@@ -554,13 +558,16 @@ export class HardenedApplication {
 
         console.log('[validateLicense] Received challenge nonce');
 
-        // Step 2: Sign the nonce with the seat's private key
-        const seatPrivateKey = fullChain.seatCertificate?.seatData?.privateKey;
-        if (!seatPrivateKey) {
-          throw new Error('Seat private key not found in certificate chain');
+        // Step 2: Sign the nonce with the ticket's Ed25519 private key
+        const ticketPrivateKeyBase64 = fullChain.ticket?.ticketData?.jwk?.d;
+        if (!ticketPrivateKeyBase64) {
+          throw new Error('Ticket private key not found in certificate chain');
         }
 
-        nonceSignature = this.#signData(Buffer.from(challengeNonce, 'utf8'), seatPrivateKey).toString('hex');
+        // Convert base64url to Buffer for Ed25519 signing
+        const ticketPrivateKey = Buffer.from(ticketPrivateKeyBase64, 'base64url');
+        const signature = await ed.signAsync(Buffer.from(challengeNonce, 'utf8'), ticketPrivateKey);
+        nonceSignature = Buffer.from(signature).toString('hex');
         console.log('[validateLicense] Signed challenge nonce');
       } catch (err) {
         console.warn('[validateLicense] Challenge-response setup failed:', err.message);

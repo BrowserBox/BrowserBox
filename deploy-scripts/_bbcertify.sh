@@ -53,6 +53,29 @@ sign_with_node() {
   " "$data" "$private_key"
 }
 
+# Helper function: Sign data with Ed25519 using @noble/ed25519
+sign_ed25519_with_node() {
+  local data="$1"
+  local private_key_base64url="$2"
+  node -e "
+    const ed = require('@noble/ed25519');
+    const data = process.argv[1];
+    const privateKeyBase64url = process.argv[2];
+    
+    (async () => {
+      try {
+        // Convert base64url to Buffer
+        const privateKey = Buffer.from(privateKeyBase64url, 'base64url');
+        const signature = await ed.signAsync(Buffer.from(data, 'utf8'), privateKey);
+        console.log(Buffer.from(signature).toString('hex'));
+      } catch (err) {
+        console.error('Error signing with Ed25519:', err.message);
+        process.exit(1);
+      }
+    })();
+  " "$data" "$private_key_base64url"
+}
+
 # Helper function: Verify signature with Node.js using crypto
 verify_with_node() {
   local data="$1"
@@ -144,15 +167,15 @@ validate_ticket_with_server() {
   
   echo "Received challenge nonce" >&2
   
-  # Step 2: Extract seat private key and sign the nonce
-  local seat_private_key=$(echo "$ticket_json" | jq -r '.seatCertificate.seatData.privateKey // empty')
-  if [[ -z "$seat_private_key" ]]; then
-    echo "Error: Cannot extract seat private key from ticket" >&2
+  # Step 2: Extract ticket's Ed25519 private key and sign the nonce
+  local ticket_private_key=$(echo "$ticket_json" | jq -r '.ticket.ticketData.jwk.d // empty')
+  if [[ -z "$ticket_private_key" ]]; then
+    echo "Error: Cannot extract ticket private key from ticket" >&2
     return 1
   fi
   
-  echo "Signing challenge nonce..." >&2
-  local nonce_signature=$(sign_with_node "$nonce" "$seat_private_key")
+  echo "Signing challenge nonce with Ed25519..." >&2
+  local nonce_signature=$(sign_ed25519_with_node "$nonce" "$ticket_private_key")
   if [[ -z "$nonce_signature" ]]; then
     echo "Error: Failed to sign challenge nonce" >&2
     return 1
