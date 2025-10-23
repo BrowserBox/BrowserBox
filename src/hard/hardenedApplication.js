@@ -325,11 +325,70 @@ export class HardenedApplication {
         console.warn('Failed to read reservation.json in checkLicense:', e);
       }
 
+      // Challenge-response authentication flow
+      let challengeNonce = null;
+      let nonceSignature = null;
+      let useChallenge = true;
+
+      try {
+        // Step 1: Request challenge nonce from server
+        const seatId = fullChain.seatCertificate?.seatData?.seatId;
+        if (!seatId) {
+          throw new Error('Cannot extract seatId from certificate chain');
+        }
+
+        console.log('[checkLicense] Requesting challenge nonce for seatId:', seatId);
+        const challengeResponse = await fetchWithTimeoutAndRetry(
+          `${this.#licenseServerUrl}/tickets/challenge`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seatId }),
+            agent: new https.Agent({ rejectUnauthorized: true }),
+          }
+        );
+
+        if (!challengeResponse.ok) {
+          throw new Error(`Failed to fetch challenge nonce: ${challengeResponse.status}`);
+        }
+
+        const challengeData = await challengeResponse.json();
+        challengeNonce = challengeData.nonce;
+
+        if (!challengeNonce) {
+          throw new Error('Server did not provide a challenge nonce');
+        }
+
+        console.log('[checkLicense] Received challenge nonce');
+
+        // Step 2: Sign the nonce with the seat's private key
+        const seatPrivateKey = fullChain.seatCertificate?.seatData?.privateKey;
+        if (!seatPrivateKey) {
+          throw new Error('Seat private key not found in certificate chain');
+        }
+
+        nonceSignature = this.#signData(Buffer.from(challengeNonce, 'utf8'), seatPrivateKey).toString('hex');
+        console.log('[checkLicense] Signed challenge nonce');
+      } catch (err) {
+        console.warn('[checkLicense] Challenge-response setup failed:', err.message);
+        // Fallback to non-challenge mode if challenge fails
+        useChallenge = false;
+        challengeNonce = null;
+        nonceSignature = null;
+      }
+
       const payload = reservationCode
         ? { certificateJson: fullChain, instanceId: this.#instanceId, reservationCode } // redeem
         : { certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true }; // revalidate-only
 
+      // Add challenge-response data if available
+      if (useChallenge && challengeNonce) {
+        payload.challengeNonce = challengeNonce;
+        payload.nonceSignature = nonceSignature;
+      }
+
       console.log('[checkLicense] reservationCode present?', Boolean(reservationCode));
+      console.log('[checkLicense] Using challenge-response?', useChallenge);
 
       const response = await fetchWithTimeoutAndRetry(
         `${this.#licenseServerUrl}/tickets/validate`,
@@ -390,6 +449,35 @@ export class HardenedApplication {
         throw new Error(`License validation failed: ${result.message}`);
       }
 
+      // Mutual authentication: verify server signature
+      if (useChallenge && result.serverSignature) {
+        try {
+          console.log('[checkLicense] Verifying server signature for mutual authentication');
+          
+          // Get the stadium's public key from the certificate chain
+          const stadiumPublicKey = fullChain.issuingCertificate?.publicKey;
+          if (!stadiumPublicKey) {
+            throw new Error('Stadium public key not found in certificate chain');
+          }
+
+          // Verify the server's signature of the instanceId
+          const isServerValid = this.#verifySignature(
+            Buffer.from(this.#instanceId, 'utf8'),
+            Buffer.from(result.serverSignature, 'hex'),
+            stadiumPublicKey
+          );
+
+          if (!isServerValid) {
+            throw new Error('Server signature verification failed - possible MITM attack');
+          }
+
+          console.log('[checkLicense] Server signature verified successfully');
+        } catch (err) {
+          console.error('[checkLicense] Mutual authentication failed:', err.message);
+          throw new Error(`Mutual authentication failed: ${err.message}`);
+        }
+      }
+
       console.log('License validation (checkLicense) succeeded.');
     } catch (err) {
       console.warn('Error validating license (checkLicense)', err);
@@ -399,9 +487,11 @@ export class HardenedApplication {
 
   /**
    * Validates the license by performing local PKI validation and communicating with the license server.
+   * @param {number} attempt - Current attempt number for retry logic
+   * @param {boolean} useChallenge - Whether to use challenge-response authentication (default: true)
    * @throws Will throw an error if license validation fails.
    */
-  async validateLicense(attempt = 0) {
+  async validateLicense(attempt = 0, useChallenge = true) {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License validation configuration is incomplete.');
     }
@@ -428,13 +518,68 @@ export class HardenedApplication {
       }
     }
 
+    // Challenge-response authentication flow
+    let challengeNonce = null;
+    let nonceSignature = null;
+
+    if (useChallenge) {
+      try {
+        // Step 1: Request challenge nonce from server
+        const seatId = fullChain.seatCertificate?.seatData?.seatId;
+        if (!seatId) {
+          throw new Error('Cannot extract seatId from certificate chain');
+        }
+
+        console.log('[validateLicense] Requesting challenge nonce for seatId:', seatId);
+        const challengeResponse = await fetchWithTimeoutAndRetry(
+          `${this.#licenseServerUrl}/tickets/challenge`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seatId }),
+            agent: new https.Agent({ rejectUnauthorized: true }),
+          }
+        );
+
+        if (!challengeResponse.ok) {
+          throw new Error(`Failed to fetch challenge nonce: ${challengeResponse.status}`);
+        }
+
+        const challengeData = await challengeResponse.json();
+        challengeNonce = challengeData.nonce;
+
+        if (!challengeNonce) {
+          throw new Error('Server did not provide a challenge nonce');
+        }
+
+        console.log('[validateLicense] Received challenge nonce');
+
+        // Step 2: Sign the nonce with the seat's private key
+        const seatPrivateKey = fullChain.seatCertificate?.seatData?.privateKey;
+        if (!seatPrivateKey) {
+          throw new Error('Seat private key not found in certificate chain');
+        }
+
+        nonceSignature = this.#signData(Buffer.from(challengeNonce, 'utf8'), seatPrivateKey).toString('hex');
+        console.log('[validateLicense] Signed challenge nonce');
+      } catch (err) {
+        console.warn('[validateLicense] Challenge-response setup failed:', err.message);
+        // Fallback to non-challenge mode if challenge fails
+        useChallenge = false;
+        challengeNonce = null;
+        nonceSignature = null;
+      }
+    }
+
     const payload = {
       certificateJson: fullChain,
       instanceId: this.#instanceId,
-      ...(reservationCode ? { reservationCode } : {})
+      ...(reservationCode ? { reservationCode } : {}),
+      ...(useChallenge && challengeNonce ? { challengeNonce, nonceSignature } : {})
     };
 
     console.log('[validateLicense] reservationCode present?', Boolean(reservationCode));
+    console.log('[validateLicense] Using challenge-response?', useChallenge);
 
     const response = await fetchWithTimeoutAndRetry(
       `${this.#licenseServerUrl}/tickets/validate`,
@@ -477,7 +622,7 @@ export class HardenedApplication {
               if (Number.isNaN(parseInt(attempt))) attempt = 0;
               if (attempt++ < 2) {
                 // Set it so the next run includes it
-                return this.validateLicense(attempt);
+                return this.validateLicense(attempt, useChallenge);
               }
             }
           }
@@ -490,7 +635,7 @@ export class HardenedApplication {
           await revalidate();
           if (Number.isNaN(parseInt(attempt))) attempt = 0;
           if (attempt++ < 2) {
-            return this.validateLicense(attempt);
+            return this.validateLicense(attempt, useChallenge);
           } else {
             throw new Error('Failed to revalidate a stale ticket.');
           }
@@ -505,6 +650,35 @@ export class HardenedApplication {
 
     if (result.message !== 'License is valid.') {
       throw new Error(`License validation failed: ${result.message}`);
+    }
+
+    // Mutual authentication: verify server signature
+    if (useChallenge && result.serverSignature) {
+      try {
+        console.log('[validateLicense] Verifying server signature for mutual authentication');
+        
+        // Get the stadium's public key from the certificate chain
+        const stadiumPublicKey = fullChain.issuingCertificate?.publicKey;
+        if (!stadiumPublicKey) {
+          throw new Error('Stadium public key not found in certificate chain');
+        }
+
+        // Verify the server's signature of the instanceId
+        const isServerValid = this.#verifySignature(
+          Buffer.from(this.#instanceId, 'utf8'),
+          Buffer.from(result.serverSignature, 'hex'),
+          stadiumPublicKey
+        );
+
+        if (!isServerValid) {
+          throw new Error('Server signature verification failed - possible MITM attack');
+        }
+
+        console.log('[validateLicense] Server signature verified successfully');
+      } catch (err) {
+        console.error('[validateLicense] Mutual authentication failed:', err.message);
+        throw new Error(`Mutual authentication failed: ${err.message}`);
+      }
     }
 
     // Clean up reservation file on success
