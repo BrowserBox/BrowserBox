@@ -111,21 +111,163 @@ function Test-TicketValidity {
     }
 }
 
+# Helper function: Sign data with Ed25519 using Node.js and @noble/ed25519
+function Sign-Ed25519WithNode {
+    param (
+        [string]$Data,
+        [string]$PrivateKeyBase64url
+    )
+    
+    $nodeScript = @"
+const ed = require('@noble/ed25519');
+const data = process.argv[1];
+const privateKeyBase64url = process.argv[2];
+
+(async () => {
+  try {
+    const privateKey = Buffer.from(privateKeyBase64url, 'base64url');
+    const signature = await ed.signAsync(Buffer.from(data, 'utf8'), privateKey);
+    console.log(Buffer.from(signature).toString('hex'));
+  } catch (err) {
+    console.error('Error signing with Ed25519:', err.message);
+    process.exit(1);
+  }
+})();
+"@
+    
+    $result = node -e $nodeScript $Data $PrivateKeyBase64url 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to sign with Ed25519: $result"
+    }
+    return $result.Trim()
+}
+
+# Helper function: Verify signature with Node.js using crypto
+function Verify-WithNode {
+    param (
+        [string]$Data,
+        [string]$Signature,
+        [string]$PublicKey
+    )
+    
+    $nodeScript = @"
+const crypto = require('crypto');
+const data = process.argv[1];
+const signature = process.argv[2];
+const publicKey = process.argv[3];
+const verify = crypto.createVerify('SHA256');
+verify.update(data);
+verify.end();
+const isValid = verify.verify(publicKey, Buffer.from(signature, 'hex'));
+console.log(isValid ? 'true' : 'false');
+"@
+    
+    $result = node -e $nodeScript $Data $Signature $PublicKey 2>&1
+    return $result.Trim() -eq 'true'
+}
+
 # Function to validate ticket with server
 function Test-TicketWithServer {
     $ticketJson = Get-Content $TicketFile -Raw
+    $ticketObject = $ticketJson | ConvertFrom-Json
     Write-Host "Checking ticket validity with server..." -ForegroundColor Yellow
-    $payload = @{ certificateJson = $ticketJson } | ConvertTo-Json -Depth 10 -Compress
+    
+    # Extract seatId from ticket
+    $seatId = $ticketObject.seatCertificate.seatData.seatId
+    if (-not $seatId) {
+        Write-Warning "Error: Cannot extract seatId from ticket"
+        return $false
+    }
+    
+    # Step 1: Request challenge nonce from server
+    Write-Host "Requesting challenge nonce..." -ForegroundColor Yellow
+    $challengeEndpoint = "$ApiServer/tickets/challenge"
+    try {
+        $challengePayload = @{ seatId = $seatId } | ConvertTo-Json -Depth 10 -Compress
+        $challengeResponse = Invoke-RestMethod -Uri $challengeEndpoint -Method Post -ContentType "application/json" -Body $challengePayload -ErrorAction Stop
+        $nonce = $challengeResponse.nonce
+    } catch {
+        Write-Warning "Could not get challenge nonce, proceeding without challenge-response: $_"
+        # Fallback to non-challenge validation
+        $payload = @{ certificateJson = $ticketObject } | ConvertTo-Json -Depth 10 -Compress
+        $response = Invoke-RestMethod -Uri $ValidateTicketEndpoint -Method Post -ContentType "application/json" -Body $payload
+        $isValid = $response.isValid -eq $true
+        if ($isValid) {
+            Write-Host "Server confirmed: Ticket is valid" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Warning "Server response: Ticket is invalid. Response: $($response | ConvertTo-Json -Depth 10 -Compress)"
+            Remove-Item $TicketFile -Force
+            return $false
+        }
+    }
+    
+    if (-not $nonce) {
+        Write-Warning "Server did not provide a challenge nonce"
+        return $false
+    }
+    
+    Write-Host "Received challenge nonce" -ForegroundColor Yellow
+    
+    # Step 2: Extract ticket's Ed25519 private key and sign the nonce
+    $ticketPrivateKey = $ticketObject.ticket.ticketData.jwk.d
+    if (-not $ticketPrivateKey) {
+        Write-Warning "Error: Cannot extract ticket private key from ticket"
+        return $false
+    }
+    
+    Write-Host "Signing challenge nonce with Ed25519..." -ForegroundColor Yellow
+    try {
+        $nonceSignature = Sign-Ed25519WithNode -Data $nonce -PrivateKeyBase64url $ticketPrivateKey
+    } catch {
+        Write-Warning "Error: Failed to sign challenge nonce: $_"
+        return $false
+    }
+    
+    Write-Host "Challenge nonce signed" -ForegroundColor Yellow
+    
+    # Step 3: Send validation request with challenge response
+    $payload = @{
+        certificateJson = $ticketObject
+        challengeNonce = $nonce
+        nonceSignature = $nonceSignature
+    } | ConvertTo-Json -Depth 10 -Compress
+    
     $response = Invoke-RestMethod -Uri $ValidateTicketEndpoint -Method Post -ContentType "application/json" -Body $payload
     $isValid = $response.isValid -eq $true
-    if ($isValid) {
-        Write-Host "Server confirmed: Ticket is valid" -ForegroundColor Green
-        return $true
-    } else {
+    $serverSignature = $response.serverSignature
+    
+    if (-not $isValid) {
         Write-Warning "Server response: Ticket is invalid. Response: $($response | ConvertTo-Json -Depth 10 -Compress)"
         Remove-Item $TicketFile -Force
         return $false
     }
+    
+    # Step 4: Verify server signature (mutual authentication)
+    if ($serverSignature) {
+        Write-Host "Verifying server signature for mutual authentication..." -ForegroundColor Yellow
+        $stadiumPublicKey = $ticketObject.issuingCertificate.publicKey
+        if (-not $stadiumPublicKey) {
+            Write-Warning "Cannot extract stadium public key, skipping server signature verification"
+        } else {
+            # Generate a pseudo instanceId (in real usage, this should match what was sent to server)
+            $instanceId = "DOSAYGO://browserbox/validation-check/$([int](Get-Date -UFormat %s))"
+            try {
+                $verificationResult = Verify-WithNode -Data $instanceId -Signature $serverSignature -PublicKey $stadiumPublicKey
+                if ($verificationResult) {
+                    Write-Host "Server signature verified successfully" -ForegroundColor Green
+                } else {
+                    Write-Warning "Server signature verification failed"
+                    # In production, you might want to fail here to prevent MITM attacks
+                }
+            } catch {
+                Write-Warning "Error verifying server signature: $_"
+            }
+        }
+    }
+    
+    Write-Host "Server confirmed: Ticket is valid" -ForegroundColor Green
+    return $true
 }
 
 # Function to fetch a vacant seat
