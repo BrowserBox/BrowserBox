@@ -1872,17 +1872,21 @@
           
           console.log('API v1 stop_app endpoint called - initiating graceful shutdown');
           
-          // Send immediate response to client
+          // Listen for the 'finish' event which indicates the response has been fully sent.
+          res.on('finish', () => {
+            console.log('HTTP response finished. Proceeding with shutdown.');
+            // Trigger the shutdown process after a brief delay.
+            setTimeout(async () => {
+              try {
+                await executeShutdownOfBBPRO();
+              } catch(e) {
+                console.error('Error during shutdown:', e);
+              }
+            }, 100); // A small delay is still good practice.
+          });
+
+          // Send response and then end the connection. res.send() calls res.end() implicitly.
           res.status(200).send('{"status":"shutdown_initiated"}');
-          
-          // Trigger the shutdown process after a brief delay to allow response to be sent
-          setTimeout(async () => {
-            try {
-              await executeShutdownOfBBPRO();
-            } catch(e) {
-              console.error('Error during shutdown:', e);
-            }
-          }, 500);
         });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
