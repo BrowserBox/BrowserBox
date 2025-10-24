@@ -858,6 +858,7 @@ test_port_access() {
     printf "${YELLOW}Testing port $port accessibility...${NC}\n"
 
     # Start ncat in the background
+    pkill ncat &>/dev/null
     (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | ncat -l "$port" >/dev/null 2>&1) &
     local pid=$!
     # Ensure ncat is killed on exit
@@ -1062,7 +1063,7 @@ setup() {
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
   fi
 
-  pkill ncat
+  pkill ncat &>/dev/null;
   for i in {-2..2}; do
     test_port_access $((setup_port+i)) || { printf "${RED}Quit software using these ports, or adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
   done
@@ -1324,7 +1325,7 @@ tor_run() {
       [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "${BB_CONFIG_DIR}/torbb_errors.txt"; echo "$login_link"; exit 1; }
       TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
   else
-      pkill ncat
+      pkill ncat &>/dev/null
       for i in {-2..2}; do
           test_port_access $((PORT+i)) || { printf "${RED}Quit software using these ports, or adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
       done
@@ -2776,7 +2777,7 @@ run_as() {
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Test port accessibility
-    pkill ncat
+    pkill ncat &>/dev/null
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Quit software using these ports or adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
