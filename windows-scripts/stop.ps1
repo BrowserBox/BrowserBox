@@ -55,7 +55,7 @@ function Read-Pid {
         $raw = (Get-Content $PidFile -ErrorAction SilentlyContinue | Out-String).Trim()
         $pid = 0
         if ([int]::TryParse($raw, [ref]$pid)) { Write-Verbose "Read PID $pid from $PidFile"; return $pid } else { Write-Warning "Could not parse PID from $PidFile"; return $null }
-    } catch { Write-Warning "Error reading PID file $PidFile: $_"; return $null }
+    } catch { Write-Warning "Error reading PID file ${PidFile}: $_"; return $null }
 }
 
 function Wait-ForProcessExit {
