@@ -92,65 +92,29 @@ function Stop-BrowserBoxViaAPI {
     $url = "http://localhost:${AppPort}/api/v1/stop_app?session_token=${LoginToken}"
     
     try {
-        # Make the API call to trigger shutdown
-        $response = Invoke-WebRequest -Uri $url -Method POST -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+        # Use curl.exe for a more robust request against the self-terminating server
+        $curlOutput = curl.exe -s -w "%{http_code}" -X POST $url
+        $statusCode = $curlOutput.Substring($curlOutput.Length - 3)
         
-        if ($response.StatusCode -eq 200) {
-            Write-Host "Shutdown request sent successfully." -ForegroundColor Green
-            Write-Host "Waiting up to 7 seconds for graceful shutdown..." -ForegroundColor Cyan
+        if ($statusCode -eq "200") {
+            Write-Host "Shutdown request sent successfully. Waiting up to 10 seconds for graceful exit..." -ForegroundColor Green
             
-            # Use Wait-Process with a 7-second timeout
-            try {
-                Wait-Process -Id $mainPid -Timeout 7 -ErrorAction Stop
+            $processExited = Wait-Process -Id $mainPid -Timeout 10 -ErrorAction SilentlyContinue
+            if ($processExited) {
                 Write-Host "Main service shut down gracefully." -ForegroundColor Green
-                Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
-                return $true
+            } else {
+                Write-Host "Warning: Process did not exit within the timeout. Forcing shutdown..." -ForegroundColor Yellow
+                Stop-Process -Id $mainPid -Force -ErrorAction SilentlyContinue
             }
-            catch [System.TimeoutException] {
-                # Timeout occurred - process is still running
-                Write-Host "Warning: Process did not exit within 7-second timeout. Forcing shutdown..." -ForegroundColor Yellow
-                
-                try {
-                    Stop-Process -Id $mainPid -Force -ErrorAction Stop
-                    Write-Host "Process forcefully terminated." -ForegroundColor Yellow
-                    Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
-                    return $true
-                }
-                catch {
-                    Write-Host "Error: Failed to force-terminate process: $_" -ForegroundColor Red
-                    return $false
-                }
-            }
-            catch {
-                # Process might have already exited or other error
-                $stillRunning = Get-Process -Id $mainPid -ErrorAction SilentlyContinue
-                if (-not $stillRunning) {
-                    Write-Host "Main service shut down gracefully." -ForegroundColor Green
-                    Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
-                    return $true
-                } else {
-                    Write-Host "Warning: Unexpected error during Wait-Process: $_" -ForegroundColor Yellow
-                    Write-Host "Forcing shutdown..." -ForegroundColor Yellow
-                    
-                    try {
-                        Stop-Process -Id $mainPid -Force -ErrorAction Stop
-                        Write-Host "Process forcefully terminated." -ForegroundColor Yellow
-                        Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
-                        return $true
-                    }
-                    catch {
-                        Write-Host "Error: Failed to force-terminate process: $_" -ForegroundColor Red
-                        return $false
-                    }
-                }
-            }
+            Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+            return $true
         } else {
-            Write-Host "Warning: Unexpected response code: $($response.StatusCode)" -ForegroundColor Yellow
+            Write-Host "Warning: API returned non-200 status code: $statusCode" -ForegroundColor Yellow
             return $false
         }
     }
     catch {
-        Write-Host "Error making API request: $_" -ForegroundColor Red
+        Write-Host "Error making API request with curl: $_" -ForegroundColor Red
         Write-Host "Falling back to direct process termination..." -ForegroundColor Yellow
         return $false
     }
