@@ -1,0 +1,32 @@
+# .github/workflows/trigger-private-build.yml
+# This workflow runs in the PUBLIC repository (BrowserBox/BrowserBox).
+# Its only job is to send a 'repository_dispatch' event to the private build repository
+# whenever a new non-RC tag is pushed.
+
+name: Trigger Private Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  dispatch:
+    # Only run for tags that are not release candidates
+    if: "!endsWith(github.ref, '-rc')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send dispatch to private build repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          # A PAT with 'repo' scope is required to dispatch to a private repository.
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          # The private repository where the build workflow lives.
+          repository: BrowserBox/BrowserBox-source
+          # A custom event type name that the private repo's workflow will listen for.
+          event-type: trigger-browserbox-build
+          # Pass the Git tag (e.g., "refs/tags/v1.2.3") to the private repo.
+          client-payload: >
+            {
+              "ref": "${{ github.ref }}"
+            }
