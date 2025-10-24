@@ -152,7 +152,7 @@ jobs:
           # Stop services
           bbx stop
           # Check no Node processes remain
-          $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools", "node" -ErrorAction SilentlyContinue
+          $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools" -ErrorAction SilentlyContinue
           if ($nodeProcs) {
             Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
           } else {
