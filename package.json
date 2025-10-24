@@ -1,7 +1,7 @@
 {
   "name": "@browserbox/browserbox",
   "type": "module",
-  "version": "14.1.4",
+  "version": "14.1.5",
   "description": "BrowserBox CLI - Secure, cross-platform RBI. See dosaygo.com",
   "main": "./src/server.js",
   "default": "dist/image.html",
@@ -63,21 +63,15 @@
     "url": "git+https://github.com/BrowserBox/BrowserBox.git"
   },
   "keywords": [
+    "back-end",
+    "front-end",
+    "cli",
+    "mobile",
     "browser",
     "headless",
     "automation",
     "chrome",
-    "viewfinder",
-    "viewfinderjs",
-    "zanj",
-    "browsergap",
-    "interactive-image",
-    "supreme-architect",
-    "oni",
-    "remoteview",
-    "groundcontrol",
-    "chromescreen",
-    "chrome controller"
+    "browserbox"
   ],
   "author": "@dosy",
   "bugs": {
