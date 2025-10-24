@@ -8,8 +8,8 @@ param (
     [int]$Port,
     [Parameter(Mandatory = $false, HelpMessage = "Provide a specific login token (unused).")]
     [string]$Token,
-    [Parameter(Mandatory = $false, HelpMessage = "Wait time in seconds for graceful shutdown (default: 30).")]
-    [int]$GraceSeconds = 30
+    [Parameter(Mandatory = $false, HelpMessage = "Wait time in seconds for graceful shutdown (default: 7).")]
+    [int]$GraceSeconds = 7
 )
 
 if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
@@ -17,7 +17,7 @@ if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-help') {
     Write-Host "Stop BrowserBox services" -ForegroundColor Yellow
     Write-Host "Usage: bbx stop [-GraceSeconds <seconds>]" -ForegroundColor Cyan
     Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  -GraceSeconds  Wait time in seconds for graceful shutdown (default: 30)" -ForegroundColor White
+    Write-Host "  -GraceSeconds  Wait time in seconds for graceful shutdown (default: 7)" -ForegroundColor White
     Write-Host "Note: --Hostname, --Email, --Port, -Token are accepted but unused" -ForegroundColor Gray
     return
 }
@@ -55,7 +55,8 @@ function Read-EnvFile {
 function Stop-BrowserBoxViaAPI {
     param (
         [string]$AppPort,
-        [string]$LoginToken
+        [string]$LoginToken,
+        [int]$GraceSeconds
     )
     
     if (-not $AppPort -or -not $LoginToken) {
@@ -88,26 +89,62 @@ function Stop-BrowserBoxViaAPI {
     Write-Host "Port: $AppPort, Token: [REDACTED]" -ForegroundColor Gray
     Write-Host "Main process PID: $mainPid" -ForegroundColor Gray
     
-    # Construct the URL with session_token as query parameter
-    $url = "http://localhost:${AppPort}/api/v1/stop_app?session_token=${LoginToken}"
+    # Try HTTPS first (for GO_SECURE=true case), then fallback to HTTP
+    $statusCode = $null
+    $urlHttps = "https://localhost:${AppPort}/api/v1/stop_app?session_token=${LoginToken}"
+    $urlHttp = "http://localhost:${AppPort}/api/v1/stop_app?session_token=${LoginToken}"
     
     try {
-        # Use curl.exe for a more robust request against the self-terminating server
-        $curlOutput = curl.exe -s -w "%{http_code}" -X POST $url
-        $statusCode = $curlOutput.Substring($curlOutput.Length - 3)
+        Write-Host "Attempting HTTPS connection..." -ForegroundColor Gray
+        # Use curl.exe with -k to accept self-signed certificates
+        $curlOutput = curl.exe -k -sS -o NUL -w "%{http_code}" -X POST $urlHttps 2>&1
+        if ($curlOutput -match "^\d{3}$") {
+            $statusCode = $curlOutput
+        }
+        
+        # If HTTPS fails or returns 000, try HTTP
+        if (-not $statusCode -or $statusCode -eq "000") {
+            Write-Host "HTTPS failed or returned 000, trying HTTP..." -ForegroundColor Gray
+            $curlOutput = curl.exe -sS -o NUL -w "%{http_code}" -X POST $urlHttp 2>&1
+            if ($curlOutput -match "^\d{3}$") {
+                $statusCode = $curlOutput
+            }
+        }
         
         if ($statusCode -eq "200") {
-            Write-Host "Shutdown request sent successfully. Waiting up to 10 seconds for graceful exit..." -ForegroundColor Green
+            Write-Host "Shutdown request sent successfully. Waiting up to $GraceSeconds seconds for graceful exit..." -ForegroundColor Green
             
-            $processExited = Wait-Process -Id $mainPid -Timeout 10 -ErrorAction SilentlyContinue
-            if ($processExited) {
-                Write-Host "Main service shut down gracefully." -ForegroundColor Green
-            } else {
-                Write-Host "Warning: Process did not exit within the timeout. Forcing shutdown..." -ForegroundColor Yellow
-                Stop-Process -Id $mainPid -Force -ErrorAction SilentlyContinue
+            # Properly wait for process to exit
+            $waitSucceeded = $false
+            try {
+                Wait-Process -Id $mainPid -Timeout $GraceSeconds -ErrorAction Stop
+                $waitSucceeded = $true
+            } catch {
+                # Timeout or process already exited
             }
-            Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
-            return $true
+            
+            # Verify process actually exited
+            $processStillRunning = Get-Process -Id $mainPid -ErrorAction SilentlyContinue
+            if (-not $processStillRunning) {
+                Write-Host "Main service shut down gracefully." -ForegroundColor Green
+                Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+                return $true
+            } else {
+                Write-Host "Warning: Process did not exit within $GraceSeconds seconds. Forcing shutdown..." -ForegroundColor Yellow
+                Stop-Process -Id $mainPid -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds 1
+                
+                # Final verification
+                $processStillRunning = Get-Process -Id $mainPid -ErrorAction SilentlyContinue
+                if ($processStillRunning) {
+                    Write-Host "Error: Process still running after forced kill!" -ForegroundColor Red
+                    return $false
+                } else {
+                    Write-Host "Process terminated after forced kill." -ForegroundColor Green
+                    Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+                    return $true
+                }
+            }
         } else {
             Write-Host "Warning: API returned non-200 status code: $statusCode" -ForegroundColor Yellow
             return $false
@@ -122,14 +159,39 @@ function Stop-BrowserBoxViaAPI {
 
 # Function to force stop processes if API method fails
 function Force-StopProcesses {
+    param (
+        [int]$GraceSeconds
+    )
+    
     Write-Host "Performing fallback shutdown..." -ForegroundColor Yellow
+    
+    $allStopped = $true
     
     # Stop main service
     if (Test-Path $mainPidFile) {
         $mainPid = Get-Content $mainPidFile -ErrorAction SilentlyContinue
         if ($mainPid -and (Get-Process -Id $mainPid -ErrorAction SilentlyContinue)) {
-            Write-Host "Forcing shutdown of main service (PID: $mainPid)..." -ForegroundColor Cyan
+            Write-Host "Terminating main service (PID: $mainPid)..." -ForegroundColor Cyan
             Stop-Process -Id $mainPid -Force -ErrorAction SilentlyContinue
+            
+            # Wait for process to exit
+            $waitSucceeded = $false
+            try {
+                Wait-Process -Id $mainPid -Timeout $GraceSeconds -ErrorAction Stop
+                $waitSucceeded = $true
+            } catch {
+                # Timeout or process already exited
+            }
+            
+            # Verify process actually exited
+            Start-Sleep -Milliseconds 500
+            $processStillRunning = Get-Process -Id $mainPid -ErrorAction SilentlyContinue
+            if ($processStillRunning) {
+                Write-Host "Error: Main process (PID: $mainPid) still running after forced kill!" -ForegroundColor Red
+                $allStopped = $false
+            } else {
+                Write-Host "Main service stopped." -ForegroundColor Green
+            }
             Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
         }
     }
@@ -138,8 +200,25 @@ function Force-StopProcesses {
     if (Test-Path $devtoolsPidFile) {
         $devtoolsPid = Get-Content $devtoolsPidFile -ErrorAction SilentlyContinue
         if ($devtoolsPid -and (Get-Process -Id $devtoolsPid -ErrorAction SilentlyContinue)) {
-            Write-Host "Forcing shutdown of devtools service (PID: $devtoolsPid)..." -ForegroundColor Cyan
+            Write-Host "Terminating devtools service (PID: $devtoolsPid)..." -ForegroundColor Cyan
             Stop-Process -Id $devtoolsPid -Force -ErrorAction SilentlyContinue
+            
+            # Wait for process to exit
+            try {
+                Wait-Process -Id $devtoolsPid -Timeout $GraceSeconds -ErrorAction Stop
+            } catch {
+                # Timeout or process already exited
+            }
+            
+            # Verify process actually exited
+            Start-Sleep -Milliseconds 500
+            $processStillRunning = Get-Process -Id $devtoolsPid -ErrorAction SilentlyContinue
+            if ($processStillRunning) {
+                Write-Host "Error: Devtools process (PID: $devtoolsPid) still running after forced kill!" -ForegroundColor Red
+                $allStopped = $false
+            } else {
+                Write-Host "Devtools service stopped." -ForegroundColor Green
+            }
             Remove-Item $devtoolsPidFile -Force -ErrorAction SilentlyContinue
         }
     }
@@ -151,12 +230,14 @@ function Force-StopProcesses {
         if (Test-Path $chromePidFile) {
             $chromePid = Get-Content $chromePidFile -ErrorAction SilentlyContinue
             if ($chromePid -and (Get-Process -Id $chromePid -ErrorAction SilentlyContinue)) {
-                Write-Host "Forcing shutdown of Chrome (PID: $chromePid)..." -ForegroundColor Cyan
+                Write-Host "Terminating Chrome (PID: $chromePid)..." -ForegroundColor Cyan
                 Stop-Process -Id $chromePid -Force -ErrorAction SilentlyContinue
                 Remove-Item $chromePidFile -Force -ErrorAction SilentlyContinue
             }
         }
     }
+    
+    return $allStopped
 }
 
 # Main shutdown logic
@@ -166,20 +247,30 @@ Write-Host "=====================================" -ForegroundColor Green
 # Read configuration from test.env
 $envVars = Read-EnvFile -FilePath $testEnvPath
 
+$shutdownSuccess = $false
+
 if ($envVars) {
     $appPort = $envVars['APP_PORT']
     $loginToken = $envVars['LOGIN_TOKEN']
     
     # Try graceful shutdown via API first
-    $success = Stop-BrowserBoxViaAPI -AppPort $appPort -LoginToken $loginToken
+    $success = Stop-BrowserBoxViaAPI -AppPort $appPort -LoginToken $loginToken -GraceSeconds $GraceSeconds
     
     if (-not $success) {
         Write-Host "API shutdown failed, using fallback method..." -ForegroundColor Yellow
-        Force-StopProcesses
+        $shutdownSuccess = Force-StopProcesses -GraceSeconds $GraceSeconds
+    } else {
+        $shutdownSuccess = $true
     }
 } else {
     Write-Host "Could not read test.env, using fallback method..." -ForegroundColor Yellow
-    Force-StopProcesses
+    $shutdownSuccess = Force-StopProcesses -GraceSeconds $GraceSeconds
 }
 
-Write-Host "BrowserBox services stopped successfully." -ForegroundColor Green
+if ($shutdownSuccess) {
+    Write-Host "BrowserBox services stopped successfully." -ForegroundColor Green
+    $global:LASTEXITCODE = 0
+} else {
+    Write-Host "Error: Some processes could not be stopped." -ForegroundColor Red
+    $global:LASTEXITCODE = 1
+}
