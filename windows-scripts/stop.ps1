@@ -63,8 +63,30 @@ function Stop-BrowserBoxViaAPI {
         return $false
     }
     
+    # Read the main process PID from the PID file
+    if (-not (Test-Path $mainPidFile)) {
+        Write-Host "Warning: Main PID file not found at $mainPidFile" -ForegroundColor Yellow
+        Write-Host "Process may not be running or was not started properly." -ForegroundColor Yellow
+        return $false
+    }
+    
+    $mainPid = Get-Content $mainPidFile -ErrorAction SilentlyContinue
+    if (-not $mainPid) {
+        Write-Host "Warning: Could not read PID from $mainPidFile" -ForegroundColor Yellow
+        return $false
+    }
+    
+    # Check if the process exists
+    $process = Get-Process -Id $mainPid -ErrorAction SilentlyContinue
+    if (-not $process) {
+        Write-Host "Process with PID $mainPid is not running." -ForegroundColor Green
+        Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+        return $true
+    }
+    
     Write-Host "Initiating graceful shutdown via API..." -ForegroundColor Cyan
     Write-Host "Port: $AppPort, Token: [REDACTED]" -ForegroundColor Gray
+    Write-Host "Main process PID: $mainPid" -ForegroundColor Gray
     
     # Construct the URL with session_token as query parameter
     $url = "http://localhost:${AppPort}/api/v1/stop_app?session_token=${LoginToken}"
@@ -75,25 +97,53 @@ function Stop-BrowserBoxViaAPI {
         
         if ($response.StatusCode -eq 200) {
             Write-Host "Shutdown request sent successfully." -ForegroundColor Green
-            Write-Host "Waiting for graceful shutdown to complete..." -ForegroundColor Cyan
+            Write-Host "Waiting up to 7 seconds for graceful shutdown..." -ForegroundColor Cyan
             
-            # Wait for processes to shut down
-            Start-Sleep -Seconds $GraceSeconds
-            
-            # Check if main process is still running
-            if (Test-Path $mainPidFile) {
-                $mainPid = Get-Content $mainPidFile -ErrorAction SilentlyContinue
-                if ($mainPid -and (Get-Process -Id $mainPid -ErrorAction SilentlyContinue)) {
-                    Write-Host "Warning: Main process still running after grace period. Forcing shutdown..." -ForegroundColor Yellow
-                    Stop-Process -Id $mainPid -Force -ErrorAction SilentlyContinue
+            # Use Wait-Process with a 7-second timeout
+            try {
+                Wait-Process -Id $mainPid -Timeout 7 -ErrorAction Stop
+                Write-Host "Main service shut down gracefully." -ForegroundColor Green
+                Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+                return $true
+            }
+            catch [System.TimeoutException] {
+                # Timeout occurred - process is still running
+                Write-Host "Warning: Process did not exit within 7-second timeout. Forcing shutdown..." -ForegroundColor Yellow
+                
+                try {
+                    Stop-Process -Id $mainPid -Force -ErrorAction Stop
+                    Write-Host "Process forcefully terminated." -ForegroundColor Yellow
                     Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
-                } else {
-                    Write-Host "Main service shut down gracefully." -ForegroundColor Green
-                    Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+                    return $true
+                }
+                catch {
+                    Write-Host "Error: Failed to force-terminate process: $_" -ForegroundColor Red
+                    return $false
                 }
             }
-            
-            return $true
+            catch {
+                # Process might have already exited or other error
+                $stillRunning = Get-Process -Id $mainPid -ErrorAction SilentlyContinue
+                if (-not $stillRunning) {
+                    Write-Host "Main service shut down gracefully." -ForegroundColor Green
+                    Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+                    return $true
+                } else {
+                    Write-Host "Warning: Unexpected error during Wait-Process: $_" -ForegroundColor Yellow
+                    Write-Host "Forcing shutdown..." -ForegroundColor Yellow
+                    
+                    try {
+                        Stop-Process -Id $mainPid -Force -ErrorAction Stop
+                        Write-Host "Process forcefully terminated." -ForegroundColor Yellow
+                        Remove-Item $mainPidFile -Force -ErrorAction SilentlyContinue
+                        return $true
+                    }
+                    catch {
+                        Write-Host "Error: Failed to force-terminate process: $_" -ForegroundColor Red
+                        return $false
+                    }
+                }
+            }
         } else {
             Write-Host "Warning: Unexpected response code: $($response.StatusCode)" -ForegroundColor Yellow
             return $false
