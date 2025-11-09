@@ -22,7 +22,7 @@
 <p align="center">
   <strong>COMING SOON:</strong>New Pricing!
   <br>
-  <strong>NOVEMBER 2025 NEWS: New <a href=CONTRIBUTING.TXT> CONTRIBUTION GUIDELINES</a></strong>. What's changed: as all lawful usage of BrowserBox requires a valid license, you must obtain a development license in order to contribute.</strong>
+  <strong>NOVEMBER 2025 NEWS: New <a href=https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/CONTRIBUTING.txt> CONTRIBUTION GUIDELINES</a></strong>. What's changed: as all lawful usage of BrowserBox requires a valid license, you must obtain a development license in order to contribute.</strong>
   <br>
   <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is now in beta.<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
 </p>
