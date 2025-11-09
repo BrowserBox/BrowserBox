@@ -1,0 +1,151 @@
+Contributing.txt — Project Browser Box
+
+Thanks for your interest in contributing to Project Browser Box. We welcome bug reports, feature requests, and contributions — but before you write code or open pull requests there are two mandatory requirements specific to this project:
+	1.	You must hold a valid Development License for Browser Box (this includes a fee and identity verification).
+	2.	You must sign our Contributor Licensing Agreement (CLA). If you are not contributing as an employee of an organization that already assigns copyright to that organization, the CLA requires a full copyright assignment for your contributions.
+
+Below are the details, rationale, and the step-by-step contribution process.
+
+⸻
+
+1 — Why these rules exist (short)
+
+Browser Box is licensed software. Any organization using or modifying Browser Box in production must be licensed to do so. Because using and customizing the code implies a commercial / organizational relationship with Browser Box, we require contributors to:
+	•	Hold a development license (so their organization is authorized to use and extend the software), and
+	•	Execute a CLA so the project can accept contributions and manage copyright/redistribution consistently.
+
+These requirements keep the project legally clear and protect contributors and downstream users.
+
+⸻
+
+2 — Development License (must-have)
+
+What it is: a paid development license issued by the Browser Box licensing team that authorizes your organization to develop, run, and distribute modifications under the terms agreed in your license.
+
+How to apply: email the licensing team at:
+development@browserbox.io
+
+What to include in your license request email (suggested):
+	•	Organization name (or individual name)
+	•	Primary contact name and email
+	•	Short description of intended use / why you need development access (e.g., “custom integration for X service”)
+	•	Proof of identity and organization (typical items: business registration, government ID for individuals — the licensing team will give specifics)
+	•	Billing/contact for license fee
+	•	Preferred legal contact (if applicable)
+
+After you email development@browserbox.io the licensing team will reply with next steps: identity verification instructions, invoice/payment details, the license agreement, and timeframe for issuance.
+
+Important: You must obtain and present proof of an active development license before your contributions can be merged into the main repository.
+
+⸻
+
+3 — Contributor Licensing Agreement (CLA)
+
+All contributors must sign the project CLA.
+	•	If you contribute as an employee of an organization that already owns or assigns copyright (via your employer), the CLA will typically allow you to contribute under that organization’s assignment.
+	•	If you contribute as an individual (not assigned by your employer), the CLA will require assignment of copyright to Browser Box per the agreement terms.
+
+How to sign:
+When your development license is issued the licensing/legal contact will provide instructions and a CLA signing link or a PDF to sign. If you have not received CLA instructions, contact development@browserbox.io and request CLA steps.
+
+Automated checks: PRs from accounts that have not signed the CLA will be flagged and will not be merged.
+
+Legal disclaimer: This document is a contribution guide, not legal advice. If you have questions about the CLA or assignment language, consult your legal counsel before signing.
+
+⸻
+
+4 — Contribution workflow (summary)
+
+Contributions follow the standard fork-and-PR flow, with license & CLA gates:
+	1.	Obtain a Development License and retain proof (license number / email confirmation).
+	2.	Sign the CLA.
+	3.	Fork the repository (or get a team collaboration branch if provided by your license contact).
+	4.	Create a topic branch: feature/<short-name> or fix/<short-name>.
+	5.	Write tests for new features / bug fixes. All CI checks must pass.
+	6.	Open a Pull Request (PR) against main or the target branch and include:
+	•	The license reference (license number or confirmation email) in the PR description.
+	•	A link / confirmation that CLA has been signed (the CLA system usually records this).
+	•	A short explanation of the change, testing steps, and any migration notes.
+	7.	Address review comments; once approvals and CI green, a maintainer will merge.
+
+Note: PRs submitted without a valid license and a signed CLA will be closed.
+
+⸻
+
+5 — Pull Request Guidelines (details)
+	•	Base branch: main (or project’s active stable branch — check the repo README).
+	•	One logical change per PR.
+	•	Keep PR size reasonable — large designs should be split into design + implementation PRs.
+	•	Reference relevant issue numbers: Fixes #123 or Relates to #456.
+	•	Provide a clear commit message and PR description (what, why, and testing).
+	•	Use conventional commit-style messages where possible: feat:, fix:, chore:, docs:, test:.
+
+⸻
+
+6 — Code style, tests, and CI
+	•	Follow existing project formatting/style rules (linting, formatting). Where applicable the project enforces rules via CI.
+	•	All new code must include tests (unit/integration) that run in CI.
+	•	Run the test suite locally before opening PRs.
+	•	If your change requires database or infra migration steps, document them in the PR and the upgrade notes.
+
+⸻
+
+7 — Issues & Feature Requests
+	•	Use the issue tracker to report bugs or request features.
+	•	If you file an issue as an unlicensed user, expect maintainers to ask for context about intended use. If your organization wants to sponsor or participate in feature development, reach out to development@browserbox.io to discuss licensing and contracting.
+
+⸻
+
+8 — Security reporting
+
+If you discover a security vulnerability, do not file a public issue. Email our security team privately at: security@browserbox.io (or the contact provided in the repo README). Include:
+	•	A short description of the issue
+	•	Repro steps
+	•	A suggested mitigation (if known)
+	•	Your development license reference (if applicable)
+
+⸻
+
+9 — Exceptions & Special Cases
+	•	In a few cases (examples: documentation fixes, translation fixes, or small one-line typo corrections), the maintainers may accept a PR from an unlicensed contributor and then ask the contributor to sign the CLA before merging. This is at the maintainers’ discretion.
+	•	Contributions that touch core engine code or change licensing/redistribution behavior will not be accepted from unlicensed contributors.
+
+⸻
+
+10 — Enforcement and audits
+
+We periodically audit contributors and contributions to ensure compliance with license and CLA requirements. Failure to provide a valid license/CLA upon request can lead to reversion of contributions.
+
+⸻
+
+11 — Template: Email to request Development License
+
+Use or paste this into an email to development@browserbox.io:
+
+Subject: Development License Request — <Organization or Individual Name>
+
+Hello Browser Box licensing team,
+
+We'd like to request a Development License for Browser Box.
+
+Organization/Individual: <Your org or full name>
+Primary contact: <Name, email, phone>
+Intended use: <short description — e.g. "Custom integration with internal search for Product X">
+Approx. # developers who will need development access: <n>
+Preferred legal contact: <name, email>
+Billing info / purchase order (if applicable): <PO# or "we will provide PO after quote">
+
+Please let me know the identity verification steps, license fee, and how to sign the CLA.
+
+Thanks,
+<Name>
+<Title>
+<Company>
+
+
+⸻
+
+
+12 — Final notes
+	•	These rules are strict by design: Browser Box is intentionally licensed and intended to be used under commercial/organizational agreements. Requiring a development license and a CLA keeps contributions legally compatible with the project’s licensing model.
+	•	If you’re unsure whether you or your organization needs a license, contact development@browserbox.io and explain your use case. They’ll advise whether a license is required.
