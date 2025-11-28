@@ -1,5 +1,5 @@
 // Imports, constants then state
-const CACHE_VERSION = 'v13.2.0';
+const CACHE_VERSION = 'v14.2.1';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'bb-etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
