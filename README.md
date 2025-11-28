@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <strong>COMING SOON:</strong>New Pricing!
+  <strong>COMING SOON:</strong>New Binary Release Version! 60 FPS, Advanced Terminal Client, Enhanced Security & New Pricing!
   <br>
   <strong>NOVEMBER 2025 NEWS: New <a href=CONTRIBUTING.TXT> CONTRIBUTION GUIDELINES</a></strong>. What's changed: as all lawful usage of BrowserBox requires a valid license, you must obtain a development license in order to contribute.</strong>
   <br>
