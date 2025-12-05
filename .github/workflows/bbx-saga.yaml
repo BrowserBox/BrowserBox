@@ -1,3 +1,7 @@
+# Note: This workflow uses the porcelain installer (bbx.sh.dosaygo.com for Unix/macOS,
+#       bbx.dosaygo.com for Windows) to fetch and install the pre-built binary distribution
+#       of BrowserBox, rather than building from source.
+
 name: bbx Saga Test Suite
 
 on:
@@ -34,9 +38,6 @@ jobs:
     timeout-minutes: 20
     container: ${{ matrix.container_image }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Check if actor is repository owner or me
         shell: bash
         run: |
@@ -45,10 +46,54 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare test script (Unix/macOS)
+      - name: Install dependencies (Ubuntu Native)
+        if: matrix.os == 'ubuntu-latest' && matrix.container_image == ''
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y curl
+
+      - name: Install dependencies (Debian Container)
+        if: matrix.container_image == 'debian:latest'
+        shell: bash
+        run: |
+          apt-get update -y
+          apt-get install -y curl
+
+      - name: Install dependencies (CentOS Container)
+        if: matrix.container_image == 'dokken/centos-stream-9'
+        shell: bash
+        run: |
+          dnf update -y
+          dnf install -y curl
+
+      - name: Setup NVM and Node.js (Containers)
+        if: matrix.os != 'windows-latest' && matrix.container_image != ''
+        shell: bash
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 22
+          nvm use 22
+          nvm alias default 22
+
+      - name: Install BrowserBox (Unix/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
-        run: chmod +x tests/test-bbx.sh
+        env:
+          BBX_HOSTNAME: "localhost"
+          BBX_NO_UPDATE: "true"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+        run: |
+          # Install coreutils on macOS
+          if [[ "$(uname -s)" == "Darwin" ]]; then
+            brew install coreutils
+          fi
+          # Install BrowserBox using porcelain installer (fetches binary distribution)
+          yes | timeout -k 10s 10m bash <(curl -sSL https://bbx.sh.dosaygo.com) install --latest-rc
 
       - name: Execute BBX Test Saga (Unix/macOS)
         if: matrix.os != 'windows-latest'
@@ -63,6 +108,7 @@ jobs:
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
         run: |
+          source $HOME/.nvm/nvm.sh || true
           [ -z "$BBX_HOSTNAME" ] && echo "BBX_HOSTNAME is not set" || echo "BBX_HOSTNAME is set"
           [ -z "$EMAIL" ] && echo "EMAIL is not set" || echo "EMAIL is set"
           [ -z "$LICENSE_KEY" ] && echo "LICENSE_KEY is not set" || echo "LICENSE_KEY is set"
@@ -71,7 +117,54 @@ jobs:
           [ -z "$INSTALL_DOC_VIEWER" ] && echo "INSTALL_DOC_VIEWER is not set" || echo "INSTALL_DOC_VIEWER is set to $INSTALL_DOC_VIEWER"
           export BBX_NO_UPDATE=true
           export INSTALL_DOC_VIEWER STATUS_MODE BBX_TEST_AGREEMENT LICENSE_KEY EMAIL BBX_HOSTNAME BB_QUICK_EXIT
-          ./tests/test-bbx.sh
+          
+          # Run test sequence using bbx CLI (binary distribution)
+          echo "Setting up bbx..."
+          bbx setup --port 8080 --hostname localhost
+          
+          echo "Running bbx..."
+          bbx run &
+          sleep 10
+          
+          # Get login link and test
+          login_link=$(cat "$HOME/.config/dosyago/bbpro/login.link" 2>/dev/null || echo "https://localhost:8080/login?token=")
+          echo "Testing login link: $login_link"
+          
+          # Test with curl (retry logic)
+          max_retries=10
+          retry_count=0
+          success=false
+          while [ $retry_count -lt $max_retries ] && [ "$success" = "false" ]; do
+            if curl -k -L -s --max-time 5 --head --fail "$login_link" > /dev/null 2>&1; then
+              echo "Connection successful"
+              success=true
+            else
+              echo "Retry $((retry_count + 1))/$max_retries failed"
+              retry_count=$((retry_count + 1))
+              sleep 5
+            fi
+          done
+          
+          if [ "$success" = "false" ]; then
+            echo "Failed to connect after $max_retries retries"
+            bbx stop
+            exit 1
+          fi
+          
+          # Wait and test again
+          echo "Waiting 25 seconds to verify link stability..."
+          sleep 25
+          
+          if curl -k -L -s --max-time 5 --head --fail "$login_link" > /dev/null 2>&1; then
+            echo "Second verification successful"
+          else
+            echo "Second verification failed"
+            bbx stop
+            exit 1
+          fi
+          
+          # Stop services
+          bbx stop
         continue-on-error: false
 
       - name: Execute BBX Test Saga (Windows)

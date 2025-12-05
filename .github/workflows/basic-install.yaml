@@ -10,6 +10,9 @@
 #  on GitHub Actions Runners. This makes it easy to see if the application is working correctly, and to test 
 #  any modifications you make. This is not an endorsement or encouragement to utilize GitHub Actions in a way that violates
 #  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
+#
+# Note: This workflow uses the porcelain installer (bbx.sh.dosaygo.com) to fetch and install the
+#       pre-built binary distribution of BrowserBox, rather than building from source.
 # End preamble
 
 name: BrowserBox Basic Install Test
@@ -46,10 +49,6 @@ jobs:
     container: ${{ matrix.container_image }}
 
     steps:
-      # Checkout the repository code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       # Check if actor is repository owner or me
       - name: Check if actor is repository owner or me
         run: |
@@ -109,21 +108,36 @@ jobs:
           BBX_NO_UPDATE: "true"
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
-      # Install application
-      - name: Install application
+      # Install BrowserBox using porcelain installer (fetches binary distribution)
+      - name: Install BrowserBox
         shell: /bin/bash {0}
         run: |
+          if [[ "${{ matrix.container_image }}" != "" ]]; then
+            # Container case: Install nvm and Node.js first
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install 22
+            nvm use 22
+            nvm alias default 22
+          fi
+          # Install BrowserBox using the porcelain installer script
           if [[ "$(uname -s)" == "Darwin" ]]; then
             brew install coreutils
           fi
-          yes | timeout -k 10s 10m ./deploy-scripts/global_install.sh localhost
+          export BBX_HOSTNAME="localhost"
+          export EMAIL="test@example.com"
+          export LICENSE_KEY="${{ secrets.BB_LICENSE_KEY }}"
+          export BBX_TEST_AGREEMENT="true"
+          yes | timeout -k 10s 10m bash <(curl -sSL https://bbx.sh.dosaygo.com) install --latest-rc
 
       # Configure application
       - name: Configure application
         id: setup
         shell: /bin/bash {0}
         run: |
-          output=$(setup_bbpro --port 8080)
+          source $HOME/.nvm/nvm.sh || true
+          output=$(bbx setup --port 8080 --hostname localhost)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
         env:
           BBX_NO_UPDATE: "true"
@@ -137,8 +151,8 @@ jobs:
           export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
           export BB_QUICK_EXIT="whatever"
           export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
-          bbcertify
-          bbpro &
+          bbx certify
+          bbx run &
           sleep 5
           ngrok http https://localhost:8080 &
           sleep 5
@@ -158,8 +172,9 @@ jobs:
       - name: Check application with retry
         shell: /bin/bash {0}
         run: |
+          source $HOME/.nvm/nvm.sh || true
           base_url="https://localhost:8080"
-          token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
+          token=$(bbx setup --port 8080 --hostname localhost | grep -oE 'token=[^&]+' | sed 's/token=//')
           check_url="${base_url}/?session_token=${token}"
           max_time=60  # Maximum total time in seconds
           timeout=5    # Timeout per attempt in seconds
@@ -180,7 +195,7 @@ jobs:
           
           if [ $success -eq 0 ]; then
             echo "Error: Application check failed after $max_time seconds"
-            stop_bbpro
+            bbx stop
             sleep 10
             exit 1
           fi
@@ -202,8 +217,9 @@ jobs:
       - name: Final check with retry
         shell: /bin/bash {0}
         run: |
+          source $HOME/.nvm/nvm.sh || true
           base_url="https://localhost:8080"
-          token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
+          token=$(bbx setup --port 8080 --hostname localhost | grep -oE 'token=[^&]+' | sed 's/token=//')
           check_url="${base_url}/?session_token=${token}"
           max_time=60  # Maximum total time in seconds
           timeout=5    # Timeout per attempt in seconds
@@ -224,12 +240,12 @@ jobs:
           
           if [ $success -eq 0 ]; then
             echo "Error: Final application check failed after $max_time seconds"
-            stop_bbpro
+            bbx stop
             sleep 10
             exit 1
           fi
           echo "Final check succeeded"
-          stop_bbpro
+          bbx stop
           sleep 10
           exit 0
         env:
@@ -239,6 +255,8 @@ jobs:
       # Cleanup
       - name: Cleanup
         if: always()
+        shell: /bin/bash {0}
         run: |
-          stop_bbpro || true
+          source $HOME/.nvm/nvm.sh || true
+          bbx stop || true
           sleep 5
