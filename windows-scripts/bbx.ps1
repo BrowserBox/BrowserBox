@@ -18,9 +18,11 @@ $BinaryDir = "$env:LOCALAPPDATA\browserbox\bin"
 $BinaryName = "browserbox.exe"
 $BinaryPath = Join-Path $BinaryDir $BinaryName
 
-# Ensure binary directory exists
-if (-not (Test-Path $BinaryDir)) {
-    New-Item -ItemType Directory -Path $BinaryDir -Force | Out-Null
+# Function to ensure binary directory exists
+function Ensure-BinaryDir {
+    if (-not (Test-Path $BinaryDir)) {
+        New-Item -ItemType Directory -Path $BinaryDir -Force | Out-Null
+    }
 }
 
 # Function to get the latest release tag from GitHub
@@ -44,6 +46,8 @@ function Download-Binary {
     param(
         [string]$Tag
     )
+    
+    Ensure-BinaryDir
     
     $assetName = "browserbox.exe"
     $downloadUrl = "https://github.com/$PublicRepo/releases/download/$Tag/$assetName"
@@ -83,6 +87,7 @@ function Test-BinaryExists {
 function Ensure-Binary {
     if (-not (Test-BinaryExists)) {
         Write-Host "BrowserBox binary not found. Installing..." -ForegroundColor Yellow
+        Ensure-BinaryDir
         $tag = Get-LatestRelease -Repo $PublicRepo
         Download-Binary -Tag $tag
     }
@@ -135,6 +140,41 @@ function Check-Update {
     }
 }
 
+# Function to show help
+function Show-Help {
+    Write-Host "bbx CLI (Windows Binary Distribution)" -ForegroundColor Green
+    Write-Host "Usage: bbx <command> [options]" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Core Commands:" -ForegroundColor Cyan
+    Write-Host "  install         Install BrowserBox binary and CLI" -ForegroundColor White
+    Write-Host "  update          Update BrowserBox to the latest version" -ForegroundColor White
+    Write-Host "  --version, -v   Show version information" -ForegroundColor White
+    Write-Host "  --help, -h      Show this help message" -ForegroundColor White
+    Write-Host "  revalidate      Clear ticket and revalidate license" -ForegroundColor White
+    Write-Host ""
+    Write-Host "All other commands are passed through to the browserbox binary." -ForegroundColor Gray
+    Write-Host "Run 'browserbox --help' after installation for full command list." -ForegroundColor Gray
+}
+
+# Function to handle revalidate command
+function Invoke-Revalidate {
+    $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
+    
+    if (-not (Test-Path (Split-Path $ticketPath))) {
+        Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
+        return
+    }
+    
+    if (Test-Path $ticketPath) {
+        Write-Host "Removing ticket.json..." -ForegroundColor Cyan
+        Remove-Item $ticketPath -Force
+        Write-Host "ticket.json removed. License will be revalidated on next use." -ForegroundColor Green
+    }
+    else {
+        Write-Host "No ticket found at $ticketPath" -ForegroundColor Yellow
+    }
+}
+
 # Main execution logic
 if ($Command -eq "install" -or $Command -eq "update") {
     # Install/update command explicitly downloads/updates the binary
@@ -159,10 +199,12 @@ elseif ($Command -eq "--version" -or $Command -eq "-v") {
     exit $LASTEXITCODE
 }
 elseif (-not $Command -or $Command -eq "-help" -or $Command -eq "--help" -or $Command -eq "-h") {
-    # Ensure binary exists for help command
-    Ensure-Binary
-    & $BinaryPath "--help"
-    exit $LASTEXITCODE
+    Show-Help
+    exit 0
+}
+elseif ($Command -eq "revalidate") {
+    Invoke-Revalidate
+    exit 0
 }
 else {
     # For all other commands, ensure binary exists and pass through
