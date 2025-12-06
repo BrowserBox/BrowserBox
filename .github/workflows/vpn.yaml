@@ -1,6 +1,9 @@
 # Preamble (please keep)
 # _meta_action_id: dosyago/BrowserBox/bbx/sep-2025-unified
 # Purpose: short-lived personal test of BrowserBox via bbx on a GitHub Actions runner.
+#
+# Note: This workflow uses the porcelain installer (bbx.sh.dosaygo.com) to fetch and install
+#       the pre-built binary distribution of BrowserBox, rather than building from source.
 name: Personal ephemeral BrowserBox (bbx + tor|ssh)
 
 on:
@@ -277,10 +280,7 @@ jobs:
               await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
             }
 
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install bbx
+      - name: Install bbx (using porcelain installer - fetches binary distribution)
         timeout-minutes: 15
         env:
           BBX_HOSTNAME: ${{ env.BBX_HOSTNAME }}
@@ -295,7 +295,8 @@ jobs:
         run: |
           set -euo pipefail
           if ! command -v bbx >/dev/null 2>&1; then
-            ./bbx.sh install --latest-rc
+            # Use porcelain installer to fetch and install binary distribution
+            yes | timeout -k 10s 10m bash <(curl -sSL https://bbx.sh.dosaygo.com) install --latest-rc
           fi
           bbx --version || true
 
