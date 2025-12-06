@@ -1349,9 +1349,9 @@ install() {
     # Run the binary installation process
     printf "${YELLOW}Running BrowserBox installer...${NC}\n"
     if [ -t 0 ] && [[ -z "$BBX_TEST_AGREEMENT" ]]; then
-        "$BINARY_PATH" --install "$BBX_HOSTNAME" "$EMAIL"
+        "$BINARY_PATH" --full-install "$BBX_HOSTNAME" "$EMAIL"
     else
-        yes | "$BINARY_PATH" --install "$BBX_HOSTNAME" "$EMAIL"
+        yes | "$BINARY_PATH" --install 
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
     
