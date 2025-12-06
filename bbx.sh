@@ -63,7 +63,7 @@ protecc_win_sysadmins() {
 # ====================================================================
 
 # Configuration
-PUBLIC_REPO="BrowserBox/BrowserBox"
+PUBLIC_REPO="${BBX_RELEASE_REPO:-BrowserBox/BrowserBox}"
 BINARY_NAME="browserbox"
 GLOBAL_BIN_DIR="/usr/local/bin"
 SUDO_BIN="$(command -v sudo || true)"
@@ -109,8 +109,12 @@ get_latest_release() {
   # Try using curl with GitHub API
   if command -v curl >/dev/null 2>&1; then
     local api_url="https://api.github.com/repos/${repo}/releases/latest"
+    local curl_auth=()
+    if [[ -n "${GH_TOKEN:-}" ]]; then
+      curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+    fi
     local response
-    response=$(curl -sS --connect-timeout 10 "$api_url" 2>/dev/null || echo "")
+    response=$(curl -sS --connect-timeout 10 "${curl_auth[@]}" "$api_url" 2>/dev/null || echo "")
     
     if [[ -n "$response" ]]; then
       # Try jq first
@@ -137,8 +141,8 @@ download_binary() {
   local tag="$2"
   local asset_name
   case "$platform" in
-    macos) asset_name="browserbox-macos-bin" ;;
-    linux) asset_name="browserbox-linux-bin" ;;
+    macos) asset_name="browserbox-macos-arm64" ;;
+    linux) asset_name="browserbox-linux-x64" ;;
     *) echo -e "${RED}Unsupported platform: $platform${NC}" >&2; exit 1 ;;
   esac
   local download_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/${asset_name}"
@@ -154,7 +158,12 @@ download_binary() {
     exit 1
   fi
   
-  if ! curl -L --fail --progress-bar --connect-timeout 30 -o "$temp_file" "$download_url" 2>&1; then
+  local curl_auth=()
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+  fi
+
+  if ! curl -L --fail --progress-bar --connect-timeout 30 "${curl_auth[@]}" -o "$temp_file" "$download_url" 2>&1; then
     echo -e "${RED}Failed to download binary from ${download_url}${NC}" >&2
     echo -e "${YELLOW}This could mean:${NC}" >&2
     echo -e "  - No release is available for ${platform}" >&2
@@ -1314,8 +1323,10 @@ install() {
     # Download and install the binary
     local platform
     platform=$(detect_platform)
-    local tag
-    tag=$(get_latest_release "$PUBLIC_REPO")
+    local tag="${BBX_RELEASE_TAG:-}"
+    if [[ -z "$tag" ]]; then
+      tag=$(get_latest_release "$PUBLIC_REPO")
+    fi
     download_binary "$platform" "$tag"
     
     # Get hostname and email for setup
@@ -3762,4 +3773,3 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
-
