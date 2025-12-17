@@ -1,10 +1,20 @@
 name: bbx Saga Test Suite (Public Release)
 
 on:
-  workflow_run:
-    workflows: ["Private Build (Draft Binaries)"]
-    types: [completed]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to test (e.g., v1.2.3). Defaults to the published release tag when run from a release event."
+        required: false
+        default: ""
+        type: string
+      release_repo:
+        description: "Release repo (owner/name)."
+        required: false
+        default: "BrowserBox/BrowserBox"
+        type: string
 
 concurrency:
   group: ${{ github.repository }}-bbx-saga
@@ -12,16 +22,14 @@ concurrency:
 
 permissions:
   contents: read      # Required for actions/checkout
-  actions: read       # Required for 'gh run view' to inspect the upstream workflow inputs
+  actions: read
 
 env:
-  PRIVATE_TAG: false
-  USE_PRIVATE_RELEASE: false
-  TARGET_RELEASE_REPO: "BrowserBox/BrowserBox"
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag || '' }}
+  TARGET_RELEASE_REPO: ${{ github.event.inputs.release_repo || 'BrowserBox/BrowserBox' }}
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
@@ -44,75 +52,18 @@ jobs:
     timeout-minutes: 10
     container: ${{ matrix.container_image }}
     steps:
-      # 1. Try to download the artifact (Solution 3), but DON'T fail if missing
-      - name: Download Tag Artifact
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          name: workflow-inputs
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true  # <--- CRITICAL ADDITION
-
-      # 2. The Ultimate Logic Block (Artifact -> CLI -> Regex)
-      - name: Derive PRIVATE_TAG
-        if: github.event_name == 'workflow_run'
+      - name: Resolve release under test
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag=""
-          
-          # ATTEMPT 1: Check for Artifact (Solution 3)
-          if [[ -f "workflow_tag.txt" ]]; then
-            tag=$(cat workflow_tag.txt | tr -d '[:space:]')
-            echo "✓ Found tag via Artifact: $tag"
-          fi
-
-          # ATTEMPT 2: Check via GH CLI (Solution 2)
-          if [[ -z "$tag" ]]; then
-            echo "Artifact missing. Attempting gh CLI..."
-            workflow_run_id="${{ github.event.workflow_run.id }}"
-            tag=$(gh run view "$workflow_run_id" --repo "${{ github.repository }}" --json inputs --jq '.inputs.tag // empty' 2>/dev/null || echo "")
-            if [[ -n "$tag" ]]; then
-              echo "✓ Found tag via gh CLI: $tag"
-            fi
-          fi
-
-          # ATTEMPT 3: Check via Run Title Regex (Solution 1)
-          if [[ -z "$tag" ]]; then
-            echo "CLI failed. Attempting display_title extraction..."
-            display_title="${{ github.event.workflow_run.display_title }}"
-            # Matches "Private Build v1.2.3" or just "v1.2.3"
-            if [[ "$display_title" =~ (v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?) ]]; then
-              tag="${BASH_REMATCH[1]}"
-              echo "✓ Found tag via Display Title: $tag"
-            fi
-          fi
-
-          # FINAL CHECK
-          if [[ -z "$tag" ]]; then
-            echo "::error::Could not resolve PRIVATE_TAG from Artifact, CLI, or Title."
+          set -euo pipefail
+          if [[ -z "${RELEASE_TAG}" ]]; then
+            echo "release_tag is required when manually dispatched." >&2
             exit 1
           fi
-
-          # EXPORT
-          {
-            echo "PRIVATE_TAG=$tag"
-            echo "USE_PRIVATE_RELEASE=true"
-            echo "TARGET_RELEASE_REPO=BrowserBox/BrowserBox"
-          } >> "$GITHUB_ENV"
+          echo "Testing release: ${TARGET_RELEASE_REPO}@${RELEASE_TAG}"
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Check if actor is repository owner or me
-        shell: bash
-        run: |
-          if [[ "${{ github.actor }}" != "crisdosaygo" ]]; then
-            echo "Actor is not me. Not running CI"
-            exit 1
-          fi
 
       - name: Prepare test script (Unix/macOS)
         if: matrix.os != 'windows-latest'
@@ -132,18 +83,9 @@ jobs:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
-          TARGET_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
-          PRIVATE_TAG: ${{ env.PRIVATE_TAG }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          if [[ "${USE_PRIVATE_RELEASE}" == "true" ]]; then
-            if [[ -z "${PRIVATE_TAG}" ]]; then
-              echo "PRIVATE_RELEASE_TAG is required when use_private_release=true" >&2
-              exit 1
-            fi
-            export BBX_RELEASE_REPO="${TARGET_RELEASE_REPO}"
-            export BBX_RELEASE_TAG="${PRIVATE_TAG}"
-            echo "Using private release ${BBX_RELEASE_REPO}@${BBX_RELEASE_TAG}"
-          fi
           chmod +x ./bbx.sh
           ./bbx.sh install
 
@@ -160,8 +102,8 @@ jobs:
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
-          PRIVATE_TAG: ${{ env.PRIVATE_TAG }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
           [ -z "$BBX_HOSTNAME" ] && echo "BBX_HOSTNAME is not set" || echo "BBX_HOSTNAME is set"
           [ -z "$EMAIL" ] && echo "EMAIL is not set" || echo "EMAIL is set"
@@ -169,15 +111,6 @@ jobs:
           [ -z "$BBX_TEST_AGREEMENT" ] && echo "BBX_TEST_AGREEMENT is not set" || echo "BBX_TEST_AGREEMENT is set"
           [ -z "$STATUS_MODE" ] && echo "STATUS_MODE is not set" || echo "STATUS_MODE is set"
           [ -z "$INSTALL_DOC_VIEWER" ] && echo "INSTALL_DOC_VIEWER is not set" || echo "INSTALL_DOC_VIEWER is set to $INSTALL_DOC_VIEWER"
-          if [[ "${USE_PRIVATE_RELEASE}" == "true" ]]; then
-            if [[ -z "${PRIVATE_TAG}" ]]; then
-              echo "PRIVATE_RELEASE_TAG is required when use_private_release=true" >&2
-              exit 1
-            fi
-            export BBX_RELEASE_REPO="${TARGET_RELEASE_REPO}"
-            export BBX_RELEASE_TAG="${PRIVATE_TAG}"
-            echo "Using private release ${BBX_RELEASE_REPO}@${BBX_RELEASE_TAG}"
-          fi
           export INSTALL_DOC_VIEWER STATUS_MODE BBX_TEST_AGREEMENT LICENSE_KEY EMAIL BBX_HOSTNAME BB_QUICK_EXIT
           ./tests/test-bbx.sh
         continue-on-error: false
@@ -194,17 +127,9 @@ jobs:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
-          TARGET_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
-          PRIVATE_TAG: ${{ env.PRIVATE_TAG }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          if ($env:USE_PRIVATE_RELEASE -eq "true") {
-            if ([string]::IsNullOrWhiteSpace($env:PRIVATE_TAG)) {
-              Write-Error "PRIVATE_RELEASE_TAG is required when use_private_release=true"
-            }
-            $env:BBX_RELEASE_REPO = $env:TARGET_RELEASE_REPO
-            $env:BBX_RELEASE_TAG = $env:PRIVATE_TAG
-            Write-Host "Using private release $($env:BBX_RELEASE_REPO)@$($env:BBX_RELEASE_TAG)"
-          }
           # Debug variables
           if (-not $env:BBX_HOSTNAME) { Write-Host "BBX_HOSTNAME is not set" } else { Write-Host "BBX_HOSTNAME is set" }
           if (-not $env:EMAIL) { Write-Host "EMAIL is not set" } else { Write-Host "EMAIL is set" }
