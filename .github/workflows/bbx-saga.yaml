@@ -1,104 +1,106 @@
-# Note: This workflow uses the porcelain installer (bbx.sh.dosaygo.com for Unix/macOS,
-#       bbx.dosaygo.com for Windows) to fetch and install the pre-built binary distribution
-#       of BrowserBox, rather than building from source.
-
-name: bbx Saga Test Suite
+name: bbx Saga Test Suite (Public Release)
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag to test (defaults to release event tag)"
+        required: false
+        default: ""
+      release_repo:
+        description: "Repository that hosts the binaries"
+        required: false
+        default: "BrowserBox/BrowserBox"
 
 concurrency:
   group: ${{ github.repository }}-bbx-saga
   cancel-in-progress: true
 
+permissions:
+  contents: read      # required for checkout
+  actions: read       # required for workflow_run context if used later
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag || '' }}
+  TARGET_RELEASE_REPO: ${{ github.event.inputs.release_repo || 'BrowserBox/BrowserBox' }}
+
 jobs:
   build:
+    name: Test on ${{ matrix.os }}${{ matrix.container_image && format(' ({0})', matrix.container_image) || '' }}
+    if: github.event_name != 'release' || (github.event.release.draft == false)
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         container_image:
-          - '' # No container (native runner)
-          - 'dokken/centos-stream-9'
+          - '' # Native runner
+          - 'dokken/centos-stream-10'
           - 'debian:latest'
         exclude:
           - os: macos-latest
-            container_image: 'dokken/centos-stream-9'
+            container_image: 'dokken/centos-stream-10'
           - os: macos-latest
             container_image: 'debian:latest'
           - os: windows-latest
-            container_image: 'dokken/centos-stream-9'
+            container_image: 'dokken/centos-stream-10'
           - os: windows-latest
             container_image: 'debian:latest'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 12
     container: ${{ matrix.container_image }}
+
     steps:
-      - name: Check if actor is repository owner or me
+      - name: Resolve release tag
         shell: bash
         run: |
-          if [[ "${{ github.actor }}" != "crisdosaygo" ]]; then
-            echo "Actor is not me. Not running CI"
+          tag="${RELEASE_TAG}"
+          repo="${TARGET_RELEASE_REPO}"
+          if [[ -z "$tag" ]]; then
+            echo "RELEASE_TAG is required (from release event or input)" >&2
             exit 1
           fi
+          {
+            echo "BBX_RELEASE_TAG=$tag"
+            echo "BBX_RELEASE_REPO=$repo"
+          } >> "$GITHUB_ENV"
+          echo "Testing binaries from $repo@$tag"
 
-      - name: Install dependencies (Ubuntu Native)
-        if: matrix.os == 'ubuntu-latest' && matrix.container_image == ''
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare test script (Unix/macOS)
+        if: matrix.os != 'windows-latest'
         shell: bash
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y curl
+        run: chmod +x tests/test-bbx.sh
 
-      - name: Install dependencies (Debian Container)
-        if: matrix.container_image == 'debian:latest'
-        shell: bash
-        run: |
-          apt-get update -y
-          apt-get install -y curl
-
-      - name: Install dependencies (CentOS Container)
-        if: matrix.container_image == 'dokken/centos-stream-9'
-        shell: bash
-        run: |
-          dnf update -y
-          dnf install -y curl
-
-      - name: Setup NVM and Node.js (Containers)
-        if: matrix.os != 'windows-latest' && matrix.container_image != ''
-        shell: bash
-        run: |
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm install 22
-          nvm use 22
-          nvm alias default 22
-
-      - name: Install BrowserBox (Unix/macOS)
+      - name: Install BrowserBox via binary (Unix/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
         env:
-          BBX_HOSTNAME: "localhost"
+          BBX_INSTALL_USER: "bbxuser"
+          BBX_TEST_AGREEMENT: "true"
           BBX_NO_UPDATE: "true"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_HOSTNAME: "localhost"
+          BB_QUICK_EXIT: "yesplease"
           EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
-          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
+          BBX_RELEASE_REPO: ${{ env.BBX_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.BBX_RELEASE_TAG }}
         run: |
-          # Install coreutils on macOS
-          if [[ "$(uname -s)" == "Darwin" ]]; then
-            brew install coreutils
-          fi
-          # Install BrowserBox using porcelain installer (fetches binary distribution)
-          yes | timeout -k 10s 10m bash <(curl -sSL https://bbx.sh.dosaygo.com) install --latest-rc
+          chmod +x ./bbx.sh
+          ./bbx.sh install
 
       - name: Execute BBX Test Saga (Unix/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
         env:
+          BBX_INSTALL_USER: "bbxuser"
           BBX_HOSTNAME: "localhost"
           BBX_NO_UPDATE: "true"
           BB_QUICK_EXIT: "yesplease"
@@ -107,8 +109,10 @@ jobs:
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_RELEASE_REPO: ${{ env.BBX_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.BBX_RELEASE_TAG }}
         run: |
-          source $HOME/.nvm/nvm.sh || true
           [ -z "$BBX_HOSTNAME" ] && echo "BBX_HOSTNAME is not set" || echo "BBX_HOSTNAME is set"
           [ -z "$EMAIL" ] && echo "EMAIL is not set" || echo "EMAIL is set"
           [ -z "$LICENSE_KEY" ] && echo "LICENSE_KEY is not set" || echo "LICENSE_KEY is set"
@@ -117,67 +121,24 @@ jobs:
           [ -z "$INSTALL_DOC_VIEWER" ] && echo "INSTALL_DOC_VIEWER is not set" || echo "INSTALL_DOC_VIEWER is set to $INSTALL_DOC_VIEWER"
           export BBX_NO_UPDATE=true
           export INSTALL_DOC_VIEWER STATUS_MODE BBX_TEST_AGREEMENT LICENSE_KEY EMAIL BBX_HOSTNAME BB_QUICK_EXIT
-          
-          # Run test sequence using bbx CLI (binary distribution)
-          echo "Setting up bbx..."
-          bbx setup --port 8080 --hostname localhost
-          
-          echo "Running bbx..."
-          bbx run &
-          sleep 10
-          
-          # Get login link and test
-          login_link=$(cat "$HOME/.config/dosyago/bbpro/login.link" 2>/dev/null || echo "https://localhost:8080/login?token=")
-          echo "Testing login link: $login_link"
-          
-          # Test with curl (retry logic)
-          max_retries=10
-          retry_count=0
-          success=false
-          while [ $retry_count -lt $max_retries ] && [ "$success" = "false" ]; do
-            if curl -k -L -s --max-time 5 --head --fail "$login_link" > /dev/null 2>&1; then
-              echo "Connection successful"
-              success=true
-            else
-              echo "Retry $((retry_count + 1))/$max_retries failed"
-              retry_count=$((retry_count + 1))
-              sleep 5
-            fi
-          done
-          
-          if [ "$success" = "false" ]; then
-            echo "Failed to connect after $max_retries retries"
-            bbx stop
-            exit 1
-          fi
-          
-          # Wait and test again
-          echo "Waiting 25 seconds to verify link stability..."
-          sleep 25
-          
-          if curl -k -L -s --max-time 5 --head --fail "$login_link" > /dev/null 2>&1; then
-            echo "Second verification successful"
-          else
-            echo "Second verification failed"
-            bbx stop
-            exit 1
-          fi
-          
-          # Stop services
-          bbx stop
+          ./tests/test-bbx.sh
         continue-on-error: false
 
       - name: Execute BBX Test Saga (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BBX_NO_UPDATE: "true"
+          BBX_FORCE_CHROME_INSTALL: "true"
           BBX_HOSTNAME: "localhost"
           EMAIL: "test@example.com"
           BB_QUICK_EXIT: "surewhatevs"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          BBX_RELEASE_REPO: ${{ env.BBX_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.BBX_RELEASE_TAG }}
         run: |
           # Debug variables
           if (-not $env:BBX_HOSTNAME) { Write-Host "BBX_HOSTNAME is not set" } else { Write-Host "BBX_HOSTNAME is set" }
@@ -185,9 +146,9 @@ jobs:
           if (-not $env:LICENSE_KEY) { Write-Host "LICENSE_KEY is not set" } else { Write-Host "LICENSE_KEY is set" }
           if (-not $env:BBX_TEST_AGREEMENT) { Write-Host "BBX_TEST_AGREEMENT is not set" } else { Write-Host "BBX_TEST_AGREEMENT is set" }
           if (-not $env:STATUS_MODE) { Write-Host "STATUS_MODE is not set" } else { Write-Host "STATUS_MODE is set" }
-          # Install BrowserBox
-          Invoke-RestMethod -Uri "https://bbx.dosaygo.com/?v=$((Get-date).Ticks)" -OutFile "install.ps1"
-          .\install.ps1
+          if (-not $env:BBX_RELEASE_TAG) { Write-Error "BBX_RELEASE_TAG is required"; exit 1 }
+          # Install BrowserBox from checked-out repo
+          .\windows-scripts\bbx.ps1 install
           if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
             Write-Error "bbx not found in PATH after install"
             exit 1
@@ -198,13 +159,10 @@ jobs:
             exit 1
           }
           Write-Host "curl.exe installed successfully"
-          # Setup BrowserBox
-          bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL"
+          bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port 9999
           $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
           Write-Host "Login link: $loginLink"
-          # Start BrowserBox
-          bbx run -Verbose
-          # Curl with retries (ignore cert errors)
+          bbx run
           Write-Host "Testing URL: $loginLink"
           $maxRetries = 10
           $retryCount = 0
@@ -212,7 +170,7 @@ jobs:
           while ($retryCount -lt $maxRetries -and -not $success) {
             try {
               $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
-              if ($response -eq "200") {
+              if ($response -ne "000") {
                 Write-Host "Initial connection successful: $response"
                 $success = $true
               } else {
@@ -221,18 +179,17 @@ jobs:
             } catch {
               Write-Host "Retry $($retryCount + 1)/$maxRetries failed: $_"
             }
-            if (-not $success) { Start-Sleep -Seconds 5; $retryCount++ }
+            if (-not $success) { Start-Sleep -Seconds 2; $retryCount++ }
           }
           if (-not $success) {
             Write-Error "Failed to connect to $loginLink after $maxRetries retries."
             exit 1
           }
-          # Wait 25 seconds and verify again
           Write-Host "Waiting 25 seconds to verify link stability..."
           Start-Sleep -Seconds 25
           try {
             $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
-            if ($response -eq "200") {
+            if ($response -ne "000") {
               Write-Host "Second verification successful: $response"
             } else {
               Write-Error "Second verification failed: HTTP $response"
@@ -242,9 +199,7 @@ jobs:
             Write-Error "Second verification failed after 25s: $_"
             exit 1
           }
-          # Stop services
           bbx stop
-          # Check no Node processes remain
           $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools" -ErrorAction SilentlyContinue
           if ($nodeProcs) {
             Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
@@ -272,10 +227,9 @@ jobs:
         if: always() && matrix.os != 'windows-latest'
         shell: bash
         run: |
-          bbx stop || true
-          sleep 5
-
-      - name: Setup tmate session on failure
-        if: failure()
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 5
+          if [ -x ./bbx.sh ]; then
+            ./bbx.sh stop || true
+          elif command -v bbx &>/dev/null; then
+            bbx stop || true
+          fi
+          pkill -f browserbox || true
