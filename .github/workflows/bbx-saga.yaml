@@ -1,4 +1,4 @@
-name: bbx Saga Test Suite (Private Release)
+name: bbx Saga Test Suite (Public Release)
 
 on:
   workflow_run:
@@ -125,7 +125,7 @@ jobs:
         env:
           BBX_INSTALL_USER: "bbxuser"
           BBX_TEST_AGREEMENT: "true"
-          BBX_NO_UPDATE: "true"
+          BBX_NO_UPDATE: "false"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BBX_HOSTNAME: "localhost"
           BB_QUICK_EXIT: "yesplease"
@@ -154,7 +154,7 @@ jobs:
         env:
           BBX_INSTALL_USER: "bbxuser"
           BBX_HOSTNAME: "localhost"
-          BBX_NO_UPDATE: "true"
+          BBX_NO_UPDATE: "false"
           BB_QUICK_EXIT: "yesplease"
           EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
@@ -180,7 +180,7 @@ jobs:
             export BBX_RELEASE_TAG="${PRIVATE_TAG}"
             echo "Using private release ${BBX_RELEASE_REPO}@${BBX_RELEASE_TAG}"
           fi
-          export BBX_NO_UPDATE=true
+          export BBX_NO_UPDATE=false
           export INSTALL_DOC_VIEWER STATUS_MODE BBX_TEST_AGREEMENT LICENSE_KEY EMAIL BBX_HOSTNAME BB_QUICK_EXIT
           ./tests/test-bbx.sh
         continue-on-error: false
@@ -190,7 +190,7 @@ jobs:
         shell: powershell
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BBX_NO_UPDATE: "true"
+          BBX_NO_UPDATE: "false"
           BBX_FORCE_CHROME_INSTALL: "true"
           BBX_HOSTNAME: "localhost"
           EMAIL: "test@example.com"
