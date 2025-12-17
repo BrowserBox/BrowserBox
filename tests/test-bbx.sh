@@ -27,7 +27,6 @@ if [[ -z "$INSTALL_DOC_VIEWER" ]]; then
   INSTALL_DOC_VIEWER="false"
 fi
 export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER}"
-export BBX_NO_UPDATE="true"
 
 # Resolve script and repo paths so we can re-enter the tests reliably after su.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd -P)"
