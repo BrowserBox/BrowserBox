@@ -9,7 +9,14 @@
 # 
 ##########################################################
 
-if [[ -n "$BBX_DEBUG" ]]; then
+is_debug_enabled() {
+  case "$(printf '%s' "${BBX_DEBUG:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|y|on|debug) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if is_debug_enabled; then
   export BBX_DEBUG
   set -x
 fi
@@ -41,6 +48,47 @@ banner() {
   
 EOF
     printf "${NC}\n"
+}
+
+# Prefer GH_TOKEN if provided; fall back to GITHUB_TOKEN so private/internal
+# releases can be accessed without extra env juggling.
+if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
+  GH_TOKEN="$GITHUB_TOKEN"
+fi
+
+# Function to find Tor control auth cookie across different platforms
+find_tor_cookie() {
+  local cookie_locations=(
+    # macOS Homebrew (ARM)
+    "/opt/homebrew/var/lib/tor/control_auth_cookie"
+    # macOS Homebrew (Intel)
+    "/usr/local/var/lib/tor/control_auth_cookie"
+    # Tor Browser (macOS)
+    "${HOME}/Library/Application Support/TorBrowser-Data/Tor/control_auth_cookie"
+    # Linux systemd
+    "/run/tor/control.authcookie"
+    # Linux Debian/Ubuntu standard
+    "/var/lib/tor/control_auth_cookie"
+    # Linux manual/alternate
+    "/var/run/tor/control.authcookie"
+    # User home directory
+    "${HOME}/.tor/control_auth_cookie"
+  )
+
+  for cookie in "${cookie_locations[@]}"; do
+    if [[ -r "$cookie" ]]; then
+      echo "$cookie"
+      return 0
+    fi
+    # Try with sudo if not readable
+    if ${SUDO:-sudo} test -r "$cookie" 2>/dev/null; then
+      echo "$cookie"
+      return 0
+    fi
+  done
+
+  # Return empty if not found
+  return 1
 }
 
 OGARGS=("$@")
@@ -103,15 +151,41 @@ detect_platform() {
 
 # Function to get the latest release tag from GitHub
 get_latest_release() {
+  # Skip API call if BBX_NO_UPDATE is set; if caller passed BBX_RELEASE_TAG, use it.
+  if [[ -n "$BBX_NO_UPDATE" ]]; then
+    if [[ -n "${BBX_RELEASE_TAG:-}" ]]; then
+      echo "$BBX_RELEASE_TAG"
+      return 0
+    fi
+    echo "unknown"
+    return 1
+  fi
+
   local repo="$1"
   local tag=""
-  
+  if [[ "$repo" != "BrowserBox/BrowserBox" && -z "${GH_TOKEN:-}" ]]; then
+    echo -e "${RED}A token (GH_TOKEN or GITHUB_TOKEN) is required to read releases from private/internal repo ${repo}.${NC}" >&2
+    exit 1
+  fi
+
+  mkdir -p "$BB_CONFIG_DIR"
+  local cache_file="${BB_CONFIG_DIR}/latest_release_${repo//\//_}.cache"
+  local now ts cached
+  now="$(date +%s)"
+  if [[ -f "$cache_file" ]]; then
+    read -r ts cached <"$cache_file" || true
+    if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
+      echo "$cached"
+      return 0
+    fi
+  fi
+
   # Try using curl with GitHub API
   if command -v curl >/dev/null 2>&1; then
     local api_url="https://api.github.com/repos/${repo}/releases/latest"
     local curl_auth=()
     if [[ -n "${GH_TOKEN:-}" ]]; then
-      curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+      curl_auth=(-H "Authorization: Bearer ${GH_TOKEN}")
     fi
     local response
     response=$(curl -sS --connect-timeout 10 "${curl_auth[@]}" "$api_url" 2>/dev/null || echo "")
@@ -131,11 +205,15 @@ get_latest_release() {
     echo -e "${RED}Failed to fetch latest release from ${repo}${NC}" >&2
     exit 1
   fi
+
+  printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
   
   echo "$tag"
 }
 
 # Function to download the binary
+# Returns the path to the downloaded executable on stdout
+# All progress/logs go to stderr
 download_binary() {
   local platform="$1"
   local tag="$2"
@@ -145,32 +223,84 @@ download_binary() {
     linux) asset_name="browserbox-linux-x64" ;;
     *) echo -e "${RED}Unsupported platform: $platform${NC}" >&2; exit 1 ;;
   esac
-  local download_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/${asset_name}"
+  
   local temp_file
   temp_file="$(mktemp "${TMPDIR:-/tmp}/browserbox.XXXX")"
   
-  echo -e "${CYAN}Downloading BrowserBox ${tag} for ${platform}...${NC}"
+  # Log to stderr >&2 so it is NOT captured by the caller
+  echo -e "${CYAN}Downloading BrowserBox ${tag} for ${platform}...${NC}" >&2
   
-  # Check if curl is available
   if ! command -v curl >/dev/null 2>&1; then
     echo -e "${RED}Error: curl is required but not installed.${NC}" >&2
-    echo -e "Please install curl and try again." >&2
     exit 1
   fi
   
   local curl_auth=()
   if [[ -n "${GH_TOKEN:-}" ]]; then
-    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+    curl_auth=(-H "Authorization: Bearer ${GH_TOKEN}")
   fi
 
-  if ! curl -L --fail --progress-bar --connect-timeout 30 "${curl_auth[@]}" -o "$temp_file" "$download_url" 2>&1; then
-    echo -e "${RED}Failed to download binary from ${download_url}${NC}" >&2
-    echo -e "${YELLOW}This could mean:${NC}" >&2
-    echo -e "  - No release is available for ${platform}" >&2
-    echo -e "  - Network connectivity issues" >&2
-    echo -e "  - The release ${tag} doesn't have a ${asset_name} asset" >&2
-    rm -f "$temp_file"
-    exit 1
+  # 1. HANDLE PRIVATE / INTERNAL RELEASES
+  if [[ -n "${GH_TOKEN:-}" || "$PUBLIC_REPO" != "BrowserBox/BrowserBox" ]]; then
+    local release_json asset_id api_download_url
+    if [[ -z "${GH_TOKEN:-}" ]]; then
+      echo -e "${RED}GH_TOKEN is required for private repo ${PUBLIC_REPO}${NC}" >&2
+      exit 1
+    fi
+
+    # Fetch metadata (Silent -sS, errors go to stderr)
+    release_json=$(curl -sS --fail -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${PUBLIC_REPO}/releases/tags/${tag}") || {
+      echo -e "${RED}Failed to fetch release metadata for ${tag}${NC}" >&2
+      exit 1
+    }
+
+    # Parse Asset ID
+    if command -v jq >/dev/null 2>&1; then
+      asset_id=$(printf '%s' "$release_json" | jq -r --arg name "$asset_name" '.assets[] | select(.name==$name) | .id' | head -n1)
+    else
+      asset_id=$(printf '%s\n' "$release_json" | awk -v name="$asset_name" '
+        BEGIN{RS="{";FS=","}
+        {
+          has=0;id=""
+          for(i=1;i<=NF;i++){
+            if($i ~ "\"name\"" && $i ~ name){has=1}
+            if($i ~ "\"id\""){gsub(/[^0-9]/,"",$i); id=$i}
+          }
+          if(has && id!=""){print id; exit}
+        }')
+    fi
+
+    if [[ -z "$asset_id" ]]; then
+      echo -e "${RED}Asset ${asset_name} not found on release ${tag}${NC}" >&2
+      exit 1
+    fi
+
+    api_download_url="https://api.github.com/repos/${PUBLIC_REPO}/releases/assets/${asset_id}"
+    
+    # DOWNLOAD PRIVATE BINARY
+    # IMPORTANT: --progress-bar writes to stderr by default.
+    # Do NOT use 2>&1 here, or the bar will be captured.
+    if ! curl -L --fail --progress-bar --connect-timeout 60 \
+        -H "Authorization: Bearer ${GH_TOKEN}" \
+        -H "Accept: application/octet-stream" \
+        -o "$temp_file" "$api_download_url"; then
+      echo -e "${RED}Failed to download binary via asset API${NC}" >&2
+      rm -f "$temp_file"
+      exit 1
+    fi
+
+  else
+    # 2. HANDLE PUBLIC RELEASES
+    local download_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/${asset_name}"
+    
+    # DOWNLOAD PUBLIC BINARY
+    # Do NOT use 2>&1.
+    if ! curl -L --fail --progress-bar --connect-timeout 60 "${curl_auth[@]}" -o "$temp_file" "$download_url"; then
+      echo -e "${RED}Failed to download binary from ${download_url}${NC}" >&2
+      echo -e "${YELLOW}Possible causes: No release asset, network issue, or bad tag.${NC}" >&2
+      rm -f "$temp_file"
+      exit 1
+    fi
   fi
   
   if [[ ! -s "$temp_file" ]]; then
@@ -179,11 +309,10 @@ download_binary() {
     exit 1
   fi
 
-  $INSTALL_CMD "$temp_file" "$BINARY_PATH"
-  rm -f "$temp_file"
+  chmod +x "$temp_file"
   
-  echo -e "${GREEN}Successfully downloaded and installed BrowserBox binary${NC}"
-  echo -e "${CYAN}Binary installed at: ${BINARY_PATH}${NC}"
+  # ONLY this goes to stdout
+  echo "$temp_file"
 }
 
 # Function to check if binary exists and is executable
@@ -457,6 +586,8 @@ ensure_installation_id() {
     # Try various methods to generate a UUID
     if command -v uuidgen >/dev/null 2>&1; then
       uuid=$(uuidgen 2>/dev/null)
+    elif command -v browserbox >/dev/null 2>&1; then
+      uuid=$(browserbox uuid 2>/dev/null)
     elif command -v python3 >/dev/null 2>&1; then
       uuid=$(python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null)
     elif command -v python >/dev/null 2>&1; then
@@ -609,6 +740,16 @@ _better_than() {
 # releases for prerelease entries (or tags containing -rc). For "any" we
 # scan all non-draft releases and pick the best by semver (stable > rc).
 get_latest_release_tag_filtered() {
+  # Skip API call if BBX_NO_UPDATE is set; allow caller-provided tag to short-circuit.
+  if [[ -n "$BBX_NO_UPDATE" ]]; then
+    if [[ -n "${BBX_RELEASE_TAG:-}" ]]; then
+      echo "$BBX_RELEASE_TAG"
+      return 0
+    fi
+    echo "unknown"
+    return 1
+  fi
+
   local channel="${1:-stable}"
 
   # Derive owner/repo from REPO_URL (e.g. https://github.com/BrowserBox/BrowserBox-source)
@@ -631,6 +772,17 @@ get_latest_release_tag_filtered() {
   }
 
   if [[ "$channel" == "stable" ]]; then
+    local cache_file="${BB_CONFIG_DIR}/latest_release_${channel}.cache"
+    local now ts cached
+    now="$(date +%s)"
+    if [[ -f "$cache_file" ]]; then
+      read -r ts cached <"$cache_file" || true
+      if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
+        echo "$cached"
+        return 0
+      fi
+    fi
+
     # GitHub's "latest" is the newest non-draft, non-prerelease release.
     local resp tag
     resp="$(curl "${CURL_OPTS[@]}" "$api/releases/latest" 2>/dev/null)" || true
@@ -639,6 +791,7 @@ get_latest_release_tag_filtered() {
     if [[ -n "$tag" && "$tag" != "null" && "$tag" != *-rc* ]]; then
       # Validate with our semver parser to be safe
       if _parse_tag "$tag" && (( PAR_STABLE == 1 )); then
+        printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
         echo "$tag"
         return 0
       fi
@@ -779,9 +932,9 @@ tag_exists_remote() {
 }
 
 
-# Version
-BBX_VERSION="$(get_latest_repo_version)"
-[[ -z "$BBX_VERSION" ]] && BBX_VERSION="unknown"
+# Version - lazy load to avoid API call on every script run
+# Only fetch version when actually needed (not during BBX_NO_UPDATE mode)
+BBX_VERSION="unknown"
 branch="main" # change to main for dist
 if [[ "$branch" != "main" ]]; then
   export BBX_BRANCH="$branch"
@@ -805,14 +958,14 @@ get_version_info() {
 get_canonical_bbx_version() {
   local version=""
   
-  # Try to get version from browserbox command if it exists
-  if command -v browserbox >/dev/null 2>&1; then
-    local browserbox_output
-    browserbox_output="$(browserbox --version 2>/dev/null || true)"
-    if [[ -n "$browserbox_output" ]]; then
+  # Try to get version from bbpro command if it exists
+  if command -v bbpro >/dev/null 2>&1; then
+    local bbpro_output
+    bbpro_output="$(browserbox --version 2>/dev/null || true)"
+    if [[ -n "$bbpro_output" ]]; then
       # Extract version number using regex (supports any dot-separated numeric format: X.Y, X.Y.Z, etc.)
       # Handles formats like "BrowserBox version: 15.1.2", "v15.1.2", or just "15.1.2"
-      version="$(echo "$browserbox_output" | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
+      version="$(echo "$bbpro_output" | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
     fi
   fi
   
@@ -835,7 +988,7 @@ get_canonical_bbx_version() {
 # Set the canonical version for use throughout the script
 VERSION="$(get_canonical_bbx_version)"
 
-if ! command -v browserbox &>/dev/null || ! test -d "${HOME}/.config/dosyago/bbpro"; then
+if ! command -v bbpro &>/dev/null || ! test -d "${HOME}/.config/dosyago/bbpro"; then
   if [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "update-background" ]] && [[ "$1" != "--version" ]] && [[ "$1" != "-v" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
     banner
     printf "\n${RED}Run ${NC}${BOLD}bbx install${NC}${RED} first.${NC}\n"
@@ -1238,7 +1391,7 @@ ensure_setup_tor() {
     fi
     if ! $tor_is_running || ! command -v tor >/dev/null 2>&1; then
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
-        $SUDO bash -c "PATH=/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
+        $SUDO bash -c "PATH=/opt/homebrew/bin:/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
     fi
 }
 
@@ -1311,68 +1464,174 @@ ensure_cloudflared() {
     return 0
 }
 
-install() {
+install_bbx() {
+    has_browser_dep() {
+        # Respect explicit CHROME_PATH if set and executable
+        if [[ -n "${CHROME_PATH:-}" && -x "${CHROME_PATH}" ]]; then
+            return 0
+        fi
+        local candidates=(
+            google-chrome-stable
+            google-chrome
+            chromium-browser
+            chromium
+            /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
+        )
+        for c in "${candidates[@]}"; do
+            if command -v "$c" >/dev/null 2>&1; then
+                return 0
+            fi
+        done
+        return 1
+    }
+
+    has_cert_dep() {
+        command -v mkcert >/dev/null 2>&1 && return 0
+        command -v certbot >/dev/null 2>&1 && return 0
+        return 1
+    }
+
+    needs_full_install() {
+        # If browserbox binary missing, or core deps missing, we must do full install.
+        if ! command -v browserbox >/dev/null 2>&1; then
+            return 0
+        fi
+        if ! has_browser_dep; then
+            return 0
+        fi
+        if ! has_cert_dep; then
+            return 0
+        fi
+        return 1
+    }
+
+    # 1. Loop Protection
+    if [[ -n "$BBX_INSTALL_GUARD" ]]; then
+        return 0
+    fi
+    export BBX_INSTALL_GUARD="true"
+
+    # 2. Path Detection
+    local is_update=false
+    if needs_full_install; then
+        is_update=false
+    else
+        is_update=true
+    fi
+
     banner
     check_agreement
+    pre_install || return 0
     load_config
     ensure_deps
     ensure_installation_id
-    
-    printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
-    
-    # Download and install the binary
-    local platform
-    platform=$(detect_platform)
-    local tag="${BBX_RELEASE_TAG:-}"
-    if [[ -z "$tag" ]]; then
-      tag=$(get_latest_release "$PUBLIC_REPO")
+
+  printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
+
+  local platform
+  platform=$(detect_platform)
+  local tag="${BBX_RELEASE_TAG:-}"
+  if [[ -z "$tag" ]]; then
+    if [[ -n "${BBX_NO_UPDATE:-}" ]]; then
+      echo -e "${RED}BBX_NO_UPDATE is set; provide BBX_RELEASE_TAG to install without hitting release APIs.${NC}" >&2
+      return 1
     fi
-    download_binary "$platform" "$tag"
-    
-    # Get hostname and email for setup
+    tag=$(get_latest_release "$PUBLIC_REPO")
+  fi
+
+    # 3. Idempotency & Download
+    local current_ver
+    current_ver=$(get_binary_version)
+    local norm_tag="${tag#v}"
+    local norm_curr="${current_ver#v}"
+
+    local exe_to_run=""
+
+    if [[ "$norm_curr" == "$norm_tag" ]] && binary_exists; then
+         printf "${GREEN}BrowserBox binary $tag is already installed.${NC}\n"
+         exe_to_run="$BINARY_PATH"
+    else
+         exe_to_run=$(download_binary "$platform" "$tag")
+         exit_status=$?
+
+         # Sanitize: output should be a single line path
+         exe_to_run=$(echo "$exe_to_run" | tail -n1 | tr -d '[:space:]')
+
+         if [[ $exit_status -ne 0 ]] || [[ -z "$exe_to_run" ]] || [[ ! -f "$exe_to_run" ]]; then
+             printf "${RED}Download failed.${NC}\n"
+             if [[ -n "$BBX_DEBUG" ]]; then echo "Debug: Download output was: $exe_to_run" >&2; fi
+             exit 1
+         fi
+    fi
+
+    # 4. Config inputs
     local default_hostname=$(get_system_hostname)
     if [ -z "$BBX_HOSTNAME" ]; then
-      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then
         BBX_HOSTNAME="localhost"
       else
         read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
       fi
     fi
     BBX_HOSTNAME="${BBX_HOSTNAME:-$default_hostname}"
-    
-    STRICTNESS="mandatory"
+
+    local strictness="mandatory"
     if is_local_hostname "$BBX_HOSTNAME"; then
-        STRICTNESS="optional"
+        strictness="optional"
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    
+
     if [ -z "$EMAIL" ]; then
-      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then
         EMAIL=""
       else
-        read -r -p "Enter your email for Let's Encrypt ($STRICTNESS for $BBX_HOSTNAME): " EMAIL
+        read -r -p "Enter your email for Let's Encrypt ($strictness for $BBX_HOSTNAME): " EMAIL
       fi
-      if [[ "$STRICTNESS" == "mandatory" ]] && [[ -z "$EMAIL" ]]; then
-        echo "An email is required for a public DNS hostname in order to provision the TLS certificate from Let's Encrypt." >&2
-        echo "Exiting..." >&2
+      if [[ "$strictness" == "mandatory" ]] && [[ -z "$EMAIL" ]]; then
+        echo "An email is required for a public DNS hostname." >&2
         exit 1
       fi
     fi
-    
-    # Run the binary full installation process
-    printf "${YELLOW}Running BrowserBox full installer...${NC}\n"
-    if [ -t 0 ] && [[ -z "$BBX_TEST_AGREEMENT" ]]; then
-        "$BINARY_PATH" --full-install "$BBX_HOSTNAME" "$EMAIL"
+
+    # 5. Execute
+    if [[ "$is_update" == "true" ]]; then
+        printf "${YELLOW}BrowserBox detected in PATH. Running update setup (--install)...${NC}\n"
+        "$exe_to_run" --install
     else
-        yes | "$BINARY_PATH" --full-install "$BBX_HOSTNAME" "$EMAIL"
+        printf "${YELLOW}BrowserBox not found in PATH. Running full setup (--full-install)...${NC}\n"
+        if [ -t 0 ] && [[ -z "$BBX_TEST_AGREEMENT" ]]; then
+            yes yes 2>/dev/null | "$exe_to_run" --full-install "$BBX_HOSTNAME" "$EMAIL"
+        else
+            # FIX: Silence 'yes' stderr to prevent "Broken pipe" logs
+            yes yes 2>/dev/null | "$exe_to_run" --full-install "$BBX_HOSTNAME" "$EMAIL"
+        fi
     fi
-    [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
-    
-    printf "${YELLOW}Installing bbx command globally...${NC}\n"
-    $SUDO curl --connect-timeout 7 --max-time 15 -sSL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
-    $SUDO chmod +x "$BBX_BIN"
+    local install_exit=$?
+
+    # Cleanup temp file
+    if [[ "$exe_to_run" != "$BINARY_PATH" && -f "$exe_to_run" ]]; then
+        rm -f "$exe_to_run"
+    fi
+
+    [ $install_exit -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
+
+    if [[ -z "$BBX_TEST_AGREEMENT" ]]; then
+      printf "${YELLOW}Installing bbx command globally...${NC}\n"
+      $SUDO curl --connect-timeout 7 --max-time 15 -sSL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
+      $SUDO chmod +x "$BBX_BIN"
+    fi
+
     save_config
-    printf "${GREEN}bbx $BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
+
+    # FIX: Re-read the version from the newly installed binary for the success message
+    local final_ver
+    if command -v bbpro >/dev/null 2>&1; then
+       final_ver=$(browserbox --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)
+    fi
+    # Fallback to tag if binary check fails
+    final_ver="${final_ver:-$tag}"
+
+    printf "${GREEN}bbx $final_ver installed successfully! Run 'bbx --help' for usage.${NC}\n"
 }
 
 setup() {
@@ -1500,9 +1759,9 @@ setup() {
   fi
 
   # Call setup_bbpro, which writes to test.env
-  LICENSE_KEY="${LICENSE_KEY}" browserbox --setup "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
 
-  # After browserbox --setup succeeds, reload config to get the new runtime values
+  # After setup_bbpro succeeds, reload config to get the new runtime values
   load_config
 
   printf "${GREEN}Setup complete.${NC}\n"
@@ -1546,13 +1805,13 @@ run() {
   # Default values from loaded config
   local port="${PORT}"
   local hostname="${BBX_HOSTNAME}"
-  local run_args=() # Store args to pass to browserbox
+  local run_args=() # Store args to pass to bbpro
 
   # Parse arguments to override config for this run only
   local temp_args=("$@")
   local clean_args=()
   for arg in "${temp_args[@]}"; do
-      # This is a simple way to filter out --port from being passed to browserbox
+      # This is a simple way to filter out --port from being passed to bbpro
       # A more robust solution would handle --port=value too
       if [[ "$arg" != "--port" && "$arg" != "-p" && ! "$arg" =~ ^[0-9]+$ ]]; then
           clean_args+=("$arg")
@@ -1581,7 +1840,7 @@ run() {
         shift 2
         ;;
       *)
-        # Pass unknown args to browserbox
+        # Pass unknown args to bbpro
         run_args+=("$1")
         shift
         ;;
@@ -1621,8 +1880,8 @@ run() {
   fi
 
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
-  # Pass any extra args to browserbox
-  run_quietly browserbox "${run_args[@]}" || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+  # Pass any extra args to bbpro
+  run_quietly bbpro "${run_args[@]}" || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   # Reload config to get the final token from the newly created test.env
   load_config
 
@@ -1681,14 +1940,26 @@ tor_run() {
   printf "${YELLOW}Starting BrowserBox with ${NC}${PURPLE}Tor${NC}${YELLOW}...${NC}\n"
   ensure_setup_tor "$(whoami)"
 
-  # Determine Tor group and cookie file dynamically
+  # Find Tor cookie file dynamically across platforms
+  COOKIE_AUTH_FILE=$(find_tor_cookie)
+  if [[ -z "$COOKIE_AUTH_FILE" ]]; then
+    # Fallback to expected locations if not found
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      TORDIR="$(brew --prefix)/var/lib/tor"
+    else
+      TORDIR="/var/lib/tor"
+    fi
+    COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+    printf "${YELLOW}Warning: Tor cookie file not found in common locations. Expected at: $COOKIE_AUTH_FILE${NC}\n"
+  else
+    TORDIR="$(dirname "$COOKIE_AUTH_FILE")"
+    printf "${GREEN}Found Tor cookie at: $COOKIE_AUTH_FILE${NC}\n"
+  fi
+
+  # Determine Tor group dynamically
   if [[ "$(uname -s)" == "Darwin" ]]; then
       TOR_GROUP="admin"  # Homebrew default
-      TORDIR="$(brew --prefix)/var/lib/tor"
-      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
   else
-      TORDIR="/var/lib/tor"
-      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
       TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
       if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
         TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
@@ -1708,7 +1979,7 @@ tor_run() {
       printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
   fi
 
-  local setup_cmd="browserbox --setup --port $PORT --token $TOKEN"
+  local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
   if $anonymize; then
       setup_cmd="$setup_cmd --ontor"
   fi
@@ -1757,7 +2028,7 @@ tor_run() {
           test_port_access $((PORT+i)) || { printf "${RED}Quit software using these ports, or adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
       done
       test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
-      browserbox || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+      bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
       login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
   fi
   sleep 2
@@ -2158,9 +2429,9 @@ cf_run() {
     exit 1
   }
 
-  # Run minimal setup using browserbox --setup with HTTP backend
+  # Run minimal setup using setup_bbpro with HTTP backend
   printf "${YELLOW}Setting up BrowserBox on port ${port} with HTTP backend...${NC}\n"
-  LICENSE_KEY="${LICENSE_KEY}" browserbox --setup --port "$port" --token "$TOKEN" --backend http || { 
+  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || { 
     printf "${RED}Setup failed${NC}\n"
     exit 1
   }
@@ -2186,9 +2457,9 @@ cf_run() {
     fi
   fi
 
-  # Start BrowserBox via run_quietly browserbox
+  # Start BrowserBox via run_quietly bbpro
   printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
-  run_quietly browserbox || { printf "${RED}Failed to start BrowserBox${NC}\n"; exit 1; }
+  run_quietly bbpro || { printf "${RED}Failed to start BrowserBox${NC}\n"; exit 1; }
 
   # Reload config to capture final token
   load_config
@@ -2203,7 +2474,7 @@ cf_run() {
   cleanup_cf_run() {
     printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
     kill $cf_pid 2>/dev/null || true
-    run_quietly browserbox --stop || true
+    run_quietly stop_bbpro || true
     printf "${GREEN}Cleanup complete.${NC}\n"
   }
   # Set trap for cleanup immediately after function definition
@@ -2447,9 +2718,9 @@ docker_stop() {
   fi
 
   printf "${YELLOW}Stopping BrowserBox for $nickname ($container_id)...${NC}\n"
-  docker exec "$container_id" bash -c "browserbox --stop" ||
-  $SUDO docker exec "$container_id" bash -c "browserbox --stop" || {
-    printf "${RED}Warning: Failed to run browserbox --stop in container${NC}\n"
+  docker exec "$container_id" bash -c "stop_bbpro" ||
+  $SUDO docker exec "$container_id" bash -c "stop_bbpro" || {
+    printf "${RED}Warning: Failed to run stop_bbpro in container${NC}\n"
   }
   printf "${YELLOW}Waiting 1 second for license release...${NC}\n"
   sleep 1
@@ -2528,6 +2799,14 @@ pre_install() {
 
         # Prompt for a non-root user to run the install as
         if [ -z "$BBX_INSTALL_USER" ]; then
+          # Check if we're in non-interactive mode (CI/CD)
+          if [[ -n "$BBX_TEST_AGREEMENT" ]] || [ ! -t 0 ]; then
+            printf "${RED}ERROR: Running as root in non-interactive mode requires BBX_INSTALL_USER environment variable${NC}\n"
+            printf "${BLUE}Please set BBX_INSTALL_USER to a non-root username (e.g., export BBX_INSTALL_USER=bbxuser)${NC}\n"
+            printf "${YELLOW}Example: export BBX_INSTALL_USER=bbxuser && ./bbx.sh install${NC}\n"
+            exit 1
+          fi
+          # Interactive mode - prompt for username
           read -p "Enter a regular user to run the installation: " install_user
           if [ -z "$install_user" ]; then
               printf "${RED}ERROR: A username is required${NC}\n"
@@ -2596,21 +2875,33 @@ pre_install() {
             create_master_user "$install_user"
         fi
 
-        # Download the install script using curl and save it to a file
-        echo "Downloading the installation script..."
-        curl -sSL "https://raw.githubusercontent.com/${owner_repo}/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
+        cp -f "$0" /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
         install_group="$(id -gn "$install_user")"
         chown "${install_user}:${install_group}" /tmp/bbx.sh
 
+        # Build a temp env file to persist BBX-related vars across the login shell.
+        local su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT)
+        local env_file
+        env_file="$(mktemp)"
+        local var val
+        for var in "${su_env_vars[@]}"; do
+          val="${!var-}"
+          [[ -n "$val" ]] || continue
+          printf '%s=%q\n' "$var" "$val" >> "$env_file"
+        done
+        chown "${install_user}:${install_group}" "$env_file" 2>/dev/null || true
+        chmod 640 "$env_file" 2>/dev/null || true
+
         # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
-        su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; /tmp/bbx.sh install"
+        su - "$install_user" -c "set -a; source $(printf '%q' "$env_file"); /tmp/bbx.sh install"
 
         if [[ -z "$BBX_TEST_AGREEMENT" ]] || [ -t 0 ]; then
           # Replace the root shell with the new user's shell
-          exec su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -l"
+          exec su - "$install_user" -c "set -a; source $(printf '%q' "$env_file"); rm -f $(printf '%q' "$env_file"); bash -l"
         else
+          rm -f "$env_file"
           return 1
         fi
     else
@@ -2756,13 +3047,18 @@ ng_run() {
     load_config
   fi
 
-  # Always run setup_nginx for ng-run
+  # Always run setup_nginx for ng-run (it's a standalone command installed in PATH)
   printf "${YELLOW}Starting Nginx setup...${NC}\n"
-  if ! setup_nginx; then
-    printf "${RED}Nginx setup failed. Aborting.${NC}\n"
-    exit 1
+  if command -v setup_nginx &>/dev/null; then
+    if ! setup_nginx; then
+      printf "${RED}Nginx setup failed. Aborting.${NC}\n"
+      exit 1
+    fi
+    printf "${GREEN}Nginx setup complete.${NC}\n"
+  else
+    printf "${YELLOW}Warning: setup_nginx command not found. Nginx setup skipped.${NC}\n"
+    printf "${YELLOW}This command should have been installed during 'bbx install'. Try reinstalling.${NC}\n"
   fi
-  printf "${GREEN}Nginx setup complete.${NC}\n"
 
   # Now, call the main run command, passing all original arguments.
   # The run command will handle calling setup if it's the very first run.
@@ -2772,19 +3068,14 @@ ng_run() {
 stop() {
     load_config
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
-    run_quietly browserbox --stop || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
+    run_quietly stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
 }
 
 logs() {
     printf "${YELLOW}Displaying BrowserBox logs...${NC}\n"
-    ensure_nvm
-    if command -v pm2 >/dev/null; then
-        pm2 logs || { printf "${RED}pm2 logs failed${NC}\n"; exit 1; }
-    else
-        printf "${RED}pm2 not found. Install pm2 (npm i -g pm2) or check logs manually.${NC}\n"
-        exit 1
-    fi
+    bbpro pm2 list || printf "${YELLOW}bbpro pm2 list failed (shim may not be running).${NC}\n"
+    printf "${YELLOW}Tail a service log with:${NC} bbpro pm2 logs bb-main --lines 50\n"
 }
 
 # Helper function to convert epoch time to a timestamp format for touch -t
@@ -2985,8 +3276,6 @@ update() {
   fi
 
   load_config
-
-  # Arg parsing: none | --latest-rc | <version>
   local arg="${1:-}"
   local repo_tag=""
 
@@ -2995,17 +3284,11 @@ update() {
     repo_tag="$(get_latest_release "$PUBLIC_REPO")"
   elif [[ "$arg" == "--latest-rc" ]]; then
     printf "${YELLOW}Updating BrowserBox to latest release candidate...${NC}\n"
-    # For binary distribution, we get latest release (not necessarily RC)
     repo_tag="$(get_latest_release "$PUBLIC_REPO")"
-    if [[ "$repo_tag" == unknown* ]]; then
-      printf "${RED}No releases found.${NC}\n"; return 1
-    fi
   else
-    # explicit version/tag
     local tag="$(normalize_tag "$arg")"
     if [[ -z "$tag" ]]; then
       printf "${RED}Invalid version: '%s'${NC}\n" "$arg"
-      printf "Expected formats: v1.2.3 | 1.2.3 | v1.2.3-rc | v1.2.3-rc.1\n"
       return 1
     fi
     repo_tag="$tag"
@@ -3013,21 +3296,41 @@ update() {
   fi
 
   if [[ "$repo_tag" == unknown* ]] || [[ -z "$repo_tag" ]]; then
-    printf "${RED}Could not determine version to update to. Check network or GH API rate limits.${NC}\n"
+    printf "${RED}Could not determine version to update to.${NC}\n"
     return 1
   fi
 
-  # Download and install the binary update
   local platform
   platform=$(detect_platform)
-  download_binary "$platform" "$repo_tag"
-  
-  # Run internal updates/migrations
+
+  # Download
+  local download_output
+  download_output=$(download_binary "$platform" "$repo_tag")
+  local exit_status=$?
+
+  local temp_exe
+  temp_exe=$(echo "$download_output" | tail -n1 | tr -d '[:space:]')
+
+  if [[ $exit_status -ne 0 ]] || [[ -z "$temp_exe" ]] || [[ ! -f "$temp_exe" ]]; then
+      printf "${RED}Download failed.${NC}\n"
+      if [[ -n "$BBX_DEBUG" ]]; then echo "Debug: $download_output" >&2; fi
+      return 1
+  fi
+
+  # Execute
   printf "${YELLOW}Running post-update installation tasks...${NC}\n"
-  "$BINARY_PATH" --install || { printf "${RED}Post-update installation failed${NC}\n"; return 1; }
-  
-  printf "${GREEN}BrowserBox updated to ${repo_tag}${NC}\n"
-  return 0
+  "$temp_exe" --install
+  local install_exit=$?
+
+  rm -f "$temp_exe"
+
+  if [ $install_exit -eq 0 ]; then
+    printf "${GREEN}BrowserBox updated to ${repo_tag}${NC}\n"
+    return 0
+  else
+    printf "${RED}Post-update installation failed${NC}\n"
+    return 1
+  fi
 }
 
 update_background() {
@@ -3044,7 +3347,6 @@ update_background() {
     # default channel = stable
     repo_tag="$(get_latest_repo_version stable)"
   fi
-
   printf "${YELLOW}Checking update lock...${NC}\n" >> "$LOG_FILE"
   # Check lock files
   if is_lock_file_recent "$PREPARING_FILE"; then
@@ -3072,8 +3374,8 @@ update_background() {
   platform=$(detect_platform)
   local asset_name
   case "$platform" in
-    macos) asset_name="browserbox-macos-bin" ;;
-    linux) asset_name="browserbox-linux-bin" ;;
+    macos) asset_name="browserbox-macos-arm64" ;;
+    linux) asset_name="browserbox-linux-x64" ;;
     *) 
       printf "${RED}Unsupported platform: $platform${NC}\n" >> "$LOG_FILE"
       $SUDO rm -f "$PREPARING_FILE"
@@ -3085,9 +3387,14 @@ update_background() {
   local temp_binary="$BBX_NEW_DIR/browserbox"
   
   printf "${YELLOW}Downloading binary from $download_url...${NC}\n" >> "$LOG_FILE"
+
+  local curl_auth=()
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+  fi
   
   # Use curl directly (no INSTALL_CMD/sudo) to avoid background sudo prompts
-  curl -L --fail --progress-bar --connect-timeout 30 -o "$temp_binary" "$download_url" >> "$LOG_FILE" 2>&1 || {
+  curl -L --fail --progress-bar --connect-timeout 30 "${curl_auth[@]}" -o "$temp_binary" "$download_url" >> "$LOG_FILE" 2>&1 || {
     printf "${YELLOW}Skipping update due to timeout or failure in connecting to BrowserBox repo${NC}\n" >> "$LOG_FILE"
     $SUDO rm -f "$PREPARING_FILE"
     rm -f "$temp_binary" 2>/dev/null
@@ -3103,7 +3410,7 @@ update_background() {
     rm -rf "$BBX_NEW_DIR"
     return 1
   fi
-  
+
   # Make binary executable
   chmod +x "$temp_binary" || { 
     printf "${RED}Failed to make binary executable${NC}\n" >> "$LOG_FILE"
@@ -3199,19 +3506,19 @@ stop_user() {
         # Cancel existing 'at' jobs for this user
         existing_jobs=$(atq | awk '{print $1}')
         for job in $existing_jobs; do
-            if at -c "$job" | grep -q "browserbox --stop.*$user"; then
+            if at -c "$job" | grep -q "stop_bbpro.*$user"; then
                 atrm "$job"
             fi
         done
-        # Schedule browserbox --stop
-        echo "$SUDO -u \"$user\" browserbox --stop" | at now + "${delay_minutes}" minutes 2>/dev/null
+        # Schedule stop_bbpro
+        echo "$SUDO -u \"$user\" stop_bbpro" | at now + "${delay_minutes}" minutes 2>/dev/null
         # Update expiry time
         local new_expiry_timestamp=$((current_time + delay_seconds))
         $SUDO -u "$user" bash -c "mkdir -p \"${home_dir}/.config/dosyago/bbpro\"; echo \"$new_expiry_timestamp\" > \"$expiry_file\""
         printf "${GREEN}Scheduled stop for $user at $new_expiry_timestamp${NC}\n"
     else
         # Immediate stop
-        $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH browserbox --stop" 2>/dev/null || { printf "${RED}Failed to stop BrowserBox for $user${NC}\n"; exit 1; }
+        $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH stop_bbpro" 2>/dev/null || { printf "${RED}Failed to stop BrowserBox for $user${NC}\n"; exit 1; }
         printf "${GREEN}BrowserBox stopped for $user${NC}\n"
     fi
 
@@ -3385,8 +3692,8 @@ run_as() {
     # Generate fresh token
     TOKEN=$(openssl rand -hex 16)
 
-    # Run browserbox --setup with explicit PATH and fresh token, redirecting output as the target user
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH LICENSE_KEY="${LICENSE_KEY}" browserbox --setup --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
+    # Run setup_bbpro with explicit PATH and fresh token, redirecting output as the target user
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
@@ -3512,7 +3819,7 @@ win9x_run() {
   export BBX_DONT_KILL_CHROME_ON_STOP="true"
 
   # Setup with explicit token
-  local setup_cmd="browserbox --setup --port $PORT --token $TOKEN"
+  local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
   LICENSE_KEY="${LICENSE_KEY}" $setup_cmd &>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   
   # Reload config to get updated values
@@ -3534,11 +3841,11 @@ win9x_run() {
     fi
   fi
 
-  # Start browserbox in background, redirecting output to suppress banner
+  # Start bbpro in background, redirecting output to suppress banner
   printf "${YELLOW}Starting BrowserBox server (silent mode)...${NC}\n"
   export WIN9X_COMPATIBILITY_MODE="true"
   export BBX_DONT_KILL_CHROME_ON_STOP="true"
-  nohup browserbox > /dev/null 2>&1 &
+  nohup bbpro > /dev/null 2>&1 &
   
   # Wait for server to start (allows time for initialization and login.link generation)
   local startup_wait=8
@@ -3746,7 +4053,7 @@ activate() {
 # Call check_and_prepare_update with the first argument
 [ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
 case "$1" in
-    install) shift 1; install "$@";;
+    install) shift 1; install_bbx "$@";;
     uninstall) shift 1; uninstall "$@";;
     setup) shift 1; setup "$@";;
     certify) shift 1; certify "$@";;
