@@ -1,50 +1,116 @@
 #!/usr/bin/env bash
 
-# ANSI color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-BOLD='\033[1m'
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-ZONE=""
+#
+# Installs and configures BrowserBox Pro on a machine.
+#
+# Usage:
+#   ./global_install.sh <hostname> [email_for_letsencrypt]
+#
+# Environment Variables:
+#   BBX_DEBUG: If set, runs the script in debug mode (set -x).
+#   BBX_NODE_VERSION: Overrides the default Node.js version to install.
+#   BBX_NO_COPY: If set, skips the final step of copying command scripts.
+#   BBX_BINARY_BUILD: If set, skips npm-related installations, assuming a self-contained binary.
+#   BBX_TEST_AGREEMENT: If set, bypasses the interactive license agreement prompt.
+#
 
-if [[ -n "$BBX_DEBUG" ]]; then
-  set -x
-fi
-if [[ -z "$1" ]]; then
-  echo "Supply a hostname as first argument" >&2
-  exit 1
-fi
-BBX_NO_COPY="${BBX_NO_COPY}"
+# --- Strict Mode --------------------------------------------------------------
+set -u
 
-unset npm_config_prefix
+# --- Configuration & Constants ------------------------------------------------
+readonly ANSI_RED='\033[0;31m'
+readonly ANSI_GREEN='\033[0;32m'
+readonly ANSI_YELLOW='\033[1;33m'
+readonly ANSI_BLUE='\033[0;34m'
+readonly ANSI_NC='\033[0m'
+readonly ANSI_BOLD='\033[1m'
 
-# flush any partial
+readonly CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+readonly DEFAULT_NODE_VERSION="${BBX_NODE_VERSION:-22}"
 
+export DEFAULT_NODE_VERSION
+
+# --- Global Variables ---------------------------------------------------------
+# These are set by functions and used by others.
+BBX_EMAIL=""
+BBX_HOSTNAME=""
 SUDO=""
-if [[ -f /etc/os-release ]]; then
-  . /etc/os-release
-fi
+ZONE=""
+APT=""
+REPLY=""
 
-if command -v sudo &>/dev/null; then
-  export SUDO="$(command -v sudo) -n"
-elif command -v apt &>/dev/null; then
-  apt update; apt install -y sudo
-elif command -v dnf &>/dev/null; then
-  dnf update; dnf install -y sudo
-fi
+# --- Helper Functions ---------------------------------------------------------
 
-if command -v sudo &>/dev/null; then
-  export SUDO="$(command -v sudo) -n"
-else
-  echo "Warning could not install sudo. There may be problems..." >&2
-fi
+log_info() {
+    printf "${ANSI_BLUE}[INFO] %s${ANSI_NC}\n" "$1" >&2
+}
 
-if command -v firewall-cmd &>/dev/null; then
-  ZONE="$($SUDO firewall-cmd --get-default-zone)"
-fi
+log_warning() {
+    printf "${ANSI_YELLOW}[WARN] %s${ANSI_NC}\n" "$1" >&2
+}
+
+log_error() {
+    printf "${ANSI_RED}[ERROR] %s${ANSI_NC}\n" "$1" >&2
+}
+
+# Safely read user input, handling interactive and non-interactive sessions.
+read_input() {
+    local prompt="$1"
+    if [ -t 0 ]; then # Interactive
+        read -p "$prompt" -r REPLY
+    else # Non-interactive (e.g., piped input)
+        read -r REPLY
+        REPLY=${REPLY:0:1} # Take the first character
+    fi
+    echo >&2 # for spacing
+}
+
+# Detects the operating system.
+get_os_type() {
+    case "$(uname -s)" in
+        Darwin*) echo "macOS" ;;
+        Linux*)  echo "Linux" ;;
+        MING*)   echo "win" ;;
+        *)       echo "unknown" ;;
+    esac
+}
+
+# Sets up the SUDO variable for privileged commands.
+setup_sudo() {
+    if command -v sudo &>/dev/null; then
+        if sudo -n true &>/dev/null; then
+            SUDO="$(command -v sudo) -n"
+        else
+            SUDO="sudo"
+        fi
+    elif [[ "$(get_os_type)" == "Linux" ]]; then
+        log_warning "sudo command not found. Attempting to install..."
+        if command -v apt &>/dev/null; then
+            apt update && apt install -y sudo
+        elif command -v dnf &>/dev/null; then
+            dnf update && dnf install -y sudo
+        fi
+        # Re-check for sudo
+        if command -v sudo &>/dev/null; then SUDO="sudo"; fi
+    fi
+
+    if [[ -z "$SUDO" ]]; then
+        log_warning "Could not find or install sudo. Privileged operations may fail."
+    else
+        export SUDO # Export for child scripts
+    fi
+}
+
+# Wrapper for getent-like functionality without installing getent
+getent_hosts() {
+  local hostname="$1"
+  # If on macOS, etc, manually search /etc/hosts
+  if ! command -v getent &>/dev/null; then
+    grep -E "^\s*([^#]+)\s+$hostname" /etc/hosts || echo ""
+  else
+    getent hosts "$hostname" || echo ""
+  fi
+}
 
 # Check if hostname is local
 is_local_hostname() {
@@ -52,6 +118,8 @@ is_local_hostname() {
   local resolved_ips ip
   local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
   local has_valid_result=0
+
+  # Try DNS resolution
   for dns in "${public_dns_servers[@]}"; do
     resolved_ips=$(command -v dig >/dev/null 2>&1 && dig +short "$hostname" A @"$dns")
     if [[ "$?" -eq 0 ]] && [[ -n "$resolved_ips" ]]; then
@@ -65,451 +133,296 @@ is_local_hostname() {
       done <<< "$resolved_ips"
     fi
   done
+
   # If all results were private or none resolved, treat as local
   if [[ "$has_valid_result" -eq 1 ]]; then
     return 0 # All IPs private => local
   fi
+
   # Fallback: check /etc/hosts (or similar)
-  if command -v getent &>/dev/null; then
-    ip=$(getent hosts "$hostname" | awk '{print $1}' | head -n1)
-    if [[ "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
-      return 0 # Local
-    fi
+  ip=$(getent_hosts "$hostname" | awk '{print $1}' | head -n1)
+  if [[ "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
+    return 0 # Local
   fi
+
   return 0 # Unresolvable => local
 }
 
-# Ensure hostname is in /etc/hosts, allowing whitespace but not comments
-ensure_hosts_entry() {
-    local hostname="$1"
-    if ! grep -v "^\s*#" /etc/hosts | grep -q "^\s*127\.0\.0\.1.*$hostname"; then
-        printf "${YELLOW}Adding $hostname to /etc/hosts...${NC}\n"
-        echo "127.0.0.1 $hostname" | $SUDO tee -a /etc/hosts > /dev/null || { printf "${RED}Failed to update /etc/hosts${NC}\n"; exit 1; }
-    else
-        printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
+# Adds the local machine's hostname to /etc/hosts to ensure it's resolvable.
+add_local_hostname_to_hosts() {
+    local default_host="$(hostname -f || uname -n || echo "unknown")"
+    local hostname="${1:-${BXX_HOSTNAME:-$default_host}}"
+    if ! grep -q "127.0.0.1.*$hostname" /etc/hosts; then
+        log_info "Adding local hostname '$hostname' to /etc/hosts..."
+        echo "127.0.0.1 $hostname" | $SUDO tee -a /etc/hosts > /dev/null
     fi
 }
 
-add_hostname_to_hosts() {
-  # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
-  local HOSTNAME="${HOSTNAME}"
-  if [ -z "$HOSTNAME" ] && command -v uname &>/dev/null; then
-    HOSTNAME=$(uname -n)
-  fi
-  if [ -z "$HOSTNAME" ] && [ -f /proc/sys/kernel/hostname ]; then
-    HOSTNAME=$(cat /proc/sys/kernel/hostname)
-  fi
-  HOSTNAME="${HOSTNAME:-unknown}"
-  if ! grep -q "127.0.0.1.*$HOSTNAME" /etc/hosts; then
-    echo "Adding hostname to /etc/hosts..." >&2
-    $SUDO cp /etc/hosts /etc/hosts.backup
-    echo "127.0.0.1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
-    echo "::1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
-    echo "$HOSTNAME has been added to /etc/hosts." >&2
-  else
-    echo "Hostname $HOSTNAME is already mapped in /etc/hosts." >&2
-  fi
-}
-
-add_hostname_to_hosts
-
+# Determines package manager and performs initial system setup.
 initialize_package_manager() {
-  local package_manager
+    log_info "Initializing package manager..."
+    # shellcheck source=/etc/os-release
+    source /etc/os-release &>/dev/null || true
+    
+    case "$(get_os_type)" in
+        macOS)
+            # Add common Homebrew paths to PATH before checking
+            # Apple Silicon: /opt/homebrew/bin
+            # Intel: /usr/local/bin
+            if [[ -x /opt/homebrew/bin/brew ]] && [[ ":$PATH:" != *":/opt/homebrew/bin:"* ]]; then
+                export PATH="/opt/homebrew/bin:$PATH"
+            fi
+            if [[ -x /usr/local/bin/brew ]] && [[ ":$PATH:" != *":/usr/local/bin:"* ]]; then
+                export PATH="/usr/local/bin:$PATH"
+            fi
+            APT="$(command -v brew || true)"
+            ;;
+        Linux)
+            if command -v apt &>/dev/null; then
+                APT="apt"
+                # shellcheck source=/dev/null
+                source ./deploy-scripts/non-interactive.sh || true
+            elif command -v dnf &>/dev/null; then
+                APT="dnf"
+                $SUDO dnf -y upgrade --refresh
+                $SUDO dnf config-manager --set-enabled crb || true
+                $SUDO dnf install -y 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm'
+                if command -v firewall-cmd &>/dev/null; then
+                    ZONE="$($SUDO firewall-cmd --get-default-zone || echo 'public')"
+                    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
+                    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
+                    $SUDO firewall-cmd --reload
+                fi
+            fi
+            ;;
+    esac
 
-  if [[ "$OSTYPE" == darwin* ]]; then
-    package_manager=$(command -v brew)
-  elif command -v apt &>/dev/null; then
-    package_manager="$(command -v apt)"
-    if command -v apt-get &>/dev/null; then
-      source ./deploy-scripts/non-interactive.sh
-    fi
-    # Check if the system is Debian and the version is 11
-    if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
-      $SUDO apt install -y wget tar
-      mkdir -p $HOME/build/Release
-      echo "Installing Custom Build of WebRTC Node for Debian 11..."
-      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/debian-11-wrtc.node
-      chmod +x debian-11-wrtc.node
-      mv debian-11-wrtc.node $HOME/build/Release/wrtc.node
-      $SUDO mkdir -p /usr/local/share/dosyago/build/Release
-      $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
-    fi
-  elif command -v pkg &>/dev/null; then
-    package_manager="$(command -v pkg)"
-  elif command -v dnf >/dev/null; then
-    package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
-    $SUDO dnf config-manager --set-enabled crb
-    $SUDO dnf -y upgrade --refresh
-    $SUDO dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
-    $SUDO dnf install -y https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
-    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
-    $SUDO firewall-cmd --reload
-    $SUDO dnf install -y wget tar
-    mkdir -p $HOME/build/Release
-    if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
-      echo "Installing Custom Build of WebRTC Node for Almalinux 8 like..."
-      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/almalinux-8-wrtc.node
-      chmod +x almalinux-8-wrtc.node
-      mv almalinux-8-wrtc.node $HOME/build/Release/wrtc.node
-    elif ([ "$ID" = "centos" ] || [ "$ID" = "rhel" ]) && [[ "$VERSION_ID" == 8* ]]; then
-      echo "Installing Custom Build of WebRTC Node for CentOS 8 or RedHat Enterprise Linux 8..."
-      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-8-wrtc.node
-      chmod +x centos-8-wrtc.node
-      mv centos-8-wrtc.node $HOME/build/Release/wrtc.node
+    if [[ -z "$APT" ]]; then
+        log_warning "No supported package manager (apt, dnf, brew) found. Some features may be limited."
+        # For macOS, brew is optional - binary builds can work without it
+        if [[ "$(get_os_type)" != "macOS" ]]; then
+            log_error "Package manager required on Linux systems."
+            return 1
+        fi
     else
-      echo "Installing Custom Build of WebRTC Node for CentOS 9 like..."
-      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-9-wrtc.node
-      chmod +x centos-9-wrtc.node
-      mv centos-9-wrtc.node $HOME/build/Release/wrtc.node
+        log_info "Using package manager: $APT"
+        export APT
     fi
-    $SUDO mkdir -p /usr/local/share/dosyago/build/Release
-    $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
-  else
-    echo "No supported package manager found. Exiting."
-    return 1
-  fi
-
-  echo "Using package manager: $package_manager"
-  export APT=$package_manager
 }
 
-# Ensure the disk is optimal
-$SUDO ./deploy-scripts/disk_extend.sh
+# Legacy note: Chai document assets used to be synchronized here when the
+# installer ran from a source checkout. The binary installer now owns that step.
+# Downloads and installs a custom WebRTC binary for specific Linux distributions.
+install_custom_wrtc_if_needed() {
+    if [[ "$(get_os_type)" != "Linux" ]]; then return; fi
+    # shellcheck source=/etc/os-release
+    source /etc/os-release || true
+    
+    local wrtc_filename=""
+    local base_url="https://github.com/dosyago/node-webrtc/releases/download/v1.0.0"
 
-# Call the function to initialize and export the APT variable
-initialize_package_manager
+    case "${ID-}" in
+        debian) [[ "${VERSION_ID-}" == "11" ]] && wrtc_filename="debian-11-wrtc.node" ;;
+        almalinux) [[ "${VERSION_ID-}" == 8* ]] && wrtc_filename="almalinux-8-wrtc.node" ;;
+        centos|rhel) [[ "${VERSION_ID-}" == 8* ]] && wrtc_filename="centos-8-wrtc.node" || wrtc_filename="centos-9-wrtc.node" ;;
+    esac
 
-read_input() {
-  if [ -t 0 ]; then  # Check if it's running interactively
-    read -p "$1" -r REPLY
-  else
-    read -r REPLY
-    REPLY=${REPLY:0:1}  # Take the first character of the piped input
-  fi
-  echo  # Add a newline for readability
-  echo
+    if [[ -n "$wrtc_filename" ]]; then
+        log_info "Custom WebRTC build needed: $wrtc_filename"
+        $SUDO "$APT" install -y wget tar
+        wget -q -O "$wrtc_filename" "$base_url/$wrtc_filename"
+        
+        $SUDO mkdir -p /usr/local/share/dosyago/build/Release
+        $SUDO mv "$wrtc_filename" "/usr/local/share/dosyago/build/Release/wrtc.node"
+        $SUDO chmod +x "/usr/local/share/dosyago/build/Release/wrtc.node"
+        log_info "Custom WebRTC build installed."
+    fi
 }
 
-get_latest_dir() {
-  # Find potential directories containing .bbpro_install_dir
-  echo "$(pwd)"
-}
+# Displays license and terms, and asks for user agreement.
+check_license_agreement() {
+    if [[ -n "${BBX_TEST_AGREEMENT-}" ]] || [ -f "$CONFIG_DIR/.agreed" ]; then
+        return 0
+    fi
 
-os_type() {
-  case "$(uname -s)" in
-    Darwin*) echo "macOS";;
-    Linux*)  echo "Linux";;
-    MING*)   echo "win";;
-    *)       echo "unknown";;
-  esac
-}
-
-install_node() {
-  ./deploy-scripts/install_node.sh 22
-}
-
-install_nvm() {
-  source ~/.nvm/nvm.sh
-  if ! command -v nvm &>/dev/null; then
-    echo "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    source ~/.nvm/nvm.sh
-    nvm install v22
-  else
-    nvm install v22
-  fi
-}
-
-# License agreement and terms display
-display_terms() {
-    printf "${BLUE}${BOLD}Welcome to BrowserBox Installation${NC}\n"
-    printf "${YELLOW}Before proceeding, please note:${NC}\n"
+    printf "${ANSI_BLUE}${ANSI_BOLD}Welcome to BrowserBox Installation${ANSI_NC}\n"
+    printf "${ANSI_YELLOW}Before proceeding, please note:${ANSI_NC}\n"
     printf "  - A valid, purchased license is required for use.\n"
-    printf "  - By installing, you agree to the terms in:\n"
-    printf "    * LICENSE: ${BLUE}https://github.com/dosyago/BrowserBoxPro/blob/main/LICENSE.md${NC}\n"
-    printf "    * Terms: ${BLUE}https://dosaygo.com/terms.txt${NC}\n"
-    printf "    * Privacy: ${BLUE}https://dosaygo.com/privacy.txt${NC}\n"
-    printf "  - Commercial use (including evaluation) requires a license.\n"
-    printf "  - Purchase at: ${BLUE}https://dosaygo.com${NC}\n"
-    printf "  - Questions? Contact ${BLUE}sales@dosaygo.com${NC}\n\n"
+    printf "  - By installing, you agree to the terms available at https://dosaygo.com\n"
+    printf "  - Commercial use (including evaluation) requires a license.\n\n"
+    
+    read_input "Do you agree to these terms and confirm a license for use? (yes/no): "
+    if [[ "$REPLY" =~ ^[Yy] ]]; then
+        log_info "Terms accepted. Proceeding..."
+        mkdir -p "$CONFIG_DIR"
+        touch "${CONFIG_DIR}/.agreed"
+        echo "$BBX_EMAIL" >> "${CONFIG_DIR}/.agreed"
+    else
+        log_error "Terms not accepted. Exiting installation."
+        exit 1
+    fi
 }
 
-check_agreement() {
-    if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
-      return 0
+# Opens firewall ports.
+open_firewall_ports() {
+    local port=$1
+    log_info "Opening firewall port $port..."
+    if command -v firewall-cmd &>/dev/null; then
+        $SUDO firewall-cmd --zone="${ZONE:-public}" --add-port="${port}/tcp" --permanent
+        $SUDO firewall-cmd --reload
+    elif command -v ufw &>/dev/null; then
+        $SUDO ufw allow "$port/tcp"
+    else
+        log_warning "No recognized firewall tool (firewalld, ufw) found. Port $port may need to be opened manually."
     fi
-    if [ ! -f "$CONFIG_DIR/.agreed" ]; then
-        display_terms
-        printf "${YELLOW}Do you agree to these terms and confirm a license for use? (yes/no): ${NC}\n"
-        read -r REPLY
-        if [[ "${REPLY:0:1}" =~ ^[yY]$ ]]; then
-            printf "${GREEN}Terms accepted. Proceeding...${NC}\n"
-            mkdir -p "$CONFIG_DIR"
-            touch "$CONFIG_DIR/.agreed"
-        else
-            printf "${RED}Terms not accepted. Exiting installation.${NC}\n"
+}
+
+# Sets up SSL certificates using mkcert for local hostnames or LetsEncrypt for public ones.
+setup_ssl() {
+    local hostname="$1"
+    local email="${2-}"
+
+    if is_local_hostname "$hostname"; then
+        log_info "Local hostname detected. Setting up SSL with mkcert..."
+        if ! command -v mkcert &>/dev/null; then
+            log_info "Installing mkcert..."
+            case "$(get_os_type)" in
+                macOS)
+                    if command -v brew &>/dev/null; then
+                        brew install nss mkcert
+                    else
+                        log_warning "Homebrew not found. Please install mkcert manually or install Homebrew."
+                        log_warning "Visit: https://brew.sh"
+                        return 0  # Continue without mkcert for now
+                    fi
+                    ;;
+                win)   log_error "Please install mkcert manually on Windows." ; exit 1 ;;
+                *)     $SUDO "$APT" install -y libnss3-tools wget && \
+                       tmpdir="$(mktemp -d)" && \
+                       wget -qO "${tmpdir}/mkcert" "https://dl.filippo.io/mkcert/latest?for=linux/$(dpkg --print-architecture 2>/dev/null || uname -m)" && \
+                       chmod +x "${tmpdir}/mkcert" && $SUDO mv "${tmpdir}/mkcert" /usr/local/bin/ && rm -rf "${tmpdir}" ;;
+            esac
+        fi
+        mkcert -install
+        mkdir -p "$HOME/sslcerts"
+        (cd "$HOME/sslcerts" && mkcert --cert-file fullchain.pem --key-file privkey.pem "$hostname" localhost 127.0.0.1)
+    else
+        log_info "Public hostname detected. Setting up SSL with LetsEncrypt (via tls script)..."
+        if [[ -z "$email" ]]; then
+            log_error "An email address (for LetsEncrypt) is required as the second argument for public hostnames."
             exit 1
         fi
+        export BB_USER_EMAIL="$email"
+        ./deploy-scripts/wait_for_hostname.sh "$hostname"
+        ./deploy-scripts/tls "$hostname"
     fi
+    log_info "SSL setup complete."
 }
 
-# Usage in script (e.g., in global_install.sh or install subcommand)
-check_agreement
-
-function create_selinux_policy_for_ports() {
-  # Check if SELinux is enforcing
-  if [[ "$(getenforce)" != "Enforcing" ]]; then
-    echo "SELinux is not in enforcing mode. Exiting."
-    return
-  fi
-
-  # Parameters: SELinux type, protocol (tcp/udp), port range or single port
-  local SEL_TYPE=$1
-  local PROTOCOL=$2
-  local PORT_RANGE=$3
-
-  if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
-    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE"
-    return
-  fi
-
-  # Add or modify the port context
-  sudo semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
-  sudo semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
-
-  # Generate and compile a custom policy module if required
-  sudo grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
-  sudo semodule -i my_custom_policy_module.pp
-
-  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
+# Installs Node.js via the dedicated script.
+install_node() {
+    log_info "Installing Node.js v${DEFAULT_NODE_VERSION}..."
+    ./deploy-scripts/install_node.sh "$DEFAULT_NODE_VERSION"
+    # shellcheck source=/dev/null
+    source "${HOME}/.nvm/nvm.sh" || true
 }
 
-open_firewall_port_range() {
-  local start_port=$1
-  local end_port=$2
-  local complete=""
+# --- Main Execution -----------------------------------------------------------
+main() {
+    # --- Initial Setup ---
+    if [[ -n "${BBX_DEBUG-}" ]]; then set -x; fi
+    unset npm_config_prefix # Avoid user-level npm config issues
 
-  if command -v getenforce &>/dev/null; then
-    if [[ "$start_port" != "$end_port" ]]; then
-      create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
-    else
-      create_selinux_policy_for_ports http_port_t tcp $start_port
+    local hostname="${1-}"
+    if [[ -z "$hostname" ]]; then
+        log_error "Usage: $0 <hostname> <your_email_for_terms_acceptance>"
+        log_error "A hostname (e.g., 'localhost' or 'bbx.example.com') is required."
+        exit 1
     fi
-  fi
 
-  # Check for firewall-cmd (firewalld)
-  if command -v firewall-cmd &> /dev/null; then
-      echo "Using firewalld"
-      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-      $SUDO firewall-cmd --reload
-      complete="true"
-  fi
+    local email="${2-}"
 
-  # Check for ufw (Uncomplicated Firewall)
-  if $SUDO bash -c 'command -v ufw' &> /dev/null; then
-      echo "Using ufw"
-      if [[ "$start_port" != "$end_port" ]]; then
-        $SUDO ufw allow ${start_port}:${end_port}/tcp
-      else
-        $SUDO ufw allow ${start_port}/tcp
-      fi
-      complete="true"
-  fi
+    if [[ -z "$email" ]]; then
+        log_error "Usage: $0 <hostname> <your_email_for_terms_acceptance>"
+        log_error "An email is required."
+        exit 1
+    fi
 
-  if [[ -z "$complete" ]]; then
-      echo "No recognized firewall management tool found"
-      if command -v apt; then
-        $SUDO apt install -y ufw 
-      elif command -v dnf; then
-        $SUDO dnf install -y firewalld
-      fi
-      return 1
-  fi
+    BBX_EMAIL="${email}"
+    BBX_HOSTNAME="${hostname}"
+
+    setup_sudo
+    check_license_agreement
+    add_local_hostname_to_hosts 
+
+    # --- System Preparation ---
+    initialize_package_manager
+    install_custom_wrtc_if_needed
+    $SUDO ./deploy-scripts/disk_extend.sh
+    
+    if [[ "$(get_os_type)" == "Linux" ]]; then
+      $SUDO "$APT" update && $SUDO "$APT" -y upgrade
+      $SUDO "$APT" install -y net-tools dnsutils jq
+      open_firewall_ports 80
+      open_firewall_ports 443
+    elif [[ "$(get_os_type)" == "macOS" ]]; then
+        if command -v brew &>/dev/null; then
+            if ! command -v jq &>/dev/null; then
+              brew install jq
+            fi
+            if ! brew --prefix gnu-getopt &>/dev/null; then
+              brew install gnu-getopt
+            fi
+            brew unlink gnu-getopt &>/dev/null
+            brew link --force gnu-getopt &>/dev/null
+        else
+            log_warning "Homebrew not found. Skipping optional package installation (jq, gnu-getopt)."
+            log_warning "Some features may be limited. To install Homebrew, visit: https://brew.sh"
+        fi
+    fi
+
+    # --- SSL and Node.js ---
+    setup_ssl "$@"
+    install_node
+
+    # --- Project Installation ---
+    log_info "Preparing project..."
+
+    if [[ -z "${BBX_BINARY_BUILD-}" ]]; then
+        log_info "Running full npm installation..."
+        if ! npm i; then
+            log_warning "Initial 'npm i' failed. Attempting recovery..."
+            npm run clean
+            if [[ "$(get_os_type)" == "Linux" ]]; then
+                $SUDO "$APT" install -y build-essential
+            fi
+            npm i # Retry
+        fi
+        log_info "npm install complete."
+    else
+        log_info "Binary build detected. Skipping npm installations."
+        log_info "Running postinstall for external dependencies only..."
+        ./scripts/postinstall.sh --external-dependencies-only
+    fi
+
+    # Legacy note: Chai document assets used to be copied from the source tree
+    # during installs. With the migration to binary-only distribution the
+    # browserbox installer now seeds ~/.config/dosyago/bbpro/chai, so the source
+    # installer intentionally skips that work.
+
+    # --- Finalization ---
+    if [[ -z "${BBX_NO_COPY-}" ]]; then
+        log_info "Copying command scripts to system path..."
+        local copy_script="./deploy-scripts/cp_commands_only.sh"
+        if [[ -z "${BBX_BINARY_BUILD-}" ]]; then
+            copy_script="./deploy-scripts/copy_install.sh"
+        fi
+        "$copy_script" "$(pwd)"
+    else
+        log_warning "Skipping script copy step due to BBX_NO_COPY."
+    fi
+
+    log_info "BrowserBox Pro installation complete!"
 }
 
-# If on macOS
-if [[ "$(uname)" == "Darwin" ]]; then
-    # Check the machine architecture
-    ARCH="$(uname -m)"
-    if [[ "$ARCH" == "arm64" ]]; then
-        true
-        #echo "This script is not compatible with the MacOS ARM architecture at this time"
-        #echo "due to some dependencies having no pre-built binaries for this architecture."
-        #echo "Please re-run this script under Rosetta."
-        #exit 1
-    fi
-fi
-
-if [ "$(os_type)" == "Linux" ]; then
-  $SUDO $APT update
-  $SUDO $APT -y upgrade
-  $SUDO $APT install -y net-tools dnsutils
-  open_firewall_port_range 80 80
-fi
-open_firewall_port_range 80 80
-
-
-if ! command -v jq &>/dev/null; then
-  if [ "$(os_type)" == "macOS" ]; then
-          brew install jq
-  else
-          $SUDO $APT install -y jq
-  fi
-fi
-
-
-if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
-  hostname="$1"
-  export BB_USER_EMAIL="$2"
-
-  amd64=""
-
-  if is_local_hostname "$1"; then
-    if ! command -v mkcert &>/dev/null; then
-      printf "${YELLOW}Installing mkcert...${NC}\n"
-      if [ "$(os_type)" == "macOS" ]; then
-        brew install nss mkcert
-      elif [ "$(os_type)" == "win" ]; then
-        choco install mkcert || scoop bucket add extras && scoop install mkcert
-      else
-        # Determine architecture
-        if command -v dpkg &>/dev/null; then
-          arch=$(dpkg --print-architecture)
-        else
-          arch=$(uname -m)
-          if [ "$arch" = "x86_64" ]; then
-            arch="amd64"  # Normalize to mkcert naming
-          fi
-          if [ "$arch" = "aarch64" ]; then
-            arch="arm64"
-          fi
-        fi
-        # Install NSS tools based on package manager
-        if command -v apt &>/dev/null; then
-          $SUDO $APT install -y libnss3-tools
-        elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-          $SUDO $APT install -y nss-tools  # $APT is dnf/yum here
-        else
-          printf "${RED}No supported package manager for NSS tools. Install manually.${NC}\n"
-          exit 1
-        fi
-        # Ensure wget or curl for downloading
-        if command -v curl &>/dev/null; then
-          downloader="curl -JLO"
-        elif command -v wget &>/dev/null; then
-          downloader="wget"
-        else
-          printf "${RED}Neither curl nor wget found. Installing wget...${NC}\n"
-          if command -v apt &>/dev/null; then
-            $SUDO $APT install -y wget
-          elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-            $SUDO $APT install -y wget
-          else
-            printf "${RED}Cannot install wget. Install curl or wget manually.${NC}\n"
-            exit 1
-          fi
-          downloader="wget"
-        fi
-        # Download and install mkcert
-        $downloader "https://dl.filippo.io/mkcert/latest?for=linux/$arch"
-        chmod +x mkcert-v*-linux-$arch
-        $SUDO cp mkcert-v*-linux-$arch /usr/local/bin/mkcert || { printf "${RED}Failed to install mkcert${NC}\n"; exit 1; }
-        rm mkcert-v*
-      fi
-    fi
-    mkcert -install
-    if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
-      :
-    else
-      echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We ARE overwriting them." >&2
-    fi
-    mkdir -p $HOME/sslcerts
-    pwd=$(pwd)
-    cd $HOME/sslcerts
-    mkcert --cert-file fullchain.pem --key-file privkey.pem $hostname localhost 127.0.0.1
-    cd $pwd
-  else
-    ip=$(getent hosts "$hostname" | awk '{ print $1 }')
-
-    if [ -n "$ip" ]; then
-      ./deploy-scripts/wait_for_hostname.sh "$hostname"
-      ./deploy-scripts/tls "$hostname"
-    else
-      echo "The provided hostname ($hostname) could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
-      exit 1
-    fi
-  fi
-else
-  if is_local_hostname "$1"; then
-    echo ""
-    echo "Usage: $0 <hostname>"
-    echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
-    echo "Note that user email is not required as 2nd parameter when using localhost as we do not use Letsencrypt in that case." >&2
-  else 
-    echo ""
-    echo "Usage: $0 <hostname> <your_email>"
-    echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
-    echo "Please provide an email as argument. This email will be used to agree to the Letsencrypt TOS for cert provisioning" >&2
-  fi
-  exit 1
-fi
-
-echo -n "Finding bbpro directory..."
-
-INSTALL_DIR=$(get_latest_dir)
-
-echo "Found bbpro at: $INSTALL_DIR"
-
-read -p "Enter to continue" -r
-
-echo "Ensuring fully installed..."
-
-if [[ -n "$INSTALL_DIR" ]]; then
-  cd $INSTALL_DIR
-fi
-
-./client/install-client-deps.sh
-
-echo "Ensuring nvm installed..."
-#install_nvm
-install_node
-source ~/.nvm/nvm.sh
-
-echo "Running npm install..."
-
-if ! npm i; then
-  # attempt to save node weirdness
-  npm run clean
-  $SUDO $APT install -y build-essential
-  npm i
-fi
-
-echo "npm install complete"
-
-if [ "$(os_type)" == "macOS" ]; then
-  if ( ! command -v getopt ) || [[ "$(getopt --version)" != *"util-linux"* ]]; then
-    if brew install gnu-getopt; then
-      brew link --force gnu-getopt
-    fi
-  fi
-else
-  if ! command -v getopt &>/dev/null; then
-    echo "Installing gnu-getopt for Linux..."
-    $SUDO $APT update
-    $SUDO $APT install -y gnu-getopt
-  fi
-fi
-
-echo "Fully installed!"
-
-if [[ -z "$BBX_NO_COPY" ]]; then
-  ./deploy-scripts/copy_install.sh "$INSTALL_DIR"
-fi
-
-#echo -n "Setting up deploy system ..."
-
-#cd $INSTALL_DIR/src/services/pool/deploy/
-#./scripts/setup.sh
-
-echo "Install complete!"
+main "$@"

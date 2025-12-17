@@ -90,18 +90,41 @@ fi
 
 source ~/.nvm/nvm.sh
 
-cd src/zombie-lord
+if [ -d src/zombie-lord ]; then
+  cd src/zombie-lord
+else
+  echo "[ERROR] src/zombie-lord not found. CWD=$(pwd)" >&2
+  # Best-effort tree/ls to debug binary extraction issues
+  if command -v tree >/dev/null 2>&1; then
+    tree -L 3
+  else
+    if command -v apt >/dev/null 2>&1; then
+      $SUDO apt update -y && $SUDO apt install -y tree || true
+    elif command -v yum >/dev/null 2>&1; then
+      $SUDO yum install -y tree || true
+    fi
+    command -v tree >/dev/null 2>&1 && tree -L 3 || ls -la
+  fi
+  exit 1
+fi
+
 $SUDO -E ./video.deps
 $SUDO -E ./audio.deps
 $SUDO -E ./deb.deps
 $SUDO -E ./font.deps
 $SUDO -E ./pptr.deps
 $SUDO -E ./dlchrome.sh
-if which google-chrome-stable; then
-	echo "chrome installed"
+if command -v google-chrome-stable >/dev/null 2>&1 \
+  || command -v google-chrome >/dev/null 2>&1 \
+  || command -v chromium-browser >/dev/null 2>&1 \
+  || command -v chromium >/dev/null 2>&1 \
+  || { [[ -n "${CHROME_PATH:-}" ]] && command -v "$CHROME_PATH" >/dev/null 2>&1; }
+then
+  echo "chrome installed"
 else
-	echo "chrome failed to install. you need to run setup again"
-	exit 1
+  echo "chrome failed to install or not found on PATH (checked google-chrome-stable/google-chrome/chromium[-browser]/CHROME_PATH)"
+  echo "please rerun setup_machine or set CHROME_PATH explicitly"
+  exit 1
 fi
 cd ../..
 $SUDO $APT install -y libvips libjpeg-dev
@@ -131,14 +154,5 @@ if ! $SUDO grep -q "%browsers ALL=(ALL:browsers) NOPASSWD:" /etc/sudoers; then
 fi
 
 $SUDO ufw disable
-if ! command -v pm2 &>/dev/null; then
-  . /etc/os-release
-
-  if [[ $ID == *"bsd" ]]; then
-    $SUDO npm i -g pm2@latest
-  else
-    npm i -g pm2@latest
-  fi
-fi
 
 $SUDO setcap 'cap_net_bind_service=+ep' "$(command -v node)"
