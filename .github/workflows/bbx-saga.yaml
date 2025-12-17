@@ -5,17 +5,6 @@ on:
     workflows: ["Private Build (Draft Binaries)"]
     types: [completed]
   workflow_dispatch:
-    inputs:
-      use_private_release:
-        description: "Use private staged release assets (BrowserBox-source)"
-        required: false
-        default: false
-        type: boolean
-      private_release_tag:
-        description: "Tag to pull from when use_private_release=true (e.g., v15.3.11-rc)"
-        required: false
-        default: ""
-        type: string
 
 concurrency:
   group: ${{ github.repository }}-bbx-saga
@@ -26,9 +15,9 @@ permissions:
   actions: read       # Required for 'gh run view' to inspect the upstream workflow inputs
 
 env:
-  PRIVATE_TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.inputs.tag || github.event.inputs.private_release_tag || '' }}
-  USE_PRIVATE_RELEASE: ${{ github.event_name == 'workflow_run' && 'true' || github.event.inputs.use_private_release || 'false' }}
-  TARGET_RELEASE_REPO: ${{ (github.event_name == 'workflow_run' || github.event.inputs.use_private_release == 'true') && 'BrowserBox/BrowserBox-source' || 'BrowserBox/BrowserBox' }}
+  PRIVATE_TAG: false
+  USE_PRIVATE_RELEASE: false
+  TARGET_RELEASE_REPO: "BrowserBox/BrowserBox"
 
 jobs:
   build:
@@ -111,7 +100,7 @@ jobs:
           {
             echo "PRIVATE_TAG=$tag"
             echo "USE_PRIVATE_RELEASE=true"
-            echo "TARGET_RELEASE_REPO=BrowserBox/BrowserBox-source"
+            echo "TARGET_RELEASE_REPO=BrowserBox/BrowserBox"
           } >> "$GITHUB_ENV"
 
       - name: Checkout repository
