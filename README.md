@@ -16,11 +16,11 @@
   <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Enabled-pink" alt="DLP Enabled"></a>
   <br>
   <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml/badge.svg" alt="bbx Saga Test Suite"></a>
-  <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/basic-install.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/basic-install.yaml/badge.svg" alt="BrowserBox Basic Install Test"></a>
 </p>
 
 <p align="center">
-  <strong>COMING SOON:</strong>New Pricing!
+
+  <strong>DECEMBER 2025 NEWS:</strong>New Pricing! And New Release Landing Soon.
   <br>
   <strong>NOVEMBER 2025 NEWS: New <a href=CONTRIBUTING.TXT> CONTRIBUTION GUIDELINES</a></strong>. What's changed: as all lawful usage of BrowserBox requires a valid license, you must obtain a development license in order to contribute.</strong>
   <br>
