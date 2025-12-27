@@ -7,6 +7,8 @@ job_name="${GITHUB_JOB:-install}"
 run_id="${GITHUB_RUN_ID:-local}"
 run_attempt="${GITHUB_RUN_ATTEMPT:-1}"
 debug_dir="${base_debug_dir}/${runner_os}/${job_name}-${run_id}-${run_attempt}"
+mkdir -p "$base_debug_dir"
+chmod 1777 "$base_debug_dir" 2>/dev/null || true
 rm -rf "$debug_dir"
 mkdir -p "$debug_dir"
 debug_log="${debug_dir}/install.log"
