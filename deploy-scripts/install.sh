@@ -178,6 +178,7 @@ handoff_env_args() {
     BBX_FULL_INSTALL
     BBX_HOSTNAME
     EMAIL
+    BBX_TEST_AGREEMENT
     BBX_INSTALL_USER
   )
   HANDOFF_ENV=()
