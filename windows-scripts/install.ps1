@@ -162,6 +162,63 @@ function Convert-HexToBytes {
     return $bytes
 }
 
+function Read-AsnLength {
+    param([System.IO.BinaryReader]$Reader)
+    $length = $Reader.ReadByte()
+    if ($length -lt 0x80) { return $length }
+    $byteCount = $length -band 0x7F
+    $length = 0
+    for ($i = 0; $i -lt $byteCount; $i++) {
+        $length = ($length -shl 8) -bor $Reader.ReadByte()
+    }
+    return $length
+}
+
+function Read-AsnSequence {
+    param([System.IO.BinaryReader]$Reader)
+    $tag = $Reader.ReadByte()
+    if ($tag -ne 0x30) { throw "Invalid ASN.1 sequence tag: $tag" }
+    return Read-AsnLength -Reader $Reader
+}
+
+function Read-AsnIntegerBytes {
+    param([System.IO.BinaryReader]$Reader)
+    $tag = $Reader.ReadByte()
+    if ($tag -ne 0x02) { throw "Invalid ASN.1 integer tag: $tag" }
+    $length = Read-AsnLength -Reader $Reader
+    $bytes = $Reader.ReadBytes($length)
+    if ($bytes.Length -gt 0 -and $bytes[0] -eq 0x00) {
+        return $bytes[1..($bytes.Length - 1)]
+    }
+    return $bytes
+}
+
+function Get-RsaPublicKeyFromPem {
+    param([string]$Pem)
+    $base64 = $Pem -replace '-----BEGIN PUBLIC KEY-----','' -replace '-----END PUBLIC KEY-----','' -replace '\s',''
+    $der = [Convert]::FromBase64String($base64)
+    $ms = New-Object System.IO.MemoryStream(,$der)
+    $reader = New-Object System.IO.BinaryReader($ms)
+    $null = Read-AsnSequence -Reader $reader
+    $algLen = Read-AsnSequence -Reader $reader
+    $null = $reader.ReadBytes($algLen)
+    $bitTag = $reader.ReadByte()
+    if ($bitTag -ne 0x03) { throw "Invalid ASN.1 bit string tag: $bitTag" }
+    $bitLen = Read-AsnLength -Reader $reader
+    $null = $reader.ReadByte()
+    $bitBytes = $reader.ReadBytes($bitLen - 1)
+    $inner = New-Object System.IO.BinaryReader((New-Object System.IO.MemoryStream(,$bitBytes)))
+    $null = Read-AsnSequence -Reader $inner
+    $modulus = Read-AsnIntegerBytes -Reader $inner
+    $exponent = Read-AsnIntegerBytes -Reader $inner
+    $params = New-Object System.Security.Cryptography.RSAParameters
+    $params.Modulus = $modulus
+    $params.Exponent = $exponent
+    $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider
+    $rsa.ImportParameters($params)
+    return $rsa
+}
+
 function Verify-ManifestSignature {
     param(
         [string]$ManifestPath,
@@ -182,7 +239,11 @@ function Verify-ManifestSignature {
     $sigBytes = Convert-HexToBytes -Hex $sigHex
 
     $rsa = [System.Security.Cryptography.RSA]::Create()
-    $rsa.ImportFromPem($IntegrityPublicKeyPem)
+    if ($rsa -and ($rsa | Get-Member -Name ImportFromPem -MemberType Method)) {
+        $rsa.ImportFromPem($IntegrityPublicKeyPem)
+    } else {
+        $rsa = Get-RsaPublicKeyFromPem -Pem $IntegrityPublicKeyPem
+    }
     $ok = $rsa.VerifyData($payload, $sigBytes, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
     if (-not $ok) { throw "Release manifest signature verification failed." }
 }
