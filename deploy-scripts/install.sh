@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-base_debug_dir="${TMPDIR:-/tmp}/bbx-install-debug"
+debug_user="${USER:-$(id -un)}"
+base_debug_dir="${TMPDIR:-/tmp}/bbx-install-debug-${debug_user}"
 runner_os="${RUNNER_OS:-$(uname -s)}"
 job_name="${GITHUB_JOB:-install}"
 run_id="${GITHUB_RUN_ID:-local}"
