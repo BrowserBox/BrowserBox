@@ -23,7 +23,8 @@ if (-not (Get-Command Download-Binary -ErrorAction SilentlyContinue)) {
     $token = if ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { "" }
     $ref = if ($env:BBX_RELEASE_TAG) { $env:BBX_RELEASE_TAG } else { "main" }
 
-    $tempDir = Join-Path ($env:TEMP ? $env:TEMP : "C:\Windows\Temp") "bbx-installer"
+    $tempBase = if ($env:TEMP) { $env:TEMP } else { "C:\Windows\Temp" }
+    $tempDir = Join-Path $tempBase "bbx-installer"
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
     $tempBbx = Join-Path $tempDir "bbx.ps1"
 

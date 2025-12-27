@@ -30,8 +30,9 @@ if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
   GH_TOKEN="$GITHUB_TOKEN"
 fi
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-script_path="${script_dir}/$(basename "${BASH_SOURCE[0]}")"
+script_source="${BASH_SOURCE[0]:-$0}"
+script_dir="$(cd "$(dirname "$script_source")" && pwd)"
+script_path="${script_dir}/$(basename "$script_source")"
 
 maybe_load_gh_token_from_gh() {
   if [[ -n "${GH_TOKEN:-}" ]]; then
@@ -383,6 +384,16 @@ download_release_asset() {
   local asset_name="$2"
   local out_path="$3"
 
+  if [[ -z "$out_path" ]]; then
+    echo "Download path is empty; cannot write release asset." >&2
+    exit 1
+  fi
+  if [[ -d "$out_path" ]]; then
+    echo "Download path '$out_path' is a directory; cannot write release asset." >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$out_path")"
+
   if [[ -n "${GH_TOKEN:-}" || "$BBX_RELEASE_REPO" != "BrowserBox/BrowserBox" ]]; then
     if [[ -z "${GH_TOKEN:-}" ]]; then
       echo "GH_TOKEN/GITHUB_TOKEN is required to download from ${BBX_RELEASE_REPO}." >&2
@@ -548,7 +559,7 @@ verify_manifest_signature "$manifest_path" "$manifest_sig_path" "$work_dir"
 asset_name="$(manifest_get_value "$manifest_path" ".artifacts[\"$artifact_key\"].fileName")"
 asset_sha="$(manifest_get_value "$manifest_path" ".artifacts[\"$artifact_key\"].sha256")"
 
-if [[ -z "$asset_name" ]]; then
+if [[ -z "$asset_name" || "$asset_name" == "null" ]]; then
   echo "Release manifest missing artifact for ${artifact_key}." >&2
   exit 1
 fi
