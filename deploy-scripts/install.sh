@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+debug_dir="${TMPDIR:-/tmp}/bbx-install-debug"
+rm -rf "$debug_dir"
+mkdir -p "$debug_dir"
+debug_log="${debug_dir}/install.log"
+debug_xtrace="${debug_dir}/xtrace.log"
+exec > >(tee -a "$debug_log") 2>&1
+exec 5>>"$debug_xtrace"
+export BASH_XTRACEFD=5
+set -x
+echo "Installer debug logging enabled. Logs: ${debug_log}, xtrace: ${debug_xtrace}" >&2
+
 usage() {
   cat <<'USAGE'
 BrowserBox installer (non-Windows)
