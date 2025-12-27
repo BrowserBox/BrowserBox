@@ -143,13 +143,12 @@ handoff_env_args() {
     EMAIL
     BBX_INSTALL_USER
   )
-  local out=()
+  HANDOFF_ENV=()
   for key in "${keys[@]}"; do
     if [[ -n "${!key:-}" ]]; then
-      out+=("${key}=${!key}")
+      HANDOFF_ENV+=("${key}=${!key}")
     fi
   done
-  printf '%q ' "${out[@]}"
 }
 
 if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
@@ -174,7 +173,8 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
   export BBX_INSTALL_USER="$install_user"
 
   if command -v sudo >/dev/null 2>&1; then
-    exec sudo -u "$install_user" -H env BBX_ROOT_HANDOFF_DONE=1 $(handoff_env_args) bash "$0" "$@"
+    handoff_env_args
+    exec sudo -u "$install_user" -H env BBX_ROOT_HANDOFF_DONE=1 "${HANDOFF_ENV[@]}" bash "$0" "$@"
   fi
 
   if command -v su >/dev/null 2>&1; then
@@ -182,7 +182,8 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
     for arg in "$@"; do
       arg_line+=" $(printf '%q' "$arg")"
     done
-    env_line="$(handoff_env_args)"
+    handoff_env_args
+    env_line="$(printf '%q ' "${HANDOFF_ENV[@]}")"
     exec su - "$install_user" -c "env BBX_ROOT_HANDOFF_DONE=1 ${env_line} bash $(printf '%q' "$0")${arg_line}"
   fi
 
@@ -205,6 +206,8 @@ require_cmd() {
 
 require_cmd curl
 require_cmd openssl
+require_cmd jq
+require_cmd xxd
 
 hex_to_bin() {
   local hex_file="$1"
@@ -276,31 +279,7 @@ get_latest_release_tag() {
   local response
   response=$(curl -sS --connect-timeout 10 "${auth[@]}" "$api_url" || true)
   local tag
-  if command -v jq >/dev/null 2>&1; then
-    tag=$(printf '%s' "$response" | jq -r '.tag_name // empty' 2>/dev/null)
-  elif command -v python3 >/dev/null 2>&1; then
-    tag=$(printf '%s' "$response" | python3 - <<'PY'
-import json,sys
-try:
-  data=json.load(sys.stdin)
-  print(data.get('tag_name',''))
-except Exception:
-  print('')
-PY
-    )
-  elif command -v python >/dev/null 2>&1; then
-    tag=$(printf '%s' "$response" | python - <<'PY'
-import json,sys
-try:
-  data=json.load(sys.stdin)
-  print(data.get('tag_name',''))
-except Exception:
-  print('')
-PY
-    )
-  else
-    tag=$(printf '%s' "$response" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1)
-  fi
+  tag=$(printf '%s' "$response" | jq -r '.tag_name // empty' 2>/dev/null)
 
   if [[ -z "$tag" ]]; then
     echo "Failed to fetch latest release tag from ${BBX_RELEASE_REPO}." >&2
