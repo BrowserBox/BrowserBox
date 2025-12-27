@@ -193,7 +193,7 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
 
   if command -v sudo >/dev/null 2>&1; then
     handoff_env_args
-    exec sudo -u "$install_user" -H env BBX_ROOT_HANDOFF_DONE=1 "${HANDOFF_ENV[@]}" bash "$0" "$@"
+    exec sudo -u "$install_user" -H env BBX_ROOT_HANDOFF_DONE=1 "${HANDOFF_ENV[@]}" bash "$script_source" "$@"
   fi
 
   if command -v su >/dev/null 2>&1; then
@@ -203,7 +203,7 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
     done
     handoff_env_args
     env_line="$(printf '%q ' "${HANDOFF_ENV[@]}")"
-    exec su - "$install_user" -c "env BBX_ROOT_HANDOFF_DONE=1 ${env_line} bash $(printf '%q' "$0")${arg_line}"
+    exec su - "$install_user" -c "env BBX_ROOT_HANDOFF_DONE=1 ${env_line} bash $(printf '%q' "$script_source")${arg_line}"
   fi
 
   echo "Unable to switch to user '$install_user' (sudo/su not available)." >&2
