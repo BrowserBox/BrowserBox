@@ -3,10 +3,54 @@ set -euo pipefail
 
 debug_user="${USER:-$(id -un)}"
 base_debug_dir="${TMPDIR:-/tmp}/bbx-install-debug-${debug_user}"
-runner_os="${RUNNER_OS:-$(uname -s)}"
 job_name="${GITHUB_JOB:-install}"
 run_id="${GITHUB_RUN_ID:-local}"
 run_attempt="${GITHUB_RUN_ATTEMPT:-1}"
+
+sanitize_debug_label() {
+  local label="${1:-unknown}"
+  label="${label//\//-}"
+  label="${label//:/-}"
+  label="${label// /-}"
+  label="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]')"
+  label="$(printf '%s' "$label" | tr -cd 'a-z0-9._-')"
+  if [[ -z "$label" ]]; then
+    label="unknown"
+  fi
+  printf '%s' "$label"
+}
+
+detect_os_label() {
+  local os_label="${RUNNER_OS:-$(uname -s)}"
+  os_label="$(printf '%s' "$os_label" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$os_label" == "darwin" || "$os_label" == "macos" ]]; then
+    printf '%s' "macos"
+    return
+  fi
+  if [[ "$os_label" == "linux" ]]; then
+    if [[ -r /etc/os-release ]]; then
+      local os_id os_ver
+      os_id="$(. /etc/os-release; echo "${ID:-linux}")"
+      os_ver="$(. /etc/os-release; echo "${VERSION_ID:-}")"
+      os_id="$(sanitize_debug_label "$os_id")"
+      os_ver="$(printf '%s' "$os_ver" | tr -cd '0-9.')"
+      if [[ -n "$os_ver" ]]; then
+        printf '%s' "${os_id}${os_ver}"
+      else
+        printf '%s' "${os_id}"
+      fi
+      return
+    fi
+  fi
+  printf '%s' "$(sanitize_debug_label "$os_label")"
+}
+
+if [[ -n "${BBX_DEBUG_OS_LABEL:-}" ]]; then
+  runner_os="$(sanitize_debug_label "$BBX_DEBUG_OS_LABEL")"
+else
+  runner_os="$(detect_os_label)"
+fi
+
 os_debug_dir="${base_debug_dir}/${runner_os}"
 debug_dir="${os_debug_dir}/${job_name}-${run_id}-${run_attempt}"
 mkdir -p "$os_debug_dir"
