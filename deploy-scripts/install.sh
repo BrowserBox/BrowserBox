@@ -30,6 +30,39 @@ if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
   GH_TOKEN="$GITHUB_TOKEN"
 fi
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+script_path="${script_dir}/$(basename "${BASH_SOURCE[0]}")"
+
+maybe_load_gh_token_from_gh() {
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    return 0
+  fi
+  if ! command -v gh >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local repo_root
+  repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  if [[ -z "$repo_root" ]]; then
+    return 0
+  fi
+
+  if [[ "$script_path" != "$repo_root/deploy-scripts/install.sh" ]]; then
+    return 0
+  fi
+
+  local token
+  token="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "$token" ]]; then
+    GH_TOKEN="$token"
+    if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+      GITHUB_TOKEN="$token"
+    fi
+  fi
+}
+
+maybe_load_gh_token_from_gh
+
 BBX_RELEASE_REPO="${BBX_RELEASE_REPO:-BrowserBox/BrowserBox}"
 
 INTEGRITY_PUBLIC_KEY_PEM='-----BEGIN PUBLIC KEY-----
