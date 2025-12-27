@@ -331,45 +331,16 @@ try {
 # Ensure cp_commands_only.ps1 copies the binary we just downloaded.
 $env:BBX_BINARY_SOURCE_PATH = $BinaryPath
 
-$depsScript = $null
-$scriptRoot = $PSScriptRoot
-if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
-    $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-}
-if (-not [string]::IsNullOrWhiteSpace($scriptRoot)) {
-    $depsScript = Join-Path $scriptRoot "install_deps.ps1"
-}
-if ($depsScript -and (Test-Path $depsScript)) {
-    & $depsScript
-    exit $LASTEXITCODE
+$installArgs = @("--install")
+if ($env:BBX_FULL_INSTALL -and $env:BBX_FULL_INSTALL -ne "" -and $env:BBX_FULL_INSTALL -ne "0" -and $env:BBX_FULL_INSTALL.ToLowerInvariant() -ne "false") {
+    $installArgs = @("--full-install")
 }
 
-$depsRef = if ($env:BBX_SCRIPT_REF) { $env:BBX_SCRIPT_REF } elseif ($env:BBX_RELEASE_TAG) { $env:BBX_RELEASE_TAG } else { "main" }
-$tempDeps = Join-Path $tempDir "install_deps.ps1"
-try {
-    if ($Token -or $ReleaseRepo -ne $PublicRepo) {
-        if (-not $Token) { throw "GH_TOKEN/GITHUB_TOKEN is required to download install_deps.ps1 from $ReleaseRepo." }
-        $headers = @{ Authorization = "Bearer $Token" }
-        $apiUrl = "https://api.github.com/repos/$ReleaseRepo/contents/windows-scripts/install_deps.ps1?ref=$depsRef"
-        $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
-        if (-not $response.content) { throw "Failed to fetch install_deps.ps1 content from $apiUrl" }
-        $bytes = [System.Convert]::FromBase64String(($response.content -replace '\s',''))
-        [System.IO.File]::WriteAllBytes($tempDeps, $bytes)
-    } else {
-        $rawUrl = if ($depsRef -eq "main") {
-            "https://raw.githubusercontent.com/$ReleaseRepo/refs/heads/main/windows-scripts/install_deps.ps1"
-        } else {
-            "https://raw.githubusercontent.com/$ReleaseRepo/refs/tags/$depsRef/windows-scripts/install_deps.ps1"
-        }
-        Invoke-WebRequest -Uri $rawUrl -OutFile $tempDeps -ErrorAction Stop
-    }
-    if (Test-Path $tempDeps) {
-        & $tempDeps
-        exit $LASTEXITCODE
-    }
-} catch {
-    Write-Warning "install_deps.ps1 not found; continuing without deps: $_"
+Write-Host "Running BrowserBox installer: $BinaryPath $($installArgs -join ' ')" -ForegroundColor Yellow
+& $BinaryPath @installArgs
+$installExit = $LASTEXITCODE
+if ($installExit -ne 0) {
+    Write-Error "BrowserBox installer exited with code $installExit"
+    exit $installExit
 }
-
-Write-Warning "install_deps.ps1 not found; BrowserBox binary downloaded to $BinaryPath."
 exit 0

@@ -92,6 +92,15 @@ Write-Host "Installing BrowserBox system dependencies..." -ForegroundColor Green
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
+function Invoke-WingetInstall {
+    param([string[]]$Args)
+    & winget install @Args
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        Write-Warning "winget install failed with exit code $exitCode; continuing."
+        $global:LASTEXITCODE = 0
+    }
+}
 if (-not $wingetPath -or $ForceAll) {
     Write-Host "Installing winget..." -ForegroundColor Cyan
     try {
@@ -122,7 +131,7 @@ if (-not $wingetPath -or $ForceAll) {
 $unzipPath = "C:\Program Files\Git\usr\bin\unzip.exe"
 if (-not (Test-Path $unzipPath) -or $ForceAll) {
     Write-Host "Installing Git for Windows..." -ForegroundColor Cyan
-    winget install --id Git.Git --accept-source-agreements --accept-package-agreements --force --silent
+    Invoke-WingetInstall -Args @("--id", "Git.Git", "--accept-source-agreements", "--accept-package-agreements", "--force", "--silent")
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     if (Test-Path $unzipPath) {
         Write-Host "Git for Windows installed successfully." -ForegroundColor Green
@@ -139,7 +148,7 @@ if (-not (Test-Path $unzipPath) -or $ForceAll) {
 # use npm packages or run additional Node.js scripts.
 if ($InstallNode) {
     Write-Host "Installing Node.js LTS (BBX_INSTALL_NODEJS=true)..." -ForegroundColor Cyan
-    winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent
+    Invoke-WingetInstall -Args @("--id", "OpenJS.NodeJS.LTS", "--accept-source-agreements", "--accept-package-agreements", "--silent")
     $env:Path = "$env:Path;$env:ProgramFiles\nodejs"
 
     # Verify Node.js and npm
@@ -163,10 +172,10 @@ $chromePathReg = Get-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\Curren
 if (-not $mkcertPath -or $ForceAll) {
     Write-Host "Installing mkcert..." -ForegroundColor Cyan
     if ($IsAdmin) {
-        winget install --id FiloSottile.mkcert --accept-source-agreements --accept-package-agreements --Location "$env:ProgramFiles\\mkcert" --silent
+        Invoke-WingetInstall -Args @("--id", "FiloSottile.mkcert", "--accept-source-agreements", "--accept-package-agreements", "--Location", "$env:ProgramFiles\\mkcert", "--silent")
         $env:Path = "$env:Path;$env:ProgramFiles\\mkcert"
     } else {
-        winget install --id FiloSottile.mkcert --accept-source-agreements --accept-package-agreements --scope user --silent
+        Invoke-WingetInstall -Args @("--id", "FiloSottile.mkcert", "--accept-source-agreements", "--accept-package-agreements", "--scope", "user", "--silent")
         $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     }
 } else {
@@ -177,10 +186,10 @@ if (-not $mkcertPath -or $ForceAll) {
 if (-not $certbotPath -or $ForceAll) {
     Write-Host "Installing Certbot..." -ForegroundColor Cyan
     if ($IsAdmin) {
-        winget install --id EFF.Certbot --accept-source-agreements --accept-package-agreements --silent
+        Invoke-WingetInstall -Args @("--id", "EFF.Certbot", "--accept-source-agreements", "--accept-package-agreements", "--silent")
         $env:Path = "$env:Path;$env:ProgramFiles\\Certbot\\bin"
     } else {
-        winget install --id EFF.Certbot --accept-source-agreements --accept-package-agreements --scope user --silent
+        Invoke-WingetInstall -Args @("--id", "EFF.Certbot", "--accept-source-agreements", "--accept-package-agreements", "--scope", "user", "--silent")
         $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     }
 } else {
@@ -196,11 +205,7 @@ if (-not $chromePathReg -or $ForceAll -or $ForceChrome) {
     } else {
         $chromeArgs += @("--scope", "user")
     }
-    & winget install @chromeArgs
-    $chromeExit = $LASTEXITCODE
-    if ($chromeExit -ne 0) {
-        Write-Warning "Chrome install returned exit code $chromeExit; continuing."
-    }
+    Invoke-WingetInstall -Args $chromeArgs
 } else {
     Write-Host "Google Chrome already installed -- skipping." -ForegroundColor Cyan
 }
