@@ -25,6 +25,11 @@ if ($null -ne $env:BBX_NO_UPDATE -and $env:BBX_NO_UPDATE -ne "") {
         $NoUpdate = ($env:BBX_NO_UPDATE.ToLowerInvariant() -in @("1", "true", "yes", "y", "on"))
     }
 }
+
+if ($null -eq $env:BBX_DONT_KILL_CHROME_ON_STOP) {
+    $env:BBX_DONT_KILL_CHROME_ON_STOP = "true"
+}
+
 $BinaryDir = "$env:LOCALAPPDATA\browserbox\bin"
 
 # Local Name (on disk)
@@ -34,6 +39,7 @@ $RemoteAssetName = "browserbox-win-x64.exe"
 
 $BinaryPath = Join-Path $BinaryDir $BinaryName
 $script:ResolvedBinaryPath = $null
+$script:RestartArgs = @()
 
 $ScriptMap = @{
     "install"   = "install.ps1"
@@ -243,6 +249,14 @@ function Get-BinaryVersion {
     return "not_installed"
 }
 
+function Test-InteractiveConsole {
+    if (-not [Environment]::UserInteractive) { return $false }
+    try {
+        if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return $false }
+    } catch { }
+    return $true
+}
+
 # Reads KEY=VALUE lines from test.env
 function Read-TestEnv {
     param([string]$Path)
@@ -291,7 +305,7 @@ function Get-ArgSwitch {
 }
 
 function Ensure-ConfigDir {
-    $cfgDir = Join-Path $env:USERPROFILE ".config\dosyago\bbpro"
+    $cfgDir = Join-Path $env:USERPROFILE ".config\dosaygo\bbpro"
     New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $cfgDir "tickets") -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $cfgDir "logs") -Force | Out-Null
@@ -400,16 +414,16 @@ function Stop-BrowserBoxMain {
         } catch { }
     }
 
-    $pid = $null
+    $ProcessId = $null
     if (Test-Path $pidFile) {
         $raw = (Get-Content $pidFile -ErrorAction SilentlyContinue | Out-String).Trim()
         $tmp = 0
-        if ([int]::TryParse($raw, [ref]$tmp)) { $pid = $tmp }
+        if ([int]::TryParse($raw, [ref]$tmp)) { $ProcessId = $tmp }
     }
 
-    if ($pid -and (Get-Process -Id $pid -ErrorAction SilentlyContinue)) {
-        Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
-        Write-Host "Stopped BrowserBox main (PID: $pid)." -ForegroundColor Green
+    if ($ProcessId -and (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) {
+        Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
+        Write-Host "Stopped BrowserBox main (PID: $ProcessId)." -ForegroundColor Green
     } else {
         # Fallback: stop any browserbox.exe processes owned by this user
         Get-Process -Name "browserbox" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -422,26 +436,111 @@ function Stop-BrowserBoxMain {
 # Function to check for updates
 function Check-Update {
     if ($NoUpdate) { return }
-    if (Test-BinaryExists) {
-        $currentVersion = Get-BinaryVersion
-        
-        if ($currentVersion -eq "unknown" -or $currentVersion -eq "not_installed") {
+    if (-not (Test-BinaryExists)) { return }
+
+    $currentVersion = Get-BinaryVersion
+    if ($currentVersion -eq "unknown" -or $currentVersion -eq "not_installed") {
+        return
+    }
+
+    try {
+        $latestTag = Get-LatestRelease -Repo $ReleaseRepo
+        $latestNorm = $latestTag -replace '^[vV]'
+        $currentNorm = $currentVersion -replace '^[vV]'
+        if (-not $latestNorm -or -not $currentNorm -or $latestNorm -eq $currentNorm) {
             return
         }
-        
-        try {
-            $latestTag = Get-LatestRelease -Repo $ReleaseRepo
-            $latestNorm = $latestTag -replace '^[vV]'
-            $currentNorm = $currentVersion -replace '^[vV]'
-            if ($latestNorm -and $currentNorm -and $latestNorm -ne $currentNorm) {
-                Write-Host "Note: A new version of BrowserBox is available: $latestTag" -ForegroundColor Yellow
-                Write-Host "      Run 'bbx install' to update."
+
+        $yesUpdate = $false
+        if ($null -ne $env:BBX_YES_UPDATE -and $env:BBX_YES_UPDATE -ne "") {
+            try {
+                $yesUpdate = [System.Convert]::ToBoolean($env:BBX_YES_UPDATE)
+            } catch {
+                $yesUpdate = ($env:BBX_YES_UPDATE.ToLowerInvariant() -in @("1", "true", "yes", "y", "on"))
             }
         }
-        catch {
-            # Silently ignore update check failures
+
+        if (-not (Test-InteractiveConsole) -and -not $yesUpdate) {
+            return
+        }
+
+        $shouldInstall = $yesUpdate
+        if (-not $shouldInstall) {
+            $response = Read-Host "A new version of BrowserBox is available ($latestTag). Install now? [y/N]"
+            if ($response -match '^(y|yes)$') {
+                $shouldInstall = $true
+            }
+        }
+
+        if ($shouldInstall) {
+            $updatedTag = Invoke-UpdateInstall
+            if ($updatedTag) {
+                Write-Host "BrowserBox updated to $updatedTag. Restarting..." -ForegroundColor Green
+                $env:BBX_UPDATE_ALREADY_APPLIED = "1"
+                & $PSCommandPath @script:RestartArgs
+                exit $LASTEXITCODE
+            }
         }
     }
+    catch {
+        # Silently ignore update check failures
+    }
+}
+
+function Invoke-UpdateInstall {
+    if ($NoUpdate -and -not $env:BBX_RELEASE_TAG) {
+        Write-Error "BBX_NO_UPDATE is set; provide BBX_RELEASE_TAG to update without release lookups."
+        return $null
+    }
+
+    $tag = if ($env:BBX_RELEASE_TAG) { $env:BBX_RELEASE_TAG } else { Get-LatestRelease -Repo $ReleaseRepo }
+    if (-not $tag) {
+        Write-Error "Could not determine release tag."
+        return $null
+    }
+
+    Download-Binary -Tag $tag
+
+    $env:BBX_BINARY_SOURCE_PATH = $BinaryPath
+    $copyScript = Join-Path $PSScriptRoot "cp_commands_only.ps1"
+    if (Test-Path $copyScript) {
+        & $copyScript | Out-Null
+    }
+
+    return $tag
+}
+
+function Should-CheckUpdateNow {
+    $cfgDir = Ensure-ConfigDir
+    $checkFile = Join-Path $cfgDir "last_update_check"
+    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    if (Test-Path $checkFile) {
+        try {
+            $last = [int64](Get-Content $checkFile -ErrorAction Stop | Select-Object -First 1)
+            if ($last -gt ($now - 3600)) {
+                return $false
+            }
+        } catch { }
+    }
+    try {
+        Set-Content -Path $checkFile -Value $now -Encoding ascii -ErrorAction SilentlyContinue | Out-Null
+    } catch { }
+    return $true
+}
+
+function Invoke-UpdateCheck {
+    param(
+        [string]$Command,
+        [string[]]$CommandArgs
+    )
+
+    if ($env:BBX_UPDATE_ALREADY_APPLIED) { return }
+    if ($NoUpdate) { return }
+    if ($Command -in @("update", "install", "uninstall")) { return }
+    if (-not (Should-CheckUpdateNow)) { return }
+
+    $script:RestartArgs = @($Command) + $CommandArgs
+    Check-Update
 }
 
 # Function to show help
@@ -453,8 +552,8 @@ function Show-Help {
     Write-Host "  install         Install BrowserBox binary and CLI" -ForegroundColor White
     Write-Host "  update          Update BrowserBox to the latest version" -ForegroundColor White
     Write-Host "  setup           Create/update test.env + login.link" -ForegroundColor White
-    Write-Host "  run             Start BrowserBox main (detached)" -ForegroundColor White
-    Write-Host "  stop            Stop BrowserBox main (best-effort)" -ForegroundColor White
+    Write-Host "  run             Start BrowserBox services (pm2-managed)" -ForegroundColor White
+    Write-Host "  stop            Stop BrowserBox services (best-effort)" -ForegroundColor White
     Write-Host "  certify         Validate license and obtain ticket" -ForegroundColor White
     Write-Host "  uninstall       Remove BrowserBox from this machine" -ForegroundColor White
     Write-Host "  revalidate      Clear ticket and revalidate license" -ForegroundColor White
@@ -554,7 +653,7 @@ function Convert-ArgListToSplat {
 
 # Function to handle revalidate command
 function Invoke-Revalidate {
-    $ticketPath = Join-Path $env:USERPROFILE ".config\dosyago\bbpro\tickets\ticket.json"
+    $ticketPath = Join-Path $env:USERPROFILE ".config\dosaygo\bbpro\tickets\ticket.json"
     
     if (-not (Test-Path (Split-Path $ticketPath))) {
         Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
@@ -662,6 +761,9 @@ elseif ($CommandArgs -and ($CommandArgs -contains "-Help")) {
     Show-CommandHelp -Command $normalizedCommand
     exit 0
 }
+
+Invoke-UpdateCheck -Command $normalizedCommand -CommandArgs $CommandArgs
+
 elseif (Invoke-CommandScript -Command $normalizedCommand -Arguments $CommandArgs) {
     exit $LASTEXITCODE
 }

@@ -32,6 +32,21 @@ fi
 
 BBX_RELEASE_REPO="${BBX_RELEASE_REPO:-BrowserBox/BrowserBox}"
 
+INTEGRITY_PUBLIC_KEY_PEM='-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnqKI++Z5x+cHF1je6Ww9
+r3hNRuefjZzlJGPD56IQTbVIDXZT45uGNHelg+BjlZezdGH86y29zKgx2g3pt8cC
+Yp8KMSgg69uo9EVFlDw8HQ1Sf7rciiU89neb48lkm5GfzXtAyIFWQj83AHDblQUq
+UJoXuu7YQLskHiRa0YPOkPf5KUHS8Yv1OJwXldsmd/+NGCrZki1o6xEt55B5qo3J
+89jUiVnSafUhZXuQiwYfRT5MVoBBFl6TK/kg3qTF4oVBvz0r4HO/C1uAEytaDEI4
+CFy2XO6i64DgSbkjzXCsomlHU0ywPbLxXPUst5AZwX62f/caGKGZs7IrZDBYNI2k
+bBZ5fCAFhExwI0HUVIFC31YFpFRZB3UnVQdE0q8UuZyCstubPk7gdkEljnCXDnMB
+bvgk5+5y8WgCrbu3mndlbb4K9NqxFq3tJppM8Gq8Rip94DghUBlRMXCBwaZ+EsBZ
+ZwkpTdoWvsJcO+NwHscRvHNRcDRUrDwMrTpSs/cfCRMUo0ze0ZxpenCQuQpae7ei
+Rs4+aW0rrwZBFo+o5GNWDOADAoD4JEPBNuSJyOw4mjdTgf8O9pIJfDF7HtX7pHr7
+e8u3jamSWvZSZA+50fI6iL05JUDA4cQ529voRTxiLALgLkSnlGY2EQrDr9A8lH4/
+hYdYq1pXWapoaFZTuPK4ln8CAwEAAQ==
+-----END PUBLIC KEY-----'
+
 is_truthy() {
   case "${1:-}" in
     1|true|TRUE|yes|YES|y|Y|on|ON) return 0 ;;
@@ -155,6 +170,58 @@ require_cmd() {
 }
 
 require_cmd curl
+require_cmd openssl
+
+hex_to_bin() {
+  local hex_file="$1"
+  local bin_file="$2"
+  if command -v xxd >/dev/null 2>&1; then
+    xxd -r -p "$hex_file" > "$bin_file"
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$hex_file" "$bin_file" <<'PY'
+import binascii,sys
+with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    data = f.read().strip()
+with open(sys.argv[2], 'wb') as out:
+    out.write(binascii.unhexlify(data))
+PY
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    python - "$hex_file" "$bin_file" <<'PY'
+import binascii,sys
+with open(sys.argv[1], 'r') as f:
+    data = f.read().strip()
+with open(sys.argv[2], 'wb') as out:
+    out.write(binascii.unhexlify(data))
+PY
+    return 0
+  fi
+  echo "Unable to decode signature hex (need xxd or python)." >&2
+  return 1
+}
+
+verify_manifest_signature() {
+  local manifest_path="$1"
+  local sig_path="$2"
+  local work_dir="$3"
+  local key_path="$work_dir/integrity_root.pem"
+  local sig_bin="$work_dir/manifest.sig.bin"
+  local payload="$work_dir/manifest.payload"
+
+  printf '%s\n' "$INTEGRITY_PUBLIC_KEY_PEM" > "$key_path"
+
+  printf 'INTEGRITY/RELEASE_MANIFEST/v1\0' > "$payload"
+  cat "$manifest_path" >> "$payload"
+  hex_to_bin "$sig_path" "$sig_bin"
+
+  if ! openssl dgst -sha256 -verify "$key_path" -signature "$sig_bin" "$payload" >/dev/null 2>&1; then
+    echo "Release manifest signature verification failed." >&2
+    return 1
+  fi
+}
 
 get_latest_release_tag() {
   if [[ -n "${BBX_NO_UPDATE:-}" ]]; then
@@ -443,6 +510,8 @@ echo "Downloading release manifest..." >&2
 download_release_asset "$release_tag" "release.manifest.json" "$manifest_path"
 download_release_asset "$release_tag" "release.manifest.json.sig" "$manifest_sig_path"
 
+verify_manifest_signature "$manifest_path" "$manifest_sig_path" "$work_dir"
+
 asset_name="$(manifest_get_value "$manifest_path" ".artifacts[\"$artifact_key\"].fileName")"
 asset_sha="$(manifest_get_value "$manifest_path" ".artifacts[\"$artifact_key\"].sha256")"
 
@@ -463,6 +532,9 @@ if [[ -n "$asset_sha" ]]; then
     echo "SHA-256 mismatch for ${asset_name}." >&2
     exit 1
   fi
+else
+  echo "Release manifest missing sha256 for ${artifact_key}." >&2
+  exit 1
 fi
 
 # Install manifest to a shared location for integrity checks.

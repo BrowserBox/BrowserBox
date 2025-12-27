@@ -518,7 +518,7 @@ if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
 fi
 
 # env
-export BBX_DONT_KILL_CHROME_ON_STOP="true"
+export BBX_DONT_KILL_CHROME_ON_STOP="${BBX_DONT_KILL_CHROME_ON_STOP-true}"
 export BBX_REQUIRE_RELEASE=1
 
 # Default paths
@@ -527,7 +527,7 @@ BBX_NEW_DIR="${BBX_HOME}/new"
 COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox-source"
 owner_repo="${REPO_URL#https://github.com/}"
-BBX_SHARE="/usr/local/share/dosyago"
+BBX_SHARE="/usr/local/share/dosaygo"
 if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
   COMMAND_DIR="/usr/local/bin"
 elif $SUDO test -w /usr/bin; then
@@ -540,7 +540,7 @@ fi
 BBX_BIN="${COMMAND_DIR}/bbx"
 
 # Config file (secondary to test.env and login.link)
-BB_CONFIG_DIR="${HOME}/.config/dosyago/bbpro"
+BB_CONFIG_DIR="${HOME}/.config/dosaygo/bbpro"
 CONFIG_FILE="${BB_CONFIG_DIR}/config"
 CERT_META_FILE="${BB_CONFIG_DIR}/tickets/cert.meta.env"
 [ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
@@ -567,7 +567,7 @@ clean_temp_installers() {
 
 # Ensure installation_id exists with a UUID
 ensure_installation_id() {
-  local INSTALL_ID_DIR="${HOME}/.config/dosyago/bbpro"
+  local INSTALL_ID_DIR="${HOME}/.config/dosaygo/bbpro"
   local INSTALL_ID_FILE="${INSTALL_ID_DIR}/installation_id"
   
   # Create directory if it doesn't exist with owner-only permissions
@@ -988,11 +988,12 @@ get_canonical_bbx_version() {
 # Set the canonical version for use throughout the script
 VERSION="$(get_canonical_bbx_version)"
 
-if ! command -v bbpro &>/dev/null || ! test -d "${HOME}/.config/dosyago/bbpro"; then
+if ! command -v bbpro &>/dev/null || ! test -d "${HOME}/.config/dosaygo/bbpro"; then
   if [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "update-background" ]] && [[ "$1" != "--version" ]] && [[ "$1" != "-v" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
     banner
-    printf "\n${RED}Run ${NC}${BOLD}bbx install${NC}${RED} first.${NC}\n"
-    printf "\tYou may need to run bbx uninstall to remove any previous or broken installation.\n"
+    printf "\n${RED}BrowserBox is not installed yet.${NC}\n"
+    printf "\tRun: ${BOLD}curl -fsSL https://browserbox.io/install.sh | bash${NC}\n"
+    printf "\tIf reinstalling, run ${BOLD}bbx uninstall${NC} first.\n"
     exit 1
   fi
 fi
@@ -2345,7 +2346,7 @@ echo "SSH tunnel process started with PID: \$tunnel_pid"
 
 sleep 8
 echo -e "\${GREEN}Tunnel established!${NC}"
-loginLink="\$(ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "cat ~/.config/dosyago/bbpro/login.link")"
+loginLink="\$(ssh -T -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "\$remote_user_at_host" "cat ~/.config/dosaygo/bbpro/login.link")"
 printf "\nAccess BrowserBox at: \${GREEN}\${loginLink}\${NC}\n\n"
 echo -e "This script will keep the tunnel alive. Press \${YELLOW}Ctrl+C\${NC} to stop."
 
@@ -2467,7 +2468,15 @@ cf_run() {
   # Start cloudflared in background with logs to BB_CONFIG_DIR
   local cf_log_file="${BB_CONFIG_DIR}/cloudflared.log"
   printf "${YELLOW}Starting Cloudflare tunnel to http://127.0.0.1:${PORT}...${NC}\n"
-  cloudflared tunnel --no-autoupdate --url "http://127.0.0.1:${PORT}" > "$cf_log_file" 2>&1 &
+
+  # Build cloudflared args with optional edge IP version
+  local cf_edge_args=()
+  if [[ -n "${BBX_CF_EDGE_IP_VERSION:-}" ]]; then
+    cf_edge_args+=(--edge-ip-version "${BBX_CF_EDGE_IP_VERSION}")
+    printf "${YELLOW}Using edge IP version: ${BBX_CF_EDGE_IP_VERSION}${NC}\n"
+  fi
+
+  cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "http://127.0.0.1:${PORT}" > "$cf_log_file" 2>&1 &
   local cf_pid=$!
 
   # Cleanup function for cf_run - defined before trap to ensure proper execution order
@@ -2875,34 +2884,61 @@ pre_install() {
             create_master_user "$install_user"
         fi
 
+        install_group="$(id -gn "$install_user")"
+        local user_home
+        user_home="$(getent passwd "$install_user" | cut -d: -f6)"
+
+        # Fix ownership of any root-created files BEFORE switching to user
+        if [[ -d "$BB_CONFIG_DIR" ]]; then
+            chown -R "${install_user}:${install_group}" "$BB_CONFIG_DIR" 2>/dev/null || true
+        fi
+
         cp -f "$0" /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
-        install_group="$(id -gn "$install_user")"
         chown "${install_user}:${install_group}" /tmp/bbx.sh
 
-        # Build a temp env file to persist BBX-related vars across the login shell.
-        local su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT)
+        # Build a comprehensive env file to persist vars across the login shell.
+        # Include all BBX-related vars plus PATH-related vars for nvm/node.
+        local su_env_vars=(
+          BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE
+          INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG
+          TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER
+          BB_QUICK_EXIT NVM_DIR NODE_PATH
+        )
         local env_file
-        env_file="$(mktemp)"
+        env_file="${user_home}/.bbx_env_restore.sh"
+        # Start fresh
+        : > "$env_file"
         local var val
         for var in "${su_env_vars[@]}"; do
           val="${!var-}"
           [[ -n "$val" ]] || continue
-          printf '%s=%q\n' "$var" "$val" >> "$env_file"
+          printf 'export %s=%q\n' "$var" "$val" >> "$env_file"
         done
+        # Preserve PATH separately (critical for finding nvm, node, etc.)
+        if [[ -n "${PATH:-}" ]]; then
+          printf 'export PATH=%q\n' "$PATH" >> "$env_file"
+        fi
         chown "${install_user}:${install_group}" "$env_file" 2>/dev/null || true
         chmod 640 "$env_file" 2>/dev/null || true
 
         # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
         su - "$install_user" -c "set -a; source $(printf '%q' "$env_file"); /tmp/bbx.sh install"
+        local install_rc=$?
 
         if [[ -z "$BBX_TEST_AGREEMENT" ]] || [ -t 0 ]; then
           # Replace the root shell with the new user's shell
           exec su - "$install_user" -c "set -a; source $(printf '%q' "$env_file"); rm -f $(printf '%q' "$env_file"); bash -l"
         else
-          rm -f "$env_file"
-          return 1
+          # In CI/CD mode, keep env file for test script handoff and return install exit code
+          # The test script will source this file when it hands off to the install user
+          if [[ $install_rc -eq 0 ]]; then
+            return 1  # Signal to caller that we've handled root->user switch
+          else
+            rm -f "$env_file"
+            exit $install_rc
+          fi
         fi
     else
         # If not running as root, continue with the normal install
@@ -3317,6 +3353,28 @@ update() {
       return 1
   fi
 
+  # Download manifest and signature to global system location (multiuser support)
+  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
+  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
+  local global_dir="/usr/local/share/dosaygo/bbpro"
+  local user_config_dir="${HOME}/.config/dosaygo/bbpro"
+  
+  # Try global location first (requires sudo), fallback to user dir
+  if [[ -w "/usr/local/share" ]] || [[ "$EUID" -eq 0 ]]; then
+    mkdir -p "$global_dir" 2>/dev/null || sudo mkdir -p "$global_dir"
+    printf "${YELLOW}Downloading release manifest to global location...${NC}\n"
+    curl -L -sS --connect-timeout 10 -o "${global_dir}/release.manifest.json" "$manifest_url" || true
+    curl -L -sS --connect-timeout 10 -o "${global_dir}/release.manifest.json.sig" "$sig_url" || true
+    # Set permissions for all users to read
+    chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
+  else
+    # Fallback to user config dir if no write access to global
+    mkdir -p "$user_config_dir"
+    printf "${YELLOW}Downloading release manifest to user config...${NC}\n"
+    curl -L -sS --connect-timeout 10 -o "${user_config_dir}/release.manifest.json" "$manifest_url" || true
+    curl -L -sS --connect-timeout 10 -o "${user_config_dir}/release.manifest.json.sig" "$sig_url" || true
+  fi
+
   # Execute
   printf "${YELLOW}Running post-update installation tasks...${NC}\n"
   "$temp_exe" --install
@@ -3490,7 +3548,7 @@ stop_user() {
     local current_time=$(date +%s)
     local should_schedule=true
     local home_dir=$(get_home_dir "$user")
-    local expiry_file="$home_dir/.config/dosyago/bbpro/expiry_time"
+    local expiry_file="$home_dir/.config/dosaygo/bbpro/expiry_time"
 
     # Check for existing expiry time
     if $SUDO test -f "$expiry_file"; then
@@ -3514,7 +3572,7 @@ stop_user() {
         echo "$SUDO -u \"$user\" stop_bbpro" | at now + "${delay_minutes}" minutes 2>/dev/null
         # Update expiry time
         local new_expiry_timestamp=$((current_time + delay_seconds))
-        $SUDO -u "$user" bash -c "mkdir -p \"${home_dir}/.config/dosyago/bbpro\"; echo \"$new_expiry_timestamp\" > \"$expiry_file\""
+        $SUDO -u "$user" bash -c "mkdir -p \"${home_dir}/.config/dosaygo/bbpro\"; echo \"$new_expiry_timestamp\" > \"$expiry_file\""
         printf "${GREEN}Scheduled stop for $user at $new_expiry_timestamp${NC}\n"
     else
         # Immediate stop
@@ -3672,7 +3730,7 @@ run_as() {
     local HOME_DIR=$(get_home_dir "$user")
 
     # Ensure config directory exists with proper ownership
-    $SUDO -u "$user" mkdir -p "$HOME_DIR/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" mkdir -p "$HOME_DIR/.config/dosaygo/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
 
     # Rsync .nvm from calling user to target user
     printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
@@ -3693,7 +3751,7 @@ run_as() {
     TOKEN=$(openssl rand -hex 16)
 
     # Run setup_bbpro with explicit PATH and fresh token, redirecting output as the target user
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port $port --token $TOKEN > ~/.config/dosaygo/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosaygo/bbpro/setup_output.txt"; exit 1; }
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
@@ -3704,11 +3762,11 @@ run_as() {
     sleep 2
 
     # Retrieve token
-    if $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/test.env"; then
-        TOKEN=$($SUDO -u "$user" bash -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
+    if $SUDO test -f "$HOME_DIR/.config/dosaygo/bbpro/test.env"; then
+        TOKEN=$($SUDO -u "$user" bash -c "source ~/.config/dosaygo/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
     fi
-    if [ -z "$TOKEN" ] && $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/login.link"; then
-        TOKEN=$($SUDO cat "$HOME_DIR/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
+    if [ -z "$TOKEN" ] && $SUDO test -f "$HOME_DIR/.config/dosaygo/bbpro/login.link"; then
+        TOKEN=$($SUDO cat "$HOME_DIR/.config/dosaygo/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
     fi
     [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
 
@@ -3895,7 +3953,7 @@ usage() {
     printf "  bbx <command> [options]\n\n"
 
     printf "${BOLD}SETUP & MANAGEMENT${NC}\n"
-    printf "  ${GREEN}install${NC}        Install BrowserBox and this CLI.\n"
+    printf "  ${GREEN}install${NC}        Install BrowserBox using https://browserbox.io/install.sh\n"
     printf "  ${GREEN}uninstall${NC}      Remove all BrowserBox components.\n"
     printf "  ${GREEN}setup${NC}          Configure core options. ${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]${NC}\n"
     printf "  ${CYAN}activate${NC}       Activate a license for more users. ${BOLD}bbx activate [number_of_users]${NC}\n"
@@ -4053,7 +4111,11 @@ activate() {
 # Call check_and_prepare_update with the first argument
 [ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
 case "$1" in
-    install) shift 1; install_bbx "$@";;
+    install)
+      printf "${YELLOW}Installation now uses the standalone installer:${NC}\n"
+      printf "  ${BOLD}curl -fsSL https://browserbox.io/install.sh | bash${NC}\n"
+      exit 0
+      ;;
     uninstall) shift 1; uninstall "$@";;
     setup) shift 1; setup "$@";;
     certify) shift 1; certify "$@";;
