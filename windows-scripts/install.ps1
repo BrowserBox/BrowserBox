@@ -32,21 +32,25 @@ if (-not (Get-Command Download-Binary -ErrorAction SilentlyContinue)) {
         if ($token -or $releaseRepo -ne $publicRepo) {
             if (-not $token) { throw "GH_TOKEN/GITHUB_TOKEN is required for private repo $releaseRepo." }
             $headers = @{ Authorization = "Bearer $token" }
-            $apiUrl = "https://api.github.com/repos/$releaseRepo/contents/windows-scripts/bbx.ps1?ref=$ref"
-            $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
-            if (-not $response.content) { throw "Failed to fetch bbx.ps1 content from $apiUrl" }
-            $bytes = [System.Convert]::FromBase64String(($response.content -replace '\s',''))
-            [System.IO.File]::WriteAllBytes($tempBbx, $bytes)
-        } else {
-            $rawUrl = if ($ref -eq "main") {
-                "https://raw.githubusercontent.com/$releaseRepo/refs/heads/main/windows-scripts/bbx.ps1"
-            } else {
-                "https://raw.githubusercontent.com/$releaseRepo/refs/tags/$ref/windows-scripts/bbx.ps1"
+            foreach ($scriptName in @("bbx.ps1", "install.ps1")) {
+                $apiUrl = "https://api.github.com/repos/$releaseRepo/contents/windows-scripts/$scriptName?ref=$ref"
+                $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
+                if (-not $response.content) { throw "Failed to fetch $scriptName content from $apiUrl" }
+                $bytes = [System.Convert]::FromBase64String(($response.content -replace '\s',''))
+                [System.IO.File]::WriteAllBytes((Join-Path $tempDir $scriptName), $bytes)
             }
-            Invoke-WebRequest -Uri $rawUrl -OutFile $tempBbx -ErrorAction Stop
+        } else {
+            foreach ($scriptName in @("bbx.ps1", "install.ps1")) {
+                $rawUrl = if ($ref -eq "main") {
+                    "https://raw.githubusercontent.com/$releaseRepo/refs/heads/main/windows-scripts/$scriptName"
+                } else {
+                    "https://raw.githubusercontent.com/$releaseRepo/refs/tags/$ref/windows-scripts/$scriptName"
+                }
+                Invoke-WebRequest -Uri $rawUrl -OutFile (Join-Path $tempDir $scriptName) -ErrorAction Stop
+            }
         }
     } catch {
-        throw "Failed to bootstrap bbx.ps1: $_"
+        throw "Failed to bootstrap bbx installer scripts: $_"
     }
 
     & $tempBbx install
