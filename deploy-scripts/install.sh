@@ -44,6 +44,12 @@ if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
 fi
 
 script_source="${BASH_SOURCE[0]:-$0}"
+if [[ ! -f "$script_source" ]]; then
+  install_script_url="${BBX_INSTALL_SCRIPT_URL:-https://browserbox.io/install.sh}"
+  temp_script="$(mktemp "${TMPDIR:-/tmp}/bbx-install-script.XXXX")"
+  curl -fsSL "$install_script_url" -o "$temp_script"
+  script_source="$temp_script"
+fi
 script_dir="$(cd "$(dirname "$script_source")" && pwd)"
 script_path="${script_dir}/$(basename "$script_source")"
 
