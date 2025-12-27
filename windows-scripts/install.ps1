@@ -17,44 +17,119 @@ if ($Help -or $args -contains '-help') {
     return
 }
 
-if (-not (Get-Command Download-Binary -ErrorAction SilentlyContinue)) {
-    $publicRepo = "BrowserBox/BrowserBox"
-    $releaseRepo = if ($env:BBX_RELEASE_REPO) { $env:BBX_RELEASE_REPO } else { $publicRepo }
-    $token = if ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { "" }
-    $ref = if ($env:BBX_RELEASE_TAG) { $env:BBX_RELEASE_TAG } else { "main" }
+$ErrorActionPreference = "Stop"
 
-    $tempBase = if ($env:TEMP) { $env:TEMP } else { "C:\Windows\Temp" }
-    $tempDir = Join-Path $tempBase "bbx-installer"
-    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-    $tempBbx = Join-Path $tempDir "bbx.ps1"
-
+$PublicRepo = "BrowserBox/BrowserBox"
+$ReleaseRepo = if ($env:BBX_RELEASE_REPO) { $env:BBX_RELEASE_REPO } else { $PublicRepo }
+$Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { "" }
+$NoUpdate = $false
+if ($null -ne $env:BBX_NO_UPDATE -and $env:BBX_NO_UPDATE -ne "") {
     try {
-        if ($token -or $releaseRepo -ne $publicRepo) {
-            if (-not $token) { throw "GH_TOKEN/GITHUB_TOKEN is required for private repo $releaseRepo." }
-            $headers = @{ Authorization = "Bearer $token" }
-            foreach ($scriptName in @("bbx.ps1", "install.ps1")) {
-                $apiUrl = "https://api.github.com/repos/$releaseRepo/contents/windows-scripts/$scriptName?ref=$ref"
-                $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
-                if (-not $response.content) { throw "Failed to fetch $scriptName content from $apiUrl" }
-                $bytes = [System.Convert]::FromBase64String(($response.content -replace '\s',''))
-                [System.IO.File]::WriteAllBytes((Join-Path $tempDir $scriptName), $bytes)
-            }
-        } else {
-            foreach ($scriptName in @("bbx.ps1", "install.ps1")) {
-                $rawUrl = if ($ref -eq "main") {
-                    "https://raw.githubusercontent.com/$releaseRepo/refs/heads/main/windows-scripts/$scriptName"
-                } else {
-                    "https://raw.githubusercontent.com/$releaseRepo/refs/tags/$ref/windows-scripts/$scriptName"
-                }
-                Invoke-WebRequest -Uri $rawUrl -OutFile (Join-Path $tempDir $scriptName) -ErrorAction Stop
-            }
-        }
+        $NoUpdate = [System.Convert]::ToBoolean($env:BBX_NO_UPDATE)
     } catch {
-        throw "Failed to bootstrap bbx installer scripts: $_"
+        $NoUpdate = ($env:BBX_NO_UPDATE.ToLowerInvariant() -in @("1", "true", "yes", "y", "on"))
+    }
+}
+
+$BinaryDir = "$env:LOCALAPPDATA\browserbox\bin"
+$BinaryName = "browserbox.exe"
+$RemoteAssetName = "browserbox-win-x64.exe"
+$BinaryPath = Join-Path $BinaryDir $BinaryName
+
+function Ensure-BinaryDir {
+    if (-not (Test-Path $BinaryDir)) {
+        New-Item -ItemType Directory -Path $BinaryDir -Force | Out-Null
+    }
+}
+
+function Get-LatestRelease {
+    param([string]$Repo)
+
+    if ($NoUpdate) {
+        if ($env:BBX_RELEASE_TAG) { return $env:BBX_RELEASE_TAG }
+        return $null
     }
 
-    & $tempBbx install
-    exit $LASTEXITCODE
+    $headers = @{}
+    if ($Token) { $headers["Authorization"] = "Bearer $Token" }
+
+    try {
+        $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
+        $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop
+        return $response.tag_name
+    } catch {
+        try {
+            Write-Host "Latest release lookup failed (check for drafts), checking release list..." -ForegroundColor Gray
+            $apiUrl = "https://api.github.com/repos/$Repo/releases?per_page=1"
+            $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop
+            if ($response -and $response.Count -gt 0) {
+                return $response[0].tag_name
+            }
+        } catch {
+            Write-Error "Failed to fetch latest release from $Repo : $_"
+            exit 1
+        }
+    }
+    return $null
+}
+
+function Download-Binary {
+    param(
+        [string]$Tag
+    )
+
+    Ensure-BinaryDir
+
+    $tempFile = "$BinaryPath.tmp"
+    Write-Host "Downloading BrowserBox $Tag for Windows..." -ForegroundColor Cyan
+
+    $headers = @{}
+    if ($Token) { $headers["Authorization"] = "Bearer $Token" }
+
+    $useAssetApi = $Token -or ($ReleaseRepo -ne $PublicRepo)
+    if ($ReleaseRepo -ne $PublicRepo -and -not $Token) {
+        Write-Error "GH_TOKEN/GITHUB_TOKEN is required to download from private/internal repo $ReleaseRepo."
+        exit 1
+    }
+
+    try {
+        if ($useAssetApi) {
+            if ($Tag) {
+                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$Tag" -Headers $headers -ErrorAction Stop
+            } else {
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases" -Headers $headers -ErrorAction Stop
+                if (-not $releases -or $releases.Count -eq 0) {
+                    Write-Error "No releases found in $ReleaseRepo"
+                    exit 1
+                }
+                $release = $releases[0]
+                $Tag = $release.tag_name
+            }
+
+            $asset = $release.assets | Where-Object { $_.name -eq $RemoteAssetName } | Select-Object -First 1
+            if (-not $asset) {
+                Write-Error "Release $Tag not found in $ReleaseRepo"
+                exit 1
+            }
+            $assetUrl = "https://api.github.com/repos/$ReleaseRepo/releases/assets/$($asset.id)"
+            Invoke-WebRequest -Uri $assetUrl -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $tempFile -ErrorAction Stop
+        } else {
+            $downloadUrl = if ($Tag) {
+                "https://github.com/$ReleaseRepo/releases/download/$Tag/$RemoteAssetName"
+            } else {
+                "https://github.com/$ReleaseRepo/releases/latest/download/$RemoteAssetName"
+            }
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile -ErrorAction Stop
+        }
+
+        if (Test-Path $BinaryPath) {
+            Remove-Item $BinaryPath -Force
+        }
+        Move-Item $tempFile $BinaryPath -Force
+    } catch {
+        Write-Error "Failed to download binary: $_"
+        exit 1
+    }
 }
 
 $IntegrityPublicKeyPem = @'
