@@ -18,7 +18,38 @@ if ($Help -or $args -contains '-help') {
 }
 
 if (-not (Get-Command Download-Binary -ErrorAction SilentlyContinue)) {
-    throw "install.ps1 must be invoked via bbx.ps1 (expects Download-Binary/Get-LatestRelease to be in scope)."
+    $publicRepo = "BrowserBox/BrowserBox"
+    $releaseRepo = if ($env:BBX_RELEASE_REPO) { $env:BBX_RELEASE_REPO } else { $publicRepo }
+    $token = if ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { "" }
+    $ref = if ($env:BBX_RELEASE_TAG) { $env:BBX_RELEASE_TAG } else { "main" }
+
+    $tempDir = Join-Path ($env:TEMP ? $env:TEMP : "C:\Windows\Temp") "bbx-installer"
+    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    $tempBbx = Join-Path $tempDir "bbx.ps1"
+
+    try {
+        if ($token -or $releaseRepo -ne $publicRepo) {
+            if (-not $token) { throw "GH_TOKEN/GITHUB_TOKEN is required for private repo $releaseRepo." }
+            $headers = @{ Authorization = "Bearer $token" }
+            $apiUrl = "https://api.github.com/repos/$releaseRepo/contents/windows-scripts/bbx.ps1?ref=$ref"
+            $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
+            if (-not $response.content) { throw "Failed to fetch bbx.ps1 content from $apiUrl" }
+            $bytes = [System.Convert]::FromBase64String(($response.content -replace '\s',''))
+            [System.IO.File]::WriteAllBytes($tempBbx, $bytes)
+        } else {
+            $rawUrl = if ($ref -eq "main") {
+                "https://raw.githubusercontent.com/$releaseRepo/refs/heads/main/windows-scripts/bbx.ps1"
+            } else {
+                "https://raw.githubusercontent.com/$releaseRepo/refs/tags/$ref/windows-scripts/bbx.ps1"
+            }
+            Invoke-WebRequest -Uri $rawUrl -OutFile $tempBbx -ErrorAction Stop
+        }
+    } catch {
+        throw "Failed to bootstrap bbx.ps1: $_"
+    }
+
+    & $tempBbx install
+    exit $LASTEXITCODE
 }
 
 $IntegrityPublicKeyPem = @'
