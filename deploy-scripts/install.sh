@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cho() {
-  echo "$@"
-}
-
 base_debug_dir="${TMPDIR:-/tmp}/bbx-install-debug"
 runner_os="${RUNNER_OS:-$(uname -s)}"
 job_name="${GITHUB_JOB:-install}"
@@ -14,12 +10,9 @@ debug_dir="${base_debug_dir}/${runner_os}/${job_name}-${run_id}-${run_attempt}"
 rm -rf "$debug_dir"
 mkdir -p "$debug_dir"
 debug_log="${debug_dir}/install.log"
-debug_xtrace="${debug_dir}/xtrace.log"
 exec > >(tee -a "$debug_log") 2>&1
-exec 5>>"$debug_xtrace"
-BASH_XTRACEFD=5
 set -x
-echo "Installer debug logging enabled. Logs: ${debug_log}, xtrace: ${debug_xtrace}" >&2
+echo "Installer debug logging enabled. Log: ${debug_log}" >&2
 
 usage() {
   cat <<'USAGE'
@@ -653,5 +646,3 @@ else
   echo "Running update install..." >&2
   "$temp_binary" --install
 fi
-
-echo "BrowserBox install complete." >&2
