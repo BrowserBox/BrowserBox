@@ -51,6 +51,7 @@ Note: No published release is needed in the private repo; only the draft (`vX.Y.
 ## Workflow triggers & alignment (public repo)
 
 - `bbx-saga.yaml` (Public Release): `release: published` or manual dispatch (`release_tag`, optional `release_repo`). Runs against released binaries. Step 7.
+- Public saga debugging loop: `docs/ci-saga-debugging.md`
 - `codeql-analysis.yml`: PR to main + weekly cron; not in release path.
 - `update-version-json.yaml` (public): `on: create` tag `v*-rc` (likely unused; create filters may not match patterns—monitor if you intend to keep it).
 - Removed: basic-install, debug, vpn, trigger-private-build, main-debug (reduces noise/minutes). The old dispatch that fed `docker-release-native-multi-arch` is gone, so that docker workflow is currently inactive.
