@@ -2471,10 +2471,13 @@ cf_run() {
 
   # Build cloudflared args with optional edge IP version
   local cf_edge_args=()
-  if [[ -n "${BBX_CF_EDGE_IP_VERSION:-}" ]]; then
-    cf_edge_args+=(--edge-ip-version "${BBX_CF_EDGE_IP_VERSION}")
-    printf "${YELLOW}Using edge IP version: ${BBX_CF_EDGE_IP_VERSION}${NC}\n"
+  local cf_edge_ip_version="${BBX_CF_EDGE_IP_VERSION:-4}"
+  if [[ "$cf_edge_ip_version" != "4" && "$cf_edge_ip_version" != "6" ]]; then
+    printf "${YELLOW}Warning: BBX_CF_EDGE_IP_VERSION must be 4 or 6 (got: %s); defaulting to 4${NC}\n" "$cf_edge_ip_version"
+    cf_edge_ip_version="4"
   fi
+  cf_edge_args+=(--edge-ip-version "${cf_edge_ip_version}")
+  printf "${YELLOW}Using edge IP version: ${cf_edge_ip_version}${NC}\n"
 
   cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "http://127.0.0.1:${PORT}" > "$cf_log_file" 2>&1 &
   local cf_pid=$!
