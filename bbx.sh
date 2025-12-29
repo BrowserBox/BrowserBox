@@ -2469,15 +2469,28 @@ cf_run() {
   local cf_log_file="${BB_CONFIG_DIR}/cloudflared.log"
   printf "${YELLOW}Starting Cloudflare tunnel to http://127.0.0.1:${PORT}...${NC}\n"
 
-  # Build cloudflared args with optional edge IP version
+  # Build cloudflared args with optional edge IP version.
+  # Default behavior:
+  # - inside Docker: use IPv4 edges (less flaky than IPv6 in CI)
+  # - outside Docker: do not pin edge IP version (cloudflared default)
+  # Override: set BBX_CF_EDGE_IP_VERSION=4 or 6.
   local cf_edge_args=()
-  local cf_edge_ip_version="${BBX_CF_EDGE_IP_VERSION:-4}"
-  if [[ "$cf_edge_ip_version" != "4" && "$cf_edge_ip_version" != "6" ]]; then
-    printf "${YELLOW}Warning: BBX_CF_EDGE_IP_VERSION must be 4 or 6 (got: %s); defaulting to 4${NC}\n" "$cf_edge_ip_version"
+  local cf_edge_ip_version=""
+  if [[ -n "${BBX_CF_EDGE_IP_VERSION:-}" ]]; then
+    cf_edge_ip_version="${BBX_CF_EDGE_IP_VERSION}"
+  elif [[ -f "/.dockerenv" ]]; then
     cf_edge_ip_version="4"
   fi
-  cf_edge_args+=(--edge-ip-version "${cf_edge_ip_version}")
-  printf "${YELLOW}Using edge IP version: ${cf_edge_ip_version}${NC}\n"
+  if [[ -n "$cf_edge_ip_version" ]]; then
+    if [[ "$cf_edge_ip_version" != "4" && "$cf_edge_ip_version" != "6" ]]; then
+      printf "${YELLOW}Warning: BBX_CF_EDGE_IP_VERSION must be 4 or 6 (got: %s); ignoring${NC}\n" "$cf_edge_ip_version"
+      cf_edge_ip_version=""
+    fi
+  fi
+  if [[ -n "$cf_edge_ip_version" ]]; then
+    cf_edge_args+=(--edge-ip-version "${cf_edge_ip_version}")
+    printf "${YELLOW}Using edge IP version: ${cf_edge_ip_version}${NC}\n"
+  fi
 
   cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "http://127.0.0.1:${PORT}" > "$cf_log_file" 2>&1 &
   local cf_pid=$!

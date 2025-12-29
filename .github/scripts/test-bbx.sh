@@ -1053,8 +1053,7 @@ test_cf_run() {
       export BBX_CF_USE_LOCAL_RUN=1
     fi
   fi
-  # use ipV4 edges universally as they seem less flaky
-  export BBX_CF_EDGE_IP_VERSION="${BBX_CF_EDGE_IP_VERSION:-4}"
+  # Don't force an edge IP version in CI; default selection is handled by bbx/cf-run.
   # Check if we have internet connectivity by testing Cloudflare endpoint
   if ! curl --connect-timeout 5 -s -o /dev/null https://www.cloudflare.com 2>/dev/null; then
     echo "Skipping Cloudflare tunnel test (no internet connectivity)"
@@ -1110,8 +1109,18 @@ test_cf_run() {
     fi
 
     local cf_edge_args=()
+    local cf_edge_ip_version=""
     if [[ -n "${BBX_CF_EDGE_IP_VERSION:-}" ]]; then
-      cf_edge_args+=(--edge-ip-version "${BBX_CF_EDGE_IP_VERSION}")
+      cf_edge_ip_version="${BBX_CF_EDGE_IP_VERSION}"
+    elif [[ -f "/.dockerenv" ]]; then
+      cf_edge_ip_version="4"
+    fi
+    if [[ -n "$cf_edge_ip_version" ]]; then
+      if [[ "$cf_edge_ip_version" == "4" || "$cf_edge_ip_version" == "6" ]]; then
+        cf_edge_args+=(--edge-ip-version "${cf_edge_ip_version}")
+      else
+        echo -e "${YELLOW}⚠ Warning: BBX_CF_EDGE_IP_VERSION must be 4 or 6 (got: ${cf_edge_ip_version}); ignoring${NC}"
+      fi
     fi
     cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "${scheme}://127.0.0.1:${local_port}" --no-tls-verify > "$cf_log_file" 2>&1 &
     cf_pid=$!
