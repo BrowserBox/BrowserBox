@@ -548,6 +548,36 @@ CERT_META_FILE="${BB_CONFIG_DIR}/tickets/cert.meta.env"
 DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
+# Cloudflare tunnel PID file for background mode tracking
+CF_PID_FILE="${BB_CONFIG_DIR}/cloudflared.pid"
+
+# Kill any existing Cloudflare tunnel started by bbx
+kill_cf_tunnel() {
+  local quiet="${1:-}"
+  if [[ -f "$CF_PID_FILE" ]]; then
+    local cf_pid
+    cf_pid="$(cat "$CF_PID_FILE" 2>/dev/null)"
+    if [[ -n "$cf_pid" ]] && kill -0 "$cf_pid" 2>/dev/null; then
+      [[ "$quiet" != "quiet" ]] && printf "${YELLOW}Stopping existing Cloudflare tunnel (PID: $cf_pid)...${NC}\n"
+      kill "$cf_pid" 2>/dev/null || true
+      # Wait up to 5 seconds for graceful shutdown
+      local wait_count=0
+      while kill -0 "$cf_pid" 2>/dev/null && [[ $wait_count -lt 10 ]]; do
+        sleep 0.5
+        wait_count=$((wait_count + 1))
+      done
+      # Force kill if still running
+      if kill -0 "$cf_pid" 2>/dev/null; then
+        kill -9 "$cf_pid" 2>/dev/null || true
+      fi
+      [[ "$quiet" != "quiet" ]] && printf "${GREEN}Cloudflare tunnel stopped.${NC}\n"
+    fi
+    rm -f "$CF_PID_FILE"
+  fi
+  # Also kill any orphan cloudflared quick-tunnel processes started by this user
+  pkill -u "$(id -u)" -f "cloudflared.*tunnel.*--url" 2>/dev/null || true
+}
+
 # Version tracking and update lock files
 # Note: VERSION_FILE and PREPARED_VERSION_FILE are deprecated in binary-based installation
 # Version info is now obtained from `browserbox --version` command via get_canonical_bbx_version()
@@ -2388,26 +2418,34 @@ cf_run() {
 
   printf "${CYAN}Starting BrowserBox with Cloudflare Quick Tunnel...${NC}\n"
 
-  # Parse optional --port|-p argument
+  # Parse arguments
   local port=""
+  local background_mode=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx cf-run [--port|-p <port>]\n"
+          printf "Usage: bbx cf-run [--port|-p <port>] [--background|-d]\n"
           exit 1
         fi
         port="$2"
         shift 2
         ;;
+      --background|-d)
+        background_mode="true"
+        shift
+        ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
-        printf "Usage: bbx cf-run [--port|-p <port>]\n"
+        printf "Usage: bbx cf-run [--port|-p <port>] [--background|-d]\n"
         exit 1
         ;;
     esac
   done
+
+  # Kill any existing CF tunnel started by bbx before starting a new one
+  kill_cf_tunnel
 
   # Default to find_free_port_block or loaded PORT if no port specified
   if [ -z "$port" ]; then
@@ -2420,19 +2458,19 @@ cf_run() {
   # Test the 5-port block and CDP port
   printf "${YELLOW}Testing port block ${port}...${NC}\n"
   for i in {-2..2}; do
-    test_port_access $((port+i)) || { 
+    test_port_access $((port+i)) || {
       printf "${RED}Port $((port+i)) is not accessible. Quit software using these ports, or adjust firewall for ports $((port-2))-$((port+2))/tcp${NC}\n"
       exit 1
     }
   done
-  test_port_access $((port-3000)) || { 
+  test_port_access $((port-3000)) || {
     printf "${RED}CDP port $((port-3000)) blocked${NC}\n"
     exit 1
   }
 
   # Run minimal setup using setup_bbpro with HTTP backend
   printf "${YELLOW}Setting up BrowserBox on port ${port} with HTTP backend...${NC}\n"
-  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || { 
+  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || {
     printf "${RED}Setup failed${NC}\n"
     exit 1
   }
@@ -2465,9 +2503,8 @@ cf_run() {
   # Reload config to capture final token
   load_config
 
-  # Start cloudflared in background with logs to BB_CONFIG_DIR
+  # Cloudflared log and PID files
   local cf_log_file="${BB_CONFIG_DIR}/cloudflared.log"
-  printf "${YELLOW}Starting Cloudflare tunnel to http://127.0.0.1:${PORT}...${NC}\n"
 
   # Build cloudflared args with optional edge IP version.
   # Default behavior:
@@ -2492,55 +2529,150 @@ cf_run() {
     printf "${YELLOW}Using edge IP version: ${cf_edge_ip_version}${NC}\n"
   fi
 
-  cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "http://127.0.0.1:${PORT}" > "$cf_log_file" 2>&1 &
-  local cf_pid=$!
-
-  # Cleanup function for cf_run - defined before trap to ensure proper execution order
-  cleanup_cf_run() {
-    printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
-    kill $cf_pid 2>/dev/null || true
-    run_quietly stop_bbpro || true
-    printf "${GREEN}Cleanup complete.${NC}\n"
+  # Function to start cloudflared and return its PID
+  start_cloudflared() {
+    : > "$cf_log_file"  # Clear log file
+    cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "http://127.0.0.1:${PORT}" >> "$cf_log_file" 2>&1 &
+    echo $!
   }
-  # Set trap for cleanup immediately after function definition
-  trap cleanup_cf_run EXIT INT TERM
 
-  # Extract https://*.trycloudflare.com from log (poll up to ~60 seconds)
-  local attempts=0
-  local max_attempts=120
-  local tunnel_url=""
-  
-  while [ $attempts -lt $max_attempts ]; do
-    if [ -f "$cf_log_file" ]; then
-      # Note: trycloudflare.com is the domain used by Cloudflare Quick Tunnels (no account required)
-      tunnel_url=$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$cf_log_file" | head -1)
-      if [ -n "$tunnel_url" ]; then
-        break
+  # Function to extract tunnel URL from log with retries
+  extract_tunnel_url() {
+    local max_wait="${1:-90}"  # Default 90 seconds
+    local attempts=0
+    local max_attempts=$((max_wait * 2))  # Check every 0.5s
+    local tunnel_url=""
+
+    while [ $attempts -lt $max_attempts ]; do
+      if [ -f "$cf_log_file" ]; then
+        # Check for errors first
+        if grep -qE "(failed to connect|connection refused|failed to request|ERR )" "$cf_log_file" 2>/dev/null; then
+          # Log has errors, but keep trying - cloudflared may retry internally
+          :
+        fi
+        # Look for successful tunnel URL
+        tunnel_url=$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$cf_log_file" 2>/dev/null | head -1)
+        if [ -n "$tunnel_url" ]; then
+          echo "$tunnel_url"
+          return 0
+        fi
       fi
+      sleep 0.5
+      attempts=$((attempts + 1))
+    done
+    return 1
+  }
+
+  # Start cloudflared with auto-restart on failure
+  printf "${YELLOW}Starting Cloudflare tunnel to http://127.0.0.1:${PORT}...${NC}\n"
+
+  local cf_pid=""
+  local tunnel_url=""
+  local max_restarts=3
+  local restart_count=0
+
+  while [ $restart_count -lt $max_restarts ]; do
+    cf_pid=$(start_cloudflared)
+    echo "$cf_pid" > "$CF_PID_FILE"
+
+    # Wait for tunnel URL
+    tunnel_url=$(extract_tunnel_url 90)
+
+    if [ -n "$tunnel_url" ]; then
+      break
     fi
-    sleep 0.5
-    attempts=$((attempts + 1))
+
+    # Check if cloudflared is still running
+    if ! kill -0 "$cf_pid" 2>/dev/null; then
+      restart_count=$((restart_count + 1))
+      if [ $restart_count -lt $max_restarts ]; then
+        printf "${YELLOW}Cloudflare tunnel failed, restarting (attempt $((restart_count + 1))/$max_restarts)...${NC}\n"
+        sleep 2
+      fi
+    else
+      # cloudflared is running but no URL yet - this is a timeout
+      printf "${RED}Timeout waiting for tunnel URL${NC}\n"
+      break
+    fi
   done
 
   if [ -z "$tunnel_url" ]; then
-    printf "${RED}Failed to extract tunnel URL from cloudflared log${NC}\n"
-    printf "${YELLOW}Last 20 lines of cloudflared log:${NC}\n"
-    tail -n 20 "$cf_log_file"
+    printf "${RED}Failed to establish Cloudflare tunnel after $max_restarts attempts${NC}\n"
+    printf "${YELLOW}Last 30 lines of cloudflared log:${NC}\n"
+    tail -n 30 "$cf_log_file"
+    kill "$cf_pid" 2>/dev/null || true
+    rm -f "$CF_PID_FILE"
+    run_quietly stop_bbpro || true
     exit 1
   fi
 
   printf "${GREEN}Cloudflare tunnel established!${NC}\n"
-  
+
   # Build login link and save to login.link
   local login_link="${tunnel_url}/login?token=${TOKEN}"
   echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
-  
+
   draw_box "Login Link: ${login_link}"
-  
+
+  # Background mode: detach and exit
+  if [[ "$background_mode" == "true" ]]; then
+    printf "\n${GREEN}Running in background mode.${NC}\n"
+    printf "${CYAN}Tunnel PID: ${cf_pid} (saved to ${CF_PID_FILE})${NC}\n"
+    printf "${CYAN}Stop with: bbx stop${NC}\n\n"
+
+    # Spawn a background monitor that restarts cloudflared if it dies
+    (
+      while true; do
+        sleep 10
+        if ! kill -0 "$cf_pid" 2>/dev/null; then
+          # cloudflared died, check if we should restart
+          if [[ -f "$CF_PID_FILE" ]]; then
+            # PID file exists, meaning user hasn't called stop - restart
+            cf_pid=$(start_cloudflared)
+            echo "$cf_pid" > "$CF_PID_FILE"
+          else
+            # PID file removed by stop command - exit monitor
+            break
+          fi
+        fi
+      done
+    ) &
+    disown
+    exit 0
+  fi
+
+  # Foreground mode: set up cleanup trap and wait
+  # Cleanup function for cf_run
+  cleanup_cf_run() {
+    printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
+    kill "$cf_pid" 2>/dev/null || true
+    rm -f "$CF_PID_FILE"
+    run_quietly stop_bbpro || true
+    printf "${GREEN}Cleanup complete.${NC}\n"
+  }
+  trap cleanup_cf_run EXIT INT TERM
+
   printf "\n${CYAN}Tunnel is active. Press Ctrl+C to stop.${NC}\n\n"
 
-  # Wait on the cloudflared PID
-  wait $cf_pid
+  # Monitor cloudflared and auto-restart if it crashes (foreground mode)
+  while true; do
+    if ! kill -0 "$cf_pid" 2>/dev/null; then
+      printf "${YELLOW}Cloudflare tunnel died, restarting...${NC}\n"
+      cf_pid=$(start_cloudflared)
+      echo "$cf_pid" > "$CF_PID_FILE"
+
+      # Wait for new URL
+      local new_url
+      new_url=$(extract_tunnel_url 60)
+      if [ -n "$new_url" ] && [ "$new_url" != "$tunnel_url" ]; then
+        tunnel_url="$new_url"
+        login_link="${tunnel_url}/login?token=${TOKEN}"
+        echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+        printf "${GREEN}New tunnel URL: ${login_link}${NC}\n"
+      fi
+    fi
+    sleep 5
+  done
 }
 
 docker_run() {
@@ -3120,6 +3252,8 @@ ng_run() {
 stop() {
     load_config
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
+    # Also stop any Cloudflare tunnel started by bbx cf-run
+    kill_cf_tunnel quiet
     run_quietly stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
 }
