@@ -13,6 +13,11 @@ TEST_INSTALL_TIMEOUT="10m"
 TEST_CF_RUN_TIMEOUT="5m"
 export SKIP_DOCKER="true" # we haven't build docker images yet so skip
 
+# Tor bootstrap can be significantly slower/flakier inside CI containers.
+if [[ -n "${BBX_CI_CONTAINER_IMAGE:-}" || -f "/.dockerenv" ]]; then
+  TEST_TOR_RUN_TIMEOUT="6m"
+fi
+
 if [[ -z "$STATUS_MODE" ]]; then
   echo "Set status mode env" >&2
   STATUS_MODE="quick exit"
