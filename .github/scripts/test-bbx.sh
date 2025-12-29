@@ -16,6 +16,7 @@ export SKIP_DOCKER="true" # we haven't build docker images yet so skip
 # Tor bootstrap can be significantly slower/flakier inside CI containers.
 if [[ -n "${BBX_CI_CONTAINER_IMAGE:-}" || -f "/.dockerenv" ]]; then
   TEST_TOR_RUN_TIMEOUT="6m"
+  export BBX_CF_MAX_TIME="${BBX_CF_MAX_TIME:-420}"
 fi
 
 if [[ -z "$STATUS_MODE" ]]; then
