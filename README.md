@@ -19,12 +19,7 @@
 </p>
 
 <p align="center">
-
-  <strong>DECEMBER 2025 NEWS:</strong>New Pricing! And New Release Landing Soon.
-  <br>
-  <strong>NOVEMBER 2025 NEWS: New <a href=CONTRIBUTING.TXT> CONTRIBUTION GUIDELINES</a></strong>. What's changed: as all lawful usage of BrowserBox requires a valid license, you must obtain a development license in order to contribute.</strong>
-  <br>
-  <strong>AUGUST 2025 NEWS: Browse the Future from the Past!<br>Windows 9x support is now in beta.<br>Bring safe modern browsing to legacy Win 9x systems and browsers.<br>See the <a href=#platform-compatibility>compatibility table</a> for details.</strong>
+  <strong>STATUS UPDATE:</strong> The new BrowserBox version has landed. We were up and installable from December 2018 until a brief outage last month while we migrated to a binary release system. Sorry for the downtime and thanks for the patience. We are back up now with a soft-launch beta - expect rapid iteration and please report issues.
 </p>
 
 BrowserBox&trade; delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
@@ -250,17 +245,20 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
 
 *   **Windows:**
     ```powershell
-    irm bbx.dosaygo.com | iex
+    irm https://browserbox.io/install.ps1 | iex
     ```
 *   **Linux (Debian, Ubuntu, CentOS, RHEL, NixOS) & macOS & Docker:**
     ```bash
-    bash <(curl -sSL https://bbx.sh.dosaygo.com) install
+    bash <(curl -sSL https://browserbox.io/install.sh) install
     ```
 *   **Via NPM (@browserbox/browserbox):**
     ```bash
     npm i -g @browserbox/browserbox
     bbx-install
     ```
+
+>[!NOTE]
+>Installers now use `browserbox.io` endpoints. If you see older docs pointing to `dosaygo.com`, use the commands above.
 
 ### 2. Purchase & Obtain Your Product Key
 
