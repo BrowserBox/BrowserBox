@@ -4103,7 +4103,6 @@ usage() {
     printf "  bbx <command> [options]\n\n"
 
     printf "${BOLD}SETUP & MANAGEMENT${NC}\n"
-    printf "  ${GREEN}install${NC}        Install BrowserBox using https://browserbox.io/install.sh\n"
     printf "  ${GREEN}uninstall${NC}      Remove all BrowserBox components.\n"
     printf "  ${GREEN}setup${NC}          Configure core options. ${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]${NC}\n"
     printf "  ${CYAN}activate${NC}       Activate a license for more users. ${BOLD}bbx activate [number_of_users]${NC}\n"
