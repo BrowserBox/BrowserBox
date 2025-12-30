@@ -5,28 +5,40 @@
 <h1 align="center">BrowserBox by DOSAYGO</h1>
 
 <p align="center">
-  <strong>Secure Your Digital World with Enterprise-Grade Remote Browser Isolation (RBI)</strong>
+  <strong>Secure, modern Remote Browser Isolation (RBI) with a clientless experience</strong>
 </p>
 
 <p align="center">
   <a href="https://dosaygo.com#license"><img src="https://img.shields.io/badge/License-Required-red" alt="License Required"></a>
   <a href="https://dosaygo.com"><img src="https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue" alt="BrowserBox Secure RBI"></a>
-  <a href="https://dosaygo.com/nist800-53.html"><img src="https://img.shields.io/badge/NIST%20800--53-Compliant-green" alt="NIST 800-53 Compliant"></a>
+  <a href="https://dosaygo.com/nist800-53.html"><img src="https://img.shields.io/badge/NIST%20800--53-Alignment-green" alt="NIST 800-53 Alignment"></a>
   <a href="https://dosaygo.com/hipaa.html"><img src="https://img.shields.io/badge/HIPAA-Ready-purple" alt="HIPAA Ready"></a>
-  <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Enabled-pink" alt="DLP Enabled"></a>
+  <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Options-pink" alt="DLP Options"></a>
   <br>
   <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml/badge.svg" alt="bbx Saga Test Suite"></a>
 </p>
 
 <p align="center">
   <strong>STATUS UPDATE:</strong> The new BrowserBox version has landed. We were up and installable from December 2018 until a brief outage last month while we migrated to a binary release system. Sorry for the downtime and thanks for the patience. We are back up now with a soft-launch beta - expect rapid iteration and please report issues.
+  <br>
+  <strong>Stability & Authority:</strong> Shipping RBI since 2018, now on signed binary releases with a tighter CI loop. We are small by design but serious about reliability and fast support.
 </p>
 
-BrowserBox&trade; delivers cutting-edge remote browser isolation (RBI) technology, protecting your organization from web-based threats while empowering your team with seamless, secure browsing. **A product key is required for all BrowserBox usage.**
+BrowserBox&trade; is a remote browser isolation (RBI) platform for security teams, SaaS builders, and IT ops. It streams a full modern browser to any client with low latency and 60 FPS, supports embedding, and runs on Windows, Linux, and containers. **A product key is required for all BrowserBox usage.**
 
-Unlock advanced security, ensure compliance, and boost productivity today!
+At a glance:
+*   **Clientless RBI:** No plugins or downloads for end users.
+*   **60 FPS streaming:** Smooth, responsive browsing over the network.
+*   **Embed anywhere:** Drop in the BrowserBox webview to your app or portal.
+*   **Flexible deployment:** Works on Windows, Linux, Docker, and LXC.
+*   **Built for control:** Policies, isolation, and audit-friendly workflows.
 
-**Note: we are NOT affiliated in any way with other websites claiming to have a BrowserBox remote browser. These sites might unintentionally have the same name as us, or it may be trying to impersonate our product or brand. Our official sites include [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), and [CloudTabs](https://browse.cloudtabs.net)**
+Quick links: [Get Started](#get-started-in-3-steps) | [Pricing](https://dosaygo.com/commerce) | [Support](mailto:support@dosaygo.com)
+
+Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), and [CloudTabs](https://browse.cloudtabs.net)
+
+<details>
+<summary>bbx CLI help (expand)</summary>
 
 ```ansi
 
@@ -75,70 +87,127 @@ Commands:
 
 *automate coming soon
 ```
+</details>
 
 ---
 
 ## Table of Contents
 
-1.  [Why Choose BrowserBox?](#why-choose-browserbox)
-2.  [Key Benefits](#key-benefits)
-3.  [Get Your License & Start Today!](#get-your-license--start-today)
-4.  [Who Needs BrowserBox?](#who-needs-browserbox)
-5.  [Core Features](#core-features)
-6.  [See It In Action](#see-it-in-action)
-7.  [Supported Network Topologies](#supported-network-topologies)
-8.  [Platform Compatibility](#platform-compatibility)
-9.  [Get Started in 3 Steps](#get-started-in-3-steps)
+1.  [Commercial Licensing & Legal (Not Open Source)](#commercial-licensing--legal-not-open-source)
+2.  [Get Started in 3 Steps](#get-started-in-3-steps)
     *   [1. Install the `bbx` CLI](#1-install-the-bbx-cli)
     *   [2. Purchase & Obtain Your Product Key](#2-purchase--obtain-your-product-key)
     *   [3. Activate & Run BrowserBox](#3-activate--run-browserbox)
-10.  [Meet `bbx`: Your BrowserBox Command Center](#meet-bbx-your-browserbox-command-center)
-11. [Embed BrowserBox Anywhere](#embed-browserbox-anywhere)
-12. [Advanced Usage](#advanced-usage)
-13. [License Compliance & Usage Data](#license-compliance--usage-data)
-14. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
-15. [Support](#support)
-16. [About DOSAYGO](#about-dosaygo)
-17. [Copyright & Licensing](#copyright--licensing)
+3.  [Why Choose BrowserBox?](#why-choose-browserbox)
+4.  [Key Benefits](#key-benefits)
+5.  [Who Needs BrowserBox?](#who-needs-browserbox)
+6.  [Core Features](#core-features)
+7.  [What's New In The Latest Release](#whats-new-in-the-latest-release)
+8.  [See It In Action](#see-it-in-action)
+9.  [Supported Network Topologies](#supported-network-topologies)
+10. [Platform Compatibility](#platform-compatibility)
+11. [Meet `bbx`: Your BrowserBox Command Center](#meet-bbx-your-browserbox-command-center)
+12. [Embed BrowserBox Anywhere](#embed-browserbox-anywhere)
+13. [Advanced Usage](#advanced-usage)
+14. [License Compliance & Usage Data](#license-compliance--usage-data)
+15. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
+16. [Support](#support)
+17. [About DOSAYGO](#about-dosaygo)
+18. [Copyright & Licensing](#copyright--licensing)
 
 ---
 
-## Why Choose BrowserBox?
+## Commercial Licensing & Legal (Not Open Source)
 
-In today's threat landscape, standard browsing is a significant risk. BrowserBox provides a secure, isolated environment that neutralizes web-based threats *before* they reach your network or endpoints. It's an essential tool for:
+BrowserBox is a commercial product. All usage requires a valid license, including development and evaluation. If you want to contribute, you must first obtain a development license per `CONTRIBUTING.TXT`.
 
-*   **Protecting Sensitive Data:** Ideal for handling confidential information in healthcare (HIPAA), finance, and government (NIST 800-53).
-*   **Secure Automation:** Safely automate web interactions, even with sensitive data.
-*   **Compliance & DLP:** Meet stringent regulatory requirements and prevent data loss.
-*   **Developer Productivity:** Easily embed secure browsing into applications.
+We are a small team and we protect our IP because it funds the work, the infrastructure, and the support that keep BrowserBox reliable. Please review our [Terms of Service](https://dosaygo.com/terms.txt.html) and [Privacy Policy](https://dosaygo.com/privacy.txt.html).
 
-## Key Benefits
+## Get Started in 3 Steps
 
-*   **Unmatched Security:** Stop malware, ransomware, and zero-day attacks. Prevent costly data breaches.
-*   **Effortless Integration:** Clientless RBI works in any browser. Embed secure browsing into your apps or protect local tabs with zero friction.
-*   **Cross-Platform Power:** Runs on Windows, Linux (Debian, Ubuntu, RHEL, CentOS, NixOS), Docker, and LXC.
-*   **Productivity Boost:** Features like Zero Latency Mode, customizable policies, and a mobile-first experience are built for modern teams.
-*   **Developer Friendly:** Powerful `bbx` CLI and an easy-to-use Embedding API.
+### 1. Install the `bbx` CLI
 
-## Get Your License & Start Today!
+The `bbx` command-line interface is your primary tool for managing BrowserBox.
 
-BrowserBox requires a license for all use. Choose the option that's right for you:
+*   **Windows:**
+    ```powershell
+    irm https://browserbox.io/install.ps1 | iex
+    ```
+*   **Linux (Debian, Ubuntu, CentOS, RHEL, NixOS) & macOS & Docker:**
+    ```bash
+    bash <(curl -sSL https://browserbox.io/install.sh) install
+    ```
+*   **Via NPM (@browserbox/browserbox):**
+    ```bash
+    npm i -g @browserbox/browserbox
+    bbx-install
+    ```
 
-*   🚀 **[Get a Commercial License](https://dosaygo.com/commerce)** - Starting at $99/user/year. Volume discounts available.
-*   🌍 **[Get a Non-Commercial License](https://dosaygo.com/noncommercial)** - $39/user/year for non-profits, and government.
-*   🧪 **[Request a Demo](mailto:sales@dosaygo.com?subject=Demo)** - Experience the full power of BrowserBox.
-*   🛡️ **[Explore Solutions for Regulated Industries](https://dosaygo.com/regulated-enterprise.html)** - HIPAA, NIST 800-53, DLP, and more.
+>[!NOTE]
+>Installers now use `browserbox.io` endpoints. If you see older docs pointing to `dosaygo.com`, use the commands above.
+
+### 2. Purchase & Obtain Your Product Key
+
+A product key is required.
+*   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://dosaygo.com/commerce).
+*   **Non-Commercial Use:** $39/user/year (for non-profits, government). [Purchase Non-Commercial License](https://dosaygo.com/noncommercial).
+*   **Evaluation:** [Apply for a 7-Day Trial](https://browserbox.io).
+*   **Demo:** [Request a Demo](mailto:sales@dosaygo.com?subject=Demo).
+*   **Regulated Industries:** [Explore compliance-oriented options](https://dosaygo.com/regulated-enterprise.html).
+
+You can also purchase directly via the `bbx` CLI on Linux/macOS:
+```console
+bbx activate [number of people]
+```
 
 >[!CAUTION]
 >Unlicensed instances will display a warning and shut down after a brief period. Ensure you have a valid product key for uninterrupted use.
 
+>[!IMPORTANT]
+>After purchase, you'll receive an email with a secure link to view your **Product Key**. Save it safely; the link is single-use. Lost keys can be re-issued by contacting [Support](mailto:support@dosaygo.com).
+
+### 3. Activate & Run BrowserBox
+
+*   **Windows:** Set the `LICENSE_KEY` environment variable:
+    ```powershell
+    $Env:LICENSE_KEY = "YOUR_BROWSERBOX_PRODUCT_KEY"
+    ```
+*   **Linux/macOS:** Use `bbx certify` to enter and save your Product Key (if not already saved via `bbx activate`).
+    ```console
+    bbx certify YOUR_BROWSERBOX_PRODUCT_KEY
+    ```
+
+Then, start BrowserBox:
+```console
+bbx setup  # Run once for initial configuration
+bbx run
+```
+Access BrowserBox using the **Login Link** provided in your console. For public internet access, ensure your DNS records are configured correctly. View logs with `bbx logs` and stop with `bbx stop`.
+
+## Why Choose BrowserBox?
+
+In today's threat landscape, standard browsing carries real risk. BrowserBox provides an isolated environment that reduces exposure to web-based threats *before* they reach your network or endpoints. It's a practical tool for:
+
+*   **Protecting Sensitive Data:** Support secure workflows in regulated environments.
+*   **Secure Automation:** Run web automation inside isolation boundaries.
+*   **Compliance & DLP:** Apply policy-driven controls to reduce data leakage.
+*   **Developer Productivity:** Easily embed secure browsing into applications.
+
+## Key Benefits
+
+*   **Stronger Isolation:** Reduce malware risk and limit exposure to web-based threats.
+*   **Effortless Integration:** Clientless RBI works in any browser. Embed secure browsing into your apps or protect local tabs with minimal friction.
+*   **Cross-Platform Coverage:** Runs on Windows, Linux (Debian, Ubuntu, RHEL, CentOS, NixOS), Docker, and LXC.
+*   **Smooth UX:** Low-latency rendering with a focus on responsiveness and 60 FPS streaming.
+*   **Developer Friendly:** Powerful `bbx` CLI and a straightforward Embedding API.
+
 ## Who Needs BrowserBox?
 
-*   **Businesses & Enterprises:** Safeguard your network, data, and employees from web-based threats.
-*   **Regulated Industries (Healthcare, Finance, Government):** Ensure compliance (HIPAA, NIST 800-53), protect sensitive data, and implement robust DLP.
-*   **Developers & Integrators:** Embed secure, isolated browsing directly into your applications and workflows.
-*   **IT & Security Teams:** Deploy a scalable, manageable, and powerful RBI solution quickly.
-*   **Automation Specialists:** Securely run Puppeteer & Playwright scripts in an isolated environment.
+*   **Security Teams:** Reduce risk from untrusted browsing while keeping access simple.
+*   **SaaS Builders & Integrators:** Embed isolated browsing directly into your product or workflow.
+*   **IT & Ops:** Deploy a manageable, remote browser on mixed fleets and servers.
+*   **Automation & QA:** Run scripts against real sites inside an isolated environment.
+*   **Regulated Orgs:** Support policy-driven browsing with configurable controls.
 
 ## Core Features
 
@@ -149,6 +218,12 @@ BrowserBox requires a license for all use. Choose the option that's right for yo
 *   **Automation Ready:** Designed for use with Puppeteer (PPtr) and Playwright (support coming soon).
 *   **Security Focused:** Built-in DLP features, Tor support for anonymity, and robust access controls.
 *   **1-Click Cloud Deployment (Coming Soon):** Easily deploy on Vultr, AWS, Azure, or Linode.
+
+## What's New In The Latest Release
+
+*   **Binary release system:** Faster installs and more reliable updates.
+*   **60 FPS streaming:** Smooth, responsive remote browsing.
+*   **Unified install endpoints:** `browserbox.io` installers for Linux/macOS and Windows.
 
 ## See It In Action
 
@@ -237,62 +312,6 @@ BrowserBox runs seamlessly across a wide range of operating systems and containe
   <img src="readme-files/browserbox-running-in-windows-98-ie-5.jpg" alt="BrowserBox Legacy Client Running in IE 5 in Windows 98" title="BrowserBox Legacy Client Running in IE 5 in Windows 98" width=800">
 </p>
 
-## Get Started in 3 Steps
-
-### 1. Install the `bbx` CLI
-
-The `bbx` command-line interface is your primary tool for managing BrowserBox.
-
-*   **Windows:**
-    ```powershell
-    irm https://browserbox.io/install.ps1 | iex
-    ```
-*   **Linux (Debian, Ubuntu, CentOS, RHEL, NixOS) & macOS & Docker:**
-    ```bash
-    bash <(curl -sSL https://browserbox.io/install.sh) install
-    ```
-*   **Via NPM (@browserbox/browserbox):**
-    ```bash
-    npm i -g @browserbox/browserbox
-    bbx-install
-    ```
-
->[!NOTE]
->Installers now use `browserbox.io` endpoints. If you see older docs pointing to `dosaygo.com`, use the commands above.
-
-### 2. Purchase & Obtain Your Product Key
-
-A product key is required.
-*   **Commercial Use:** Starts at $99/user/year. [Purchase Commercial License](https://dosaygo.com/commerce).
-*   **Non-Commercial Use:** $39/user/year (for non-profits, government). [Purchase Non-Commercial License](https://dosaygo.com/noncommercial).
-*   **Evaluation:** [Apply for a 7-Day Trial](https://browserbox.io).
-
-You can also purchase directly via the `bbx` CLI on Linux/macOS:
-```console
-bbx activate [number of people]
-```
-
->[!IMPORTANT]
->After purchase, you'll receive an email with a secure link to view your **Product Key**. Save it safely; the link is single-use. Lost keys can be re-issued by contacting [Support](mailto:support@dosaygo.com).
-
-### 3. Activate & Run BrowserBox
-
-*   **Windows:** Set the `LICENSE_KEY` environment variable:
-    ```powershell
-    $Env:LICENSE_KEY = "YOUR_BROWSERBOX_PRODUCT_KEY"
-    ```
-*   **Linux/macOS:** Use `bbx certify` to enter and save your Product Key (if not already saved via `bbx activate`).
-    ```console
-    bbx certify YOUR_BROWSERBOX_PRODUCT_KEY
-    ```
-
-Then, start BrowserBox:
-```console
-bbx setup  # Run once for initial configuration
-bbx run
-```
-Access BrowserBox using the **Login Link** provided in your console. For public internet access, ensure your DNS records are configured correctly. View logs with `bbx logs` and stop with `bbx stop`.
-
 ---
 
 ## Meet `bbx`: Your BrowserBox Command Center
@@ -335,7 +354,7 @@ For more details, see the [browserbox-webview.js file](https://github.com/Browse
 
 *   **Secure Document Viewing:** Safely preview files without downloading them to the client device (Linux only).
 *   **Developer Tools Access:** Inspect remote pages by right-clicking within the BrowserBox session.
-*   **Tor & SSH Tunneling:** Enhance privacy and anonymity. Refer to the [Advanced Setup Guide](ADVANCE.md) (Note: `ADVANCE.md` link needs to be created or pointed correctly).
+*   **Tor & SSH Tunneling:** Enhance privacy and anonymity.
 
 ---
 
@@ -355,7 +374,7 @@ Please review our [Privacy Policy](https://dosaygo.com/privacy.txt.html) and [Te
 A: You can [Apply for a 7-Day Trial Here](https://browserbox.io).
 
 **Q: Why is a license required for BrowserBox?**
-A: Because we provide it to you on the condition you pay us for it. In capitalism, voluntary exchange ensures creators are compensated for the value they provide to others through mutual benefit and respect.
+A: Licenses fund development, updates, and support so we can keep BrowserBox reliable and secure.
 
 **Q: Do you offer perpetual licenses (non-subscription, version-locked)?**
 A: Yes, for enterprise clients with an Annual Contract Value (ACV) of $150K+. Please contact [sales@dosaygo.com](mailto:sales@dosaygo.com) for inquiries.
