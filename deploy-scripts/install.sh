@@ -364,32 +364,133 @@ if [[ "${1:-}" == "--yes" || "${1:-}" == "-y" ]]; then
   shift
 fi
 
+# ----------------------------------------------------------------------
+# Dependency Management & Installation Helpers
+# ----------------------------------------------------------------------
+
+attempt_install_package() {
+  local pkg="$1"
+  local cmd_prefix=""
+
+  # Determine if we need sudo
+  if [[ "$(id -u)" -ne 0 ]]; then
+    if command -v sudo >/dev/null 2>&1; then
+      cmd_prefix="sudo -E"
+    else
+      echo "Warning: Not root and sudo not found. Cannot auto-install $pkg." >&2
+      return 1
+    fi
+  fi
+
+  echo "Attempting to install missing dependency: $pkg..." >&2
+
+  # macOS (Homebrew)
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    if command -v brew >/dev/null 2>&1; then
+      # brew install is usually interactive-safe, but we ensure no updates block it
+      brew install "$pkg" || return 1
+      return 0
+    else
+      echo "Homebrew not found. Cannot install $pkg on macOS." >&2
+      return 1
+    fi
+  fi
+
+  # Linux Package Managers
+  if command -v apt-get >/dev/null 2>&1; then
+    # Debian / Ubuntu
+    # We try to update quietly first to ensure package lists aren't stale
+    $cmd_prefix apt-get update -qq >/dev/null 2>&1 || true
+    $cmd_prefix apt-get install -y "$pkg"
+  elif command -v apk >/dev/null 2>&1; then
+    # Alpine
+    $cmd_prefix apk add --no-cache "$pkg"
+  elif command -v dnf >/dev/null 2>&1; then
+    # Fedora / RHEL 8+
+    $cmd_prefix dnf install -y "$pkg"
+  elif command -v yum >/dev/null 2>&1; then
+    # RHEL 7 / CentOS
+    $cmd_prefix yum install -y "$pkg"
+  elif command -v pacman >/dev/null 2>&1; then
+    # Arch Linux
+    $cmd_prefix pacman -Sy --noconfirm "$pkg"
+  elif command -v zypper >/dev/null 2>&1; then
+    # openSUSE
+    $cmd_prefix zypper install -n "$pkg"
+  else
+    echo "No supported package manager found. Cannot install $pkg." >&2
+    return 1
+  fi
+}
+
 require_cmd() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    echo "Missing required command: $1" >&2
+  local cmd="$1"
+  local pkg="${2:-$1}" # Allow specifying a package name different from the command
+
+  if command -v "$cmd" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  attempt_install_package "$pkg"
+
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: Missing required command: $cmd (failed to install package: $pkg)" >&2
     exit 1
   fi
 }
 
 require_tool_or_python() {
   local tool="$1"
+  local pkg="${2:-$1}"
+
+  # 1. Check if tool exists
   if command -v "$tool" >/dev/null 2>&1; then
     return 0
   fi
-  if command -v python3 >/dev/null 2>&1; then
+
+  # 2. Try to install the tool (e.g., install 'jq')
+  if attempt_install_package "$pkg"; then
+    if command -v "$tool" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+
+  # 3. Check for Python fallback
+  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
     return 0
   fi
-  if command -v python >/dev/null 2>&1; then
-    return 0
+
+  # 4. Try to install Python3
+  echo "Command '$tool' missing and Python fallback missing." >&2
+  if attempt_install_package "python3"; then
+    if command -v python3 >/dev/null 2>&1; then
+      return 0
+    fi
   fi
-  echo "Missing required command: $tool (and no Python fallback found)" >&2
+
+  # 5. Final attempt for 'python' (some older distros)
+  if attempt_install_package "python"; then
+    if command -v python >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+
+  echo "Error: Missing required command: $tool" >&2
+  echo "       Could not install '$pkg' and could not find or install a Python fallback." >&2
   exit 1
 }
 
+# Ensure base tools are present or installed
 require_cmd curl
 require_cmd openssl
-require_tool_or_python jq
-require_tool_or_python xxd
+
+# jq: Try to install 'jq'. If fail, ensure 'python3' is available.
+require_tool_or_python jq jq
+
+# xxd: Try to install 'xxd'. If fail, ensure 'python3' is available.
+# Note: 'xxd' is often in 'vim-common' or 'xxd' package depending on distro.
+# We try 'xxd' first as it's the most common package name for the standalone tool.
+require_tool_or_python xxd xxd
 
 hex_to_bin() {
   local hex_file="$1"
