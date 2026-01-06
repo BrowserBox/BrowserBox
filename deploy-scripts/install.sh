@@ -10,9 +10,9 @@ if [[ -n "${BBX_DEBUG:-}" ]]; then
 
   sanitize_debug_label() {
     local label="${1:-unknown}"
-    label="${label//\//-}"
-    label="${label//:/-}"
-    label="${label// /-}"
+    label="${label//\/\/-}"
+    label="${label//:/\-}"
+    label="${label// /\-}"
     label="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]')"
     label="$(printf '%s' "$label" | tr -cd 'a-z0-9._-')"
     if [[ -z "$label" ]]; then
@@ -31,7 +31,9 @@ if [[ -n "${BBX_DEBUG:-}" ]]; then
     if [[ "$os_label" == "linux" ]]; then
       if [[ -r /etc/os-release ]]; then
         local os_id os_ver
+        # shellcheck disable=SC1091
         os_id="$(. /etc/os-release; echo "${ID:-linux}")"
+        # shellcheck disable=SC1091
         os_ver="$(. /etc/os-release; echo "${VERSION_ID:-}")"
         os_id="$(sanitize_debug_label "$os_id")"
         os_ver="$(printf '%s' "$os_ver" | tr -cd '0-9.')"
@@ -82,6 +84,37 @@ Environment overrides:
   EMAIL              Email for --full-install (LetsEncrypt)
   BBX_INSTALL_USER   Non-root install user when running as root
 USAGE
+}
+
+print_non_interactive_help() {
+  echo "----------------------------------------------------------------" >&2
+  echo "BrowserBox Non-Interactive Install Helper" >&2
+  echo "----------------------------------------------------------------" >&2
+  echo "It appears you are running the installer in a non-interactive" >&2
+  echo "environment (e.g. CI/CD or piped script) without all required" >&2
+  echo "environment variables." >&2
+  echo "" >&2
+  echo "REQUIRED VARIABLES:" >&2
+  
+  if [[ "$(id -u)" -eq 0 ]]; then
+    echo "  BBX_INSTALL_USER  : System username to own the installation (CANNOT be root)" >&2
+  fi
+  
+  echo "  EMAIL             : Email address for Let's Encrypt SSL certificates" >&2
+  echo "                      (Required for public domains)" >&2
+  echo "" >&2
+  echo "OPTIONAL VARIABLES:" >&2
+  echo "  BBX_HOSTNAME      : Domain name (Defaults to system hostname)" >&2
+  echo "  BBX_FULL_INSTALL  : Set to 'true' to force a full reinstall" >&2
+  echo "" >&2
+  echo "EXAMPLE usage:" >&2
+  local ex_user=""
+  if [[ "$(id -u)" -eq 0 ]]; then
+    ex_user="BBX_INSTALL_USER=ubuntu "
+  fi
+  echo "  export ${ex_user}EMAIL=me@example.com" >&2
+  echo "  curl -fsSL https://browserbox.io/install.sh | bash" >&2
+  echo "----------------------------------------------------------------" >&2
 }
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -172,7 +205,27 @@ is_truthy() {
 }
 
 is_interactive() {
-  [[ -t 0 && -t 1 ]]
+  if [[ -t 0 && -t 1 ]]; then
+    return 0
+  fi
+  if [[ -c /dev/tty ]]; then
+    return 0
+  fi
+  return 1
+}
+
+prompt_input() {
+  local prompt="$1"
+  local output_var_name="$2"
+  
+  if [[ -t 0 ]]; then
+    read -r -p "$prompt" "${output_var_name?}"
+  elif [[ -c /dev/tty ]]; then
+    # Read from /dev/tty if stdin is not a TTY (e.g. pipe)
+    read -r -p "$prompt" "${output_var_name?}" < /dev/tty
+  else
+    return 1
+  fi
 }
 
 ensure_user_exists() {
@@ -239,10 +292,11 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
   install_user="${BBX_INSTALL_USER:-}"
   if [[ -z "$install_user" ]]; then
     if ! is_interactive; then
-      echo "Running as root requires BBX_INSTALL_USER to be set." >&2
+      print_non_interactive_help
+      echo "Error: Running as root requires BBX_INSTALL_USER to be set." >&2
       exit 1
     fi
-    read -r -p "Install as which non-root user? " install_user
+    prompt_input "Install as which non-root user? " install_user
   fi
 
   if [[ -z "$install_user" ]]; then
@@ -276,6 +330,7 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
 fi
 
 YES_FLAG=""
+release_json=""
 if [[ "${1:-}" == "--yes" || "${1:-}" == "-y" ]]; then
   YES_FLAG="--yes"
   shift
@@ -288,10 +343,25 @@ require_cmd() {
   fi
 }
 
+require_tool_or_python() {
+  local tool="$1"
+  if command -v "$tool" >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "Missing required command: $tool (and no Python fallback found)" >&2
+  exit 1
+}
+
 require_cmd curl
 require_cmd openssl
-require_cmd jq
-require_cmd xxd
+require_tool_or_python jq
+require_tool_or_python xxd
 
 hex_to_bin() {
   local hex_file="$1"
@@ -325,6 +395,7 @@ PY
 }
 
 verify_manifest_signature() {
+  echo "Verifying release manifest signature..." >&2
   local manifest_path="$1"
   local sig_path="$2"
   local work_dir="$3"
@@ -341,6 +412,35 @@ verify_manifest_signature() {
   if ! openssl dgst -sha256 -verify "$key_path" -signature "$sig_bin" "$payload" >/dev/null 2>&1; then
     echo "Release manifest signature verification failed." >&2
     return 1
+  fi
+}
+
+extract_tag_name() {
+  if command -v jq >/dev/null 2>&1; then
+    jq -r '.tag_name // empty' 2>/dev/null
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - <<'PY'
+import json,sys
+try:
+  data=json.load(sys.stdin)
+  print(data.get('tag_name') or '')
+except:
+  pass
+PY
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    python - <<'PY'
+import json,sys
+try:
+  data=json.load(sys.stdin)
+  print(data.get('tag_name') or '')
+except:
+  pass
+PY
+    return 0
   fi
 }
 
@@ -363,7 +463,7 @@ get_latest_release_tag() {
   local response
   response=$(curl -sS --connect-timeout 10 "${auth[@]}" "$api_url" || true)
   local tag
-  tag=$(printf '%s' "$response" | jq -r '.tag_name // empty' 2>/dev/null)
+  tag=$(printf '%s' "$response" | extract_tag_name)
 
   if [[ -z "$tag" ]]; then
     echo "Failed to fetch latest release tag from ${BBX_RELEASE_REPO}." >&2
@@ -430,13 +530,13 @@ PY
     return 0
   fi
 
-  awk -v name="$asset_name" '
+  awk -v name="$asset_name" ' 
     BEGIN{RS="{";FS=","}
     {
       has=0;id=""
       for(i=1;i<=NF;i++){
-        if($i ~ "\\\"name\\\"" && $i ~ name){has=1}
-        if($i ~ "\\\"id\\\""){gsub(/[^0-9]/,"",$i); id=$i}
+        if($i ~ "\"name\"" && $i ~ name){has=1}
+        if($i ~ "\"id\""){gsub(/[^0-9]/,"",$i); id=$i}
       }
       if(has && id!=""){print id; exit}
     }'
@@ -463,8 +563,10 @@ download_release_asset() {
       exit 1
     fi
 
-    local release_json
-    release_json="$(fetch_release_json "$tag")"
+    if [[ -z "${release_json:-}" ]]; then
+        release_json="$(fetch_release_json "$tag")"
+    fi
+
     if [[ -z "$release_json" ]]; then
       echo "Failed to fetch release metadata for ${tag}." >&2
       exit 1
@@ -477,7 +579,7 @@ download_release_asset() {
       exit 1
     fi
 
-    curl -L --fail --progress-bar --connect-timeout 60 \
+    curl -L --fail --progress-bar --connect-timeout 60 --retry 3 --retry-delay 2 \
       -H "Authorization: Bearer ${GH_TOKEN}" \
       -H "Accept: application/octet-stream" \
       -o "$out_path" "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases/assets/${asset_id}"
@@ -485,7 +587,7 @@ download_release_asset() {
   fi
 
   local url="https://github.com/${BBX_RELEASE_REPO}/releases/download/${tag}/${asset_name}"
-  curl -L --fail --progress-bar --connect-timeout 60 -o "$out_path" "$url"
+  curl -L --fail --progress-bar --connect-timeout 60 --retry 3 --retry-delay 2 -o "$out_path" "$url"
 }
 
 hash_file() {
@@ -615,6 +717,7 @@ manifest_sig_path="$work_dir/release.manifest.json.sig"
 
 echo "Downloading release manifest..." >&2
 download_release_asset "$release_tag" "release.manifest.json" "$manifest_path"
+echo "Downloading release manifest signature..." >&2
 download_release_asset "$release_tag" "release.manifest.json.sig" "$manifest_sig_path"
 
 verify_manifest_signature "$manifest_path" "$manifest_sig_path" "$work_dir"
@@ -628,6 +731,81 @@ if [[ -z "$asset_name" || "$asset_name" == "null" ]]; then
 fi
 
 temp_binary="$work_dir/${asset_name}"
+
+# --- NEW LOCATION: Full Install Logic & Validation ---
+full_install=false
+if ! command -v browserbox >/dev/null 2>&1; then
+  full_install=true
+fi
+if is_truthy "${BBX_FULL_INSTALL:-}"; then
+  full_install=true
+fi
+
+manifest_full="$(manifest_get_value "$manifest_path" '.install.fullInstallRequired')"
+legacy_full="$(manifest_get_value "$manifest_path" '.full_install_required')"
+if [[ "$manifest_full" == "true" || "$legacy_full" == "true" ]]; then
+  full_install=true
+fi
+
+config_dir="${HOME}/.config/dosaygo/bbpro"
+if [[ -z "${BBX_HOSTNAME:-}" && -f "$config_dir/test.env" ]]; then
+  BBX_HOSTNAME="$(sed -n 's/^DOMAIN=//p' "$config_dir/test.env" | tail -n1)"
+fi
+
+if [[ -z "${EMAIL:-}" && -f "$config_dir/.agreed" ]]; then
+  agreed_val="$(tail -n1 "$config_dir/.agreed" | tr -d '\r' | tr -d '\n')"
+  if [[ "$agreed_val" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    EMAIL="$agreed_val"
+  fi
+fi
+
+hostname_default="${BBX_HOSTNAME:-$(hostname)}"
+email_value="${EMAIL:-}"
+
+is_local_hostname() {
+  case "$1" in
+    localhost|127.0.0.1|::1) return 0 ;;
+    *.local|*.test|*.example) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [[ "$full_install" == "true" ]]; then
+  if [[ -z "${BBX_HOSTNAME:-}" ]]; then
+    if is_interactive; then
+      prompt_input "Enter hostname (default: ${hostname_default}): " BBX_HOSTNAME
+    fi
+  fi
+  BBX_HOSTNAME="${BBX_HOSTNAME:-$hostname_default}"
+
+  if [[ -z "$email_value" ]]; then
+    if is_interactive; then
+      local_notice="required"
+      if is_local_hostname "$BBX_HOSTNAME"; then
+        local_notice="optional"
+      fi
+      prompt_input "Enter your email for Let's Encrypt (${local_notice}): " email_value
+    fi
+  fi
+
+  if ! is_local_hostname "$BBX_HOSTNAME"; then
+    if [[ -z "$email_value" ]]; then
+      if ! is_interactive; then
+        print_non_interactive_help
+      fi
+      echo "Error: Email is required for a public hostname." >&2
+      exit 1
+    fi
+    if [[ ! "$email_value" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+      if ! is_interactive; then
+        print_non_interactive_help
+      fi
+      echo "Error: '$email_value' is not a valid email address." >&2
+      exit 1
+    fi
+  fi
+fi
+# --- END NEW LOCATION ---
 
 echo "Downloading ${asset_name} (${release_tag})..." >&2
 download_release_asset "$release_tag" "$asset_name" "$temp_binary"
@@ -654,63 +832,7 @@ cp "$manifest_path" "$manifest_target_dir/release.manifest.json"
 cp "$manifest_sig_path" "$manifest_target_dir/release.manifest.json.sig"
 chmod 644 "$manifest_target_dir/release.manifest.json" "$manifest_target_dir/release.manifest.json.sig" 2>/dev/null || true
 
-full_install=false
-if ! command -v browserbox >/dev/null 2>&1; then
-  full_install=true
-fi
-if is_truthy "${BBX_FULL_INSTALL:-}"; then
-  full_install=true
-fi
-
-manifest_full="$(manifest_get_value "$manifest_path" '.install.fullInstallRequired')"
-legacy_full="$(manifest_get_value "$manifest_path" '.full_install_required')"
-if [[ "$manifest_full" == "true" || "$legacy_full" == "true" ]]; then
-  full_install=true
-fi
-
-config_dir="${HOME}/.config/dosaygo/bbpro"
-if [[ -z "${BBX_HOSTNAME:-}" && -f "$config_dir/test.env" ]]; then
-  BBX_HOSTNAME="$(sed -n 's/^DOMAIN=//p' "$config_dir/test.env" | tail -n1)"
-fi
-
-if [[ -z "${EMAIL:-}" && -f "$config_dir/.agreed" ]]; then
-  EMAIL="$(tail -n1 "$config_dir/.agreed" | tr -d '\r' | tr -d '\n')"
-fi
-
-hostname_default="${BBX_HOSTNAME:-$(hostname)}"
-email_value="${EMAIL:-}"
-
-is_local_hostname() {
-  case "$1" in
-    localhost|127.0.0.1|::1) return 0 ;;
-    *.local|*.test|*.example) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 if [[ "$full_install" == "true" ]]; then
-  if [[ -z "${BBX_HOSTNAME:-}" ]]; then
-    if is_interactive; then
-      read -r -p "Enter hostname (default: ${hostname_default}): " BBX_HOSTNAME
-    fi
-  fi
-  BBX_HOSTNAME="${BBX_HOSTNAME:-$hostname_default}"
-
-  if [[ -z "$email_value" ]]; then
-    if is_interactive; then
-      local_notice="required"
-      if is_local_hostname "$BBX_HOSTNAME"; then
-        local_notice="optional"
-      fi
-      read -r -p "Enter your email for Let's Encrypt (${local_notice}): " email_value
-    fi
-  fi
-
-  if ! is_local_hostname "$BBX_HOSTNAME" && [[ -z "$email_value" ]]; then
-    echo "Email is required for a public hostname." >&2
-    exit 1
-  fi
-
   echo "Running full install..." >&2
   "$temp_binary" --full-install "$BBX_HOSTNAME" "$email_value" ${YES_FLAG}
 else
