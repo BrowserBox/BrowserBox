@@ -92,13 +92,14 @@ function Get-LatestRelease {
 
     try {
         $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
-        $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop
+        # -UseBasicParsing ensures compatibility with PowerShell 5.1 on Server Core
+        $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop -UseBasicParsing
         return $response.tag_name
     } catch {
         try {
             Write-Host "Latest release lookup failed, checking release list..." -ForegroundColor Gray
             $apiUrl = "https://api.github.com/repos/$Repo/releases?per_page=1"
-            $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop
+            $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop -UseBasicParsing
             if ($response -and $response.Count -gt 0) {
                 return $response[0].tag_name
             }
@@ -132,9 +133,9 @@ function Download-Binary {
     try {
         if ($useAssetApi) {
             if ($Tag) {
-                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$Tag" -Headers $headers -ErrorAction Stop
+                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$Tag" -Headers $headers -ErrorAction Stop -UseBasicParsing
             } else {
-                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases" -Headers $headers -ErrorAction Stop
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases" -Headers $headers -ErrorAction Stop -UseBasicParsing
                 if (-not $releases -or $releases.Count -eq 0) {
                     Write-Error "No releases found in $ReleaseRepo"
                     exit 1
@@ -149,14 +150,14 @@ function Download-Binary {
                 exit 1
             }
             $assetUrl = "https://api.github.com/repos/$ReleaseRepo/releases/assets/$($asset.id)"
-            Invoke-WebRequest -Uri $assetUrl -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $tempFile -ErrorAction Stop
+            Invoke-WebRequest -Uri $assetUrl -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $tempFile -ErrorAction Stop -UseBasicParsing
         } else {
             $downloadUrl = if ($Tag) {
                 "https://github.com/$ReleaseRepo/releases/download/$Tag/$RemoteAssetName"
             } else {
                 "https://github.com/$ReleaseRepo/releases/latest/download/$RemoteAssetName"
             }
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile -ErrorAction Stop
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile -ErrorAction Stop -UseBasicParsing
         }
 
         if (Test-Path $BinaryPath) {
@@ -278,11 +279,14 @@ function Verify-ManifestSignature {
     $sigBytes = Convert-HexToBytes -Hex $sigHex
 
     $rsa = [System.Security.Cryptography.RSA]::Create()
+    
+    # Check for ImportFromPem (PWSH 7+ / .NET 5+). Fallback to manual ASN.1 parser (PS 5.1).
     if ($rsa -and ($rsa | Get-Member -Name ImportFromPem -MemberType Method)) {
         $rsa.ImportFromPem($IntegrityPublicKeyPem)
     } else {
         $rsa = Get-RsaPublicKeyFromPem -Pem $IntegrityPublicKeyPem
     }
+    
     $ok = $rsa.VerifyData($payload, $sigBytes, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
     if (-not $ok) { throw "Release manifest signature verification failed." }
 }
@@ -335,17 +339,17 @@ try {
     if ($Token -or $ReleaseRepo -ne $publicRepo) {
         if (-not $Token) { throw "GH_TOKEN/GITHUB_TOKEN is required to download manifests from $ReleaseRepo." }
         $headers = @{ Authorization = "Bearer $Token" }
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$tag" -Headers $headers -ErrorAction Stop
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$tag" -Headers $headers -ErrorAction Stop -UseBasicParsing
         $manifestAsset = $release.assets | Where-Object { $_.name -eq "release.manifest.json" } | Select-Object -First 1
         $sigAsset = $release.assets | Where-Object { $_.name -eq "release.manifest.json.sig" } | Select-Object -First 1
         if (-not $manifestAsset -or -not $sigAsset) { throw "Manifest assets not found on release $tag." }
-        Invoke-WebRequest -Uri "https://api.github.com/repos/$ReleaseRepo/releases/assets/$($manifestAsset.id)" -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $manifestPath -ErrorAction Stop
-        Invoke-WebRequest -Uri "https://api.github.com/repos/$ReleaseRepo/releases/assets/$($sigAsset.id)" -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $sigPath -ErrorAction Stop
+        Invoke-WebRequest -Uri "https://api.github.com/repos/$ReleaseRepo/releases/assets/$($manifestAsset.id)" -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $manifestPath -ErrorAction Stop -UseBasicParsing
+        Invoke-WebRequest -Uri "https://api.github.com/repos/$ReleaseRepo/releases/assets/$($sigAsset.id)" -Headers @{ Authorization = "Bearer $Token"; Accept = "application/octet-stream" } -OutFile $sigPath -ErrorAction Stop -UseBasicParsing
     } else {
         $manifestUrl = "https://github.com/$ReleaseRepo/releases/download/$tag/release.manifest.json"
         $sigUrl = "https://github.com/$ReleaseRepo/releases/download/$tag/release.manifest.json.sig"
-        Invoke-WebRequest -Uri $manifestUrl -OutFile $manifestPath -ErrorAction Stop
-        Invoke-WebRequest -Uri $sigUrl -OutFile $sigPath -ErrorAction Stop
+        Invoke-WebRequest -Uri $manifestUrl -OutFile $manifestPath -ErrorAction Stop -UseBasicParsing
+        Invoke-WebRequest -Uri $sigUrl -OutFile $sigPath -ErrorAction Stop -UseBasicParsing
     }
     Verify-ManifestSignature -ManifestPath $manifestPath -SignaturePath $sigPath
 
@@ -413,6 +417,7 @@ $DefaultHostname = if ($CfgHostname) { $CfgHostname } else { $env:COMPUTERNAME }
 
 # Interactive Prompting
 if ($FullInstall) {
+    # [Environment]::UserInteractive works in both PS 5.1 and PS Core 7+
     if ([Environment]::UserInteractive) {
         if (-not $CfgHostname) {
             $input = Read-Host "Enter hostname (default: $DefaultHostname)"
@@ -422,7 +427,6 @@ if ($FullInstall) {
                 $CfgHostname = $input
             }
         } else {
-            # Normalize in case we picked up a blank var
              if ([string]::IsNullOrWhiteSpace($CfgHostname)) { $CfgHostname = $DefaultHostname }
         }
 
