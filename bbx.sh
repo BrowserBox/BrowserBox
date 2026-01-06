@@ -4153,7 +4153,8 @@ faq() {
 check_agreement() {
   if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
     if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-      echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
+      # Write a valid email-like string for test agreement so install.sh can pick it up
+      echo "${EMAIL:-test@browserbox.io}" > "$BB_CONFIG_DIR/.agreed"
     fi
     return 0
   fi
@@ -4163,9 +4164,18 @@ check_agreement() {
       printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
       read -r -p " Agree? (yes/no): " AGREE
       [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
+      
+      while true; do
+        read -r -p " Enter your email address: " USER_EMAIL
+        if [[ "$USER_EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+           break
+        else
+           printf "${RED}Invalid email format. Please try again.${NC}\n"
+        fi
+      done
+
       mkdir -p "$BB_CONFIG_DIR"
-      touch "$BB_CONFIG_DIR/.agreed"
-      echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
+      echo "$USER_EMAIL" > "$BB_CONFIG_DIR/.agreed"
   fi
 }
 
