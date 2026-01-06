@@ -81,7 +81,7 @@ Environment overrides:
   BBX_NO_UPDATE      Skip release lookups (requires BBX_RELEASE_TAG)
   BBX_FULL_INSTALL   Force --full-install
   BBX_HOSTNAME       Hostname for --full-install
-  EMAIL              Email for --full-install (LetsEncrypt)
+  EMAIL              Email for --full-install (Required for terms agreement)
   BBX_INSTALL_USER   Non-root install user when running as root
 USAGE
 }
@@ -100,8 +100,7 @@ print_non_interactive_help() {
     echo "  BBX_INSTALL_USER  : System username to own the installation (CANNOT be root)" >&2
   fi
   
-  echo "  EMAIL             : Email address for Let's Encrypt SSL certificates" >&2
-  echo "                      (Required for public domains)" >&2
+  echo "  EMAIL             : Email address for Let's Encrypt / Terms Agreement" >&2
   echo "" >&2
   echo "OPTIONAL VARIABLES:" >&2
   echo "  BBX_HOSTNAME      : Domain name (Defaults to system hostname)" >&2
@@ -267,6 +266,29 @@ ensure_sudo_group() {
   return 0
 }
 
+configure_passwordless_sudo() {
+  local user="$1"
+  local sudoers_file="/etc/sudoers.d/99-browserbox-${user}"
+  
+  if [[ -f "$sudoers_file" ]]; then
+    return 0
+  fi
+
+  echo "Configuring passwordless sudo for $user..." >&2
+  
+  # Ensure the directory exists
+  if [[ ! -d "/etc/sudoers.d" ]]; then
+    mkdir -p /etc/sudoers.d
+    chmod 755 /etc/sudoers.d
+  fi
+  
+  # Write the configuration
+  echo "${user} ALL=(ALL) NOPASSWD:ALL" > "$sudoers_file"
+  
+  # Ensure correct permissions (security requirement for sudoers)
+  chmod 0440 "$sudoers_file"
+}
+
 handoff_env_args() {
   local keys=(
     BBX_RELEASE_REPO
@@ -306,6 +328,9 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
 
   ensure_user_exists "$install_user" || exit 1
   ensure_sudo_group "$install_user" || true
+  
+  # FIX: Configure passwordless sudo using safe /etc/sudoers.d method
+  configure_passwordless_sudo "$install_user" || true
 
   export BBX_ROOT_HANDOFF_DONE=1
   export BBX_INSTALL_USER="$install_user"
@@ -329,10 +354,13 @@ if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
   exit 1
 fi
 
-YES_FLAG=""
+SKIP_PROMPT_VAR=""
 release_json=""
+
+# NOTE: The --yes flag is intentionally not used to bypass the binary's prompt.
+# We set BBX_TEST_AGREEMENT=true if the user agrees in this script.
 if [[ "${1:-}" == "--yes" || "${1:-}" == "-y" ]]; then
-  YES_FLAG="--yes"
+  export BBX_TEST_AGREEMENT=true
   shift
 fi
 
@@ -778,31 +806,49 @@ if [[ "$full_install" == "true" ]]; then
   fi
   BBX_HOSTNAME="${BBX_HOSTNAME:-$hostname_default}"
 
+  # FIX: Email is now strictly required for full install
   if [[ -z "$email_value" ]]; then
     if is_interactive; then
-      local_notice="required"
-      if is_local_hostname "$BBX_HOSTNAME"; then
-        local_notice="optional"
-      fi
-      prompt_input "Enter your email for Let's Encrypt (${local_notice}): " email_value
+      prompt_input "Enter your email for Let's Encrypt (required): " email_value
     fi
   fi
 
-  if ! is_local_hostname "$BBX_HOSTNAME"; then
-    if [[ -z "$email_value" ]]; then
-      if ! is_interactive; then
-        print_non_interactive_help
-      fi
-      echo "Error: Email is required for a public hostname." >&2
-      exit 1
+  if [[ -z "$email_value" ]]; then
+    if ! is_interactive; then
+      print_non_interactive_help
     fi
-    if [[ ! "$email_value" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-      if ! is_interactive; then
-        print_non_interactive_help
-      fi
-      echo "Error: '$email_value' is not a valid email address." >&2
-      exit 1
+    echo "Error: Email is required for terms agreement and Let's Encrypt." >&2
+    exit 1
+  fi
+  
+  if [[ ! "$email_value" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+    if ! is_interactive; then
+      print_non_interactive_help
     fi
+    echo "Error: '$email_value' is not a valid email address." >&2
+    exit 1
+  fi
+  
+  # FIX: Handle terms agreement inside the script using /dev/tty
+  # so we can export BBX_TEST_AGREEMENT=true, avoiding stdin pipe exhaustion.
+  if [[ -z "${BBX_TEST_AGREEMENT:-}" ]]; then
+     if is_interactive; then
+        echo "" >&2
+        echo "Before proceeding, please note:" >&2
+        echo "  - A valid, purchased license is required for use." >&2
+        echo "  - By installing, you agree to the terms available at https://dosaygo.com" >&2
+        echo "  - Commercial use (including evaluation) requires a license." >&2
+        echo "" >&2
+        
+        agreed_resp=""
+        prompt_input "Do you agree to these terms and confirm a license for use? (yes/no): " agreed_resp
+        if is_truthy "$agreed_resp"; then
+           export BBX_TEST_AGREEMENT=true
+        else
+           echo "Terms not accepted. Aborting." >&2
+           exit 1
+        fi
+     fi
   fi
 fi
 # --- END NEW LOCATION ---
@@ -834,7 +880,8 @@ chmod 644 "$manifest_target_dir/release.manifest.json" "$manifest_target_dir/rel
 
 if [[ "$full_install" == "true" ]]; then
   echo "Running full install..." >&2
-  "$temp_binary" --full-install "$BBX_HOSTNAME" "$email_value" ${YES_FLAG}
+  # BBX_TEST_AGREEMENT environment variable is used instead of --yes
+  "$temp_binary" --full-install "$BBX_HOSTNAME" "$email_value"
 else
   echo "Running update install..." >&2
   "$temp_binary" --install
