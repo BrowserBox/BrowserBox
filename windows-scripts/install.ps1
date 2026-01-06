@@ -1,45 +1,82 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false, HelpMessage = "Show help.")]
-    [switch]$Help
+    [switch]$Help,
+    [Parameter(Mandatory = $false, HelpMessage = "Auto-confirm prompts.")]
+    [switch]$Yes
 )
 
 if ($Help -or $args -contains '-help') {
-    Write-Host "bbx install" -ForegroundColor Green
-    Write-Host "Install BrowserBox (binary distribution)" -ForegroundColor Yellow
-    Write-Host "Usage: bbx install" -ForegroundColor Cyan
-    Write-Host "Options:" -ForegroundColor Cyan
-    Write-Host "  -Help    Show this help message" -ForegroundColor White
+    Write-Host "BrowserBox Installer (Windows)" -ForegroundColor Green
+    Write-Host "Usage: .\install.ps1 [-Yes] [-Help]" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Environment overrides:" -ForegroundColor Cyan
-    Write-Host "  BBX_RELEASE_REPO, BBX_RELEASE_TAG, GH_TOKEN/GITHUB_TOKEN, BBX_NO_UPDATE" -ForegroundColor White
+    Write-Host "  BBX_RELEASE_REPO   GitHub repo for releases (default: BrowserBox/BrowserBox)"
+    Write-Host "  BBX_RELEASE_TAG    Pin a specific release tag"
+    Write-Host "  GH_TOKEN           GitHub token for private repos"
+    Write-Host "  BBX_NO_UPDATE      Skip release lookups"
+    Write-Host "  BBX_FULL_INSTALL   Force --full-install"
+    Write-Host "  BBX_HOSTNAME       Hostname for --full-install"
+    Write-Host "  EMAIL              Email for --full-install (LetsEncrypt)"
     $global:LASTEXITCODE = 0
     return
 }
 
 $ErrorActionPreference = "Stop"
 
+# --- Configuration & Environment Setup ---
+
 $PublicRepo = "BrowserBox/BrowserBox"
 $ReleaseRepo = if ($env:BBX_RELEASE_REPO) { $env:BBX_RELEASE_REPO } else { $PublicRepo }
 $Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { "" }
-$NoUpdate = $false
-if ($null -ne $env:BBX_NO_UPDATE -and $env:BBX_NO_UPDATE -ne "") {
-    try {
-        $NoUpdate = [System.Convert]::ToBoolean($env:BBX_NO_UPDATE)
-    } catch {
-        $NoUpdate = ($env:BBX_NO_UPDATE.ToLowerInvariant() -in @("1", "true", "yes", "y", "on"))
-    }
+
+function Test-IsTruthy {
+    param([string]$Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
+    return $Value.ToLowerInvariant() -in @("1", "true", "yes", "y", "on")
 }
 
+$NoUpdate = Test-IsTruthy $env:BBX_NO_UPDATE
 $BinaryDir = "$env:LOCALAPPDATA\browserbox\bin"
 $BinaryName = "browserbox.exe"
 $RemoteAssetName = "browserbox-win-x64.exe"
 $BinaryPath = Join-Path $BinaryDir $BinaryName
 
+# --- Helper Functions ---
+
 function Ensure-BinaryDir {
     if (-not (Test-Path $BinaryDir)) {
         New-Item -ItemType Directory -Path $BinaryDir -Force | Out-Null
     }
+}
+
+function Show-NonInteractiveHelp {
+    Write-Error "----------------------------------------------------------------"
+    Write-Error "BrowserBox Non-Interactive Install Helper"
+    Write-Error "----------------------------------------------------------------"
+    Write-Error "It appears you are running the installer in a non-interactive"
+    Write-Error "environment without all required environment variables."
+    Write-Error ""
+    Write-Error "REQUIRED VARIABLES:"
+    Write-Error "  EMAIL             : Email address for Let's Encrypt SSL certificates"
+    Write-Error "                      (Required for public domains)"
+    Write-Error ""
+    Write-Error "OPTIONAL VARIABLES:"
+    Write-Error "  BBX_HOSTNAME      : Domain name (Defaults to system hostname)"
+    Write-Error "  BBX_FULL_INSTALL  : Set to 'true' to force a full reinstall"
+    Write-Error ""
+    Write-Error "EXAMPLE:"
+    Write-Error "  `$env:EMAIL='me@example.com'"
+    Write-Error "  iex ((New-Object System.Net.WebClient).DownloadString('https://browserbox.io/install.ps1'))"
+    Write-Error "----------------------------------------------------------------"
+}
+
+function Test-IsLocalHostname {
+    param([string]$Hostname)
+    if ([string]::IsNullOrWhiteSpace($Hostname)) { return $false }
+    if ($Hostname -in @("localhost", "127.0.0.1", "::1")) { return $true }
+    if ($Hostname -match "\.local$|\.test$|\.example$") { return $true }
+    return $false
 }
 
 function Get-LatestRelease {
@@ -59,7 +96,7 @@ function Get-LatestRelease {
         return $response.tag_name
     } catch {
         try {
-            Write-Host "Latest release lookup failed (check for drafts), checking release list..." -ForegroundColor Gray
+            Write-Host "Latest release lookup failed, checking release list..." -ForegroundColor Gray
             $apiUrl = "https://api.github.com/repos/$Repo/releases?per_page=1"
             $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop
             if ($response -and $response.Count -gt 0) {
@@ -131,6 +168,8 @@ function Download-Binary {
         exit 1
     }
 }
+
+# --- Crypto / Verification Utils ---
 
 $IntegrityPublicKeyPem = @'
 -----BEGIN PUBLIC KEY-----
@@ -254,6 +293,8 @@ function Get-FileSha256 {
     return (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+# --- Main Logic ---
+
 $tag = if ($env:BBX_RELEASE_TAG) { $env:BBX_RELEASE_TAG } else { Get-LatestRelease -Repo $ReleaseRepo }
 if (-not $tag) {
     Write-Error "Could not determine release tag."
@@ -262,11 +303,9 @@ if (-not $tag) {
 
 Download-Binary -Tag $tag
 
-# Try global location first (C:\ProgramData), fallback to user dir
+# Setup config paths
 $globalDir = Join-Path $env:PROGRAMDATA "dosaygo\bbpro"
 $userConfigDir = "$env:USERPROFILE\.config\dosaygo\bbpro"
-
-# Check if we can write to ProgramData (admin privileges)
 $useGlobal = $false
 try {
     if (-not (Test-Path $globalDir)) { 
@@ -274,21 +313,21 @@ try {
     }
     $useGlobal = $true
 } catch {
-    # No admin access, use user config dir
     if (-not (Test-Path $userConfigDir)) { 
         New-Item -ItemType Directory -Path $userConfigDir -Force | Out-Null 
     }
 }
-
 $targetDir = if ($useGlobal) { $globalDir } else { $userConfigDir }
 $locationDesc = if ($useGlobal) { "global location" } else { "user config" }
 
+# Download Manifest
 $tempBase = $env:TEMP
 if (-not $tempBase) { $tempBase = "C:\Windows\Temp" }
 $tempDir = Join-Path $tempBase "bbx-installer"
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 $manifestPath = Join-Path $tempDir "release.manifest.json"
 $sigPath = Join-Path $tempDir "release.manifest.json.sig"
+$manifestJson = $null
 
 Write-Host "Downloading release manifest to $locationDesc..." -ForegroundColor Yellow
 try {
@@ -328,12 +367,109 @@ try {
     exit 1
 }
 
-# Ensure cp_commands_only.ps1 copies the binary we just downloaded.
+# --- Setup for Install Execution (Interactive Logic) ---
+
+$FullInstall = $false
+# 1. Check if env var forces full install
+if (Test-IsTruthy $env:BBX_FULL_INSTALL) {
+    $FullInstall = $true
+}
+# 2. Check if binary existed before (if not, force full install)
+#    (Note: we already downloaded over it, checking logic assumes if this is a fresh machine)
+#    Since we overwrote $BinaryPath, we can't check existence now, but typically logic is:
+#    If the user has no config, it's a full install.
+if (-not (Test-Path "$userConfigDir\config.yaml") -and -not (Test-Path "$globalDir\config.yaml")) {
+    $FullInstall = $true
+}
+# 3. Check manifest requirements
+if ($manifestJson.install.fullInstallRequired -or $manifestJson.full_install_required) {
+    $FullInstall = $true
+}
+
+# Pre-load Hostname/Email from existing config if available
+$CfgHostname = $env:BBX_HOSTNAME
+$CfgEmail = $env:EMAIL
+
+if (-not $CfgHostname) {
+    $testEnv = Join-Path $userConfigDir "test.env"
+    if (Test-Path $testEnv) {
+        $content = Get-Content $testEnv -Raw
+        if ($content -match "DOMAIN=(.+)") {
+            $CfgHostname = $matches[1].Trim()
+        }
+    }
+}
+if (-not $CfgEmail) {
+    $agreedFile = Join-Path $userConfigDir ".agreed"
+    if (Test-Path $agreedFile) {
+        $line = Get-Content $agreedFile | Select-Object -Last 1
+        if ($line -match "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$") {
+            $CfgEmail = $line.Trim()
+        }
+    }
+}
+
+$DefaultHostname = if ($CfgHostname) { $CfgHostname } else { $env:COMPUTERNAME }
+
+# Interactive Prompting
+if ($FullInstall) {
+    if ([Environment]::UserInteractive) {
+        if (-not $CfgHostname) {
+            $input = Read-Host "Enter hostname (default: $DefaultHostname)"
+            if ([string]::IsNullOrWhiteSpace($input)) {
+                $CfgHostname = $DefaultHostname
+            } else {
+                $CfgHostname = $input
+            }
+        } else {
+            # Normalize in case we picked up a blank var
+             if ([string]::IsNullOrWhiteSpace($CfgHostname)) { $CfgHostname = $DefaultHostname }
+        }
+
+        if (-not $CfgEmail) {
+            $promptMsg = "Enter your email for Let's Encrypt"
+            if (Test-IsLocalHostname $CfgHostname) {
+                $promptMsg += " (optional for local)"
+            } else {
+                $promptMsg += " (required)"
+            }
+            $input = Read-Host $promptMsg
+            $CfgEmail = $input
+        }
+    } else {
+        # Non-Interactive Fallback
+        if ([string]::IsNullOrWhiteSpace($CfgHostname)) { $CfgHostname = $DefaultHostname }
+    }
+
+    # Validation
+    if (-not (Test-IsLocalHostname $CfgHostname)) {
+        if ([string]::IsNullOrWhiteSpace($CfgEmail)) {
+            if (-not [Environment]::UserInteractive) { Show-NonInteractiveHelp }
+            Write-Error "Error: Email is required for a public hostname."
+            exit 1
+        }
+        if ($CfgEmail -notmatch "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$") {
+            if (-not [Environment]::UserInteractive) { Show-NonInteractiveHelp }
+            Write-Error "Error: '$CfgEmail' is not a valid email address."
+            exit 1
+        }
+    }
+}
+
+# --- Execution ---
+
 $env:BBX_BINARY_SOURCE_PATH = $BinaryPath
 
-$installArgs = @("--install")
-if ($env:BBX_FULL_INSTALL -and $env:BBX_FULL_INSTALL -ne "" -and $env:BBX_FULL_INSTALL -ne "0" -and $env:BBX_FULL_INSTALL.ToLowerInvariant() -ne "false") {
-    $installArgs = @("--full-install")
+if ($FullInstall) {
+    $installArgs = @("--full-install", $CfgHostname)
+    if (-not [string]::IsNullOrWhiteSpace($CfgEmail)) {
+        $installArgs += $CfgEmail
+    }
+    if ($Yes) {
+        $installArgs += "--yes"
+    }
+} else {
+    $installArgs = @("--install")
 }
 
 Write-Host "Running BrowserBox installer: $BinaryPath $($installArgs -join ' ')" -ForegroundColor Yellow
