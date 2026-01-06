@@ -809,7 +809,7 @@ if [[ "$full_install" == "true" ]]; then
   # FIX: Email is now strictly required for full install
   if [[ -z "$email_value" ]]; then
     if is_interactive; then
-      prompt_input "Enter your email for Let's Encrypt (required): " email_value
+      prompt_input "Enter your email for Let's Encrypt and BrowserBox terms agreement (required): " email_value
     fi
   fi
 
