@@ -712,15 +712,38 @@ download_release_asset() {
       exit 1
     fi
 
-    curl -L --fail --progress-bar --connect-timeout 60 --retry 3 --retry-delay 2 \
-      -H "Authorization: Bearer ${GH_TOKEN}" \
-      -H "Accept: application/octet-stream" \
-      -o "$out_path" "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases/assets/${asset_id}"
-    return 0
+    # Retry loop for HTTP errors (curl --retry doesn't retry on HTTP 500)
+    local max_attempts=3
+    local attempt=1
+    while [[ $attempt -le $max_attempts ]]; do
+      if curl -L --fail --progress-bar --connect-timeout 60 --retry 3 --retry-delay 2 \
+        -H "Authorization: Bearer ${GH_TOKEN}" \
+        -H "Accept: application/octet-stream" \
+        -o "$out_path" "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases/assets/${asset_id}"; then
+        return 0
+      fi
+      echo "Download attempt $attempt failed, retrying in 2s..." >&2
+      sleep 2
+      ((attempt++))
+    done
+    echo "Failed to download asset after $max_attempts attempts." >&2
+    return 1
   fi
 
   local url="https://github.com/${BBX_RELEASE_REPO}/releases/download/${tag}/${asset_name}"
-  curl -L --fail --progress-bar --connect-timeout 60 --retry 3 --retry-delay 2 -o "$out_path" "$url"
+  # Retry loop for HTTP errors
+  local max_attempts=3
+  local attempt=1
+  while [[ $attempt -le $max_attempts ]]; do
+    if curl -L --fail --progress-bar --connect-timeout 60 --retry 3 --retry-delay 2 -o "$out_path" "$url"; then
+      return 0
+    fi
+    echo "Download attempt $attempt failed, retrying in 2s..." >&2
+    sleep 2
+    ((attempt++))
+  done
+  echo "Failed to download asset after $max_attempts attempts." >&2
+  return 1
 }
 
 hash_file() {
