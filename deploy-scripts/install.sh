@@ -83,6 +83,7 @@ Environment overrides:
   BBX_HOSTNAME       Hostname for --full-install
   EMAIL              Email for --full-install (Required for terms agreement)
   BBX_INSTALL_USER   Non-root install user when running as root
+  BBX_SUDOLESS       Set to 'true' to skip sudo usage (for Docker/Cloud Run)
 USAGE
 }
 
@@ -301,6 +302,7 @@ handoff_env_args() {
     EMAIL
     BBX_TEST_AGREEMENT
     BBX_INSTALL_USER
+    BBX_SUDOLESS
   )
   HANDOFF_ENV=()
   for key in "${keys[@]}"; do
@@ -310,7 +312,8 @@ handoff_env_args() {
   done
 }
 
-if [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
+# Skip root handoff if BBX_SUDOLESS is set (for Docker, Cloud Run, etc.)
+if [[ "${BBX_SUDOLESS:-false}" != "true" ]] && [[ "$(id -u)" -eq 0 && -z "${BBX_ROOT_HANDOFF_DONE:-}" ]]; then
   install_user="${BBX_INSTALL_USER:-}"
   if [[ -z "$install_user" ]]; then
     if ! is_interactive; then
@@ -373,7 +376,8 @@ attempt_install_package() {
   local cmd_prefix=""
 
   # Determine if we need sudo
-  if [[ "$(id -u)" -ne 0 ]]; then
+  # Skip sudo if BBX_SUDOLESS is set (for Docker, Cloud Run, etc.)
+  if [[ "${BBX_SUDOLESS:-false}" != "true" ]] && [[ "$(id -u)" -ne 0 ]]; then
     if command -v sudo >/dev/null 2>&1; then
       cmd_prefix="sudo -E"
     else
