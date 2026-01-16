@@ -13,12 +13,6 @@ TEST_INSTALL_TIMEOUT="10m"
 TEST_CF_RUN_TIMEOUT="5m"
 export SKIP_DOCKER="true" # we haven't build docker images yet so skip
 
-# Tor bootstrap can be significantly slower/flakier inside CI containers.
-if [[ -n "${BBX_CI_CONTAINER_IMAGE:-}" || -f "/.dockerenv" ]]; then
-  TEST_TOR_RUN_TIMEOUT="6m"
-  export BBX_CF_MAX_TIME="${BBX_CF_MAX_TIME:-420}"
-fi
-
 if [[ -z "$STATUS_MODE" ]]; then
   echo "Set status mode env" >&2
   STATUS_MODE="quick exit"
@@ -1041,19 +1035,6 @@ test_tor_run() {
 }
 
 test_cf_run() {
-  if [[ -f /.dockerenv ]]; then
-    local os_id=""
-    if [[ -f /etc/os-release ]]; then
-      # shellcheck disable=SC1091
-      source /etc/os-release
-      os_id="${ID:-}"
-    fi
-    if [[ "$os_id" == "centos" || "$os_id" == "rhel" || "$os_id" == "fedora" ]]; then
-      echo -e "${YELLOW}⚠ Warning: ${os_id} container detected; using local-run CF path with IPv4 edge${NC}"
-      export BBX_CF_USE_LOCAL_RUN=1
-    fi
-  fi
-  # Don't force an edge IP version in CI; default selection is handled by bbx/cf-run.
   # Check if we have internet connectivity by testing Cloudflare endpoint
   if ! curl --connect-timeout 5 -s -o /dev/null https://www.cloudflare.com 2>/dev/null; then
     echo "Skipping Cloudflare tunnel test (no internet connectivity)"
@@ -1061,212 +1042,55 @@ test_cf_run() {
     return 0
   fi
 
-  if [[ -n "${BBX_CF_USE_LOCAL_RUN:-}" ]]; then
-    echo "Running Cloudflare tunnel against local bbx run... "
-    if ! command -v cloudflared &>/dev/null; then
-      echo -e "${YELLOW}⚠ Warning: cloudflared not found; skipping CF test${NC}"
-      ((warnings++))
-      return 0
-    fi
+  echo "Running bbx with Cloudflare tunnel (background mode)... "
 
-    if ! saga_bbx_setup --port "${BBX_SETUP_PORT}" --hostname localhost; then
-      echo -e "${RED}✘ Failed (bbx setup failed for CF run)${NC}"
-      ((failed++))
-      return 1
-    fi
-
-    output="$(saga_bbx_run 2>&1)"
-    login_link="$(extract_login_link "$output" | tail -n 1)"
-    if [ -z "$login_link" ]; then
-      echo -e "${RED}✘ Failed (No login link or run failed)${NC}"
-      ((failed++))
-      saga_bbx_stop
-      return 1
-    fi
-
-    local env_file="${BB_CONFIG_DIR}/test.env"
-    if [ ! -f "$env_file" ]; then
-      echo -e "${YELLOW}⚠ Warning: ${env_file} not found; skipping CF test${NC}"
-      ((warnings++))
-      saga_bbx_stop
-      return 0
-    fi
-    # shellcheck disable=SC1090
-    source "$env_file"
-    local local_port="${APP_PORT:-}"
-    local token="${LOGIN_TOKEN:-}"
-    if [[ -z "$local_port" ]]; then
-      echo -e "${YELLOW}⚠ Warning: APP_PORT missing; skipping CF test${NC}"
-      ((warnings++))
-      saga_bbx_stop
-      return 0
-    fi
-
-    local cf_log_file="${BB_CONFIG_DIR}/cloudflared.log"
-    local scheme="https"
-    if [[ "${BBX_HTTP_ONLY:-}" == "true" ]]; then
-      scheme="http"
-    fi
-
-    local cf_edge_args=()
-    local cf_edge_ip_version=""
-    if [[ -n "${BBX_CF_EDGE_IP_VERSION:-}" ]]; then
-      cf_edge_ip_version="${BBX_CF_EDGE_IP_VERSION}"
-    elif [[ -f "/.dockerenv" ]]; then
-      cf_edge_ip_version="4"
-    fi
-    if [[ -n "$cf_edge_ip_version" ]]; then
-      if [[ "$cf_edge_ip_version" == "4" || "$cf_edge_ip_version" == "6" ]]; then
-        cf_edge_args+=(--edge-ip-version "${cf_edge_ip_version}")
-      else
-        echo -e "${YELLOW}⚠ Warning: BBX_CF_EDGE_IP_VERSION must be 4 or 6 (got: ${cf_edge_ip_version}); ignoring${NC}"
-      fi
-    fi
-    cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "${scheme}://127.0.0.1:${local_port}" --no-tls-verify > "$cf_log_file" 2>&1 &
-    cf_pid=$!
-
-    local attempts=0
-    local max_attempts=120
-    local tunnel_url=""
-    while [ $attempts -lt $max_attempts ]; do
-      if [ -f "$cf_log_file" ]; then
-        tunnel_url=$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$cf_log_file" | head -1)
-        if [ -n "$tunnel_url" ]; then
-          break
-        fi
-      fi
-      sleep 0.5
-      attempts=$((attempts + 1))
-    done
-
-    if [ -z "$tunnel_url" ]; then
-      echo -e "${RED}✘ Failed to extract tunnel URL from cloudflared log${NC}"
-      kill $cf_pid 2>/dev/null || true
-      saga_bbx_stop
-      return 1
-    fi
-
-    local cf_login_link="${tunnel_url}/login?token=${token}"
-    echo -e "${GREEN}✔ Success (CF run started, link: ${cf_login_link})${NC}"
-    ((passed++))
-
-    sleep 10
-
-    local start_time=$(date +%s)
-    local max_time="${BBX_CF_MAX_TIME:-180}"
-    local interval="${BBX_CF_INTERVAL:-4}"
-    local timeout=10
-    local success=0
-    local http_code=""
-    local curl_opts="-s -k -L -w %{http_code} --max-time $timeout --fail --output /dev/null"
-    echo -n "Testing CF login link ${cf_login_link} with retries... "
-    while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
-      http_code="$(curl $curl_opts "$cf_login_link")"
-      if [[ "$http_code" =~ ^2 ]]; then
-        success=1
-        break
-      fi
-      sleep $interval
-    done
-    if [ $success -ne 1 ]; then
-      if [[ -n "${BBX_CI_CONTAINER_IMAGE:-}" || -f "/.dockerenv" ]]; then
-        echo -e "${YELLOW}⚠ Warning: CF login link check did not reach 2xx within $max_time seconds (Last HTTP code: $http_code); treating as non-fatal in CI containers${NC}"
-        ((warnings++))
-        kill $cf_pid 2>/dev/null || true
-        saga_bbx_stop
-        return 0
-      fi
-      echo -e "${RED}✘ Failed after $max_time seconds (Last HTTP code: $http_code)${NC}"
-      kill $cf_pid 2>/dev/null || true
-      saga_bbx_stop
-      return 1
-    fi
-    echo -e "${GREEN}✔ Success (HTTP $http_code)${NC}"
-    ((passed++))
-
-    kill $cf_pid 2>/dev/null || true
-    saga_bbx_stop
-    return 0
-  fi
-
-  echo "Running bbx with Cloudflare tunnel... "
-  # Run cf-run with a timeout (allow extra time for tunnel propagation)
   local bbx_exec=""
-  local timeout_cmd="timeout"
   if ! bbx_exec="$(bbx_exec_path)"; then
     echo -e "${RED}✘ Failed (bbx command not found)${NC}"
     ((failed++))
     return 1
   fi
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    if command -v gtimeout &>/dev/null; then
-      timeout_cmd="gtimeout"
-    else
-      timeout_cmd=""
-    fi
-  fi
-  if [[ -n "$timeout_cmd" ]] && command -v "$timeout_cmd" &>/dev/null; then
-    "$timeout_cmd" -k 15s "$TEST_CF_RUN_TIMEOUT" "$bbx_exec" cf-run 2>&1 &
-  else
-    "$bbx_exec" cf-run 2>&1 &
-  fi
-  cf_pid=$!
-  
-  # Wait for cf-run to start and create login.link
-  sleep 30
-  
-  if [ ! -f "${BB_CONFIG_DIR}/login.link" ]; then
-    echo -e "${YELLOW}⚠ Warning: login.link not found (cf-run may still be starting)${NC}"
-    kill $cf_pid 2>/dev/null || true
+
+  # Use cf-run --background which handles:
+  # - cloudflared installation
+  # - auto-restart on crash
+  # - PID file management
+  # - URL extraction with retries
+  "$bbx_exec" cf-run --background 2>&1
+  local cf_run_exit=$?
+
+  if [ $cf_run_exit -ne 0 ]; then
+    echo -e "${RED}✘ Failed (cf-run exited with code $cf_run_exit)${NC}"
+    ((failed++))
     saga_bbx_stop
-    ((warnings++))
-    return 0
+    return 1
   fi
-  
+
+  # cf-run --background exits after tunnel is established and login.link is written
+  if [ ! -f "${BB_CONFIG_DIR}/login.link" ]; then
+    echo -e "${RED}✘ Failed (login.link not found after cf-run)${NC}"
+    ((failed++))
+    saga_bbx_stop
+    return 1
+  fi
+
   output="$(cat "${BB_CONFIG_DIR}/login.link")"
   login_link="$(extract_login_link "$output" | tail -n 1)"
-  
+
   if [ -z "$login_link" ]; then
-    echo -e "${YELLOW}⚠ Warning: No login link found${NC}"
-    kill $cf_pid 2>/dev/null || true
+    echo -e "${RED}✘ Failed (No login link found in login.link)${NC}"
+    ((failed++))
     saga_bbx_stop
-    ((warnings++))
-    return 0
+    return 1
   fi
-  
+
   echo -e "${GREEN}✔ Success (CF run started, link: ${login_link})${NC}"
   ((passed++))
 
-  # Wait for the local origin to be reachable before hitting the tunnel.
-  local env_file="${BB_CONFIG_DIR}/test.env"
-  if [ -f "$env_file" ]; then
-    # shellcheck disable=SC1090
-    source "$env_file"
-    local local_port="${APP_PORT:-}"
-    local token="${LOGIN_TOKEN:-}"
-    if [[ -n "$local_port" ]]; then
-      local origin_link="http://127.0.0.1:${local_port}/login"
-      if [[ -n "$token" ]]; then
-        origin_link="${origin_link}?token=${token}"
-      fi
-      local start_time=$(date +%s)
-      local max_time=60
-      local interval=2
-      local http_code=""
-      while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
-        http_code="$(curl -s -L -w %{http_code} --max-time 5 --fail --output /dev/null "$origin_link")"
-        if [[ "$http_code" =~ ^2 ]]; then
-          break
-        fi
-        sleep $interval
-      done
-    fi
-  fi
+  # Give tunnel a moment to stabilize
+  sleep 5
 
-  # Cloudflare quick tunnels can take a bit to become active.
-  sleep 10
-  
-  # Test login link with longer retries for tunnel propagation.
+  # Test login link with retries for tunnel propagation
   local start_time=$(date +%s)
   local max_time="${BBX_CF_MAX_TIME:-180}"
   local interval="${BBX_CF_INTERVAL:-4}"
@@ -1274,6 +1098,7 @@ test_cf_run() {
   local success=0
   local http_code=""
   local curl_opts="-s -k -L -w %{http_code} --max-time $timeout --fail --output /dev/null"
+
   echo -n "Testing CF login link $login_link with retries... "
   while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
     http_code="$(curl $curl_opts "$login_link")"
@@ -1283,19 +1108,25 @@ test_cf_run() {
     fi
     sleep $interval
   done
+
   if [ $success -ne 1 ]; then
-      echo -e "${RED}✘ Failed after $max_time seconds (Last HTTP code: $http_code)${NC}"
-      kill $cf_pid 2>/dev/null || true
-      saga_bbx_stop
-      return 1
+    echo -e "${RED}✘ Failed after $max_time seconds (Last HTTP code: $http_code)${NC}"
+    # Dump cloudflared log for debugging
+    if [ -f "${BB_CONFIG_DIR}/cloudflared.log" ]; then
+      echo -e "${YELLOW}Last 30 lines of cloudflared.log:${NC}"
+      tail -n 30 "${BB_CONFIG_DIR}/cloudflared.log"
     fi
+    saga_bbx_stop
+    ((failed++))
+    return 1
+  fi
+
   echo -e "${GREEN}✔ Success (HTTP $http_code)${NC}"
   ((passed++))
-  
-  # Cleanup
-  kill $cf_pid 2>/dev/null || true
+
+  # Cleanup via bbx stop (which now also kills CF tunnel)
   saga_bbx_stop
-  
+
   echo -e "${GREEN}✔ CF run test complete${NC}"
   ((passed++))
   return 0
