@@ -1760,14 +1760,18 @@ setup() {
     fi
     setup_hostname="${new_hostname}"
   fi
-  if ! is_local_hostname "$setup_hostname"; then
-    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
-    wait_for_hostname "$setup_hostname" || { printf "${RED}Hostname $setup_hostname not resolving${NC}\n"; exit 1; }
+  if [[ -n "${BBX_CLOUD_RUN:-}" ]]; then
+    printf "${YELLOW}Cloud Run detected; skipping /etc/hosts and TLS setup.${NC}\n"
   else
-    ensure_hosts_entry "$setup_hostname"
+    if ! is_local_hostname "$setup_hostname"; then
+      printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
+      wait_for_hostname "$setup_hostname" || { printf "${RED}Hostname $setup_hostname not resolving${NC}\n"; exit 1; }
+    else
+      ensure_hosts_entry "$setup_hostname"
+    fi
+    
+    EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
   fi
-  
-  EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
@@ -1894,8 +1898,11 @@ run() {
     ensure_hosts_entry "$hostname"
   fi
 
-  # Validate existing product key
+  # Validate existing product key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY;
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
@@ -2021,8 +2028,11 @@ tor_run() {
   fi
   LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  # Validate existing product key
+  # Validate existing product key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY;
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
@@ -2245,6 +2255,20 @@ zt_run() {
     local p_main="${PORT:-8080}" # Use configured port or default
 
     bbx setup --port $p_main --hostname "$tunnel_hostname"
+
+    # Validate LICENSE_KEY via bbcertify (remove stale ticket on failure to allow fresh retry)
+    export LICENSE_KEY
+    TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+    # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+    bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
+    certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
+    if [[ "$?" -ne 0 ]]; then
+      printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+      echo "Certification output: $certout"
+      exit 1
+    else
+      printf "${GREEN}Certification complete.${NC}\n"
+    fi
 
     # 9. Construct and save the "single shot" script for the user
     local user_at_host="$(whoami)@$zt_ip"
@@ -2480,8 +2504,11 @@ cf_run() {
     printf "${YELLOW}Warning: test.env not found${NC}\n"
   }
 
-  # Validate LICENSE_KEY via bbcertify
+  # Validate LICENSE_KEY via bbcertify (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
@@ -4033,8 +4060,11 @@ win9x_run() {
   # Reload config to get updated values
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   
-  # Validate license key
+  # Validate license key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
