@@ -782,15 +782,26 @@ get_latest_release_tag_filtered() {
 
   local channel="${1:-stable}"
 
-  # Derive owner/repo from REPO_URL (e.g. https://github.com/BrowserBox/BrowserBox-source)
-  local owner="${owner_repo%%/*}"
-  local repo="${owner_repo#*/}"
-  local api="https://api.github.com/repos/${owner}/${repo}"
+  # Use PUBLIC_REPO for releases (releases are published to public repo, not source repo)
+  local release_repo="${PUBLIC_REPO:-BrowserBox/BrowserBox}"
+  local api="https://api.github.com/repos/${release_repo}"
+
+  # For internal/non-public repos, skip strict tag validation to allow testing
+  local is_internal_repo=false
+  if [[ "$release_repo" != "BrowserBox/BrowserBox" ]]; then
+    is_internal_repo=true
+  fi
 
   # Curl opts (use token if present)
+  local has_token=false
   local -a CURL_OPTS=( -sS --connect-timeout 8 -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" )
-  [[ -n "$GITHUB_TOKEN" ]] && CURL_OPTS+=( -H "Authorization: Bearer $GITHUB_TOKEN" )
-  [[ -z "$GITHUB_TOKEN" && -n "$GH_TOKEN" ]] && CURL_OPTS+=( -H "Authorization: Bearer $GH_TOKEN" )
+  if [[ -n "$GITHUB_TOKEN" ]]; then
+    CURL_OPTS+=( -H "Authorization: Bearer $GITHUB_TOKEN" )
+    has_token=true
+  elif [[ -n "$GH_TOKEN" ]]; then
+    CURL_OPTS+=( -H "Authorization: Bearer $GH_TOKEN" )
+    has_token=true
+  fi
 
   # Helper to safely parse tag_name (jq preferred, sed fallback)
   _extract_tag_name() {
@@ -799,6 +810,36 @@ get_latest_release_tag_filtered() {
     else
       sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1
     fi
+  }
+
+  # Helper to check for rate limit or other API errors
+  _check_api_error() {
+    local resp="$1"
+    if [[ "$resp" == *'"message"'*'"API rate limit exceeded"'* ]] || [[ "$resp" == *'"message"'*'"rate limit"'* ]]; then
+      echo "rate_limit"
+    elif [[ "$resp" == *'"message"'*'"Not Found"'* ]]; then
+      echo "not_found"
+    elif [[ "$resp" == *'"message"'* ]] && [[ "$resp" != *'"tag_name"'* ]]; then
+      echo "api_error"
+    else
+      echo "ok"
+    fi
+  }
+
+  # Helper to use stale cache when API fails
+  _use_stale_cache() {
+    local cache_file="$1"
+    local reason="$2"
+    if [[ -f "$cache_file" ]]; then
+      local ts cached
+      read -r ts cached <"$cache_file" || true
+      if [[ -n "$cached" && "$cached" != "unknown" ]]; then
+        [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}Using cached version due to %s: %s${NC}\n" "$reason" "$cached" >&2
+        echo "$cached"
+        return 0
+      fi
+    fi
+    return 1
   }
 
   if [[ "$channel" == "stable" ]]; then
@@ -814,26 +855,130 @@ get_latest_release_tag_filtered() {
     fi
 
     # GitHub's "latest" is the newest non-draft, non-prerelease release.
-    local resp tag
+    local resp tag api_status
     resp="$(curl "${CURL_OPTS[@]}" "$api/releases/latest" 2>/dev/null)" || true
+    api_status="$(_check_api_error "$resp")"
+
+    if [[ "$api_status" == "rate_limit" ]]; then
+      if [[ "$has_token" == "false" ]]; then
+        printf "${YELLOW}GitHub API rate limit exceeded. Set GITHUB_TOKEN or GH_TOKEN to avoid this.${NC}\n" >&2
+      else
+        printf "${YELLOW}GitHub API rate limit exceeded (even with token).${NC}\n" >&2
+      fi
+      # Try to use stale cache
+      if _use_stale_cache "$cache_file" "rate limit"; then
+        return 0
+      fi
+      echo "unknown - rate limited"; return 1
+    elif [[ "$api_status" == "not_found" ]]; then
+      [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}No releases found in repository.${NC}\n" >&2
+      echo "unknown"; return 1
+    elif [[ "$api_status" == "api_error" ]]; then
+      [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}GitHub API error occurred.${NC}\n" >&2
+      # Try stale cache
+      if _use_stale_cache "$cache_file" "API error"; then
+        return 0
+      fi
+      echo "unknown"; return 1
+    fi
+
     tag="$(printf '%s' "$resp" | _extract_tag_name)"
-    # Filter out any accidental "-rc" tag names just in case
-    if [[ -n "$tag" && "$tag" != "null" && "$tag" != *-rc* ]]; then
-      # Validate with our semver parser to be safe
-      if _parse_tag "$tag" && (( PAR_STABLE == 1 )); then
+
+    # For internal repos, accept any non-draft release without strict tag validation
+    if [[ "$is_internal_repo" == "true" ]]; then
+      if [[ -n "$tag" && "$tag" != "null" ]]; then
         printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
         echo "$tag"
         return 0
       fi
+      # /releases/latest may fail for repos with only draft releases, try fetching list
+      local list_resp first_non_draft
+      list_resp="$(curl "${CURL_OPTS[@]}" "$api/releases?per_page=20" 2>/dev/null)" || true
+      if command -v jq >/dev/null 2>&1; then
+        first_non_draft="$(printf '%s' "$list_resp" | jq -r '[.[] | select(.draft==false)][0].tag_name // empty')"
+      else
+        # Fallback: just grab the first tag_name (less accurate but usable)
+        first_non_draft="$(printf '%s' "$list_resp" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1)"
+      fi
+      if [[ -n "$first_non_draft" && "$first_non_draft" != "null" ]]; then
+        printf '%s %s\n' "$now" "$first_non_draft" >"$cache_file" || true
+        echo "$first_non_draft"
+        return 0
+      fi
+    else
+      # Public repo: filter out any accidental "-rc" tag names and validate semver
+      if [[ -n "$tag" && "$tag" != "null" && "$tag" != *-rc* ]]; then
+        # Validate with our semver parser to be safe
+        if _parse_tag "$tag" && (( PAR_STABLE == 1 )); then
+          printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
+          echo "$tag"
+          return 0
+        fi
+      fi
     fi
+
+    # If nothing found but we have stale cache, use it
+    if _use_stale_cache "$cache_file" "no valid release found"; then
+      return 0
+    fi
+
     # If nothing found, fall through to failure (caller will fallback to tags)
     echo "unknown"; return 1
   fi
 
   # For "rc" and "any" we need to list releases and pick the best.
-  # We’ll iterate through all non-draft releases, filtering by channel.
-  local resp tags best_tag=""
+  # We'll iterate through all non-draft releases, filtering by channel.
+  local cache_file="${BB_CONFIG_DIR}/latest_release_${channel}.cache"
+  local now
+  now="$(date +%s)"
+
+  # Check cache first for rc/any channels too
+  if [[ -f "$cache_file" ]]; then
+    local ts cached
+    read -r ts cached <"$cache_file" || true
+    if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
+      echo "$cached"
+      return 0
+    fi
+  fi
+
+  local resp tags best_tag="" api_status
   resp="$(curl "${CURL_OPTS[@]}" "$api/releases?per_page=100" 2>/dev/null)" || true
+  api_status="$(_check_api_error "$resp")"
+
+  if [[ "$api_status" == "rate_limit" ]]; then
+    if [[ "$has_token" == "false" ]]; then
+      printf "${YELLOW}GitHub API rate limit exceeded. Set GITHUB_TOKEN or GH_TOKEN to avoid this.${NC}\n" >&2
+    else
+      printf "${YELLOW}GitHub API rate limit exceeded (even with token).${NC}\n" >&2
+    fi
+    if _use_stale_cache "$cache_file" "rate limit"; then
+      return 0
+    fi
+    echo "unknown - rate limited"; return 1
+  elif [[ "$api_status" != "ok" ]]; then
+    [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}GitHub API error for channel ${channel}.${NC}\n" >&2
+    if _use_stale_cache "$cache_file" "API error"; then
+      return 0
+    fi
+    echo "unknown"; return 1
+  fi
+
+  # For internal repos, just return the first non-draft release without tag validation
+  if [[ "$is_internal_repo" == "true" ]]; then
+    local first_non_draft
+    if command -v jq >/dev/null 2>&1; then
+      first_non_draft="$(printf '%s' "$resp" | jq -r '[.[] | select(.draft==false)][0].tag_name // empty')"
+    else
+      first_non_draft="$(printf '%s' "$resp" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1)"
+    fi
+    if [[ -n "$first_non_draft" && "$first_non_draft" != "null" ]]; then
+      printf '%s %s\n' "$now" "$first_non_draft" >"$cache_file" || true
+      echo "$first_non_draft"
+      return 0
+    fi
+    echo "unknown"; return 1
+  fi
 
   if command -v jq >/dev/null 2>&1; then
     if [[ "$channel" == "rc" ]]; then
@@ -871,7 +1016,14 @@ get_latest_release_tag_filtered() {
   done <<< "$tags"
 
   if [[ -n "$best_tag" ]]; then
+    # Cache the result for rc/any channels
+    printf '%s %s\n' "$now" "$best_tag" >"$cache_file" || true
     echo "$best_tag"; return 0
+  fi
+
+  # Try stale cache before giving up
+  if _use_stale_cache "$cache_file" "no valid ${channel} release found"; then
+    return 0
   fi
 
   echo "unknown"; return 1
