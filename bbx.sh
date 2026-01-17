@@ -3600,6 +3600,51 @@ check_prepare_and_install() {
         # Avoid self-overwrite while swapping binary
         is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
 
+        # Install release manifest before binary (required for integrity verification)
+        # Match keyring.js search order: execDir first, then global, then user config
+        local prepared_dir
+        prepared_dir="$(dirname "$prepared_binary")"
+        local prepared_manifest="${prepared_dir}/release.manifest.json"
+        local prepared_manifest_sig="${prepared_dir}/release.manifest.json.sig"
+        local exec_dir="${COMMAND_DIR}"
+        local global_manifest_dir="/usr/local/share/dosaygo/bbpro"
+        local user_manifest_dir="${HOME}/.config/dosaygo/bbpro"
+
+        if [[ -f "$prepared_manifest" ]] && [[ -f "$prepared_manifest_sig" ]]; then
+          printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
+          local manifest_installed=false
+          
+          # Install to execDir first (primary location checked by integrity verification)
+          if $SUDO cp "$prepared_manifest" "${exec_dir}/release.manifest.json" 2>/dev/null && \
+             $SUDO cp "$prepared_manifest_sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
+            $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
+            printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n" >> "$LOG_FILE"
+            manifest_installed=true
+          fi
+          
+          # Also install to global dir for multiuser support
+          if [[ "$exec_dir" != "/usr/local/bin" ]]; then
+            $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
+            if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
+               $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
+              $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
+              manifest_installed=true
+            fi
+          fi
+          
+          # Fallback to user config if neither worked
+          if [[ "$manifest_installed" != "true" ]]; then
+            mkdir -p "$user_manifest_dir"
+            cp "$prepared_manifest" "$user_manifest_dir/release.manifest.json" || true
+            cp "$prepared_manifest_sig" "$user_manifest_dir/release.manifest.json.sig" || true
+            printf "${YELLOW}Release manifest installed to user config (no global write access)${NC}\n" >> "$LOG_FILE"
+          fi
+        else
+          printf "${RED}Error: Prepared manifest files not found, integrity check will fail${NC}\n" >> "$LOG_FILE"
+          printf "${RED}Error: Prepared manifest files not found${NC}\n"
+          return 1
+        fi
+
         # Replace global binary with prepared binary (using INSTALL_CMD for sudo)
         $INSTALL_CMD "$prepared_binary" "$BINARY_PATH" || { 
           printf "${RED}Failed to install prepared binary to $BINARY_PATH${NC}\n" >> "$LOG_FILE"
@@ -3682,27 +3727,66 @@ update() {
       return 1
   fi
 
-  # Download manifest and signature to global system location (multiuser support)
+  # Download manifest and signature - match keyring.js search order:
+  # 1. execDir (alongside binary) - checked first by integrity verification
+  # 2. globalSystemDir (/usr/local/share/dosaygo/bbpro) - for multiuser
+  # 3. userConfigDir (~/.config/dosaygo/bbpro) - fallback
   local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
   local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
+  local exec_dir="${COMMAND_DIR}"
   local global_dir="/usr/local/share/dosaygo/bbpro"
   local user_config_dir="${HOME}/.config/dosaygo/bbpro"
+  local temp_manifest_dir
+  temp_manifest_dir="$(mktemp -d)"
   
-  # Try global location first (requires sudo), fallback to user dir
-  if [[ -w "/usr/local/share" ]] || [[ "$EUID" -eq 0 ]]; then
-    mkdir -p "$global_dir" 2>/dev/null || sudo mkdir -p "$global_dir"
-    printf "${YELLOW}Downloading release manifest to global location...${NC}\n"
-    curl -L -sS --connect-timeout 10 -o "${global_dir}/release.manifest.json" "$manifest_url" || true
-    curl -L -sS --connect-timeout 10 -o "${global_dir}/release.manifest.json.sig" "$sig_url" || true
-    # Set permissions for all users to read
-    chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
-  else
-    # Fallback to user config dir if no write access to global
-    mkdir -p "$user_config_dir"
-    printf "${YELLOW}Downloading release manifest to user config...${NC}\n"
-    curl -L -sS --connect-timeout 10 -o "${user_config_dir}/release.manifest.json" "$manifest_url" || true
-    curl -L -sS --connect-timeout 10 -o "${user_config_dir}/release.manifest.json.sig" "$sig_url" || true
+  # Download to temp first
+  printf "${YELLOW}Downloading release manifest...${NC}\n"
+  if ! curl -L -sS --fail --connect-timeout 10 -o "${temp_manifest_dir}/release.manifest.json" "$manifest_url"; then
+    printf "${RED}Failed to download release manifest.${NC}\n"
+    rm -rf "$temp_manifest_dir"
+    return 1
   fi
+  if ! curl -L -sS --fail --connect-timeout 10 -o "${temp_manifest_dir}/release.manifest.json.sig" "$sig_url"; then
+    printf "${RED}Failed to download release manifest signature.${NC}\n"
+    rm -rf "$temp_manifest_dir"
+    return 1
+  fi
+  
+  # Install manifest to execDir first (primary location checked by integrity verification)
+  # This ensures the manifest is found alongside the binary
+  local manifest_installed=false
+  if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${exec_dir}/release.manifest.json" 2>/dev/null && \
+     $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
+    $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
+    printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n"
+    manifest_installed=true
+  fi
+  
+  # Also install to global dir for multiuser support (if different from exec_dir)
+  if [[ "$exec_dir" != "/usr/local/bin" ]]; then
+    $SUDO mkdir -p "$global_dir" 2>/dev/null
+    if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${global_dir}/release.manifest.json" 2>/dev/null && \
+       $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${global_dir}/release.manifest.json.sig" 2>/dev/null; then
+      $SUDO chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
+      printf "${GREEN}Release manifest also installed to global location.${NC}\n"
+      manifest_installed=true
+    fi
+  fi
+  
+  # Fallback to user config if neither worked
+  if [[ "$manifest_installed" != "true" ]]; then
+    mkdir -p "$user_config_dir"
+    if cp "${temp_manifest_dir}/release.manifest.json" "${user_config_dir}/release.manifest.json" && \
+       cp "${temp_manifest_dir}/release.manifest.json.sig" "${user_config_dir}/release.manifest.json.sig"; then
+      printf "${YELLOW}Release manifest installed to user config (no global write access).${NC}\n"
+      manifest_installed=true
+    else
+      printf "${RED}Failed to install release manifest anywhere. Integrity checks will fail.${NC}\n"
+      rm -rf "$temp_manifest_dir"
+      return 1
+    fi
+  fi
+  rm -rf "$temp_manifest_dir"
 
   # Execute
   printf "${YELLOW}Running post-update installation tasks...${NC}\n"
@@ -3805,6 +3889,20 @@ update_background() {
     rm -f "$temp_binary"
     rm -rf "$BBX_NEW_DIR"
     return 1
+  }
+
+  # Download manifest and signature for integrity verification
+  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
+  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
+  local temp_manifest="$BBX_NEW_DIR/release.manifest.json"
+  local temp_manifest_sig="$BBX_NEW_DIR/release.manifest.json.sig"
+
+  printf "${YELLOW}Downloading release manifest...${NC}\n" >> "$LOG_FILE"
+  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "$temp_manifest" "$manifest_url" >> "$LOG_FILE" 2>&1 || {
+    printf "${YELLOW}Warning: Failed to download release manifest${NC}\n" >> "$LOG_FILE"
+  }
+  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "$temp_manifest_sig" "$sig_url" >> "$LOG_FILE" 2>&1 || {
+    printf "${YELLOW}Warning: Failed to download release manifest signature${NC}\n" >> "$LOG_FILE"
   }
 
   # Mark as prepared (record the exact git tag)
