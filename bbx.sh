@@ -509,12 +509,16 @@ ensure_modern_bash() {
 # ensure_modern_bash "$@"
 
 
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
-    banner
-    printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
-    exit 1
+# Sudo check - respect BBX_SUDOLESS for Docker/Cloud Run environments
+if [[ "${BBX_SUDOLESS:-false}" == "true" ]]; then
+  SUDO=""
+else
+  SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+  if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
+      banner
+      printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
+      exit 1
+  fi
 fi
 
 # env
