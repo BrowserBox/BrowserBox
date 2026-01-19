@@ -1144,14 +1144,21 @@ get_version_info() {
 get_canonical_bbx_version() {
   local version=""
   
-  # Try to get version from bbpro command if it exists
-  if command -v bbpro >/dev/null 2>&1; then
-    local bbpro_output
-    bbpro_output="$(browserbox --version 2>/dev/null || true)"
-    if [[ -n "$bbpro_output" ]]; then
+  # Try to get version from installed browserbox (preferred) or bbpro
+  local version_cmd=""
+  if command -v browserbox >/dev/null 2>&1; then
+    version_cmd="browserbox"
+  elif command -v bbpro >/dev/null 2>&1; then
+    version_cmd="bbpro"
+  fi
+
+  if [[ -n "$version_cmd" ]]; then
+    local bb_output
+    bb_output="$("$version_cmd" --version 2>/dev/null || true)"
+    if [[ -n "$bb_output" ]]; then
       # Extract version number using regex (supports any dot-separated numeric format: X.Y, X.Y.Z, etc.)
       # Handles formats like "BrowserBox version: 15.1.2", "v15.1.2", or just "15.1.2"
-      version="$(echo "$bbpro_output" | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
+      version="$(echo "$bb_output" | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
     fi
   fi
   
@@ -3466,6 +3473,16 @@ is_lock_file_recent() {
     return 1  # File doesn’t exist, so not recent
   fi
 
+  # If lock_file points to a binary that no longer exists, treat it as stale
+  if [ "$lock_file" = "$PREPARING_FILE" ]; then
+    local prepared_path
+    prepared_path=$(sed -n '2p' "$lock_file" 2>/dev/null)
+    if [[ -n "$prepared_path" ]] && [[ ! -f "$prepared_path" ]]; then
+      $SUDO rm -f "$lock_file" 2>/dev/null || true
+      return 1
+    fi
+  fi
+
   # Create a temporary file with a unique name based on process ID
   local temp_file="/tmp/lock_check_$$"
   touch "$temp_file" || return 1  # Create the temp file; fail if it can’t be created
@@ -3502,6 +3519,17 @@ check_and_prepare_update() {
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
+
+  # Fast path: if a prepared update exists, install it immediately (do not wait for the next check window)
+  if [ -f "$PREPARED_FILE" ]; then
+    local prepared_tag
+    prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
+    if [[ -n "$prepared_tag" ]]; then
+      if check_prepare_and_install "$prepared_tag"; then
+        return 0
+      fi
+    fi
+  fi
 
   # Define the last update check file and time constraints
   local last_update_check_file="${BB_CONFIG_DIR}/last_update_check"
@@ -3580,6 +3608,22 @@ check_and_prepare_update() {
   return 0
 }
 
+download_release_manifest() {
+  local tag="$1"
+  local dest_dir="$2"
+  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/release.manifest.json"
+  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/release.manifest.json.sig"
+  local curl_auth=()
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+  fi
+  mkdir -p "$dest_dir" || return 1
+  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json" "$manifest_url" || return 1
+  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json.sig" "$sig_url" || return 1
+  chmod 644 "${dest_dir}/release.manifest.json" "${dest_dir}/release.manifest.json.sig" 2>/dev/null || true
+  return 0
+}
+
 check_prepare_and_install() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
@@ -3614,53 +3658,107 @@ check_prepare_and_install() {
         local global_manifest_dir="/usr/local/share/dosaygo/bbpro"
         local user_manifest_dir="${HOME}/.config/dosaygo/bbpro"
 
-        if [[ -f "$prepared_manifest" ]] && [[ -f "$prepared_manifest_sig" ]]; then
-          printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
-          local manifest_installed=false
-          
-          # Install to execDir first (primary location checked by integrity verification)
-          if $SUDO cp "$prepared_manifest" "${exec_dir}/release.manifest.json" 2>/dev/null && \
-             $SUDO cp "$prepared_manifest_sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
-            $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
-            printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n" >> "$LOG_FILE"
+        if [[ ! -f "$prepared_manifest" || ! -f "$prepared_manifest_sig" ]]; then
+          printf "${YELLOW}Prepared manifest files missing. Downloading fresh copy...${NC}\n" >> "$LOG_FILE"
+          if ! download_release_manifest "$repo_tag" "$prepared_dir" >> "$LOG_FILE" 2>&1; then
+            printf "${RED}Error: Prepared manifest files not found${NC}\n" >> "$LOG_FILE"
+            printf "${RED}Error: Prepared manifest files not found${NC}\n"
+            return 1
+          fi
+        fi
+
+        printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
+        local manifest_installed=false
+        
+        # Install to execDir first (primary location checked by integrity verification)
+        if $SUDO cp "$prepared_manifest" "${exec_dir}/release.manifest.json" 2>/dev/null && \
+           $SUDO cp "$prepared_manifest_sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
+          $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
+          printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n" >> "$LOG_FILE"
+          manifest_installed=true
+        fi
+        
+        # Also install to global dir for multiuser support
+        if [[ "$exec_dir" != "/usr/local/bin" ]]; then
+          $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
+          if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
+             $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
+            $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
             manifest_installed=true
           fi
-          
-          # Also install to global dir for multiuser support
-          if [[ "$exec_dir" != "/usr/local/bin" ]]; then
-            $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
-            if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
-               $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
-              $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
-              manifest_installed=true
-            fi
-          fi
-          
-          # Fallback to user config if neither worked
-          if [[ "$manifest_installed" != "true" ]]; then
-            mkdir -p "$user_manifest_dir"
-            cp "$prepared_manifest" "$user_manifest_dir/release.manifest.json" || true
-            cp "$prepared_manifest_sig" "$user_manifest_dir/release.manifest.json.sig" || true
-            printf "${YELLOW}Release manifest installed to user config (no global write access)${NC}\n" >> "$LOG_FILE"
-          fi
-        else
-          printf "${RED}Error: Prepared manifest files not found, integrity check will fail${NC}\n" >> "$LOG_FILE"
-          printf "${RED}Error: Prepared manifest files not found${NC}\n"
-          return 1
+        fi
+        
+        # Fallback to user config if neither worked
+        if [[ "$manifest_installed" != "true" ]]; then
+          mkdir -p "$user_manifest_dir"
+          cp "$prepared_manifest" "$user_manifest_dir/release.manifest.json" || true
+          cp "$prepared_manifest_sig" "$user_manifest_dir/release.manifest.json.sig" || true
+          printf "${YELLOW}Release manifest installed to user config (no global write access)${NC}\n" >> "$LOG_FILE"
         fi
 
         # Replace global binary with prepared binary (using INSTALL_CMD for sudo)
-        $INSTALL_CMD "$prepared_binary" "$BINARY_PATH" || { 
-          printf "${RED}Failed to install prepared binary to $BINARY_PATH${NC}\n" >> "$LOG_FILE"
-          return 1
+        $INSTALL_CMD "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || { 
+          printf "${RED}Failed to install prepared binary to $BINARY_PATH (install)${NC}\n" >> "$LOG_FILE"
         }
+        # Verify and repair if needed
+        if [[ ! -x "$BINARY_PATH" ]] || [[ ! -s "$BINARY_PATH" ]]; then
+          printf "${YELLOW}Binary missing or not executable after install; copying directly...${NC}\n" >> "$LOG_FILE"
+          $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1
+        fi
+        if [[ ! -x "$BINARY_PATH" ]] || [[ ! -s "$BINARY_PATH" ]]; then
+          printf "${RED}Failed to place binary at $BINARY_PATH (post-copy)${NC}\n" >> "$LOG_FILE"
+          return 1
+        fi
+        ls -l "$BINARY_PATH" >> "$LOG_FILE" 2>&1
+        "$BINARY_PATH" --version >> "$LOG_FILE" 2>&1 || true
 
         # Run internal updates/migrations after swapping binary
         printf "${YELLOW}Running post-update installation tasks...${NC}\n" >> "$LOG_FILE"
-        "$BINARY_PATH" --install >> "$LOG_FILE" 2>&1 || { 
+        BBX_BINARY_SOURCE_PATH="$prepared_binary" "$BINARY_PATH" --install >> "$LOG_FILE" 2>&1 || { 
           printf "${RED}Failed to run post-update installation${NC}\n" >> "$LOG_FILE"
           return 1
         }
+
+        # Post-install sanity: ensure the installed binary matches the prepared build.
+        # The install phase may briefly replace the binary in-place; tolerate short gaps.
+        local expected_version
+        expected_version="${repo_tag#v}"
+        local installed_version
+        installed_version=""
+        local tries=0
+        while (( tries < 150 )); do
+          tries=$((tries + 1))
+
+          # The install step may briefly remove/replace the binary; if missing, restore from prepared.
+          if [[ ! -s "$BINARY_PATH" ]] || [[ ! -x "$BINARY_PATH" ]]; then
+            $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || true
+          fi
+
+          installed_version="$("$BINARY_PATH" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+')"
+          if [[ "$installed_version" == "$expected_version" ]]; then
+            break
+          fi
+          sleep 0.2
+        done
+        if [[ "$installed_version" != "$expected_version" ]]; then
+          printf "${YELLOW}Installed binary version (%s) does not match prepared (%s); recopying prepared binary...${NC}\n" "$installed_version" "$expected_version" >> "$LOG_FILE"
+          $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || true
+          installed_version=""
+          tries=0
+          while (( tries < 150 )); do
+            tries=$((tries + 1))
+            installed_version="$("$BINARY_PATH" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+')"
+            if [[ "$installed_version" == "$expected_version" ]]; then
+              break
+            fi
+            sleep 0.2
+          done
+        fi
+        if [[ "$installed_version" != "$expected_version" ]]; then
+          printf "${RED}Post-install version mismatch: got '%s', expected '%s'${NC}\n" "$installed_version" "$expected_version" >> "$LOG_FILE"
+          return 1
+        fi
+        ls -l "$BINARY_PATH" >> "$LOG_FILE" 2>&1
 
         # Clean up prepared files
         rm -rf "$BBX_NEW_DIR" || printf "${YELLOW}Warning: Failed to remove $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"
@@ -3833,6 +3931,10 @@ update_background() {
     return 0
   fi
 
+  # Start a fresh log for a new download/prepare cycle (keep update.log as "last update process").
+  mkdir -p "$BB_CONFIG_DIR" 2>/dev/null || true
+  : > "$LOG_FILE"
+
   printf "${YELLOW}Requesting update lock...${NC}\n" >> "$LOG_FILE"
   # Create preparing lock file
   $SUDO mkdir -p "$BBX_SHARE" || { printf "${RED}Failed to create install directory $BBX_SHARE ... ${NC}\n" >> "$LOG_FILE";  $SUDO rm -f "$PREPARING_FILE" ; exit 1; }
@@ -3902,12 +4004,13 @@ update_background() {
   local temp_manifest_sig="$BBX_NEW_DIR/release.manifest.json.sig"
 
   printf "${YELLOW}Downloading release manifest...${NC}\n" >> "$LOG_FILE"
-  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "$temp_manifest" "$manifest_url" >> "$LOG_FILE" 2>&1 || {
+  if ! download_release_manifest "$repo_tag" "$BBX_NEW_DIR" >> "$LOG_FILE" 2>&1; then
     printf "${YELLOW}Warning: Failed to download release manifest${NC}\n" >> "$LOG_FILE"
-  }
-  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "$temp_manifest_sig" "$sig_url" >> "$LOG_FILE" 2>&1 || {
-    printf "${YELLOW}Warning: Failed to download release manifest signature${NC}\n" >> "$LOG_FILE"
-  }
+    $SUDO rm -f "$PREPARING_FILE"
+    rm -f "$temp_binary" 2>/dev/null
+    rm -rf "$BBX_NEW_DIR" 2>/dev/null
+    return 1
+  fi
 
   # Mark as prepared (record the exact git tag)
   printf "${YELLOW}Marking update as prepared...${NC}\n" >> "$LOG_FILE"
