@@ -379,7 +379,7 @@ attempt_install_package() {
   # Skip sudo if BBX_SUDOLESS is set (for Docker, Cloud Run, etc.)
   if [[ "${BBX_SUDOLESS:-false}" != "true" ]] && [[ "$(id -u)" -ne 0 ]]; then
     if command -v sudo >/dev/null 2>&1; then
-      cmd_prefix="sudo -E"
+      cmd_prefix="sudo -n -E"
     else
       echo "Warning: Not root and sudo not found. Cannot auto-install $pkg." >&2
       return 1
@@ -998,13 +998,26 @@ fi
 
 # Install manifest to a shared location for integrity checks.
 manifest_target_dir="${HOME}/.config/dosaygo/bbpro"
+SUDO=""
 if [[ -w "/usr/local/share" || "$(id -u)" -eq 0 ]]; then
   manifest_target_dir="/usr/local/share/dosaygo/bbpro"
+elif [[ -z "${BBX_SUDOLESS:-}" ]] && command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  # We have sudo and can use it non-interactively.
+  manifest_target_dir="/usr/local/share/dosaygo/bbpro"
+  SUDO="sudo -n"
 fi
-mkdir -p "$manifest_target_dir"
-cp "$manifest_path" "$manifest_target_dir/release.manifest.json"
-cp "$manifest_sig_path" "$manifest_target_dir/release.manifest.json.sig"
-chmod 644 "$manifest_target_dir/release.manifest.json" "$manifest_target_dir/release.manifest.json.sig" 2>/dev/null || true
+echo "Installing release manifest to ${manifest_target_dir}..." >&2
+if [[ -n "$SUDO" ]]; then
+  $SUDO mkdir -p "$manifest_target_dir"
+  $SUDO cp "$manifest_path" "$manifest_target_dir/release.manifest.json"
+  $SUDO cp "$manifest_sig_path" "$manifest_target_dir/release.manifest.json.sig"
+  $SUDO chmod 644 "$manifest_target_dir/release.manifest.json" "$manifest_target_dir/release.manifest.json.sig" 2>/dev/null || true
+else
+  mkdir -p "$manifest_target_dir"
+  cp "$manifest_path" "$manifest_target_dir/release.manifest.json"
+  cp "$manifest_sig_path" "$manifest_target_dir/release.manifest.json.sig"
+  chmod 644 "$manifest_target_dir/release.manifest.json" "$manifest_target_dir/release.manifest.json.sig" 2>/dev/null || true
+fi
 
 if [[ "$full_install" == "true" ]]; then
   echo "Running full install..." >&2
@@ -1014,3 +1027,5 @@ else
   echo "Running update install..." >&2
   "$temp_binary" --install
 fi
+
+echo "Installation complete. Type 'bbx' to get started. Get a license key at https://browserbox.io and install your license key with bbx certify." >&2

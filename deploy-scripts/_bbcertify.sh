@@ -8,11 +8,11 @@ fi
 set -e
 
 # Configuration
-CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets"
+CONFIG_DIR="$HOME/.config/dosaygo/bbpro/tickets"
 [ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
 TICKET_FILE="$CONFIG_DIR/ticket.json"
 API_VERSION="v1"
-API_SERVER="https://master.dosaygo.com"
+API_SERVER="${BBX_LICENSE_SERVER_URL:-https://master.dosaygo.com}"
 API_BASE="${API_SERVER}/${API_VERSION}"
 VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat?reserve=0" # Snapshot only
 ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
@@ -33,65 +33,38 @@ Options:
   --force-license    Force license check and new ticket
   --no-reservation   Skip seat reservation step
   -h, --help         Show this help message
+
+Environment:
+  BBX_LICENSE_SERVER_URL  Override API server (default: https://master.dosaygo.com)
 EOF
   exit 0
 }
 
-# Helper function: Sign data with Node.js using crypto
-sign_with_node() {
-  local data="$1"
-  local private_key="$2"
-  node -e "
-    const crypto = require('crypto');
-    const data = process.argv[1];
-    const privateKey = process.argv[2];
-    const sign = crypto.createSign('SHA256');
-    sign.update(data);
-    sign.end();
-    const signature = sign.sign(privateKey, 'hex');
-    console.log(signature);
-  " "$data" "$private_key"
+require_browserbox() {
+  if ! command -v browserbox >/dev/null 2>&1; then
+    echo "Error: browserbox binary is required for certificate operations." >&2
+    exit 1
+  fi
 }
 
-# Helper function: Sign data with Ed25519 using @noble/ed25519
-sign_ed25519_with_node() {
+sign_ed25519() {
   local data="$1"
   local private_key_base64url="$2"
-  node -e "
-    const ed = require('@noble/ed25519');
-    const data = process.argv[1];
-    const privateKeyBase64url = process.argv[2];
-    
-    (async () => {
-      try {
-        // Convert base64url to Buffer
-        const privateKey = Buffer.from(privateKeyBase64url, 'base64url');
-        const signature = await ed.signAsync(Buffer.from(data, 'utf8'), privateKey);
-        console.log(Buffer.from(signature).toString('hex'));
-      } catch (err) {
-        console.error('Error signing with Ed25519:', err.message);
-        process.exit(1);
-      }
-    })();
-  " "$data" "$private_key_base64url"
+  require_browserbox
+  browserbox sign-ed25519 "$data" "$private_key_base64url"
 }
 
-# Helper function: Verify signature with Node.js using crypto
-verify_with_node() {
+verify_rsa_sha256() {
   local data="$1"
   local signature="$2"
   local public_key="$3"
-  node -e "
-    const crypto = require('crypto');
-    const data = process.argv[1];
-    const signature = process.argv[2];
-    const publicKey = process.argv[3];
-    const verify = crypto.createVerify('SHA256');
-    verify.update(data);
-    verify.end();
-    const isValid = verify.verify(publicKey, Buffer.from(signature, 'hex'));
-    console.log(isValid ? 'true' : 'false');
-  " "$data" "$signature" "$public_key"
+  require_browserbox
+  browserbox verify-rsa-sha256 "$data" "$signature" "$public_key"
+}
+
+device_id_from_binary() {
+  require_browserbox
+  browserbox device-id
 }
 
 meta_put() {
@@ -175,7 +148,8 @@ validate_ticket_with_server() {
   fi
   
   echo "Signing challenge nonce with Ed25519..." >&2
-  local nonce_signature=$(sign_ed25519_with_node "$nonce" "$ticket_private_key")
+  local nonce_signature
+  nonce_signature=$(sign_ed25519 "$nonce" "$ticket_private_key")
   if [[ -z "$nonce_signature" ]]; then
     echo "Error: Failed to sign challenge nonce" >&2
     return 1
@@ -213,7 +187,8 @@ validate_ticket_with_server() {
     else
       # Generate a pseudo instanceId (in real usage, this should match what was sent to server)
       local instance_id="DOSAYGO://browserbox/validation-check/$(date +%s)"
-      local verification_result=$(verify_with_node "$instance_id" "$server_signature" "$stadium_public_key")
+      local verification_result
+      verification_result=$(verify_rsa_sha256 "$instance_id" "$server_signature" "$stadium_public_key")
       if [[ "$verification_result" == "true" ]]; then
         echo "Server signature verified successfully" >&2
       else
@@ -250,18 +225,8 @@ get_vacant_seat() {
 issue_ticket() {
   local seat_id="$1"
   local time_slot=$(date +%s)
-  local device_id=$(node << EOF
-const os = require('os');
-const crypto = require('crypto');
-const interfaces = os.networkInterfaces();
-const macAddresses = Object.keys(interfaces).flatMap(nic => interfaces[nic].map(iface => iface.mac).filter(mac => mac !== '00:00:00:00:00:00'));
-const cpuInfo = os.cpus()[0].model;
-const totalMemory = os.totalmem();
-const data = \`\${macAddresses.join(',')}-\${cpuInfo}-\${totalMemory}\`;
-const hash = crypto.createHash('sha256').update(data).digest('hex');
-console.log(hash);
-EOF
-)
+  local device_id
+  device_id=$(device_id_from_binary)
   # Debug: Log the computed device_id
   [[ -n "$BBX_DEBUG" ]] && echo "DEBUG: Issued ticket using device_id: $device_id" >&2
   echo "Issuing ticket for seat $seat_id..." >&2
@@ -311,10 +276,21 @@ reserve_seat() {
     return 1
   fi
   echo "Seat reserved successfully" >&2
-  # If new ticket issued, save it
+  # If new ticket issued, save it and register it
   if [[ -n "$new_ticket" ]]; then
     echo "$new_ticket" > "$TICKET_FILE"
     echo "New ticket saved to $TICKET_FILE" >&2
+    echo "Registering new ticket issued by server..." >&2
+    register_certificate "$new_ticket"
+    # Update cert meta with new ticket details
+    local new_ticket_id=$(echo "$new_ticket" | jq -r '.ticket.ticketData.ticketId // empty')
+    local new_time_slot=$(echo "$new_ticket" | jq -r '.ticket.ticketData.timeSlot // empty')
+    if [[ -n "$new_ticket_id" ]]; then
+      meta_put BBX_TICKET_ID "$new_ticket_id"
+    fi
+    if [[ -n "$new_time_slot" ]]; then
+      meta_put BBX_TICKET_SLOT "$new_time_slot"
+    fi
   fi
   jq -n --arg code "$reservation" \
     '{reservationCode:$code}' > "$RESERVATION_FILE"

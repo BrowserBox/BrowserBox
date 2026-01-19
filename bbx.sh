@@ -509,12 +509,16 @@ ensure_modern_bash() {
 # ensure_modern_bash "$@"
 
 
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
-    banner
-    printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
-    exit 1
+# Sudo check - respect BBX_SUDOLESS for Docker/Cloud Run environments
+if [[ "${BBX_SUDOLESS:-false}" == "true" ]]; then
+  SUDO=""
+else
+  SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+  if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
+      banner
+      printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
+      exit 1
+  fi
 fi
 
 # env
@@ -782,15 +786,26 @@ get_latest_release_tag_filtered() {
 
   local channel="${1:-stable}"
 
-  # Derive owner/repo from REPO_URL (e.g. https://github.com/BrowserBox/BrowserBox-source)
-  local owner="${owner_repo%%/*}"
-  local repo="${owner_repo#*/}"
-  local api="https://api.github.com/repos/${owner}/${repo}"
+  # Use PUBLIC_REPO for releases (releases are published to public repo, not source repo)
+  local release_repo="${PUBLIC_REPO:-BrowserBox/BrowserBox}"
+  local api="https://api.github.com/repos/${release_repo}"
+
+  # For internal/non-public repos, skip strict tag validation to allow testing
+  local is_internal_repo=false
+  if [[ "$release_repo" != "BrowserBox/BrowserBox" ]]; then
+    is_internal_repo=true
+  fi
 
   # Curl opts (use token if present)
+  local has_token=false
   local -a CURL_OPTS=( -sS --connect-timeout 8 -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" )
-  [[ -n "$GITHUB_TOKEN" ]] && CURL_OPTS+=( -H "Authorization: Bearer $GITHUB_TOKEN" )
-  [[ -z "$GITHUB_TOKEN" && -n "$GH_TOKEN" ]] && CURL_OPTS+=( -H "Authorization: Bearer $GH_TOKEN" )
+  if [[ -n "$GITHUB_TOKEN" ]]; then
+    CURL_OPTS+=( -H "Authorization: Bearer $GITHUB_TOKEN" )
+    has_token=true
+  elif [[ -n "$GH_TOKEN" ]]; then
+    CURL_OPTS+=( -H "Authorization: Bearer $GH_TOKEN" )
+    has_token=true
+  fi
 
   # Helper to safely parse tag_name (jq preferred, sed fallback)
   _extract_tag_name() {
@@ -799,6 +814,36 @@ get_latest_release_tag_filtered() {
     else
       sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1
     fi
+  }
+
+  # Helper to check for rate limit or other API errors
+  _check_api_error() {
+    local resp="$1"
+    if [[ "$resp" == *'"message"'*'"API rate limit exceeded"'* ]] || [[ "$resp" == *'"message"'*'"rate limit"'* ]]; then
+      echo "rate_limit"
+    elif [[ "$resp" == *'"message"'*'"Not Found"'* ]]; then
+      echo "not_found"
+    elif [[ "$resp" == *'"message"'* ]] && [[ "$resp" != *'"tag_name"'* ]]; then
+      echo "api_error"
+    else
+      echo "ok"
+    fi
+  }
+
+  # Helper to use stale cache when API fails
+  _use_stale_cache() {
+    local cache_file="$1"
+    local reason="$2"
+    if [[ -f "$cache_file" ]]; then
+      local ts cached
+      read -r ts cached <"$cache_file" || true
+      if [[ -n "$cached" && "$cached" != "unknown" ]]; then
+        [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}Using cached version due to %s: %s${NC}\n" "$reason" "$cached" >&2
+        echo "$cached"
+        return 0
+      fi
+    fi
+    return 1
   }
 
   if [[ "$channel" == "stable" ]]; then
@@ -814,26 +859,130 @@ get_latest_release_tag_filtered() {
     fi
 
     # GitHub's "latest" is the newest non-draft, non-prerelease release.
-    local resp tag
+    local resp tag api_status
     resp="$(curl "${CURL_OPTS[@]}" "$api/releases/latest" 2>/dev/null)" || true
+    api_status="$(_check_api_error "$resp")"
+
+    if [[ "$api_status" == "rate_limit" ]]; then
+      if [[ "$has_token" == "false" ]]; then
+        printf "${YELLOW}GitHub API rate limit exceeded. Set GITHUB_TOKEN or GH_TOKEN to avoid this.${NC}\n" >&2
+      else
+        printf "${YELLOW}GitHub API rate limit exceeded (even with token).${NC}\n" >&2
+      fi
+      # Try to use stale cache
+      if _use_stale_cache "$cache_file" "rate limit"; then
+        return 0
+      fi
+      echo "unknown - rate limited"; return 1
+    elif [[ "$api_status" == "not_found" ]]; then
+      [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}No releases found in repository.${NC}\n" >&2
+      echo "unknown"; return 1
+    elif [[ "$api_status" == "api_error" ]]; then
+      [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}GitHub API error occurred.${NC}\n" >&2
+      # Try stale cache
+      if _use_stale_cache "$cache_file" "API error"; then
+        return 0
+      fi
+      echo "unknown"; return 1
+    fi
+
     tag="$(printf '%s' "$resp" | _extract_tag_name)"
-    # Filter out any accidental "-rc" tag names just in case
-    if [[ -n "$tag" && "$tag" != "null" && "$tag" != *-rc* ]]; then
-      # Validate with our semver parser to be safe
-      if _parse_tag "$tag" && (( PAR_STABLE == 1 )); then
+
+    # For internal repos, accept any non-draft release without strict tag validation
+    if [[ "$is_internal_repo" == "true" ]]; then
+      if [[ -n "$tag" && "$tag" != "null" ]]; then
         printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
         echo "$tag"
         return 0
       fi
+      # /releases/latest may fail for repos with only draft releases, try fetching list
+      local list_resp first_non_draft
+      list_resp="$(curl "${CURL_OPTS[@]}" "$api/releases?per_page=20" 2>/dev/null)" || true
+      if command -v jq >/dev/null 2>&1; then
+        first_non_draft="$(printf '%s' "$list_resp" | jq -r '[.[] | select(.draft==false)][0].tag_name // empty')"
+      else
+        # Fallback: just grab the first tag_name (less accurate but usable)
+        first_non_draft="$(printf '%s' "$list_resp" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1)"
+      fi
+      if [[ -n "$first_non_draft" && "$first_non_draft" != "null" ]]; then
+        printf '%s %s\n' "$now" "$first_non_draft" >"$cache_file" || true
+        echo "$first_non_draft"
+        return 0
+      fi
+    else
+      # Public repo: filter out any accidental "-rc" tag names and validate semver
+      if [[ -n "$tag" && "$tag" != "null" && "$tag" != *-rc* ]]; then
+        # Validate with our semver parser to be safe
+        if _parse_tag "$tag" && (( PAR_STABLE == 1 )); then
+          printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
+          echo "$tag"
+          return 0
+        fi
+      fi
     fi
+
+    # If nothing found but we have stale cache, use it
+    if _use_stale_cache "$cache_file" "no valid release found"; then
+      return 0
+    fi
+
     # If nothing found, fall through to failure (caller will fallback to tags)
     echo "unknown"; return 1
   fi
 
   # For "rc" and "any" we need to list releases and pick the best.
-  # We’ll iterate through all non-draft releases, filtering by channel.
-  local resp tags best_tag=""
+  # We'll iterate through all non-draft releases, filtering by channel.
+  local cache_file="${BB_CONFIG_DIR}/latest_release_${channel}.cache"
+  local now
+  now="$(date +%s)"
+
+  # Check cache first for rc/any channels too
+  if [[ -f "$cache_file" ]]; then
+    local ts cached
+    read -r ts cached <"$cache_file" || true
+    if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
+      echo "$cached"
+      return 0
+    fi
+  fi
+
+  local resp tags best_tag="" api_status
   resp="$(curl "${CURL_OPTS[@]}" "$api/releases?per_page=100" 2>/dev/null)" || true
+  api_status="$(_check_api_error "$resp")"
+
+  if [[ "$api_status" == "rate_limit" ]]; then
+    if [[ "$has_token" == "false" ]]; then
+      printf "${YELLOW}GitHub API rate limit exceeded. Set GITHUB_TOKEN or GH_TOKEN to avoid this.${NC}\n" >&2
+    else
+      printf "${YELLOW}GitHub API rate limit exceeded (even with token).${NC}\n" >&2
+    fi
+    if _use_stale_cache "$cache_file" "rate limit"; then
+      return 0
+    fi
+    echo "unknown - rate limited"; return 1
+  elif [[ "$api_status" != "ok" ]]; then
+    [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}GitHub API error for channel ${channel}.${NC}\n" >&2
+    if _use_stale_cache "$cache_file" "API error"; then
+      return 0
+    fi
+    echo "unknown"; return 1
+  fi
+
+  # For internal repos, just return the first non-draft release without tag validation
+  if [[ "$is_internal_repo" == "true" ]]; then
+    local first_non_draft
+    if command -v jq >/dev/null 2>&1; then
+      first_non_draft="$(printf '%s' "$resp" | jq -r '[.[] | select(.draft==false)][0].tag_name // empty')"
+    else
+      first_non_draft="$(printf '%s' "$resp" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1)"
+    fi
+    if [[ -n "$first_non_draft" && "$first_non_draft" != "null" ]]; then
+      printf '%s %s\n' "$now" "$first_non_draft" >"$cache_file" || true
+      echo "$first_non_draft"
+      return 0
+    fi
+    echo "unknown"; return 1
+  fi
 
   if command -v jq >/dev/null 2>&1; then
     if [[ "$channel" == "rc" ]]; then
@@ -871,7 +1020,14 @@ get_latest_release_tag_filtered() {
   done <<< "$tags"
 
   if [[ -n "$best_tag" ]]; then
+    # Cache the result for rc/any channels
+    printf '%s %s\n' "$now" "$best_tag" >"$cache_file" || true
     echo "$best_tag"; return 0
+  fi
+
+  # Try stale cache before giving up
+  if _use_stale_cache "$cache_file" "no valid ${channel} release found"; then
+    return 0
   fi
 
   echo "unknown"; return 1
@@ -988,14 +1144,21 @@ get_version_info() {
 get_canonical_bbx_version() {
   local version=""
   
-  # Try to get version from bbpro command if it exists
-  if command -v bbpro >/dev/null 2>&1; then
-    local bbpro_output
-    bbpro_output="$(browserbox --version 2>/dev/null || true)"
-    if [[ -n "$bbpro_output" ]]; then
+  # Try to get version from installed browserbox (preferred) or bbpro
+  local version_cmd=""
+  if command -v browserbox >/dev/null 2>&1; then
+    version_cmd="browserbox"
+  elif command -v bbpro >/dev/null 2>&1; then
+    version_cmd="bbpro"
+  fi
+
+  if [[ -n "$version_cmd" ]]; then
+    local bb_output
+    bb_output="$("$version_cmd" --version 2>/dev/null || true)"
+    if [[ -n "$bb_output" ]]; then
       # Extract version number using regex (supports any dot-separated numeric format: X.Y, X.Y.Z, etc.)
       # Handles formats like "BrowserBox version: 15.1.2", "v15.1.2", or just "15.1.2"
-      version="$(echo "$bbpro_output" | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
+      version="$(echo "$bb_output" | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
     fi
   fi
   
@@ -1760,14 +1923,18 @@ setup() {
     fi
     setup_hostname="${new_hostname}"
   fi
-  if ! is_local_hostname "$setup_hostname"; then
-    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
-    wait_for_hostname "$setup_hostname" || { printf "${RED}Hostname $setup_hostname not resolving${NC}\n"; exit 1; }
+  if [[ -n "${BBX_CLOUD_RUN:-}" ]]; then
+    printf "${YELLOW}Cloud Run detected; skipping /etc/hosts and TLS setup.${NC}\n"
   else
-    ensure_hosts_entry "$setup_hostname"
+    if ! is_local_hostname "$setup_hostname"; then
+      printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
+      wait_for_hostname "$setup_hostname" || { printf "${RED}Hostname $setup_hostname not resolving${NC}\n"; exit 1; }
+    else
+      ensure_hosts_entry "$setup_hostname"
+    fi
+    
+    EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
   fi
-  
-  EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
@@ -1894,8 +2061,11 @@ run() {
     ensure_hosts_entry "$hostname"
   fi
 
-  # Validate existing product key
+  # Validate existing product key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY;
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
@@ -2021,8 +2191,11 @@ tor_run() {
   fi
   LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  # Validate existing product key
+  # Validate existing product key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY;
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
@@ -2245,6 +2418,20 @@ zt_run() {
     local p_main="${PORT:-8080}" # Use configured port or default
 
     bbx setup --port $p_main --hostname "$tunnel_hostname"
+
+    # Validate LICENSE_KEY via bbcertify (remove stale ticket on failure to allow fresh retry)
+    export LICENSE_KEY
+    TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+    # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+    bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
+    certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
+    if [[ "$?" -ne 0 ]]; then
+      printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+      echo "Certification output: $certout"
+      exit 1
+    else
+      printf "${GREEN}Certification complete.${NC}\n"
+    fi
 
     # 9. Construct and save the "single shot" script for the user
     local user_at_host="$(whoami)@$zt_ip"
@@ -2480,8 +2667,11 @@ cf_run() {
     printf "${YELLOW}Warning: test.env not found${NC}\n"
   }
 
-  # Validate LICENSE_KEY via bbcertify
+  # Validate LICENSE_KEY via bbcertify (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
@@ -3283,6 +3473,16 @@ is_lock_file_recent() {
     return 1  # File doesn’t exist, so not recent
   fi
 
+  # If lock_file points to a binary that no longer exists, treat it as stale
+  if [ "$lock_file" = "$PREPARING_FILE" ]; then
+    local prepared_path
+    prepared_path=$(sed -n '2p' "$lock_file" 2>/dev/null)
+    if [[ -n "$prepared_path" ]] && [[ ! -f "$prepared_path" ]]; then
+      $SUDO rm -f "$lock_file" 2>/dev/null || true
+      return 1
+    fi
+  fi
+
   # Create a temporary file with a unique name based on process ID
   local temp_file="/tmp/lock_check_$$"
   touch "$temp_file" || return 1  # Create the temp file; fail if it can’t be created
@@ -3319,6 +3519,17 @@ check_and_prepare_update() {
   load_config
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
+
+  # Fast path: if a prepared update exists, install it immediately (do not wait for the next check window)
+  if [ -f "$PREPARED_FILE" ]; then
+    local prepared_tag
+    prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
+    if [[ -n "$prepared_tag" ]]; then
+      if check_prepare_and_install "$prepared_tag"; then
+        return 0
+      fi
+    fi
+  fi
 
   # Define the last update check file and time constraints
   local last_update_check_file="${BB_CONFIG_DIR}/last_update_check"
@@ -3397,6 +3608,22 @@ check_and_prepare_update() {
   return 0
 }
 
+download_release_manifest() {
+  local tag="$1"
+  local dest_dir="$2"
+  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/release.manifest.json"
+  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/release.manifest.json.sig"
+  local curl_auth=()
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
+  fi
+  mkdir -p "$dest_dir" || return 1
+  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json" "$manifest_url" || return 1
+  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json.sig" "$sig_url" || return 1
+  chmod 644 "${dest_dir}/release.manifest.json" "${dest_dir}/release.manifest.json.sig" 2>/dev/null || true
+  return 0
+}
+
 check_prepare_and_install() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
@@ -3421,18 +3648,117 @@ check_prepare_and_install() {
         # Avoid self-overwrite while swapping binary
         is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
 
+        # Install release manifest before binary (required for integrity verification)
+        # Match keyring.js search order: execDir first, then global, then user config
+        local prepared_dir
+        prepared_dir="$(dirname "$prepared_binary")"
+        local prepared_manifest="${prepared_dir}/release.manifest.json"
+        local prepared_manifest_sig="${prepared_dir}/release.manifest.json.sig"
+        local exec_dir="${COMMAND_DIR}"
+        local global_manifest_dir="/usr/local/share/dosaygo/bbpro"
+        local user_manifest_dir="${HOME}/.config/dosaygo/bbpro"
+
+        if [[ ! -f "$prepared_manifest" || ! -f "$prepared_manifest_sig" ]]; then
+          printf "${YELLOW}Prepared manifest files missing. Downloading fresh copy...${NC}\n" >> "$LOG_FILE"
+          if ! download_release_manifest "$repo_tag" "$prepared_dir" >> "$LOG_FILE" 2>&1; then
+            printf "${RED}Error: Prepared manifest files not found${NC}\n" >> "$LOG_FILE"
+            printf "${RED}Error: Prepared manifest files not found${NC}\n"
+            return 1
+          fi
+        fi
+
+        printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
+        local manifest_installed=false
+        
+        # Install to execDir first (primary location checked by integrity verification)
+        if $SUDO cp "$prepared_manifest" "${exec_dir}/release.manifest.json" 2>/dev/null && \
+           $SUDO cp "$prepared_manifest_sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
+          $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
+          printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n" >> "$LOG_FILE"
+          manifest_installed=true
+        fi
+        
+        # Also install to global dir for multiuser support
+        if [[ "$exec_dir" != "/usr/local/bin" ]]; then
+          $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
+          if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
+             $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
+            $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
+            manifest_installed=true
+          fi
+        fi
+        
+        # Fallback to user config if neither worked
+        if [[ "$manifest_installed" != "true" ]]; then
+          mkdir -p "$user_manifest_dir"
+          cp "$prepared_manifest" "$user_manifest_dir/release.manifest.json" || true
+          cp "$prepared_manifest_sig" "$user_manifest_dir/release.manifest.json.sig" || true
+          printf "${YELLOW}Release manifest installed to user config (no global write access)${NC}\n" >> "$LOG_FILE"
+        fi
+
         # Replace global binary with prepared binary (using INSTALL_CMD for sudo)
-        $INSTALL_CMD "$prepared_binary" "$BINARY_PATH" || { 
-          printf "${RED}Failed to install prepared binary to $BINARY_PATH${NC}\n" >> "$LOG_FILE"
-          return 1
+        $INSTALL_CMD "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || { 
+          printf "${RED}Failed to install prepared binary to $BINARY_PATH (install)${NC}\n" >> "$LOG_FILE"
         }
+        # Verify and repair if needed
+        if [[ ! -x "$BINARY_PATH" ]] || [[ ! -s "$BINARY_PATH" ]]; then
+          printf "${YELLOW}Binary missing or not executable after install; copying directly...${NC}\n" >> "$LOG_FILE"
+          $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1
+        fi
+        if [[ ! -x "$BINARY_PATH" ]] || [[ ! -s "$BINARY_PATH" ]]; then
+          printf "${RED}Failed to place binary at $BINARY_PATH (post-copy)${NC}\n" >> "$LOG_FILE"
+          return 1
+        fi
+        ls -l "$BINARY_PATH" >> "$LOG_FILE" 2>&1
+        "$BINARY_PATH" --version >> "$LOG_FILE" 2>&1 || true
 
         # Run internal updates/migrations after swapping binary
         printf "${YELLOW}Running post-update installation tasks...${NC}\n" >> "$LOG_FILE"
-        "$BINARY_PATH" --install >> "$LOG_FILE" 2>&1 || { 
+        BBX_BINARY_SOURCE_PATH="$prepared_binary" "$BINARY_PATH" --install >> "$LOG_FILE" 2>&1 || { 
           printf "${RED}Failed to run post-update installation${NC}\n" >> "$LOG_FILE"
           return 1
         }
+
+        # Post-install sanity: ensure the installed binary matches the prepared build.
+        # The install phase may briefly replace the binary in-place; tolerate short gaps.
+        local expected_version
+        expected_version="${repo_tag#v}"
+        local installed_version
+        installed_version=""
+        local tries=0
+        while (( tries < 150 )); do
+          tries=$((tries + 1))
+
+          # The install step may briefly remove/replace the binary; if missing, restore from prepared.
+          if [[ ! -s "$BINARY_PATH" ]] || [[ ! -x "$BINARY_PATH" ]]; then
+            $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || true
+          fi
+
+          installed_version="$("$BINARY_PATH" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+')"
+          if [[ "$installed_version" == "$expected_version" ]]; then
+            break
+          fi
+          sleep 0.2
+        done
+        if [[ "$installed_version" != "$expected_version" ]]; then
+          printf "${YELLOW}Installed binary version (%s) does not match prepared (%s); recopying prepared binary...${NC}\n" "$installed_version" "$expected_version" >> "$LOG_FILE"
+          $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || true
+          installed_version=""
+          tries=0
+          while (( tries < 150 )); do
+            tries=$((tries + 1))
+            installed_version="$("$BINARY_PATH" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+')"
+            if [[ "$installed_version" == "$expected_version" ]]; then
+              break
+            fi
+            sleep 0.2
+          done
+        fi
+        if [[ "$installed_version" != "$expected_version" ]]; then
+          printf "${RED}Post-install version mismatch: got '%s', expected '%s'${NC}\n" "$installed_version" "$expected_version" >> "$LOG_FILE"
+          return 1
+        fi
+        ls -l "$BINARY_PATH" >> "$LOG_FILE" 2>&1
 
         # Clean up prepared files
         rm -rf "$BBX_NEW_DIR" || printf "${YELLOW}Warning: Failed to remove $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"
@@ -3503,27 +3829,66 @@ update() {
       return 1
   fi
 
-  # Download manifest and signature to global system location (multiuser support)
+  # Download manifest and signature - match keyring.js search order:
+  # 1. execDir (alongside binary) - checked first by integrity verification
+  # 2. globalSystemDir (/usr/local/share/dosaygo/bbpro) - for multiuser
+  # 3. userConfigDir (~/.config/dosaygo/bbpro) - fallback
   local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
   local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
+  local exec_dir="${COMMAND_DIR}"
   local global_dir="/usr/local/share/dosaygo/bbpro"
   local user_config_dir="${HOME}/.config/dosaygo/bbpro"
+  local temp_manifest_dir
+  temp_manifest_dir="$(mktemp -d)"
   
-  # Try global location first (requires sudo), fallback to user dir
-  if [[ -w "/usr/local/share" ]] || [[ "$EUID" -eq 0 ]]; then
-    mkdir -p "$global_dir" 2>/dev/null || sudo mkdir -p "$global_dir"
-    printf "${YELLOW}Downloading release manifest to global location...${NC}\n"
-    curl -L -sS --connect-timeout 10 -o "${global_dir}/release.manifest.json" "$manifest_url" || true
-    curl -L -sS --connect-timeout 10 -o "${global_dir}/release.manifest.json.sig" "$sig_url" || true
-    # Set permissions for all users to read
-    chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
-  else
-    # Fallback to user config dir if no write access to global
-    mkdir -p "$user_config_dir"
-    printf "${YELLOW}Downloading release manifest to user config...${NC}\n"
-    curl -L -sS --connect-timeout 10 -o "${user_config_dir}/release.manifest.json" "$manifest_url" || true
-    curl -L -sS --connect-timeout 10 -o "${user_config_dir}/release.manifest.json.sig" "$sig_url" || true
+  # Download to temp first
+  printf "${YELLOW}Downloading release manifest...${NC}\n"
+  if ! curl -L -sS --fail --connect-timeout 10 -o "${temp_manifest_dir}/release.manifest.json" "$manifest_url"; then
+    printf "${RED}Failed to download release manifest.${NC}\n"
+    rm -rf "$temp_manifest_dir"
+    return 1
   fi
+  if ! curl -L -sS --fail --connect-timeout 10 -o "${temp_manifest_dir}/release.manifest.json.sig" "$sig_url"; then
+    printf "${RED}Failed to download release manifest signature.${NC}\n"
+    rm -rf "$temp_manifest_dir"
+    return 1
+  fi
+  
+  # Install manifest to execDir first (primary location checked by integrity verification)
+  # This ensures the manifest is found alongside the binary
+  local manifest_installed=false
+  if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${exec_dir}/release.manifest.json" 2>/dev/null && \
+     $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
+    $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
+    printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n"
+    manifest_installed=true
+  fi
+  
+  # Also install to global dir for multiuser support (if different from exec_dir)
+  if [[ "$exec_dir" != "/usr/local/bin" ]]; then
+    $SUDO mkdir -p "$global_dir" 2>/dev/null
+    if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${global_dir}/release.manifest.json" 2>/dev/null && \
+       $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${global_dir}/release.manifest.json.sig" 2>/dev/null; then
+      $SUDO chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
+      printf "${GREEN}Release manifest also installed to global location.${NC}\n"
+      manifest_installed=true
+    fi
+  fi
+  
+  # Fallback to user config if neither worked
+  if [[ "$manifest_installed" != "true" ]]; then
+    mkdir -p "$user_config_dir"
+    if cp "${temp_manifest_dir}/release.manifest.json" "${user_config_dir}/release.manifest.json" && \
+       cp "${temp_manifest_dir}/release.manifest.json.sig" "${user_config_dir}/release.manifest.json.sig"; then
+      printf "${YELLOW}Release manifest installed to user config (no global write access).${NC}\n"
+      manifest_installed=true
+    else
+      printf "${RED}Failed to install release manifest anywhere. Integrity checks will fail.${NC}\n"
+      rm -rf "$temp_manifest_dir"
+      return 1
+    fi
+  fi
+  rm -rf "$temp_manifest_dir"
 
   # Execute
   printf "${YELLOW}Running post-update installation tasks...${NC}\n"
@@ -3565,6 +3930,10 @@ update_background() {
   if check_prepare_and_install "$repo_tag"; then
     return 0
   fi
+
+  # Start a fresh log for a new download/prepare cycle (keep update.log as "last update process").
+  mkdir -p "$BB_CONFIG_DIR" 2>/dev/null || true
+  : > "$LOG_FILE"
 
   printf "${YELLOW}Requesting update lock...${NC}\n" >> "$LOG_FILE"
   # Create preparing lock file
@@ -3627,6 +3996,21 @@ update_background() {
     rm -rf "$BBX_NEW_DIR"
     return 1
   }
+
+  # Download manifest and signature for integrity verification
+  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
+  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
+  local temp_manifest="$BBX_NEW_DIR/release.manifest.json"
+  local temp_manifest_sig="$BBX_NEW_DIR/release.manifest.json.sig"
+
+  printf "${YELLOW}Downloading release manifest...${NC}\n" >> "$LOG_FILE"
+  if ! download_release_manifest "$repo_tag" "$BBX_NEW_DIR" >> "$LOG_FILE" 2>&1; then
+    printf "${YELLOW}Warning: Failed to download release manifest${NC}\n" >> "$LOG_FILE"
+    $SUDO rm -f "$PREPARING_FILE"
+    rm -f "$temp_binary" 2>/dev/null
+    rm -rf "$BBX_NEW_DIR" 2>/dev/null
+    return 1
+  fi
 
   # Mark as prepared (record the exact git tag)
   printf "${YELLOW}Marking update as prepared...${NC}\n" >> "$LOG_FILE"
@@ -4033,8 +4417,11 @@ win9x_run() {
   # Reload config to get updated values
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   
-  # Validate license key
+  # Validate license key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY
+  TICKET_FILE="$HOME/.config/dosaygo/bbpro/tickets/ticket.json"
+  # Check ticket validity without reserving (--no-reservation), remove stale ticket on failure
+  bbcertify --no-reservation >/dev/null 2>&1 || rm -f "$TICKET_FILE"
   certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
   if [[ "$?" -ne 0 ]]; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
