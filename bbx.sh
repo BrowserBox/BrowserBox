@@ -3654,7 +3654,7 @@ check_prepare_and_install() {
         is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
 
         # Install release manifest before binary (required for integrity verification)
-        # Match keyring.js search order: execDir first, then global, then user config
+        # Manifests go to data dirs only — never the binary location
         local prepared_dir
         prepared_dir="$(dirname "$prepared_binary")"
         local prepared_manifest="${prepared_dir}/release.manifest.json"
@@ -3674,26 +3674,17 @@ check_prepare_and_install() {
 
         printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
         local manifest_installed=false
-        
-        # Install to execDir first (primary location checked by integrity verification)
-        if $SUDO cp "$prepared_manifest" "${exec_dir}/release.manifest.json" 2>/dev/null && \
-           $SUDO cp "$prepared_manifest_sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
-          $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
-          printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n" >> "$LOG_FILE"
+
+        # Install to global data dir (canonical location for manifests)
+        $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
+        if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
+           $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
+          $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
+          printf "${GREEN}Release manifest installed to ${global_manifest_dir}${NC}\n" >> "$LOG_FILE"
           manifest_installed=true
         fi
-        
-        # Also install to global dir for multiuser support
-        if [[ "$exec_dir" != "/usr/local/bin" ]]; then
-          $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
-          if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
-             $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
-            $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
-            manifest_installed=true
-          fi
-        fi
-        
-        # Fallback to user config if neither worked
+
+        # Fallback to user config if global dir not writable
         if [[ "$manifest_installed" != "true" ]]; then
           mkdir -p "$user_manifest_dir"
           cp "$prepared_manifest" "$user_manifest_dir/release.manifest.json" || true
@@ -3834,10 +3825,10 @@ update() {
       return 1
   fi
 
-  # Download manifest and signature - match keyring.js search order:
-  # 1. execDir (alongside binary) - checked first by integrity verification
-  # 2. globalSystemDir (/usr/local/share/dosaygo/bbpro) - for multiuser
-  # 3. userConfigDir (~/.config/dosaygo/bbpro) - fallback
+  # Download manifest and signature
+  # Manifests go to data dirs only — never the binary location
+  # 1. globalSystemDir (/usr/local/share/dosaygo/bbpro) - canonical location
+  # 2. userConfigDir (~/.config/dosaygo/bbpro) - fallback if no global write access
   local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
   local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
   local exec_dir="${COMMAND_DIR}"
@@ -3859,28 +3850,17 @@ update() {
     return 1
   fi
   
-  # Install manifest to execDir first (primary location checked by integrity verification)
-  # This ensures the manifest is found alongside the binary
+  # Install manifest to global data dir (canonical location for manifests)
   local manifest_installed=false
-  if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${exec_dir}/release.manifest.json" 2>/dev/null && \
-     $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${exec_dir}/release.manifest.json.sig" 2>/dev/null; then
-    $SUDO chmod 644 "${exec_dir}/release.manifest.json" "${exec_dir}/release.manifest.json.sig" 2>/dev/null || true
-    printf "${GREEN}Release manifest installed to ${exec_dir}${NC}\n"
+  $SUDO mkdir -p "$global_dir" 2>/dev/null
+  if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${global_dir}/release.manifest.json" 2>/dev/null && \
+     $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${global_dir}/release.manifest.json.sig" 2>/dev/null; then
+    $SUDO chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
+    printf "${GREEN}Release manifest installed to ${global_dir}${NC}\n"
     manifest_installed=true
   fi
-  
-  # Also install to global dir for multiuser support (if different from exec_dir)
-  if [[ "$exec_dir" != "/usr/local/bin" ]]; then
-    $SUDO mkdir -p "$global_dir" 2>/dev/null
-    if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${global_dir}/release.manifest.json" 2>/dev/null && \
-       $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${global_dir}/release.manifest.json.sig" 2>/dev/null; then
-      $SUDO chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
-      printf "${GREEN}Release manifest also installed to global location.${NC}\n"
-      manifest_installed=true
-    fi
-  fi
-  
-  # Fallback to user config if neither worked
+
+  # Fallback to user config if global dir not writable
   if [[ "$manifest_installed" != "true" ]]; then
     mkdir -p "$user_config_dir"
     if cp "${temp_manifest_dir}/release.manifest.json" "${user_config_dir}/release.manifest.json" && \
