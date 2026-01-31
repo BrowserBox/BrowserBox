@@ -18,12 +18,6 @@
   <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml/badge.svg" alt="bbx Saga Test Suite"></a>
 </p>
 
-<p align="center">
-  <strong>STATUS UPDATE:</strong> The new BrowserBox version has landed. We were up and installable from December 2018 until a brief outage last month while we migrated to a binary release system. Sorry for the downtime and thanks for the patience. We are back up now with a soft-launch beta - expect rapid iteration and please report issues.
-  <br>
-  <strong>Stability & Authority:</strong> Shipping RBI since 2018, now on signed binary releases with a tighter CI loop. We are small by design but serious about reliability and fast support.
-</p>
-
 BrowserBox&trade; is a remote browser isolation (RBI) platform for security teams, SaaS builders, and IT ops. It streams a full modern browser to any client with low latency and 60 FPS, supports embedding, and runs on Windows, Linux, and containers. **A product key is required for all BrowserBox usage.**
 
 At a glance:
