@@ -21,6 +21,11 @@ if is_debug_enabled; then
   set -x
 fi
 
+# Preserve BBX_MINIMAL_MODE from the caller environment across script chains.
+if [[ -n "${BBX_MINIMAL_MODE+x}" ]]; then
+  export BBX_MINIMAL_MODE
+fi
+
 # ANSI color codes
 RED='\033[0;31m'
 GREEN='\033[1;32m'
@@ -1957,7 +1962,7 @@ setup() {
   fi
 
   # Call setup_bbpro, which writes to test.env
-  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
 
   # After setup_bbpro succeeds, reload config to get the new runtime values
   load_config
@@ -2189,7 +2194,7 @@ tor_run() {
   elif ! $onion; then
       ensure_hosts_entry "$BBX_HOSTNAME"
   fi
-  LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   # Validate existing product key (remove stale ticket on failure to allow fresh retry)
   export LICENSE_KEY;
@@ -2657,7 +2662,7 @@ cf_run() {
 
   # Run minimal setup using setup_bbpro with HTTP backend
   printf "${YELLOW}Setting up BrowserBox on port ${port} with HTTP backend...${NC}\n"
-  LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || {
+  BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || {
     printf "${RED}Setup failed${NC}\n"
     exit 1
   }
@@ -4285,14 +4290,14 @@ run_as() {
     TOKEN=$(openssl rand -hex 16)
 
     # Run setup_bbpro with explicit PATH and fresh token, redirecting output as the target user
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port $port --token $TOKEN > ~/.config/dosaygo/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosaygo/bbpro/setup_output.txt"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH BBX_MINIMAL_MODE=\"${BBX_MINIMAL_MODE:-}\" LICENSE_KEY=\"${LICENSE_KEY}\" setup_bbpro --port $port --token $TOKEN > ~/.config/dosaygo/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosaygo/bbpro/setup_output.txt"; exit 1; }
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
         printf "${RED}No product key set in LICENSE_KEY env var. Run 'bbx activate' or go to dosaygo.com to get a valid product key.${NC}\n"
         exit 1
     fi
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; export BBX_MINIMAL_MODE=\"${BBX_MINIMAL_MODE:-}\"; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
     # Retrieve token
@@ -4412,7 +4417,7 @@ win9x_run() {
 
   # Setup with explicit token
   local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
-  LICENSE_KEY="${LICENSE_KEY}" $setup_cmd &>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" $setup_cmd &>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   
   # Reload config to get updated values
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
