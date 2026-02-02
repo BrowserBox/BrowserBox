@@ -1761,6 +1761,19 @@ install_bbx() {
              if [[ -n "$BBX_DEBUG" ]]; then echo "Debug: Download output was: $exe_to_run" >&2; fi
              exit 1
          fi
+
+          # Download and install release manifest for integrity verification
+          printf "${YELLOW}Downloading release manifest...${NC}\n"
+          local temp_manifest_dir
+          temp_manifest_dir="$(mktemp -d)"
+          if download_release_manifest "$tag" "$temp_manifest_dir"; then
+            if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
+              printf "${YELLOW}Warning: Failed to install release manifest${NC}\n"
+            fi
+          else
+            printf "${YELLOW}Warning: Failed to download release manifest${NC}\n"
+          fi
+          rm -rf "$temp_manifest_dir"
     fi
 
     # 4. Config inputs
@@ -3629,6 +3642,37 @@ download_release_manifest() {
   return 0
 }
 
+install_release_manifest_from_dir() {
+  local source_dir="$1"
+  local source_manifest="${source_dir}/release.manifest.json"
+  local source_signature="${source_dir}/release.manifest.json.sig"
+  local global_manifest_dir="/usr/local/share/dosaygo/bbpro"
+  local user_manifest_dir="${HOME}/.config/dosaygo/bbpro"
+
+  if [[ ! -f "$source_manifest" || ! -f "$source_signature" ]]; then
+    printf "${RED}Release manifest files are missing from ${source_dir}${NC}\n" >&2
+    return 1
+  fi
+
+  $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
+  if $SUDO cp "$source_manifest" "${global_manifest_dir}/release.manifest.json" 2>/dev/null && \
+     $SUDO cp "$source_signature" "${global_manifest_dir}/release.manifest.json.sig" 2>/dev/null; then
+    $SUDO chmod 644 "${global_manifest_dir}/release.manifest.json" "${global_manifest_dir}/release.manifest.json.sig" 2>/dev/null || true
+    printf "${GREEN}Release manifest installed to ${global_manifest_dir}${NC}\n"
+    return 0
+  fi
+
+  mkdir -p "$user_manifest_dir"
+  if cp "$source_manifest" "${user_manifest_dir}/release.manifest.json" && \
+     cp "$source_signature" "${user_manifest_dir}/release.manifest.json.sig"; then
+    chmod 644 "${user_manifest_dir}/release.manifest.json" "${user_manifest_dir}/release.manifest.json.sig" 2>/dev/null || true
+    printf "${YELLOW}Release manifest installed to user config (no global write access)${NC}\n"
+    return 0
+  fi
+
+  return 1
+}
+
 check_prepare_and_install() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
@@ -3659,10 +3703,6 @@ check_prepare_and_install() {
         prepared_dir="$(dirname "$prepared_binary")"
         local prepared_manifest="${prepared_dir}/release.manifest.json"
         local prepared_manifest_sig="${prepared_dir}/release.manifest.json.sig"
-        local exec_dir="${COMMAND_DIR}"
-        local global_manifest_dir="/usr/local/share/dosaygo/bbpro"
-        local user_manifest_dir="${HOME}/.config/dosaygo/bbpro"
-
         if [[ ! -f "$prepared_manifest" || ! -f "$prepared_manifest_sig" ]]; then
           printf "${YELLOW}Prepared manifest files missing. Downloading fresh copy...${NC}\n" >> "$LOG_FILE"
           if ! download_release_manifest "$repo_tag" "$prepared_dir" >> "$LOG_FILE" 2>&1; then
@@ -3673,23 +3713,10 @@ check_prepare_and_install() {
         fi
 
         printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
-        local manifest_installed=false
-
-        # Install to global data dir (canonical location for manifests)
-        $SUDO mkdir -p "$global_manifest_dir" 2>/dev/null
-        if $SUDO cp "$prepared_manifest" "$global_manifest_dir/release.manifest.json" 2>/dev/null && \
-           $SUDO cp "$prepared_manifest_sig" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null; then
-          $SUDO chmod 644 "$global_manifest_dir/release.manifest.json" "$global_manifest_dir/release.manifest.json.sig" 2>/dev/null || true
-          printf "${GREEN}Release manifest installed to ${global_manifest_dir}${NC}\n" >> "$LOG_FILE"
-          manifest_installed=true
-        fi
-
-        # Fallback to user config if global dir not writable
-        if [[ "$manifest_installed" != "true" ]]; then
-          mkdir -p "$user_manifest_dir"
-          cp "$prepared_manifest" "$user_manifest_dir/release.manifest.json" || true
-          cp "$prepared_manifest_sig" "$user_manifest_dir/release.manifest.json.sig" || true
-          printf "${YELLOW}Release manifest installed to user config (no global write access)${NC}\n" >> "$LOG_FILE"
+        if ! install_release_manifest_from_dir "$prepared_dir" >> "$LOG_FILE" 2>&1; then
+          printf "${RED}Error: Failed to install release manifest${NC}\n" >> "$LOG_FILE"
+          printf "${RED}Error: Failed to install release manifest${NC}\n"
+          return 1
         fi
 
         # Replace global binary with prepared binary (using INSTALL_CMD for sudo)
@@ -3827,51 +3854,21 @@ update() {
 
   # Download manifest and signature
   # Manifests go to data dirs only — never the binary location
-  # 1. globalSystemDir (/usr/local/share/dosaygo/bbpro) - canonical location
-  # 2. userConfigDir (~/.config/dosaygo/bbpro) - fallback if no global write access
-  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
-  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
-  local exec_dir="${COMMAND_DIR}"
-  local global_dir="/usr/local/share/dosaygo/bbpro"
-  local user_config_dir="${HOME}/.config/dosaygo/bbpro"
   local temp_manifest_dir
   temp_manifest_dir="$(mktemp -d)"
   
   # Download to temp first
   printf "${YELLOW}Downloading release manifest...${NC}\n"
-  if ! curl -L -sS --fail --connect-timeout 10 -o "${temp_manifest_dir}/release.manifest.json" "$manifest_url"; then
+  if ! download_release_manifest "$repo_tag" "$temp_manifest_dir"; then
     printf "${RED}Failed to download release manifest.${NC}\n"
     rm -rf "$temp_manifest_dir"
     return 1
   fi
-  if ! curl -L -sS --fail --connect-timeout 10 -o "${temp_manifest_dir}/release.manifest.json.sig" "$sig_url"; then
-    printf "${RED}Failed to download release manifest signature.${NC}\n"
+
+  if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
+    printf "${RED}Failed to install release manifest anywhere. Integrity checks will fail.${NC}\n"
     rm -rf "$temp_manifest_dir"
     return 1
-  fi
-  
-  # Install manifest to global data dir (canonical location for manifests)
-  local manifest_installed=false
-  $SUDO mkdir -p "$global_dir" 2>/dev/null
-  if $SUDO cp "${temp_manifest_dir}/release.manifest.json" "${global_dir}/release.manifest.json" 2>/dev/null && \
-     $SUDO cp "${temp_manifest_dir}/release.manifest.json.sig" "${global_dir}/release.manifest.json.sig" 2>/dev/null; then
-    $SUDO chmod 644 "${global_dir}/release.manifest.json" "${global_dir}/release.manifest.json.sig" 2>/dev/null || true
-    printf "${GREEN}Release manifest installed to ${global_dir}${NC}\n"
-    manifest_installed=true
-  fi
-
-  # Fallback to user config if global dir not writable
-  if [[ "$manifest_installed" != "true" ]]; then
-    mkdir -p "$user_config_dir"
-    if cp "${temp_manifest_dir}/release.manifest.json" "${user_config_dir}/release.manifest.json" && \
-       cp "${temp_manifest_dir}/release.manifest.json.sig" "${user_config_dir}/release.manifest.json.sig"; then
-      printf "${YELLOW}Release manifest installed to user config (no global write access).${NC}\n"
-      manifest_installed=true
-    else
-      printf "${RED}Failed to install release manifest anywhere. Integrity checks will fail.${NC}\n"
-      rm -rf "$temp_manifest_dir"
-      return 1
-    fi
   fi
   rm -rf "$temp_manifest_dir"
 
