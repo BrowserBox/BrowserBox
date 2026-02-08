@@ -4501,7 +4501,63 @@ usage() {
     printf "  ${GREEN}--faq${NC}           Display frequently asked questions.\n"
     printf "  ${GREEN}--version${NC}       Show the version of the bbx CLI.\n"
     printf "  ${GREEN}--help${NC}          Show this help screen.\n\n"
-    printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2025${NC}\n\n"
+    printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2025${NC}\n"
+}
+
+show_policy_footer() {
+    local baseline=""
+    local color=""
+    local label=""
+    local desc=""
+    
+    # Check if browserbox supports policy command
+    if command -v browserbox >/dev/null 2>&1; then
+      local policy_output
+      policy_output=$(browserbox policy get 2>&1)
+      
+      if echo "$policy_output" | grep -q "Unknown command\|not found\|unavailable"; then
+        # Policy not supported in this version
+        color="${RED}"
+        label="unsupported"
+        desc="policy not available in this BrowserBox version"
+        printf "\n"
+        printf "  ${color}■${NC} Policy: ${color}${label}${NC} — ${desc}\n"
+        printf "    Update BrowserBox to enable policy controls: ${BOLD}bbx update${NC}\n\n"
+        return
+      fi
+      
+      # Extract baseline from policy output
+      baseline=$(echo "$policy_output" | grep -o '"baselineId"[[:space:]]*:[[:space:]]*"[^"]*"' 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/' | head -1)
+    else
+      # browserbox not installed
+      color="${YELLOW}"
+      printf "\n"
+      printf "  ${color}■${NC} Policy: ${color}not installed${NC} — install BrowserBox to enable policy controls\n\n"
+      return
+    fi
+    
+    # Determine color and label based on baseline
+    if [[ "$baseline" == *"regulated"* ]]; then
+      color="${PURPLE}"
+      label="regulated"
+      desc="navigation restricted, features locked"
+    elif [[ "$baseline" == *"compat"* ]]; then
+      color="${GREEN}"
+      label="compat"
+      desc="open navigation, all features enabled"
+    elif [[ -n "$baseline" ]]; then
+      color="${BLUE}"
+      label="custom"
+      desc="custom policy active"
+    else
+      color="${YELLOW}"
+      label="no policy"
+      desc="default allow-all"
+    fi
+    
+    printf "\n"
+    printf "  ${color}■${NC} Policy: ${color}${label}${NC} — ${desc}\n"
+    printf "    Run ${BOLD}bbx policy${NC} to view or change what's allowed.\n\n"
 }
 
 faq() {
@@ -4682,3 +4738,6 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
+
+# Always show policy status footer
+show_policy_footer
