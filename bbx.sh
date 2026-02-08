@@ -4497,6 +4497,7 @@ usage() {
 
     printf "${BOLD}OTHER COMMANDS${NC}\n"
     printf "  ${BLUE}${BOLD}automate${NC}       Drive BrowserBox with scripts (coming soon).\n"
+    printf "  ${GREEN}policy${NC}         Manage canonical policy bundle. ${BOLD}bbx policy <subcommand>${NC}\n"
     printf "  ${GREEN}--faq${NC}           Display frequently asked questions.\n"
     printf "  ${GREEN}--version${NC}       Show the version of the bbx CLI.\n"
     printf "  ${GREEN}--help${NC}          Show this help screen.\n\n"
@@ -4664,6 +4665,17 @@ case "$1" in
     docker-run|docker-start) shift 1; docker_run "$@";;
     docker-stop) shift 1; docker_stop "$@";;
     win9x-run|win9x-start) shift 1; banner_color=$YELLOW; win9x_run "$@";;
+    policy)
+      shift 1
+      if command -v bbpolicy >/dev/null 2>&1; then
+        bbpolicy "$@"
+      elif command -v browserbox >/dev/null 2>&1; then
+        browserbox policy "$@"
+      else
+        printf "${RED}Policy command unavailable: install BrowserBox first.${NC}\n"
+        exit 1
+      fi
+      ;;
     --version|-v) shift 1; version "$@";;
     --help|-h) shift 1; usage "$@";;
     --faq) shift 1; faq "$@";; 
