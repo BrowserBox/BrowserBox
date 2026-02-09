@@ -18,16 +18,24 @@
   <a href="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml"><img src="https://github.com/BrowserBox/BrowserBox/actions/workflows/bbx-saga.yaml/badge.svg" alt="bbx Saga Test Suite"></a>
 </p>
 
-BrowserBox&trade; is a remote browser isolation (RBI) platform for security teams, SaaS builders, and IT ops. It streams a full modern browser to any client with low latency and 60 FPS, supports embedding, and runs on Windows, Linux, and containers. **A product key is required for all BrowserBox usage.**
+<p align="center">
+  <strong>🆕 FEBRUARY 2026:</strong> Windows 98½ Demo now live!<br>
+  Try BrowserBox with our nostalgic <a href="https://win9-5.com/demo">Windows 98½ demo</a> — free 17-minute cloud browser sessions, no signup required.<br>
+  <strong>Cloud API:</strong> Purchase minutes and create on-demand cloud browser sessions via REST API.<br>
+  <a href="https://win9-5.com/api/">API Docs</a> · <a href="https://win9-5.com/pricing/">Pricing</a> · <a href="https://win9-5.com/demo">Live Demo</a>
+</p>
+
+BrowserBox&trade; is a remote browser isolation (RBI) platform for security teams, SaaS builders, and IT ops. It streams a full modern browser to any client with low latency and 60 FPS, supports embedding, and runs on Windows, Linux, and containers. **A product key is required for all self-hosted BrowserBox usage.**
 
 At a glance:
 *   **Clientless RBI:** No plugins or downloads for end users.
 *   **60 FPS streaming:** Smooth, responsive browsing over the network.
-*   **Embed anywhere:** Drop in the BrowserBox webview to your app or portal.
+*   **Embed anywhere:** Drop in the `<browserbox-webview>` component — works with self-hosted or cloud instances.
+*   **Cloud API:** Purchase minutes and spin up ephemeral browser sessions on demand via REST.
 *   **Flexible deployment:** Works on Windows, Linux, Docker, and LXC.
 *   **Built for control:** Policies, isolation, and audit-friendly workflows.
 
-Quick links: [Get Started](#get-started-in-3-steps) | [Pricing](https://dosaygo.com/commerce) | [Support](mailto:support@dosaygo.com)
+Quick links: [Get Started](#get-started-in-3-steps) | [Cloud API](#cloud-api-ephemeral-sessions) | [Embedding API](#embed-browserbox-anywhere) | [Live Demo](https://win9-5.com/demo) | [Pricing](https://win9-5.com/pricing/) | [Support](mailto:api@browserbox.io)
 
 Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), and [CloudTabs](https://browse.cloudtabs.net)
 
@@ -102,11 +110,12 @@ Commands:
 10. [Platform Compatibility](#platform-compatibility)
 11. [Meet `bbx`: Your BrowserBox Command Center](#meet-bbx-your-browserbox-command-center)
 12. [Embed BrowserBox Anywhere](#embed-browserbox-anywhere)
-13. [Advanced Usage](#advanced-usage)
-14. [License Compliance & Usage Data](#license-compliance--usage-data)
-15. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
-16. [Support](#support)
-17. [About DOSAYGO](#about-dosaygo)
+13. [Cloud API (Ephemeral Sessions)](#cloud-api-ephemeral-sessions)
+14. [Advanced Usage](#advanced-usage)
+15. [License Compliance & Usage Data](#license-compliance--usage-data)
+16. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
+17. [Support](#support)
+18. [About DOSAYGO](#about-dosaygo)
 18. [Copyright & Licensing](#copyright--licensing)
 
 ---
@@ -204,12 +213,15 @@ In today's threat landscape, standard browsing carries real risk. BrowserBox pro
 *   **Comprehensive Platform Support:** Windows, major Linux distributions, Docker, LXC.
 *   **Powerful `bbx` CLI Tool:** Manage installations, licenses, users, and run modes (including Tor).
 *   **Easy Embedding API:** Integrate BrowserBox into your web applications with a simple `<browserbox-webview>` custom element.
+*   **Cloud API:** Create on-demand ephemeral browser sessions via REST — no self-hosting required. [Learn more](https://win9-5.com/api/).
 *   **Automation Ready:** Designed for use with Puppeteer (PPtr) and Playwright (support coming soon).
 *   **Security Focused:** Built-in DLP features, Tor support for anonymity, and robust access controls.
 *   **1-Click Cloud Deployment (Coming Soon):** Easily deploy on Vultr, AWS, Azure, or Linode.
 
 ## What's New In The Latest Release
 
+*   **Cloud API:** Purchase minutes and create ephemeral browser sessions on demand — [API docs](https://win9-5.com/api/).
+*   **Windows 98½ Demo:** Try BrowserBox free at [win9-5.com/demo](https://win9-5.com/demo) — no signup required.
 *   **Binary release system:** Faster installs and more reliable updates.
 *   **60 FPS streaming:** Smooth, responsive remote browsing.
 *   **Unified install endpoints:** `browserbox.io` installers for Linux/macOS and Windows.
@@ -321,9 +333,9 @@ The `bbx` CLI simplifies every aspect of BrowserBox management:
 
 ## Embed BrowserBox Anywhere
 
-Easily integrate secure, remote browsing into your web applications using the BrowserBox Embedding API. Our `<browserbox-webview>` custom element allows you to add a fully isolated browser to any webpage.
+Integrate secure, remote browsing into your web applications using the `<browserbox-webview>` custom element. This Embedding API works with both **self-hosted** BrowserBox instances and **cloud instances** created via the [Cloud API](#cloud-api-ephemeral-sessions).
 
-**Quick Start:**
+**Quick Start (self-hosted):**
 
 1.  **Configure Server:** Set `ALLOWED_EMBEDDING_ORIGINS` on your BrowserBox server:
     ```bash
@@ -335,7 +347,72 @@ Easily integrate secure, remote browsing into your web applications using the Br
     <script src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/api/browserbox-webview.js"></script>
     <browserbox-webview login-link="https://your-browserbox-instance.com/login/abc123" width="800" height="600"></browserbox-webview>
     ```
-For more details, see the [browserbox-webview.js file](https://github.com/BrowserBox/BrowserBox/blob/main/api/browserbox-webview.js).
+
+**Quick Start (cloud API):**
+
+```html
+<script src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/api/browserbox-webview.js"></script>
+<browserbox-webview id="bbx" width="1024" height="768"></browserbox-webview>
+<script>
+  // Create a session via the Cloud API, then pass the login URL to the webview
+  const res = await fetch('https://win9-5.com/api/v1/sessions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer YOUR_API_KEY', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ minutes: 30 })
+  });
+  const { loginUrl } = await res.json();
+  document.getElementById('bbx').setAttribute('login-link', loginUrl);
+</script>
+```
+
+**Key `<browserbox-webview>` features:**
+*   Full navigation control (URL bar, back/forward, reload, tabs)
+*   Event listeners: `tabcreated`, `tabnavigated`, `tabclosed`, `faviconschange`
+*   Methods: `navigate(url)`, `getTabCount()`, `closeTab(id)`, `callApi(method, params)`
+*   Responsive resizing with automatic viewport scaling
+
+For full Embedding API documentation, see the [browserbox-webview.js file](https://github.com/BrowserBox/BrowserBox/blob/main/api/browserbox-webview.js).
+
+---
+
+## Cloud API (Ephemeral Sessions)
+
+The BrowserBox Cloud API lets you create on-demand, ephemeral cloud browser sessions without self-hosting. Purchase minute packs and use a REST API to manage sessions programmatically.
+
+**How it works:**
+1.  Purchase a minute pack (60, 300, or 1000 minutes) at [win9-5.com/pricing](https://win9-5.com/pricing/)
+2.  Receive an API bearer token by email
+3.  Create sessions via `POST /api/v1/sessions` — get a login URL
+4.  Embed the login URL in `<browserbox-webview>` or open it directly
+
+**Example:**
+
+```bash
+# Create a 30-minute session
+curl -X POST https://win9-5.com/api/v1/sessions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"minutes": 30}'
+
+# Response:
+# { "sessionId": "abc123...", "loginUrl": "https://...", "minutes_allocated": 30, "balance_minutes": 270 }
+```
+
+**Endpoints:**
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET`  | `/api/v1/pricing` | List products and prices (public) |
+| `POST` | `/api/v1/sessions` | Create a new browser session |
+| `GET`  | `/api/v1/sessions/:id` | Get session status |
+| `DELETE` | `/api/v1/sessions/:id` | End session, refund unused minutes |
+| `GET`  | `/api/v1/balance` | Check remaining minutes |
+| `POST` | `/api/v1/checkout` | Create a Stripe checkout for purchasing minutes |
+
+Unused minutes are refunded when you delete a session early. Minutes never expire.
+
+📖 **Full API documentation:** [win9-5.com/api](https://win9-5.com/api/)
+🎮 **Live demo:** [win9-5.com/demo](https://win9-5.com/demo)
+📧 **API support:** [api@browserbox.io](mailto:api@browserbox.io)
 
 ---
 
@@ -388,9 +465,11 @@ A: Visit [dosaygo.com](https://dosaygo.com) or email [sales@dosaygo.com](mailto:
 ## Support
 
 Need help? Our team is ready to assist.
-*   **Technical Support:** [support@dosaygo.com](mailto:support@dosaygo.com)
+*   **API & Technical Support:** [api@browserbox.io](mailto:api@browserbox.io)
+*   **General Support:** [support@dosaygo.com](mailto:support@dosaygo.com)
 *   **Sales & Licensing:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 *   **GitHub Issues:** For bug reports or feature requests related to the open-source components or `bbx` tool.
+*   **API Documentation:** [win9-5.com/api](https://win9-5.com/api/)
 
 ---
 
@@ -406,7 +485,7 @@ Visit us at [dosaygo.com](https://dosaygo.com).
 
 ## Copyright & Licensing
 
-BrowserBox™ is &copy; 2018-2025 DOSAYGO Corporation USA. All rights reserved.
+BrowserBox™ is &copy; 2018-2026 DOSAYGO Corporation USA. All rights reserved.
 The `bbx` CLI tool and other specified components are under the [LICENSE.md](LICENSE.md) in this repository. You need a license agreement to use this product. Purchase licenses online at: https://dosaygo.com/commerce or reach out to sales@dosaygo.com to discuss your needs. The BrowserBox product requires a validly purchased license (either commercial for business and personal use, or non-commercial for public sector and non-profit). Your license comes with one or more license keys and a number of seats. 
 
 ---
