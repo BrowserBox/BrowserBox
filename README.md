@@ -140,6 +140,12 @@ The `bbx` command-line interface is your primary tool for managing BrowserBox.
     ```bash
     curl -fsSL https://browserbox.io/install.sh | bash
     ```
+*   **Via NPM (@browserbox/browserbox):**
+    ```bash
+    npm i -g @browserbox/browserbox
+    bbx
+    ```
+    The npm package is a thin wrapper that delegates to an existing BrowserBox install, or runs the platform installer first and then delegates.
 
 >[!NOTE]
 >Installers now use `browserbox.io` endpoints. If you see older docs pointing to `dosaygo.com`, use the commands above.
