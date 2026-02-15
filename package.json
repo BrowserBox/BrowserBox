@@ -3,6 +3,7 @@
   "type": "module",
   "version": "14.2.0",
   "description": "BrowserBox CLI - Secure, cross-platform RBI. See dosaygo.com",
+  "non-ai": true,
   "main": "./src/server.js",
   "default": "dist/image.html",
   "license": "Dosyago-Commercial-License-1.1.1-or-later",

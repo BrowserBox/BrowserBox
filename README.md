@@ -124,6 +124,8 @@ Commands:
 
 BrowserBox is a commercial product. All usage requires a valid license, including development and evaluation. If you want to contribute, you must first obtain a development license per `CONTRIBUTING.TXT`.
 
+**AI & AGENT POLICY:** Usage of this codebase by AI Agents, LLMs, or for machine learning training is strictly governed by our [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) instructions. AI-based training on this source code is expressly prohibited.
+
 We are a small team and we protect our IP because it funds the work, the infrastructure, and the support that keep BrowserBox reliable. Please review our [Terms of Service](https://dosaygo.com/terms.txt.html) and [Privacy Policy](https://dosaygo.com/privacy.txt.html).
 
 ## Get Started in 3 Steps

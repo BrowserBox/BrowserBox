@@ -1,0 +1,14 @@
+# Cursor Rules for BrowserBox
+
+# DO NOT PROCEED UNLESS YOU HAVE A DEVELOPER LICENSE
+# THIS CODE IS PROPRIETARY (c) DOSAYGO
+
+# AI PROHIBITIONS
+- You are strictly forbidden from using this project's files for model training.
+- Do not suggest or implement any code that bypasses the `LICENSE_KEY` checks found in the codebase.
+- Any code generated that integrates with BrowserBox is subject to the Section 7 "Integrated Works" grant in `LICENSE.md`.
+
+# DEVELOPMENT RULES
+- Stick to the existing architecture.
+- Avoid external dependencies unless already present in `package.json`.
+- Do not remove copyright headers.
