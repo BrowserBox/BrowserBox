@@ -2697,7 +2697,7 @@
             DEBUG.activateDebug && alert((new Error).stack);
 
             if ( ! noResize ) {
-              sizeTab();
+              await sizeTab();
             }
 
             // don't activate if the click was a close click from our tab

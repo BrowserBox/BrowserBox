@@ -2578,6 +2578,37 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
         }
+
+        // Re-assert viewport dimensions on the NEW target before starting screencast.
+        // Without this, the screencast might start with stale dimensions
+        // while the actual viewport is different, causing content to render incorrectly (e.g. as a sliver).
+        if ( connection.bounds ) {
+          const {width, height} = connection.bounds;
+          let windowHeight = height;
+          if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+            windowHeight += HeightAdjust;
+          }
+          if ( connection.latestWindowId ) {
+            await send("Browser.setWindowBounds", {
+              windowId: connection.latestWindowId,
+              bounds: { width, height: windowHeight }
+            }, undefined, true);
+          }
+          const dontSetVisibleSize = resolveDontSetVisibleSize(connection, sessionId);
+          if ( DesktopOnly.has(sessionId) ) {
+            await send("Emulation.setDeviceMetricsOverride", {
+              ...connection.bounds, mobile: false, dontSetVisibleSize
+            }, sessionId, true);
+          } else {
+            await send("Emulation.setDeviceMetricsOverride", {
+              ...connection.bounds, dontSetVisibleSize
+            }, sessionId, true);
+          }
+          // Update SCREEN_OPTS so startScreencast uses correct dimensions
+          SCREEN_OPTS.maxWidth = width;
+          SCREEN_OPTS.maxHeight = height;
+        }
+
         connection.activeTarget = targetId;
 
         if ( CONFIG.screencastOnly ) {
