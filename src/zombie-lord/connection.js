@@ -2590,6 +2590,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( bounds ) {
           if ( command.params.bounds ) {
             Object.assign(connection.bounds, command.params.bounds);
+            // Delete from params so we don't send invalid CDP to the browser
+            delete command.params.bounds;
           }
           const {width, height} = bounds;
           let windowHeight = height;
