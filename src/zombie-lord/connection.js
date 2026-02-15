@@ -2582,8 +2582,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         // Re-assert viewport dimensions on the NEW target before starting screencast.
         // Without this, the screencast might start with stale dimensions
         // while the actual viewport is different, causing content to render incorrectly (e.g. as a sliver).
-        if ( connection.bounds ) {
-          const {width, height} = connection.bounds;
+        
+        // Priority: Use bounds passed in the command, fallback to connection.bounds.
+        // Passing them in the command ensures atomicity on slow connections.
+        const bounds = command.params.bounds || connection.bounds;
+
+        if ( bounds ) {
+          if ( command.params.bounds ) {
+            Object.assign(connection.bounds, command.params.bounds);
+          }
+          const {width, height} = bounds;
           let windowHeight = height;
           if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
             windowHeight += HeightAdjust;
@@ -2597,11 +2605,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const dontSetVisibleSize = resolveDontSetVisibleSize(connection, sessionId);
           if ( DesktopOnly.has(sessionId) ) {
             await send("Emulation.setDeviceMetricsOverride", {
-              ...connection.bounds, mobile: false, dontSetVisibleSize
+              ...bounds, mobile: false, dontSetVisibleSize
             }, sessionId, true);
           } else {
             await send("Emulation.setDeviceMetricsOverride", {
-              ...connection.bounds, dontSetVisibleSize
+              ...bounds, dontSetVisibleSize
             }, sessionId, true);
           }
           // Update SCREEN_OPTS so startScreencast uses correct dimensions

@@ -2752,7 +2752,14 @@
             queue.send({
               command: {
                 name: "Target.activateTarget",
-                params: {targetId},
+                params: {
+                  targetId,
+                  bounds: {
+                    width: self.ViewportWidth,
+                    height: self.ViewportHeight,
+                    mobile: deviceIsMobile()
+                  }
+                },
                 requiresShot: true,
                 forceFrame
               }
