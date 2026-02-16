@@ -3450,6 +3450,8 @@ stop() {
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
     # Also stop any Cloudflare tunnel started by bbx cf-run
     kill_cf_tunnel quiet
+    # Clear login link so stale CF links aren't reused by next bbx run
+    rm -f "${BB_CONFIG_DIR}/login.link"
     run_quietly stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
 }
