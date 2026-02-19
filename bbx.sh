@@ -2766,6 +2766,7 @@ cf_run() {
   local tunnel_url=""
   local max_restarts=3
   local restart_count=0
+  local cf_run_stopping="false"
 
   while [ $restart_count -lt $max_restarts ]; do
     cf_pid=$(start_cloudflared)
@@ -2840,19 +2841,34 @@ cf_run() {
   # Foreground mode: set up cleanup trap and wait
   # Cleanup function for cf_run
   cleanup_cf_run() {
+    if [[ "$cf_run_stopping" == "true" ]]; then
+      return
+    fi
+    cf_run_stopping="true"
+    trap - EXIT INT TERM
     printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
     kill "$cf_pid" 2>/dev/null || true
     rm -f "$CF_PID_FILE"
     run_quietly stop_bbpro || true
     printf "${GREEN}Cleanup complete.${NC}\n"
   }
-  trap cleanup_cf_run EXIT INT TERM
+
+  handle_cf_run_signal() {
+    cleanup_cf_run
+    exit 130
+  }
+
+  trap cleanup_cf_run EXIT
+  trap handle_cf_run_signal INT TERM
 
   printf "\n${CYAN}Tunnel is active. Press Ctrl+C to stop.${NC}\n\n"
 
   # Monitor cloudflared and auto-restart if it crashes (foreground mode)
-  while true; do
+  while [[ "$cf_run_stopping" != "true" ]]; do
     if ! kill -0 "$cf_pid" 2>/dev/null; then
+      if [[ "$cf_run_stopping" == "true" ]]; then
+        break
+      fi
       printf "${YELLOW}Cloudflare tunnel died, restarting...${NC}\n"
       cf_pid=$(start_cloudflared)
       echo "$cf_pid" > "$CF_PID_FILE"
