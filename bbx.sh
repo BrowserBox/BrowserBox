@@ -2114,7 +2114,11 @@ run() {
     login_link="https://${zeta_host}/login?token=${TOKEN}"
     echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   else
-    login_link=$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null || echo "https://${hostname}:${port}/login?token=${TOKEN}")
+    # Always construct the local link from the current hostname/port.
+    # Do NOT read login.link here — it may contain a stale CF/tor URL
+    # from a previous cf-run or tor-run which would show a broken link.
+    login_link="https://${hostname}:${port}/login?token=${TOKEN}"
+    echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   fi
 
   draw_box "Login Link: ${login_link}"
@@ -2245,7 +2249,8 @@ tor_run() {
       done
       test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
       bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-      login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
+      login_link="https://${BBX_HOSTNAME}:${PORT}/login?token=${TOKEN}"
+      echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   fi
   sleep 2
   printf "${GREEN}BrowserBox with Tor started.${NC}\n"
