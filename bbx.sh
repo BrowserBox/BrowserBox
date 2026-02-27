@@ -2080,13 +2080,40 @@ run() {
   fi
 
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
-  # Start services immediately — license certification runs after on the fast path
   # Use python3 for ms precision; fall back to seconds on systems without it
   _ms() { python3 -c 'import time; print(int(time.time()*1000))' 2>/dev/null || echo $(( $(date +%s) * 1000 )); }
   local _run_t0; _run_t0=$(_ms)
-  printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
-  run_quietly bbpro "${run_args[@]}" || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-  printf "${YELLOW}[startup] bbpro returned at $(( $(_ms) - _run_t0 ))ms${NC}\n"
+
+  # Run bbcertify in background so reservation.json is written while bbpro launches.
+  # The binary's validateLicense polls for reservation.json on retry, so even if bbpro
+  # wins the race the binary will pick up the file within a few seconds.
+  export LICENSE_KEY;
+  local cert_log; cert_log="$(mktemp /tmp/bbx-certify-XXXXXX.log)"
+  [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] Starting license certification (background) at $(( $(_ms) - _run_t0 ))ms...${NC}\n"
+  bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify" > "$cert_log" 2>&1 &
+  local CERT_PID=$!
+
+  [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
+  run_quietly bbpro "${run_args[@]}" || { printf "${RED}Failed to start${NC}\n"; kill "$CERT_PID" 2>/dev/null; rm -f "$cert_log"; exit 1; }
+  [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] bbpro returned at $(( $(_ms) - _run_t0 ))ms${NC}\n"
+
+  # Wait for background certification to complete
+  if ! wait "$CERT_PID"; then
+    printf "${RED}License check failed. Run 'bbx activate' or go to dosaygo.com. Stopping BrowserBox...${NC}\n"
+    echo "Certification output:"
+    cat "$cert_log"
+    rm -f "$cert_log"
+    bbx stop 2>/dev/null || true
+    exit 1
+  fi
+  rm -f "$cert_log"
+  [[ -n "${BBX_DEBUG:-}" ]] && printf "${GREEN}[startup] Certification complete at $(( $(_ms) - _run_t0 ))ms${NC}\n"
+  if [[ -f "$CERT_META_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$CERT_META_FILE"
+    export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
+  fi
+
   # Reload config to get the final token from the newly created test.env
   load_config
 
@@ -2113,24 +2140,6 @@ run() {
   draw_box "Login Link: ${login_link}"
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
-  fi
-
-  # License certification runs after startup on the fast path; kills app if it fails.
-  # (ticket.json from the last run is readable immediately; bbcertify only refreshes the reservation)
-  export LICENSE_KEY;
-  printf "${YELLOW}[startup] Running license certification at $(( $(_ms) - _run_t0 ))ms...${NC}\n"
-  certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
-  if [[ "$?" -ne 0 ]]; then
-    printf "${RED}License check failed. Run 'bbx activate' or go to dosaygo.com. Stopping BrowserBox...${NC}\n"
-    echo "Certification output: $certout"
-    bbx stop 2>/dev/null || true
-    exit 1
-  fi
-  printf "${GREEN}[startup] Certification complete at $(( $(_ms) - _run_t0 ))ms${NC}\n"
-  if [[ -f "$CERT_META_FILE" ]]; then
-    # shellcheck disable=SC1090
-    source "$CERT_META_FILE"
-    export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
   fi
 }
 
