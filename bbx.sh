@@ -1941,8 +1941,8 @@ setup() {
     fi
     setup_hostname="${new_hostname}"
   fi
-  if [[ -n "${BBX_CLOUD_RUN:-}" ]]; then
-    printf "${YELLOW}Cloud Run detected; skipping /etc/hosts and TLS setup.${NC}\n"
+  if [[ -n "${BBX_CLOUD_RUN:-}" ]] || [[ "${BBX_FLY:-}" == "true" ]]; then
+    printf "${YELLOW}Cloud/Fly detected; skipping /etc/hosts and TLS setup.${NC}\n"
   else
     if ! is_local_hostname "$setup_hostname"; then
       printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
