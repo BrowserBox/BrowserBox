@@ -1214,8 +1214,13 @@ else
 fi
 
 load_config() {
+    # Respect caller-provided key: do not let persisted config clobber explicit env.
+    local env_license_key="${LICENSE_KEY:-}"
     # Load persistent config first
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+    if [[ -n "$env_license_key" ]]; then
+        LICENSE_KEY="$env_license_key"
+    fi
     # Then load runtime config, which can override for the session
     if [ -f "${BB_CONFIG_DIR}/test.env" ]; then
         source "$BB_CONFIG_DIR/test.env"
@@ -1279,6 +1284,12 @@ validate_license_key() {
 
   # If no key exists or we're forcing a new one, prompt
   if [ -z "$LICENSE_KEY" ] || [ "$force_prompt" = "true" ]; then
+    # Hard-fail in non-interactive contexts instead of blocking on read
+    if [[ "${BBX_NONINTERACTIVE:-}" == "true" ]] || ! [[ -t 0 ]]; then
+      printf "${RED}ERROR: LICENSE_KEY is empty and stdin is not a terminal.${NC}\n" >&2
+      printf "${YELLOW}Set LICENSE_KEY in env or run 'bbx certify' interactively.${NC}\n" >&2
+      return 1
+    fi
     while true; do
       read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
       if [ -z "$LICENSE_KEY" ]; then
@@ -1367,12 +1378,33 @@ get_system_hostname() {
     echo "${host:-unknown}"
 }
 
+# Normalize hostnames for local/direct use paths.
+# Wildcard hostnames are not valid literal host entries or local links.
+normalize_hostname_for_local_use() {
+  local hostname="$1"
+  if [[ "$hostname" == *"*"* ]]; then
+    printf 'localhost\n'
+    return 0
+  fi
+  printf '%s\n' "$hostname"
+}
+
 # Wrapper for getent-like functionality without installing getent
 getent_hosts() {
   local hostname="$1"
   # If on macOS, etc, manually search /etc/hosts
   if ! command -v getent &>/dev/null; then
-    grep -E "^\s*([^#]+)\s+$hostname" /etc/hosts || echo ""
+    awk -v h="$hostname" '
+      /^[[:space:]]*#/ { next }
+      {
+        for (i = 2; i <= NF; i++) {
+          if ($i == h) {
+            print
+            break
+          }
+        }
+      }
+    ' /etc/hosts || echo ""
   else
     getent hosts "$hostname" || echo ""
   fi
@@ -1415,12 +1447,29 @@ is_local_hostname() {
 }
 
 # Ensure hostname is in /etc/hosts, allowing whitespace but not comments
+hosts_entry_exists() {
+  local ip="$1"
+  local hostname="$2"
+  awk -v ip="$ip" -v h="$hostname" '
+    /^[[:space:]]*#/ { next }
+    $1 == ip {
+      for (i = 2; i <= NF; i++) {
+        if ($i == h) {
+          found = 1
+          exit
+        }
+      }
+    }
+    END { exit(found ? 0 : 1) }
+  ' /etc/hosts
+}
+
 ensure_hosts_entry() {
   local h="$1"
-  if ! grep -Ev '^[[:space:]]*#' /etc/hosts | grep -Eq "^[[:space:]]*127\.0\.0\.1[[:space:]].*\b$h\b"; then
+  if ! hosts_entry_exists "127.0.0.1" "$h"; then
     echo "127.0.0.1 $h" | $SUDO tee -a /etc/hosts >/dev/null
   fi
-  if ! grep -Ev '^[[:space:]]*#' /etc/hosts | grep -Eq "^[[:space:]]*::1[[:space:]].*\b$h\b"; then
+  if ! hosts_entry_exists "::1" "$h"; then
     echo "::1 $h" | $SUDO tee -a /etc/hosts >/dev/null
   fi
 }
@@ -1919,6 +1968,13 @@ setup() {
     exit 1
   fi
 
+  local normalized_hostname
+  normalized_hostname="$(normalize_hostname_for_local_use "$hostname")"
+  if [[ "$hostname" != "$normalized_hostname" ]]; then
+    printf "${YELLOW}Wildcard hostname '%s' is not valid for setup; using 'localhost' instead.${NC}\n" "$hostname"
+  fi
+  hostname="$normalized_hostname"
+
   # These are now local to setup; they will be written to test.env
   local setup_port="$port"
   local setup_hostname="$hostname"
@@ -2063,9 +2119,17 @@ run() {
     esac
   done
 
+  hostname="$(normalize_hostname_for_local_use "$hostname")"
+
   # Use the determined port and hostname for this run
   PORT="$port"
   BBX_HOSTNAME="$hostname"
+
+  if [[ -z "${LICENSE_KEY:-}" ]]; then
+    printf "${RED}No LICENSE_KEY found for this shell/session.${NC}\n"
+    printf "${YELLOW}Set LICENSE_KEY in env or run 'bbx certify' once to persist it in ${CONFIG_FILE}.${NC}\n"
+    exit 1
+  fi
 
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE] BrowserBox is running with a tunnel or reverse-proxy.${NC}\n"
@@ -2089,25 +2153,58 @@ run() {
   # wins the race the binary will pick up the file within a few seconds.
   export LICENSE_KEY;
   local cert_log; cert_log="$(mktemp /tmp/bbx-certify-XXXXXX.log)"
-  [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] Starting license certification (background) at $(( $(_ms) - _run_t0 ))ms...${NC}\n"
-  bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify" > "$cert_log" 2>&1 &
+  printf "${YELLOW}[startup] Certifying license...${NC}\n"
+  bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_NONINTERACTIVE=true; bbcertify" > "$cert_log" 2>&1 &
   local CERT_PID=$!
 
-  [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
-  run_quietly bbpro "${run_args[@]}" || { printf "${RED}Failed to start${NC}\n"; kill "$CERT_PID" 2>/dev/null; rm -f "$cert_log"; exit 1; }
+  # Start bbpro — keep stderr visible so failures aren't silent
+  printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
+  local bbpro_log; bbpro_log="$(mktemp /tmp/bbx-bbpro-XXXXXX.log)"
+  local bbpro_rc
+  if [[ -n ${BBX_DEBUG:-} ]]; then
+    BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro "${run_args[@]}" 2>&1 | tee "$bbpro_log"
+    bbpro_rc=${PIPESTATUS[0]}
+  else
+    env BBX_NONINTERACTIVE=true bbpro "${run_args[@]}" > "$bbpro_log" 2>&1
+    bbpro_rc=$?
+  fi
+  if [[ "$bbpro_rc" -ne 0 ]]; then
+    printf "${RED}Failed to start BrowserBox (exit %d). Last output:${NC}\n" "$bbpro_rc"
+    tail -20 "$bbpro_log"
+    rm -f "$bbpro_log"
+    kill "$CERT_PID" 2>/dev/null; rm -f "$cert_log"
+    exit 1
+  fi
+  rm -f "$bbpro_log"
   [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] bbpro returned at $(( $(_ms) - _run_t0 ))ms${NC}\n"
 
-  # Wait for background certification to complete
+  # Wait for background certification to complete (bounded: 120s)
+  printf "${YELLOW}[startup] Waiting for license certification...${NC}\n"
+  local _cert_t0; _cert_t0=$SECONDS
+  local _cert_timeout=120
+  while kill -0 "$CERT_PID" 2>/dev/null; do
+    if (( SECONDS - _cert_t0 >= _cert_timeout )); then
+      printf "${RED}License certification timed out after %ds.${NC}\n" "$_cert_timeout"
+      printf "${YELLOW}Cert log:${NC}\n"
+      tail -20 "$cert_log"
+      kill "$CERT_PID" 2>/dev/null
+      rm -f "$cert_log"
+      bbx stop 2>/dev/null || true
+      exit 1
+    fi
+    sleep 1
+  done
+  # Collect exit status
   if ! wait "$CERT_PID"; then
     printf "${RED}License check failed. Run 'bbx activate' or go to dosaygo.com. Stopping BrowserBox...${NC}\n"
-    echo "Certification output:"
-    cat "$cert_log"
+    printf "${YELLOW}Cert log:${NC}\n"
+    tail -20 "$cert_log"
     rm -f "$cert_log"
     bbx stop 2>/dev/null || true
     exit 1
   fi
   rm -f "$cert_log"
-  [[ -n "${BBX_DEBUG:-}" ]] && printf "${GREEN}[startup] Certification complete at $(( $(_ms) - _run_t0 ))ms${NC}\n"
+  printf "${GREEN}[startup] License certified.${NC}\n"
   if [[ -f "$CERT_META_FILE" ]]; then
     # shellcheck disable=SC1090
     source "$CERT_META_FILE"
@@ -2713,9 +2810,24 @@ cf_run() {
     fi
   fi
 
-  # Start BrowserBox via run_quietly bbpro
+  # Start BrowserBox — keep stderr visible so failures aren't silent
   printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
-  run_quietly bbpro || { printf "${RED}Failed to start BrowserBox${NC}\n"; exit 1; }
+  local _cf_bbpro_log; _cf_bbpro_log="$(mktemp /tmp/bbx-bbpro-XXXXXX.log)"
+  local _cf_bbpro_rc
+  if [[ -n ${BBX_DEBUG:-} ]]; then
+    BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
+    _cf_bbpro_rc=${PIPESTATUS[0]}
+  else
+    env BBX_NONINTERACTIVE=true bbpro > "$_cf_bbpro_log" 2>&1
+    _cf_bbpro_rc=$?
+  fi
+  if [[ "$_cf_bbpro_rc" -ne 0 ]]; then
+    printf "${RED}Failed to start BrowserBox (exit %d). Last output:${NC}\n" "$_cf_bbpro_rc"
+    tail -20 "$_cf_bbpro_log"
+    rm -f "$_cf_bbpro_log"
+    exit 1
+  fi
+  rm -f "$_cf_bbpro_log"
 
   # Reload config to capture final token
   load_config
@@ -2915,6 +3027,7 @@ docker_run() {
   local nickname=""
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  hostname="$(normalize_hostname_for_local_use "$hostname")"
   local email="${EMAIL:-$USER@$hostname}"
 
   while [ $# -gt 0 ]; do
@@ -4211,6 +4324,7 @@ run_as() {
     local user=""
     local port="${PORT:-$(find_free_port_block)}"
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+    hostname="$(normalize_hostname_for_local_use "$hostname")"
     local temporary=false
 
     # Parse arguments with named flags
