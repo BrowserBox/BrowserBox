@@ -375,9 +375,12 @@ Integrate secure, remote browsing into your web applications using the `<browser
 
 **Key `<browserbox-webview>` features:**
 *   Attributes: `login-link` (required), `width`, `height`, `parent-origin`, `request-timeout-ms`
-*   Lifecycle events: `ready`, `api-ready`, `ready-timeout`, `disconnected`, `iframe-retry`, `mid-synced`, `mid-sync-timeout`, `usability-changed`
-*   Runtime events: `tab-created`, `tab-closed`, `tab-updated`, `active-tab-changed`, `did-start-loading`, `did-stop-loading`, `did-navigate`, `policy-denied`, `favicon-changed`
-*   Core methods: `whenReady()`, `listApiMethods()`, `callApi()`, `navigateTo()`, `getTabs()`, `getTabCount()`, `getActiveTabIndex()`, `createTab()`, `closeTab()`, `switchToTab()`, `reload()`, `goBack()`, `goForward()`, `stop()`
+*   **Namespaced session-host API**: `session`, `tabs`, `page`, `capture`, `policy`
+*   **Advanced surfaces** (capability-gated): `augment(...)`, `select(...)`, `observe()`, `events()`
+*   Lifecycle events: `ready` / `api.ready`, `session.disconnected`, `session.usability.changed`, `iframe-retry`, `mid-synced`
+*   Runtime events: `tab.created`, `tab.closed`, `tab.updated`, `tab.activated`, `page.navigated`, `page.load.started`, `page.load.stopped`, `policy.denied`
+*   Legacy event names (`tab-created`, `did-navigate`, etc.) continue to work alongside the new canonical dot-notation names
+*   Core methods: `whenReady()`, `listApiMethods()`, `callApi()`, `navigateTo()`, `getTabs()`, `createTab()`, `closeTab()`, `switchToTab()`, `reload()`, `goBack()`, `goForward()`, `stop()`
 *   Diagnostics + recovery: `health()`, `getTransportDiagnostics()`, `updateIframe()`, `refresh()`, `stopReconnectAttempts()`
 
 For full Embedding API docs, see:
