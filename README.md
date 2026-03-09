@@ -352,14 +352,14 @@ Integrate secure, remote browsing into your web applications using the `<browser
     ```
 2.  **Add to HTML:** Include the script and element in your webpage:
     ```html
-    <script src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/api/browserbox-webview.js"></script>
+    <script src="https://win9-5.com/browserbox-webview.js" type="module"></script>
     <browserbox-webview login-link="https://your-browserbox-instance.com/login/abc123" width="800" height="600"></browserbox-webview>
     ```
 
 **Quick Start (cloud API):**
 
 ```html
-<script src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/api/browserbox-webview.js"></script>
+<script src="https://win9-5.com/browserbox-webview.js" type="module"></script>
 <browserbox-webview id="bbx" width="1024" height="768"></browserbox-webview>
 <script>
   // Create a session via the Cloud API, then pass the login URL to the webview
@@ -374,12 +374,16 @@ Integrate secure, remote browsing into your web applications using the `<browser
 ```
 
 **Key `<browserbox-webview>` features:**
-*   Full navigation control (URL bar, back/forward, reload, tabs)
-*   Event listeners: `tabcreated`, `tabnavigated`, `tabclosed`, `faviconschange`
-*   Methods: `navigate(url)`, `getTabCount()`, `closeTab(id)`, `callApi(method, params)`
-*   Responsive resizing with automatic viewport scaling
+*   Attributes: `login-link` (required), `width`, `height`, `parent-origin`, `request-timeout-ms`
+*   Lifecycle events: `ready`, `api-ready`, `ready-timeout`, `disconnected`, `iframe-retry`, `mid-synced`, `mid-sync-timeout`, `usability-changed`
+*   Runtime events: `tab-created`, `tab-closed`, `tab-updated`, `active-tab-changed`, `did-start-loading`, `did-stop-loading`, `did-navigate`, `policy-denied`, `favicon-changed`
+*   Core methods: `whenReady()`, `listApiMethods()`, `callApi()`, `navigateTo()`, `getTabs()`, `getTabCount()`, `getActiveTabIndex()`, `createTab()`, `closeTab()`, `switchToTab()`, `reload()`, `goBack()`, `goForward()`, `stop()`
+*   Diagnostics + recovery: `health()`, `getTransportDiagnostics()`, `updateIframe()`, `refresh()`, `stopReconnectAttempts()`
 
-For full Embedding API documentation, see the [browserbox-webview.js file](https://github.com/BrowserBox/BrowserBox/blob/main/api/browserbox-webview.js).
+For full Embedding API docs, see:
+*   [BrowserBox API repository](https://github.com/BrowserBox/browserbox-api)
+*   [Canonical cloud docs](https://win9-5.com/api/)
+*   [`browserbox-webview.js` in this repo](https://github.com/BrowserBox/BrowserBox/blob/main/api/browserbox-webview.js)
 
 ---
 
