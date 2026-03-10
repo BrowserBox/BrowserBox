@@ -1,0 +1,314 @@
+name: bbx Saga Test Suite (Public Release)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to test (e.g., v15.10.2)"
+        required: true
+        type: string
+      disable_tmate:
+        description: "Disable tmate debug sessions on failure"
+        required: false
+        default: false
+        type: boolean
+      matrix_json:
+        description: "JSON matrix (keys: os, container_image, exclude). Leave empty for default."
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: ${{ github.repository }}-bbx-saga
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag || '' }}
+  DISABLE_TMATE: ${{ github.event.inputs.disable_tmate || 'false' }}
+  TARGET_RELEASE_REPO: BrowserBox/BrowserBox
+
+jobs:
+  saga:
+    name: build (${{ matrix.os }}${{ matrix.container_image != '' && format(', {0}', matrix.container_image) || '' }})
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && github.event.inputs.matrix_json != '' && github.event.inputs.matrix_json || '{"os":["ubuntu-latest","macos-latest","windows-latest"],"container_image":["","dokken/centos-stream-10","debian:latest"],"exclude":[{"os":"macos-latest","container_image":"dokken/centos-stream-10"},{"os":"macos-latest","container_image":"debian:latest"},{"os":"windows-latest","container_image":"dokken/centos-stream-10"},{"os":"windows-latest","container_image":"debian:latest"}]}' ) }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container_image }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RELEASE_TAG}" ]]; then
+            echo "RELEASE_TAG is required (release event or workflow_dispatch input release_tag)." >&2
+            exit 1
+          fi
+          echo "Testing release: ${TARGET_RELEASE_REPO}@${RELEASE_TAG}"
+
+      - name: Prepare clean test workspace (Unix/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/scripts/test-bbx.sh "$HOME/test-bbx.sh"
+          chmod +x "$HOME/test-bbx.sh"
+          echo "BBX_TEST_DIR=$HOME" >> "$GITHUB_ENV"
+          rm -rf "$GITHUB_WORKSPACE"
+          mkdir -p "$GITHUB_WORKSPACE"
+
+      - name: Install BrowserBox (Unix/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        env:
+          BBX_INSTALL_USER: "bbxuser"
+          BBX_TEST_AGREEMENT: "true"
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_DEBUG_OS_LABEL: ${{ matrix.container_image != '' && matrix.container_image || matrix.os }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          BBX_NO_UPDATE: "true"
+        working-directory: ${{ env.BBX_TEST_DIR }}
+        run: |
+          set -euo pipefail
+          if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1 || ! command -v xxd >/dev/null 2>&1 || ! command -v sudo >/dev/null 2>&1; then
+            if command -v apt-get >/dev/null 2>&1; then
+              apt-get update -y
+              apt-get install -y curl jq xxd sudo
+            elif command -v dnf >/dev/null 2>&1; then
+              dnf install -y curl jq vim-common sudo
+            elif command -v yum >/dev/null 2>&1; then
+              yum install -y curl jq vim-common sudo
+            elif command -v apk >/dev/null 2>&1; then
+              apk add --no-cache curl jq xxd sudo
+            else
+              echo "curl, jq, xxd, and sudo are required but no supported package manager found." >&2
+              exit 1
+            fi
+          fi
+          if command -v sudo >/dev/null 2>&1; then
+            if [[ -w /etc/sudoers.d ]] && grep -qE '^[[:space:]]*#includedir[[:space:]]+/etc/sudoers.d' /etc/sudoers; then
+              echo "bbxuser ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/bbxuser
+              chmod 0440 /etc/sudoers.d/bbxuser
+            elif [[ -w /etc/sudoers ]]; then
+              if ! grep -qE '^bbxuser[[:space:]]+ALL=\(ALL\)[[:space:]]+NOPASSWD:ALL' /etc/sudoers; then
+                echo "bbxuser ALL=(ALL) NOPASSWD:ALL" >>/etc/sudoers
+              fi
+            fi
+          fi
+          install_url="https://raw.githubusercontent.com/BrowserBox/BrowserBox/${RELEASE_TAG}/deploy-scripts/install.sh"
+          echo "Using installer: ${install_url}"
+          curl -fsSL "$install_url" | bash
+
+      - name: Execute BBX Test Saga (Unix/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        env:
+          BBX_INSTALL_USER: "bbxuser"
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          BBX_NO_UPDATE: "true"
+          BBX_CI_CONTAINER_IMAGE: ${{ matrix.container_image }}
+          BB_QUICK_EXIT: "yesplease"
+        working-directory: ${{ env.BBX_TEST_DIR }}
+        run: |
+          set -euo pipefail
+          ./test-bbx.sh
+
+      - name: Execute BBX Test Saga (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          BB_QUICK_EXIT: "surewhatevs"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          BBX_NO_UPDATE: "true"
+          BBX_FORCE_CHROME_INSTALL: "false"
+          BBX_DONT_KILL_CHROME_ON_STOP: "false"
+        run: |
+          if (-not $env:RELEASE_TAG) {
+            Write-Error "RELEASE_TAG is required (release event or workflow_dispatch input release_tag)."
+            exit 1
+          }
+          $installUrl = "https://raw.githubusercontent.com/BrowserBox/BrowserBox/$($env:RELEASE_TAG)/windows-scripts/install.ps1"
+          Write-Host "Using installer: $installUrl"
+          irm $installUrl | iex
+          if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
+            Write-Error "bbx not found in PATH after install"
+            exit 1
+          }
+          if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+            winget install cURL.cURL --silent --accept-source-agreements --accept-package-agreements
+          }
+          if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+            Write-Error "curl.exe not installed"
+            exit 1
+          }
+          Write-Host "curl.exe available"
+          bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port 9999
+          $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
+          Write-Host "Login link: $loginLink"
+          bbx run
+          Write-Host "Testing URL: $loginLink"
+          $maxRetries = 10
+          $retryCount = 0
+          $success = $false
+          while ($retryCount -lt $maxRetries -and -not $success) {
+            try {
+              $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
+              if ($response -ne "000") {
+                Write-Host "Initial connection successful: $response"
+                $success = $true
+              } else {
+                Write-Host "Retry $($retryCount + 1)/$maxRetries failed: HTTP $response"
+              }
+            } catch {
+              Write-Host "Retry $($retryCount + 1)/$maxRetries failed: $_"
+            }
+            if (-not $success) { Start-Sleep -Seconds 4; $retryCount++ }
+          }
+          if (-not $success) {
+            Write-Error "Failed to connect to $loginLink after $maxRetries retries."
+            exit 1
+          }
+          $uri = [System.Uri]$loginLink
+          $port = $uri.Port
+          $devtoolsPort = $port + 1
+          $devtoolsLink = $loginLink.Replace(":$port", ":$devtoolsPort")
+          Write-Host "Testing Devtools URL: $devtoolsLink"
+          try {
+            $response = curl.exe -k -L "$devtoolsLink" -o NUL -w "%{http_code}"
+            if ($response -ne "000") {
+              Write-Host "Devtools connection successful: $response"
+            } else {
+              Write-Error "Devtools connection failed: HTTP $response"
+              exit 1
+            }
+          } catch {
+            Write-Error "Devtools connection failed: $_"
+            exit 1
+          }
+          Write-Host "Waiting 45 seconds to verify link stability..."
+          Start-Sleep -Seconds 45
+          try {
+            $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
+            if ($response -ne "000") {
+              Write-Host "Second verification (Main) successful: $response"
+            } else {
+              Write-Error "Second verification (Main) failed: HTTP $response"
+              exit 1
+            }
+          } catch {
+            Write-Error "Second verification (Main) failed after 45s: $_"
+            exit 1
+          }
+          try {
+            $response = curl.exe -k -L "$devtoolsLink" -o NUL -w "%{http_code}"
+            if ($response -ne "000") {
+              Write-Host "Second verification (Devtools) successful: $response"
+            } else {
+              Write-Error "Second verification (Devtools) failed: HTTP $response"
+              exit 1
+            }
+          } catch {
+            Write-Error "Second verification (Devtools) failed after 45s: $_"
+            exit 1
+          }
+          bbx stop
+          $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools" -ErrorAction SilentlyContinue
+          if ($nodeProcs) {
+            Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
+          } else {
+            Write-Host "No Node processes remain -- cleanup successful."
+          }
+
+      - name: Print BBX Logs on Failure (Unix/macOS)
+        if: failure() && matrix.os != 'windows-latest'
+        id: print_logs
+        shell: bash
+        run: |
+          echo "===== Installer debug logs ====="
+          shopt -s nullglob
+          for log in /tmp/bbx-install-debug-*/*/*/install.log; do
+            echo "===== ${log} (last 200 lines) ====="
+            tail -200 "$log"
+          done
+          shopt -u nullglob
+          LOG_DIR="$HOME/.config/dosaygo/bbpro/service_logs"
+          echo "===== Checking $LOG_DIR ====="
+          if [[ -d "$LOG_DIR" ]]; then
+            for log in bb-main-out.log bb-main-err.log; do
+              if [[ -f "$LOG_DIR/$log" ]]; then
+                echo "===== Contents of $log (last 200 lines) ====="
+                tail -200 "$LOG_DIR/$log"
+              else
+                echo "$log not found"
+              fi
+            done
+            echo "logs_found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Log directory not found: $LOG_DIR"
+            echo "Checking if config dir exists..."
+            ls -la "$HOME/.config/dosaygo/bbpro/" 2>/dev/null || echo "Config dir not found"
+            echo "logs_found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Debug with tmate (Unix/macOS)
+        if: failure() && matrix.os != 'windows-latest' && steps.print_logs.outputs.logs_found == 'false' && env.DISABLE_TMATE != 'true'
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10
+        with:
+          limit-access-to-actor: true
+        env:
+          BBX_INSTALL_USER: "bbxuser"
+          BBX_HOSTNAME: "localhost"
+          BB_QUICK_EXIT: "yesplease"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          BBX_NO_UPDATE: "true"
+
+      - name: Cleanup (Unix/macOS)
+        if: always() && matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          if command -v bbx &>/dev/null; then
+            bbx stop || true
+          elif command -v browserbox &>/dev/null; then
+            browserbox pm2 stop bb-main || true
+          fi
+          pkill -f browserbox || true
+
