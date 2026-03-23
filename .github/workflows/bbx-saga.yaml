@@ -44,7 +44,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Validate release tag
         shell: bash
@@ -283,7 +283,7 @@ jobs:
 
       - name: Debug with tmate (Unix/macOS)
         if: failure() && matrix.os != 'windows-latest' && steps.print_logs.outputs.logs_found == 'false' && env.DISABLE_TMATE != 'true'
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@v3.23
         timeout-minutes: 10
         with:
           limit-access-to-actor: true
@@ -311,4 +311,3 @@ jobs:
             browserbox pm2 stop bb-main || true
           fi
           pkill -f browserbox || true
-
