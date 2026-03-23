@@ -66,6 +66,31 @@ bbx setup
 bbx run
 ```
 
+## GitHub Actions
+
+Launch BrowserBox directly on a GitHub Actions runner with [BrowserBox/browserbox-action](https://github.com/BrowserBox/browserbox-action).
+
+- Supports `tunnel: none`, `cloudflare`, and `tor`
+- Defaults to a minimal runner footprint with `BBX_MINIMAL_MODE=true`
+- Disables update checks during runner launches with `BBX_NO_UPDATE=true`
+- Requires a BrowserBox license key from [browserbox.io](https://browserbox.io)
+
+```yaml
+jobs:
+  browserbox:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Launch BrowserBox
+        id: browserbox
+        uses: BrowserBox/browserbox-action@v1
+        with:
+          license-key: ${{ secrets.BROWSERBOX_LICENSE_KEY }}
+          tunnel: cloudflare
+
+      - name: Print login link
+        run: echo "${{ steps.browserbox.outputs.login-link }}"
+```
+
 ## Cloud API
 
 Create on-demand ephemeral browser sessions without self-hosting. Purchase minute packs and manage sessions via REST.
