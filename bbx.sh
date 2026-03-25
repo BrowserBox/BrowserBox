@@ -1214,12 +1214,27 @@ else
 fi
 
 load_config() {
-    # Respect caller-provided key: do not let persisted config clobber explicit env.
+    # Respect caller-provided values: do not let persisted config clobber explicit env.
     local env_license_key="${LICENSE_KEY:-}"
+    local env_email="${EMAIL:-}"
+    local env_hostname="${BBX_HOSTNAME:-}"
     # Load persistent config first
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
     if [[ -n "$env_license_key" ]]; then
         LICENSE_KEY="$env_license_key"
+    fi
+    if [[ -n "$env_email" ]]; then
+        EMAIL="$env_email"
+    fi
+    if [[ -n "$env_hostname" ]]; then
+        BBX_HOSTNAME="$env_hostname"
+    fi
+    if [[ -z "${EMAIL:-}" && -f "${BB_CONFIG_DIR}/.agreed" ]]; then
+        local agreed_email=""
+        agreed_email="$(tail -n1 "${BB_CONFIG_DIR}/.agreed" | tr -d '\r' | tr -d '\n')"
+        if [[ "$agreed_email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+            EMAIL="$agreed_email"
+        fi
     fi
     # Then load runtime config, which can override for the session
     if [ -f "${BB_CONFIG_DIR}/test.env" ]; then
@@ -1227,7 +1242,12 @@ load_config() {
         # For backward compatibility, ensure top-level vars are set from test.env
         PORT="${APP_PORT:-$PORT}"
         TOKEN="${LOGIN_TOKEN:-$TOKEN}"
-        BBX_HOSTNAME="${DOMAIN:-$BBX_HOSTNAME}"
+        if [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
+            BBX_HOSTNAME="$DOMAIN"
+        fi
+    fi
+    if [[ -n "$env_hostname" ]]; then
+        BBX_HOSTNAME="$env_hostname"
     fi
 }
 
@@ -1240,15 +1260,17 @@ save_config() {
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"  # Restrict to owner only
 
-  # Grab any existing key from config (without sourcing / polluting env)
-  local existing_key=""
+  # Grab existing values from config (without sourcing / polluting env)
+  local existing_key="" existing_email="" existing_hostname=""
   if [ -f "$CONFIG_FILE" ]; then
     existing_key=$(grep -E '^LICENSE_KEY=' "$CONFIG_FILE" | head -n1 | sed -E 's/^LICENSE_KEY="?([^"]*)"?$/\1/')
+    existing_email=$(grep -E '^EMAIL=' "$CONFIG_FILE" | head -n1 | sed -E 's/^EMAIL="?([^"]*)"?$/\1/')
+    existing_hostname=$(grep -E '^BBX_HOSTNAME=' "$CONFIG_FILE" | head -n1 | sed -E 's/^BBX_HOSTNAME="?([^"]*)"?$/\1/')
   fi
 
   # Decide what key to write:
-  # - Prefer the current in-memory key if it's valid format
-  # - Else keep the existing on-disk key if it's valid format
+  # - Prefer the current in-memory value if non-empty/valid
+  # - Else keep the existing on-disk value
   # - Else write empty
   local _LIC_TO_WRITE=""
   if [[ -n "$LICENSE_KEY" && "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
@@ -1259,11 +1281,18 @@ save_config() {
     _LIC_TO_WRITE=""
   fi
 
+  # Prefer in-memory EMAIL, fall back to on-disk
+  local _EMAIL_TO_WRITE="${EMAIL:-$existing_email}"
+
+  # Prefer in-memory BBX_HOSTNAME, fall back to on-disk
+  local _HOST_TO_WRITE="${BBX_HOSTNAME:-$existing_hostname}"
+
   # Only save persistent, user-level data to the main config file.
-  # Runtime data like PORT, TOKEN, and HOSTNAME now live in test.env.
+  # Runtime data like PORT and TOKEN live in test.env.
   cat > "$CONFIG_FILE" <<EOF
-EMAIL="${EMAIL:-}"
+EMAIL="${_EMAIL_TO_WRITE}"
 LICENSE_KEY="${_LIC_TO_WRITE}"
+BBX_HOSTNAME="${_HOST_TO_WRITE}"
 EOF
   chmod 600 "$CONFIG_FILE"
 }
@@ -2020,6 +2049,9 @@ setup() {
     test_port_access $((setup_port+i)) || { printf "${RED}Quit software using these ports, or adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked${NC}\n"; exit 1; }
+
+  # Persist hostname so save_config (EXIT trap) writes it to disk
+  BBX_HOSTNAME="$setup_hostname"
 
   # Build the command arguments for setup_bbpro
   local setup_args=("--port" "$setup_port" "--token" "$setup_token")
