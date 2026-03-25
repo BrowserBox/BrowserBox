@@ -121,8 +121,8 @@ The `<browserbox-webview>` element provides a session-host API with namespaced s
 
 BrowserBox is a commercial product. All usage requires a valid license.
 
-- **Commercial:** Starts at $99/user/year. [Purchase](https://dosaygo.com/commerce)
-- **Non-Commercial:** $39/user/year (non-profits, government). [Purchase](https://dosaygo.com/noncommercial)
+- **Commercial:** Starts at $119/user/year. [Purchase](https://dosaygo.com/commerce)
+- **Non-Commercial:** $49/user/year (non-profits, government). [Purchase](https://dosaygo.com/noncommercial)
 - **Evaluation:** [Apply for a 7-day trial](https://browserbox.io)
 - **Enterprise / Source Access:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 
