@@ -84,6 +84,7 @@ Environment overrides:
   EMAIL              Email for --full-install (Required for terms agreement)
   BBX_INSTALL_USER   Non-root install user when running as root
   BBX_SUDOLESS       Set to 'true' to skip sudo usage (for Docker/Cloud Run)
+  BBX_LOCAL_ARTIFACTS  Path to directory with local build artifacts (skips download)
 USAGE
 }
 
@@ -303,6 +304,7 @@ handoff_env_args() {
     BBX_TEST_AGREEMENT
     BBX_INSTALL_USER
     BBX_SUDOLESS
+    BBX_LOCAL_ARTIFACTS
   )
   HANDOFF_ENV=()
   for key in "${keys[@]}"; do
@@ -861,9 +863,6 @@ if [[ "$artifact_key" != "linux-x64" && "$artifact_key" != "darwin-arm64" ]]; th
 fi
 
 release_tag="${BBX_RELEASE_TAG:-}"
-if [[ -z "$release_tag" ]]; then
-  release_tag="$(get_latest_release_tag)"
-fi
 
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/bbx-install.XXXX")"
 trap 'rm -rf "$work_dir"' EXIT
@@ -871,10 +870,28 @@ trap 'rm -rf "$work_dir"' EXIT
 manifest_path="$work_dir/release.manifest.json"
 manifest_sig_path="$work_dir/release.manifest.json.sig"
 
-echo "Downloading release manifest..." >&2
-download_release_asset "$release_tag" "release.manifest.json" "$manifest_path"
-echo "Downloading release manifest signature..." >&2
-download_release_asset "$release_tag" "release.manifest.json.sig" "$manifest_sig_path"
+# --- Local Artifacts Override (for dev/test builds) ---
+# Set BBX_LOCAL_ARTIFACTS to a directory containing:
+#   release.manifest.json, release.manifest.json.sig, and the binary
+# This skips all downloads and uses the local files directly.
+if [[ -n "${BBX_LOCAL_ARTIFACTS:-}" ]]; then
+  if [[ ! -d "$BBX_LOCAL_ARTIFACTS" ]]; then
+    echo "BBX_LOCAL_ARTIFACTS='$BBX_LOCAL_ARTIFACTS' is not a directory." >&2
+    exit 1
+  fi
+  echo "Using local artifacts from ${BBX_LOCAL_ARTIFACTS}..." >&2
+  cp "${BBX_LOCAL_ARTIFACTS}/release.manifest.json" "$manifest_path"
+  cp "${BBX_LOCAL_ARTIFACTS}/release.manifest.json.sig" "$manifest_sig_path"
+  release_tag="${release_tag:-local-dev}"
+else
+  if [[ -z "$release_tag" ]]; then
+    release_tag="$(get_latest_release_tag)"
+  fi
+  echo "Downloading release manifest..." >&2
+  download_release_asset "$release_tag" "release.manifest.json" "$manifest_path"
+  echo "Downloading release manifest signature..." >&2
+  download_release_asset "$release_tag" "release.manifest.json.sig" "$manifest_sig_path"
+fi
 
 verify_manifest_signature "$manifest_path" "$manifest_sig_path" "$work_dir"
 
@@ -981,8 +998,13 @@ if [[ "$full_install" == "true" ]]; then
 fi
 # --- END NEW LOCATION ---
 
-echo "Downloading ${asset_name} (${release_tag})..." >&2
-download_release_asset "$release_tag" "$asset_name" "$temp_binary"
+if [[ -n "${BBX_LOCAL_ARTIFACTS:-}" ]]; then
+  echo "Copying ${asset_name} from local artifacts..." >&2
+  cp "${BBX_LOCAL_ARTIFACTS}/${asset_name}" "$temp_binary"
+else
+  echo "Downloading ${asset_name} (${release_tag})..." >&2
+  download_release_asset "$release_tag" "$asset_name" "$temp_binary"
+fi
 chmod +x "$temp_binary"
 
 if [[ -n "$asset_sha" ]]; then
