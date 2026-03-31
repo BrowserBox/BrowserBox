@@ -4198,6 +4198,145 @@ status() {
     fi
 }
 
+vacancy() {
+    load_config
+
+    if [[ -z "${LICENSE_KEY:-}" ]]; then
+        printf '%b\n' "${RED}No LICENSE_KEY found for this shell/session.${NC}"
+        printf '%b\n' "${YELLOW}Set LICENSE_KEY in env or run 'bbx certify' once to persist it in ${CONFIG_FILE}.${NC}"
+        exit 1
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        printf '%b\n' "${RED}jq is required for bbx vacancy.${NC}"
+        exit 1
+    fi
+
+    local api_server="${BBX_LICENSE_SERVER_URL:-https://master.dosaygo.com}"
+    local occupancy_url="${api_server}/v1/occupancy"
+    local snapshot_url="${api_server}/v1/vacant-seat?reserve=0"
+    local response=""
+    local status=""
+    local curl_rc=0
+    local reservation_code=""
+    local reserved_seat_id=""
+    local ticket_id=""
+    local ticket_slot=""
+    local detail_level=""
+    local seats_total=""
+    local reserved_active=""
+    local leased_active=""
+    local free_now=""
+    local vacant_seat=""
+    local occupied_now=""
+    local source_mode=""
+
+    if [[ -f "$CERT_META_FILE" ]]; then
+        # shellcheck disable=SC1090
+        source "$CERT_META_FILE"
+        reservation_code="${BBX_RESERVATION_CODE:-}"
+        reserved_seat_id="${BBX_RESERVED_SEAT_ID:-}"
+        ticket_id="${BBX_TICKET_ID:-}"
+        ticket_slot="${BBX_TICKET_SLOT:-}"
+    fi
+
+    response=$(curl -sS --connect-timeout 7 --max-time 15 \
+        -H "Authorization: Bearer ${LICENSE_KEY}" \
+        -w $'\n%{http_code}' \
+        "$occupancy_url") || curl_rc=$?
+
+    if [[ "$curl_rc" -eq 0 ]]; then
+        status="${response##*$'\n'}"
+        response="${response%$'\n'*}"
+
+        if [[ "$status" == "200" ]] && printf '%s' "$response" | jq empty >/dev/null 2>&1; then
+            source_mode="occupancy-summary"
+            detail_level=$(printf '%s' "$response" | jq -r '.detailLevel // "summary"')
+            seats_total=$(printf '%s' "$response" | jq -r '.occupancy.totals.seatsTotal // 0')
+            reserved_active=$(printf '%s' "$response" | jq -r '.occupancy.totals.reservedActive // 0')
+            leased_active=$(printf '%s' "$response" | jq -r '.occupancy.totals.leasedActive // 0')
+            free_now=$(printf '%s' "$response" | jq -r '.occupancy.totals.freeNow // 0')
+            occupied_now=$((reserved_active + leased_active))
+
+            jq -n \
+                --arg apiServer "$api_server" \
+                --arg sourceMode "$source_mode" \
+                --arg detailLevel "$detail_level" \
+                --argjson seatsTotal "$seats_total" \
+                --argjson reservedActive "$reserved_active" \
+                --argjson leasedActive "$leased_active" \
+                --argjson occupiedNow "$occupied_now" \
+                --argjson freeNow "$free_now" \
+                --arg reservationCode "$reservation_code" \
+                --arg reservedSeatId "$reserved_seat_id" \
+                --arg ticketId "$ticket_id" \
+                --arg ticketSlot "$ticket_slot" \
+                --argjson raw "$response" \
+                '{
+                    api_server: $apiServer,
+                    source: $sourceMode,
+                    detail_level: $detailLevel,
+                    totals: {
+                        seats_total: $seatsTotal,
+                        occupied_now: $occupiedNow,
+                        vacant_now: $freeNow,
+                        leased_active: $leasedActive,
+                        reserved_active: $reservedActive
+                    },
+                    local_reservation: {
+                        reservation_code: (if ($reservationCode | length) > 0 then $reservationCode else null end),
+                        reserved_seat_id: (if ($reservedSeatId | length) > 0 then $reservedSeatId else null end),
+                        ticket_id: (if ($ticketId | length) > 0 then $ticketId else null end),
+                        ticket_slot: (if ($ticketSlot | length) > 0 then $ticketSlot else null end)
+                    },
+                    raw_snapshot: $raw
+                }'
+            return 0
+        fi
+    fi
+
+    response=$(curl -sS --connect-timeout 7 --max-time 15 \
+        -H "Authorization: Bearer ${LICENSE_KEY}" \
+        "$snapshot_url") || curl_rc=$?
+
+    if [[ "$curl_rc" -ne 0 ]]; then
+        printf '%b\n' "${RED}Failed to query license server occupancy or vacancy snapshot.${NC}"
+        exit "$curl_rc"
+    fi
+
+    if ! printf '%s' "$response" | jq empty >/dev/null 2>&1; then
+        printf '%b\n' "${RED}License server returned non-JSON vacancy data.${NC}"
+        printf "%s\n" "$response"
+        exit 1
+    fi
+
+    source_mode="vacancy-snapshot-fallback"
+    vacant_seat=$(printf '%s' "$response" | jq -r '.vacantSeat // empty')
+
+    jq -n \
+        --arg apiServer "$api_server" \
+        --arg sourceMode "$source_mode" \
+        --arg vacantSeat "$vacant_seat" \
+        --arg reservationCode "$reservation_code" \
+        --arg reservedSeatId "$reserved_seat_id" \
+        --arg ticketId "$ticket_id" \
+        --arg ticketSlot "$ticket_slot" \
+        --argjson raw "$response" \
+        '{
+            api_server: $apiServer,
+            source: $sourceMode,
+            vacant_seat: (if ($vacantSeat | length) > 0 then $vacantSeat else null end),
+            has_vacancy: ($vacantSeat | length > 0),
+            local_reservation: {
+                reservation_code: (if ($reservationCode | length) > 0 then $reservationCode else null end),
+                reserved_seat_id: (if ($reservedSeatId | length) > 0 then $reservedSeatId else null end),
+                ticket_id: (if ($ticketId | length) > 0 then $ticketId else null end),
+                ticket_slot: (if ($ticketSlot | length) > 0 then $ticketSlot else null end)
+            },
+            raw_snapshot: $raw
+        }'
+}
+
 # stop-user subcommand
 stop_user() {
     load_config
@@ -4648,6 +4787,7 @@ usage() {
     printf "  ${GREEN}certify${NC}        Validate your current license status.\n"
     printf "  ${GREEN}update${NC}         Update BrowserBox to a specific or latest version. ${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
     printf "  ${GREEN}status${NC}         Check the running status of BrowserBox.\n"
+    printf '%b\n' "  ${GREEN}vacancy${NC}        Show the current license vacancy snapshot."
     printf "  ${GREEN}logs${NC}           View the logs for the BrowserBox service.\n\n"
 
     printf "${BOLD}CORE ACTIONS${NC}\n"
@@ -4740,6 +4880,10 @@ faq() {
     printf "   b) Use the ${GREEN}docker-start${NC} command to run isolated instances in containers.\n"
     printf "      Example: ${BOLD}bbx docker-start team_a --port 8090${NC}\n"
     printf "   ${YELLOW}Important:${NC} Make sure the ports you specify for each instance are unique and do not overlap.\n\n"
+
+    printf "${BOLD}2) How do I see whether a license seat is currently available?${NC}\n"
+    printf '%b\n' "   Run ${BOLD}bbx vacancy${NC}. It queries the current license-server vacancy snapshot and prints any local reservation metadata."
+    printf "   For full occupancy totals and current lease inventories, the license backend needs an explicit Amulet-side endpoint.\n\n"
 
     # Add more FAQs here as needed
     # printf "${BOLD}2) Another question?${NC}\n"
@@ -4883,6 +5027,7 @@ case "$1" in
     update-background) shift 1; update_background "$@";;
     activate) shift 1; activate "$@";;
     status) shift 1; status "$@";;
+    vacancy) shift 1; vacancy "$@";;
     run-as|start-as) shift 1; run_as "$@";;
     tor-run|tor-start) shift 1; banner_color=$PURPLE; tor_run "$@";;
     zt-run|zt-start) shift 1; banner_color=$BLUE; zt_run "$@";;
