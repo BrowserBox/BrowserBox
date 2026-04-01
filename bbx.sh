@@ -1448,8 +1448,12 @@ is_local_hostname() {
 
   # Try DNS resolution
   for dns in "${public_dns_servers[@]}"; do
-    resolved_ips=$(command -v dig >/dev/null 2>&1 && dig +short "$hostname" A @"$dns")
-    if [[ "$?" -eq 0 ]] && [[ -n "$resolved_ips" ]]; then
+    if command -v dig >/dev/null 2>&1; then
+      resolved_ips="$(dig +short "$hostname" A @"$dns" 2>/dev/null || true)"
+    else
+      resolved_ips=""
+    fi
+    if [[ -n "$resolved_ips" ]]; then
       has_valid_result=1
       while IFS= read -r ip; do
         ip="${ip%.}"
@@ -1468,11 +1472,15 @@ is_local_hostname() {
 
   # Fallback: check /etc/hosts (or similar)
   ip=$(getent_hosts "$hostname" | awk '{print $1}' | head -n1)
+  ip="${ip%.}"
+  if [[ -z "$ip" ]]; then
+    return 0 # Unresolvable => local
+  fi
   if [[ "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
     return 0 # Local
   fi
 
-  return 0 # Unresolvable => local
+  return 1 # Public
 }
 
 # Ensure hostname is in /etc/hosts, allowing whitespace but not comments
@@ -2036,7 +2044,11 @@ setup() {
       ensure_hosts_entry "$setup_hostname"
     fi
     
-    EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
+    if [[ "$backend_scheme" == "http" ]]; then
+      printf "${YELLOW}HTTP backend selected; skipping TLS certificate setup for %s.${NC}\n" "$setup_hostname"
+    else
+      EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
+    fi
   fi
 
   # Ensure we have a valid product key
@@ -2247,6 +2259,10 @@ run() {
   load_config
 
   local login_link=""
+  local login_scheme="https"
+  if [[ -n "$http_only" ]]; then
+    login_scheme="http"
+  fi
   if [[ -n "$zeta_mode" ]]; then
     source "${BB_CONFIG_DIR}/hosts.env"
     local addr_var_name="ADDR_${PORT}"
@@ -2256,13 +2272,13 @@ run() {
       printf "${RED}Error: Could not find host for port ${PORT} in hosts.env file (variable ${addr_var_name}).${NC}\n" >&2
       exit 1
     fi
-    login_link="https://${zeta_host}/login?token=${TOKEN}"
+    login_link="${login_scheme}://${zeta_host}/login?token=${TOKEN}"
     echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   else
     # Always construct the local link from the current hostname/port.
     # Do NOT read login.link here — it may contain a stale CF/tor URL
     # from a previous cf-run or tor-run which would show a broken link.
-    login_link="https://${hostname}:${port}/login?token=${TOKEN}"
+    login_link="${login_scheme}://${hostname}:${port}/login?token=${TOKEN}"
     echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   fi
 

@@ -657,16 +657,25 @@ function Invoke-Revalidate {
     
     if (-not (Test-Path (Split-Path $ticketPath))) {
         Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
-        return
     }
     
     if (Test-Path $ticketPath) {
         Write-Host "Removing ticket.json..." -ForegroundColor Cyan
         Remove-Item $ticketPath -Force
-        Write-Host "ticket.json removed. License will be revalidated on next use." -ForegroundColor Green
+        Write-Host "ticket.json removed." -ForegroundColor Green
     }
     else {
         Write-Host "No ticket found at $ticketPath" -ForegroundColor Yellow
+    }
+
+    # Re-certify to obtain a fresh ticket (mirrors Unix bbrevalidate)
+    Write-Host "Re-certifying license..." -ForegroundColor Cyan
+    $certifyScript = Join-Path $PSScriptRoot "certify.ps1"
+    if (Test-Path $certifyScript) {
+        & $certifyScript
+    } else {
+        # Fallback: invoke via bbx command
+        Invoke-CommandScript -Command "certify" -Arguments @()
     }
 }
 
@@ -764,6 +773,72 @@ elseif ($CommandArgs -and ($CommandArgs -contains "-Help")) {
 
 Invoke-UpdateCheck -Command $normalizedCommand -CommandArgs $CommandArgs
 
+if ($normalizedCommand -in @("run", "start")) {
+    # Mirror Unix bbx.sh: run certify in background, launch binary concurrently,
+    # wait for certify. The binary's validateLicense polls for reservation.json.
+    $certifyScript = Join-Path $PSScriptRoot "certify.ps1"
+    $startScript = Join-Path $PSScriptRoot "start.ps1"
+
+    # Resolve LICENSE_KEY (env > config)
+    $ConfigDir = "$env:USERPROFILE\.config\dosaygo\bbpro"
+    $TestEnvFile = "$ConfigDir\test.env"
+    $lk = $env:LICENSE_KEY
+    if (-not $lk -and (Test-Path $TestEnvFile)) {
+        Get-Content $TestEnvFile | ForEach-Object {
+            if ($_ -match "^LICENSE_KEY=(.+)$") { $lk = $Matches[1] }
+        }
+    }
+    if (-not $lk) {
+        Write-Error "No LICENSE_KEY available. Run 'bbx certify' or set LICENSE_KEY env var."
+        exit 1
+    }
+
+    Write-Host "[startup] Certifying license..." -ForegroundColor Yellow
+    $certJob = Start-Job -ScriptBlock {
+        param($script, $key)
+        $env:LICENSE_KEY = $key
+        $env:BBX_NONINTERACTIVE = "true"
+        & $script
+    } -ArgumentList $certifyScript, $lk
+
+    Write-Host "[startup] Starting BrowserBox services..." -ForegroundColor Yellow
+    if ($CommandArgs -and $CommandArgs.Count -gt 0) {
+        $params = Convert-ArgListToSplat -Command $normalizedCommand -ArgList $CommandArgs
+        & $startScript @params
+    } else {
+        & $startScript
+    }
+    $startRc = $LASTEXITCODE
+    if ($startRc -ne 0) {
+        Write-Host "Failed to start BrowserBox (exit $startRc)." -ForegroundColor Red
+        Stop-Job $certJob -ErrorAction SilentlyContinue
+        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+        exit $startRc
+    }
+
+    # Wait for background certification (bounded: 120s)
+    Write-Host "[startup] Waiting for license certification..." -ForegroundColor Yellow
+    $certResult = $certJob | Wait-Job -Timeout 120
+    if (-not $certResult -or $certResult.State -eq 'Running') {
+        Write-Host "License certification timed out after 120s." -ForegroundColor Red
+        Receive-Job $certJob -ErrorAction SilentlyContinue | Write-Host
+        Stop-Job $certJob -ErrorAction SilentlyContinue
+        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+        bbx stop 2>$null
+        exit 1
+    }
+    $certOutput = Receive-Job $certJob -ErrorAction SilentlyContinue
+    if ($certResult.State -eq 'Failed') {
+        Write-Host "License check failed. Run 'bbx certify' or visit dosaygo.com." -ForegroundColor Red
+        $certOutput | Write-Host
+        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+        bbx stop 2>$null
+        exit 1
+    }
+    Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+    Write-Host "[startup] License certified." -ForegroundColor Green
+    exit 0
+}
 elseif (Invoke-CommandScript -Command $normalizedCommand -Arguments $CommandArgs) {
     exit $LASTEXITCODE
 }
