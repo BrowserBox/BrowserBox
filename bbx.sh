@@ -96,7 +96,32 @@ find_tor_cookie() {
   return 1
 }
 
-OGARGS=("$@")
+# Returns the Tor SOCKS proxy URL (socks5h://127.0.0.1:<port>).
+# Reads SocksPort from known torrc locations; defaults to 9050.
+_bbx_tor_socks_url() {
+  local socks_port=9050
+  local torrc=""
+  for _f in /opt/homebrew/etc/tor/torrc /usr/local/etc/tor/torrc /etc/tor/torrc "${HOME}/.tor/torrc"; do
+    if [[ -f "$_f" ]]; then torrc="$_f"; break; fi
+  done
+  if [[ -n "$torrc" ]]; then
+    local _p
+    _p=$(grep "^SocksPort" "$torrc" 2>/dev/null | awk '{print $2}' | head -1)
+    [[ "$_p" =~ ^[0-9]+$ ]] && socks_port="$_p"
+  fi
+  echo "socks5h://127.0.0.1:${socks_port}"
+}
+
+_bbx_sed_inplace() {
+  local expr="$1"
+  local file="$2"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    sed -i '' -e "$expr" "$file"
+  else
+    sed -i -e "$expr" "$file"
+  fi
+}
+
 
 protecc_win_sysadmins() {
     # Check for Windows environments
@@ -2360,8 +2385,20 @@ tor_run() {
       printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
   fi
 
+  # Backup test.env before any tor-related setup so 'bbx stop' can restore it.
+  # Use -n (no-clobber) so a second tor-run doesn't overwrite a valid backup.
+  local _pretor_backup="${BB_CONFIG_DIR}/test.env.pre-tor"
+  if [[ -f "${BB_CONFIG_DIR}/test.env" && ! -f "$_pretor_backup" ]]; then
+    cp "${BB_CONFIG_DIR}/test.env" "$_pretor_backup"
+    printf "${YELLOW}Backed up test.env → test.env.pre-tor${NC}\n"
+  fi
+
+  # For --no-onion mode: use a plain setup so existing TLS certs and DOMAIN are
+  # preserved. TOR_PROXY is injected into test.env after setup.
+  # For full --onion mode: pass --ontor so setup_bbpro configures tor-sslcerts;
+  # torbb will override SSLCERTS_DIR per-onion address via torbb.env.
   local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
-  if $anonymize; then
+  if $anonymize && $onion; then
       setup_cmd="$setup_cmd --ontor"
   fi
   if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
@@ -2370,6 +2407,20 @@ tor_run() {
       ensure_hosts_entry "$BBX_HOSTNAME"
   fi
   BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+
+  # Inject TOR_PROXY for --no-onion+anonymize (regular setup leaves it empty).
+  if $anonymize && ! $onion; then
+    local _tor_proxy_url
+    _tor_proxy_url="$(_bbx_tor_socks_url)"
+    if grep -q "^export TOR_PROXY=" "${BB_CONFIG_DIR}/test.env"; then
+      _bbx_sed_inplace "s|^export TOR_PROXY=.*|export TOR_PROXY=\"${_tor_proxy_url}\"|" "${BB_CONFIG_DIR}/test.env"
+    else
+      printf '\nexport TOR_PROXY="%s"\n' "${_tor_proxy_url}" >> "${BB_CONFIG_DIR}/test.env"
+    fi
+    export TOR_PROXY="$_tor_proxy_url"
+    printf "${GREEN}TOR_PROXY → ${_tor_proxy_url}${NC}\n"
+  fi
+
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   # Validate existing product key
   export LICENSE_KEY;
