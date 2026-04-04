@@ -654,6 +654,7 @@ function Convert-ArgListToSplat {
 # Function to handle revalidate command
 function Invoke-Revalidate {
     $ticketPath = Join-Path $env:USERPROFILE ".config\dosaygo\bbpro\tickets\ticket.json"
+    $reservationPath = Join-Path $env:USERPROFILE ".config\dosaygo\bbpro\tickets\reservation.json"
     
     if (-not (Test-Path (Split-Path $ticketPath))) {
         Write-Warning "Ticket directory does not exist at $(Split-Path $ticketPath)"
@@ -666,6 +667,12 @@ function Invoke-Revalidate {
     }
     else {
         Write-Host "No ticket found at $ticketPath" -ForegroundColor Yellow
+    }
+
+    if (Test-Path $reservationPath) {
+        Write-Host "Removing reservation.json..." -ForegroundColor Cyan
+        Remove-Item $reservationPath -Force
+        Write-Host "reservation.json removed." -ForegroundColor Green
     }
 
     # Re-certify to obtain a fresh ticket (mirrors Unix bbrevalidate)
