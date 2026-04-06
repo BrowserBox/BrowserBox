@@ -158,22 +158,12 @@ jobs:
         shell: pwsh
         env:
           BBX_FORCE_CHROME_INSTALL: "false"
-          BBX_NO_UPDATE: "true"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
-            Write-Error "RELEASE_TAG is required (release event or workflow_dispatch input release_tag)."
-            exit 1
-          }
-          $installUrl = "https://raw.githubusercontent.com/BrowserBox/BrowserBox/$($env:RELEASE_TAG)/windows-scripts/install.ps1"
-          Write-Host "Using installer: $installUrl"
-          & pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { irm '$installUrl' | iex }"
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Install failed with exit code $LASTEXITCODE"
-            exit 1
-          }
+          Write-Host "Installing BrowserBox..."
+          & pwsh -NoProfile -ExecutionPolicy Bypass -Command "irm browserbox.io/install.ps1 | iex"
+          if ($LASTEXITCODE -ne 0) { Write-Error "Install failed with exit code $LASTEXITCODE"; exit 1 }
           $bbxBinDir = "$env:LOCALAPPDATA\browserbox\bin"
           if (Test-Path $bbxBinDir) {
             $env:PATH = "$bbxBinDir;$env:PATH"
