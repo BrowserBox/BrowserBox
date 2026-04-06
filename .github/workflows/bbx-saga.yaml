@@ -160,6 +160,7 @@ jobs:
           BBX_FORCE_CHROME_INSTALL: "false"
           BBX_NO_UPDATE: "true"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
           $ErrorActionPreference = 'Stop'
           if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
