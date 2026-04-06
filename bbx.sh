@@ -2439,21 +2439,69 @@ tor_run() {
   fi
 
   local login_link=""
+  local _tor_max_retries=3
+  local _tor_attempt=0
+  local _tor_success=false
+
   if $onion; then
-      printf "${YELLOW}Running as onion site...${NC}\n"
-      if $in_tor_group; then
-          #echo "Run torbb directly as in TOR_GROU"
-          login_link="$(torbb)"
-      elif command -v sg >/dev/null 2>&1; then
-          #echo "Use safe heredoc with env"
-          export BB_CONFIG_DIR BBX_DEBUG
-          login_link="$($SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env PATH=\"$PATH\" BB_CONFIG_DIR=\"$BB_CONFIG_DIR\" BBX_RESERVATION_CODE=\"$BBX_RESERVATION_CODE\" BBX_RESERVED_SEAT_ID=\"$BBX_RESERVED_SEAT_ID\" BBX_TICKET_ID=\"$BBX_TICKET_ID\" BBX_TICKET_SLOT=\"$BBX_TICKET_SLOT\" bash -cl torbb")"
-      else
-          #echo "Fallback without sg"
-          login_link="$(torbb)"
+    while [ $_tor_attempt -lt $_tor_max_retries ]; do
+      _tor_attempt=$((_tor_attempt + 1))
+      if [ $_tor_attempt -gt 1 ]; then
+        printf "${YELLOW}Tor-run attempt ${_tor_attempt}/${_tor_max_retries}...${NC}\n"
+        # Clean stop before retry
+        run_quietly stop_bbpro || true
+        sleep 3
       fi
-      [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "${BB_CONFIG_DIR}/torbb_errors.txt"; echo "$login_link"; exit 1; }
+
+      printf "${YELLOW}Running as onion site...${NC}\n"
+      login_link=""
+      if $in_tor_group; then
+          login_link="$(torbb)" || true
+      elif command -v sg >/dev/null 2>&1; then
+          export BB_CONFIG_DIR BBX_DEBUG
+          login_link="$($SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env PATH=\"$PATH\" BB_CONFIG_DIR=\"$BB_CONFIG_DIR\" BBX_RESERVATION_CODE=\"$BBX_RESERVATION_CODE\" BBX_RESERVED_SEAT_ID=\"$BBX_RESERVED_SEAT_ID\" BBX_TICKET_ID=\"$BBX_TICKET_ID\" BBX_TICKET_SLOT=\"$BBX_TICKET_SLOT\" bash -cl torbb")" || true
+      else
+          login_link="$(torbb)" || true
+      fi
+
+      if [ -z "$login_link" ]; then
+        printf "${RED}torbb failed (attempt ${_tor_attempt}/${_tor_max_retries})${NC}\n"
+        [ -f "${BB_CONFIG_DIR}/torbb_errors.txt" ] && tail -n 5 "${BB_CONFIG_DIR}/torbb_errors.txt"
+        continue
+      fi
+
       TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
+
+      # Readiness gate: verify onion service is reachable via Tor SOCKS proxy
+      printf "${YELLOW}Verifying onion service reachability...${NC}\n"
+      local _tor_verify_ok=false
+      local _tor_verify_elapsed=0
+      local _tor_verify_max=90
+      local _tor_verify_interval=5
+      while [ $_tor_verify_elapsed -lt $_tor_verify_max ]; do
+        local _tor_http_code
+        _tor_http_code="$(curl -s -k -L --max-time 15 --output /dev/null -w '%{http_code}' \
+          --proxy "socks5h://127.0.0.1:9050" "$login_link" 2>/dev/null)" || true
+        if [[ "$_tor_http_code" =~ ^(200|302)$ ]]; then
+          printf "${GREEN}Onion service reachable (HTTP %s)${NC}\n" "$_tor_http_code"
+          _tor_verify_ok=true
+          break
+        fi
+        sleep "$_tor_verify_interval"
+        _tor_verify_elapsed=$((_tor_verify_elapsed + _tor_verify_interval))
+      done
+
+      if $_tor_verify_ok; then
+        _tor_success=true
+        break
+      fi
+      printf "${RED}Onion service not reachable after ${_tor_verify_max}s (attempt ${_tor_attempt}/${_tor_max_retries})${NC}\n"
+    done
+
+    if ! $_tor_success; then
+      printf "${RED}Failed to establish reachable Tor onion service after ${_tor_max_retries} attempts${NC}\n"
+      exit 1
+    fi
   else
       pkill ncat &>/dev/null
       for i in {-2..2}; do
@@ -2973,21 +3021,94 @@ cf_run() {
 
     while [ $attempts -lt $max_attempts ]; do
       if [ -f "$cf_log_file" ]; then
-        # Check for errors first
-        if grep -qE "(failed to connect|connection refused|failed to request|ERR )" "$cf_log_file" 2>/dev/null; then
-          # Log has errors, but keep trying - cloudflared may retry internally
-          :
-        fi
         # Look for successful tunnel URL
         tunnel_url=$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' "$cf_log_file" 2>/dev/null | head -1)
         if [ -n "$tunnel_url" ]; then
           echo "$tunnel_url"
           return 0
         fi
+        # Check for fatal errors (rate limit, auth failure) — stop waiting early
+        if grep -qE '(429 Too Many Requests|failed to unmarshal quick Tunnel)' "$cf_log_file" 2>/dev/null; then
+          printf "${RED}Cloudflare API error (likely rate-limited)${NC}\n"
+          return 1
+        fi
+      fi
+      # If cloudflared process has exited, stop waiting
+      if [ -n "$cf_pid" ] && ! kill -0 "$cf_pid" 2>/dev/null; then
+        printf "${RED}cloudflared exited before producing a tunnel URL${NC}\n"
+        return 1
       fi
       sleep 0.5
       attempts=$((attempts + 1))
     done
+    return 1
+  }
+
+  # Resolve a tunnel hostname, falling back to parent domain or Cloudflare DNS
+  resolve_tunnel_host() {
+    local host="$1"
+    local ip=""
+    # Try system DNS for exact host
+    ip="$(dig +short "$host" A 2>/dev/null | head -1)"
+    if [[ -z "$ip" || "$ip" == *";"* ]]; then
+      # Try Cloudflare DNS for exact host
+      ip="$(dig +short @1.1.1.1 "$host" A 2>/dev/null | head -1)"
+    fi
+    if [[ -z "$ip" || "$ip" == *";"* ]]; then
+      # For trycloudflare.com subdomains, all resolve to the same Anycast IPs.
+      # New subdomains may not have propagated yet, so resolve the parent domain.
+      local parent="${host#*.}"
+      if [[ "$parent" == "trycloudflare.com" ]]; then
+        ip="$(dig +short @1.1.1.1 "$parent" A 2>/dev/null | head -1)"
+      fi
+    fi
+    [[ -n "$ip" && "$ip" != *";"* ]] && echo "$ip"
+  }
+
+  # Verify that the tunnel actually serves BrowserBox (readiness gate)
+  verify_cf_tunnel() {
+    local url="$1"
+    local max_wait="${2:-60}"
+    local interval=3
+    local elapsed=0
+    local host resolve_args
+
+    # Extract hostname for DNS fallback (bash builtins — portable across BSD/GNU)
+    host="${url#*://}"
+    host="${host%%/*}"
+    resolve_args=()
+
+    printf "${YELLOW}Verifying tunnel serves BrowserBox at ${url}...${NC}\n"
+
+    # Pre-check: if system DNS can't resolve the host, set up --resolve immediately
+    local pre_ip
+    pre_ip="$(resolve_tunnel_host "$host")"
+    if [[ -n "$pre_ip" ]]; then
+      # Verify system DNS works for this host
+      local sys_test
+      sys_test="$(curl -s -k --max-time 5 -o /dev/null -w '%{http_code}' "https://${host}/" 2>/dev/null)" || true
+      if [[ "$sys_test" == "000" ]]; then
+        resolve_args=(--resolve "${host}:443:${pre_ip}")
+        printf "${YELLOW}System DNS can't resolve ${host}, using direct IP (${pre_ip})${NC}\n"
+      fi
+    fi
+
+    while [ $elapsed -lt $max_wait ]; do
+      local http_code
+      http_code="$(curl -s -k -L --max-time 10 "${resolve_args[@]}" --output /dev/null -w '%{http_code}' "${url}/login?token=${TOKEN}" 2>/dev/null)" || true
+      if [[ "$http_code" =~ ^(200|302)$ ]]; then
+        local page_body
+        page_body="$(curl -s -k -L --max-time 10 "${resolve_args[@]}" "${url}/login?token=${TOKEN}" 2>/dev/null)" || true
+        if echo "$page_body" | grep -q "bb-view\|browserbox\|voodoo" 2>/dev/null; then
+          printf "${GREEN}Tunnel readiness verified (HTTP %s, app content confirmed)${NC}\n" "$http_code"
+          return 0
+        fi
+        printf "${YELLOW}Tunnel responds (HTTP %s) but app not ready yet...${NC}\n" "$http_code"
+      fi
+      sleep "$interval"
+      elapsed=$((elapsed + interval))
+    done
+    printf "${RED}Tunnel readiness check failed after ${max_wait}s${NC}\n"
     return 1
   }
 
@@ -3008,20 +3129,24 @@ cf_run() {
     tunnel_url=$(extract_tunnel_url 90)
 
     if [ -n "$tunnel_url" ]; then
-      break
+      # Tunnel URL extracted — verify it actually serves the app
+      if verify_cf_tunnel "$tunnel_url" 60; then
+        break
+      fi
+      # Readiness gate failed — treat as a retriable failure
+      printf "${YELLOW}Tunnel URL obtained but readiness check failed${NC}\n"
     fi
 
-    # Check if cloudflared is still running
-    if ! kill -0 "$cf_pid" 2>/dev/null; then
-      restart_count=$((restart_count + 1))
-      if [ $restart_count -lt $max_restarts ]; then
-        printf "${YELLOW}Cloudflare tunnel failed, restarting (attempt $((restart_count + 1))/$max_restarts)...${NC}\n"
-        sleep 2
-      fi
-    else
-      # cloudflared is running but no URL yet - this is a timeout
-      printf "${RED}Timeout waiting for tunnel URL${NC}\n"
-      break
+    # Kill the failed/stalled cloudflared before retrying
+    kill "$cf_pid" 2>/dev/null || true
+    wait "$cf_pid" 2>/dev/null || true
+    tunnel_url=""
+    restart_count=$((restart_count + 1))
+
+    if [ $restart_count -lt $max_restarts ]; then
+      local backoff=$((2 + restart_count * 3))
+      printf "${YELLOW}Cloudflare tunnel attempt failed, retrying in ${backoff}s (attempt $((restart_count + 1))/$max_restarts)...${NC}\n"
+      sleep "$backoff"
     fi
   done
 
@@ -3035,7 +3160,7 @@ cf_run() {
     exit 1
   fi
 
-  printf "${GREEN}Cloudflare tunnel established!${NC}\n"
+  printf "${GREEN}Cloudflare tunnel established and verified!${NC}\n"
 
   # Build login link and save to login.link
   local login_link="${tunnel_url}/login?token=${TOKEN}"
