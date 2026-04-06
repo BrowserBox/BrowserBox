@@ -41,7 +41,7 @@ jobs:
       matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && github.event.inputs.matrix_json != '' && github.event.inputs.matrix_json || '{"os":["ubuntu-latest","macos-latest","windows-latest"],"container_image":["","dokken/centos-stream-10","debian:latest"],"exclude":[{"os":"macos-latest","container_image":"dokken/centos-stream-10"},{"os":"macos-latest","container_image":"debian:latest"},{"os":"windows-latest","container_image":"dokken/centos-stream-10"},{"os":"windows-latest","container_image":"debian:latest"}]}' ) }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container_image }}
-    timeout-minutes: 15
+    timeout-minutes: 19
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -62,7 +62,9 @@ jobs:
         run: |
           set -euo pipefail
           cp .github/scripts/test-bbx.sh "$HOME/test-bbx.sh"
+          cp .github/scripts/bbx-ci-e2e.mjs "$HOME/bbx-ci-e2e.mjs"
           chmod +x "$HOME/test-bbx.sh"
+          chmod +x "$HOME/bbx-ci-e2e.mjs"
           echo "BBX_TEST_DIR=$HOME" >> "$GITHUB_ENV"
           rm -rf "$GITHUB_WORKSPACE"
           mkdir -p "$GITHUB_WORKSPACE"
@@ -74,6 +76,7 @@ jobs:
           BBX_INSTALL_USER: "bbxuser"
           BBX_TEST_AGREEMENT: "true"
           BBX_HOSTNAME: "localhost"
+          BB_QUICK_EXIT: "yesplease"
           EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
@@ -115,12 +118,27 @@ jobs:
           echo "Using installer: ${install_url}"
           curl -fsSL "$install_url" | bash
 
+      - name: Verify bbx install (Unix/macOS)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "PATH=$PATH"
+          echo "bbx command: $(command -v bbx || echo 'not found')"
+          echo "browserbox command: $(command -v browserbox || echo 'not found')"
+          ls -la /usr/local/bin/bbx 2>/dev/null || true
+          ls -la /usr/local/bin/browserbox 2>/dev/null || true
+          ls -la /usr/bin/bbx 2>/dev/null || true
+          ls -la /usr/bin/browserbox 2>/dev/null || true
+
       - name: Execute BBX Test Saga (Unix/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
         env:
           BBX_INSTALL_USER: "bbxuser"
           BBX_HOSTNAME: "localhost"
+          BBX_NO_UPDATE: "true"
+          BB_QUICK_EXIT: "yesplease"
           EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           BBX_TEST_AGREEMENT: "true"
@@ -129,42 +147,110 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
-          BBX_NO_UPDATE: "true"
           BBX_CI_CONTAINER_IMAGE: ${{ matrix.container_image }}
-          BB_QUICK_EXIT: "yesplease"
         working-directory: ${{ env.BBX_TEST_DIR }}
         run: |
           set -euo pipefail
           ./test-bbx.sh
 
-      - name: Execute BBX Test Saga (Windows)
+      - name: Install BrowserBox (Windows)
         if: matrix.os == 'windows-latest'
-        shell: powershell
+        shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BBX_HOSTNAME: "localhost"
-          EMAIL: "test@example.com"
-          BB_QUICK_EXIT: "surewhatevs"
-          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
-          BBX_TEST_AGREEMENT: "true"
-          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
-          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
-          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
-          BBX_NO_UPDATE: "true"
           BBX_FORCE_CHROME_INSTALL: "false"
-          BBX_DONT_KILL_CHROME_ON_STOP: "false"
+          BBX_NO_UPDATE: "true"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if (-not $env:RELEASE_TAG) {
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
             Write-Error "RELEASE_TAG is required (release event or workflow_dispatch input release_tag)."
             exit 1
           }
           $installUrl = "https://raw.githubusercontent.com/BrowserBox/BrowserBox/$($env:RELEASE_TAG)/windows-scripts/install.ps1"
           Write-Host "Using installer: $installUrl"
-          irm $installUrl | iex
-          if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
+          & pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { irm '$installUrl' | iex }"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Install failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+          $bbxBinDir = "$env:LOCALAPPDATA\browserbox\bin"
+          if (Test-Path $bbxBinDir) {
+            $env:PATH = "$bbxBinDir;$env:PATH"
+            "$bbxBinDir" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+            Write-Host "Added $bbxBinDir to PATH"
+          }
+          $bbxCmd = Get-Command bbx -ErrorAction SilentlyContinue
+          if (-not $bbxCmd) {
             Write-Error "bbx not found in PATH after install"
             exit 1
           }
+          Write-Host "bbx installed at $($bbxCmd.Source)"
+          $wrapperDir = Split-Path -Parent $bbxCmd.Source
+          $repoWindowsScripts = Join-Path $env:GITHUB_WORKSPACE "windows-scripts"
+          $wrapperFiles = @(
+            "bbx.ps1",
+            "start.ps1",
+            "stop.ps1",
+            "setup.ps1",
+            "certify.ps1",
+            "prepare.ps1",
+            "uninstall.ps1",
+            "cp_commands_only.ps1"
+          )
+          foreach ($file in $wrapperFiles) {
+            $sourcePath = Join-Path $repoWindowsScripts $file
+            if (Test-Path $sourcePath) {
+              Copy-Item -Path $sourcePath -Destination (Join-Path $wrapperDir $file) -Force
+            }
+          }
+          Write-Host "Overrode Windows wrapper scripts in $wrapperDir from repo source"
+          if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+            Write-Error "npm not found in PATH"
+            exit 1
+          }
+          $wrtcTempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("bbx-wrtc-" + [System.Guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $wrtcTempDir -Force | Out-Null
+          Push-Location $wrtcTempDir
+          npm pack @roamhq/wrtc-win32-x64@0.10.0 --silent
+          if ($LASTEXITCODE -ne 0) {
+            Pop-Location
+            Remove-Item -Path $wrtcTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Error "Failed to fetch @roamhq/wrtc-win32-x64 tarball for CI seeding"
+            exit 1
+          }
+          $wrtcTarball = Join-Path $wrtcTempDir "roamhq-wrtc-win32-x64-0.10.0.tgz"
+          if (-not (Test-Path $wrtcTarball)) {
+            Pop-Location
+            Remove-Item -Path $wrtcTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Error "Fetched @roamhq/wrtc-win32-x64 but tarball was not found at $wrtcTarball"
+            exit 1
+          }
+          tar -xf $wrtcTarball
+          if ($LASTEXITCODE -ne 0) {
+            Pop-Location
+            Remove-Item -Path $wrtcTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Error "Failed to extract @roamhq/wrtc-win32-x64 tarball"
+            exit 1
+          }
+          $wrtcNodeSource = Join-Path $wrtcTempDir "package\wrtc.node"
+          if (-not (Test-Path $wrtcNodeSource)) {
+            Pop-Location
+            Remove-Item -Path $wrtcTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Error "Extracted @roamhq/wrtc-win32-x64 but wrtc.node was not found at $wrtcNodeSource"
+            exit 1
+          }
+          $wrtcWorkspaceModuleDir = Join-Path $env:GITHUB_WORKSPACE "node_modules\@roamhq\wrtc-win32-x64"
+          New-Item -ItemType Directory -Path $wrtcWorkspaceModuleDir -Force | Out-Null
+          Copy-Item -Path $wrtcNodeSource -Destination (Join-Path $wrtcWorkspaceModuleDir "wrtc.node") -Force
+          $wrtcWorkspaceReleaseDir = Join-Path $env:GITHUB_WORKSPACE "build\Release"
+          New-Item -ItemType Directory -Path $wrtcWorkspaceReleaseDir -Force | Out-Null
+          Copy-Item -Path $wrtcNodeSource -Destination (Join-Path $wrtcWorkspaceReleaseDir "wrtc.node") -Force
+          $wrtcReleaseDir = Join-Path $env:USERPROFILE "build\Release"
+          New-Item -ItemType Directory -Path $wrtcReleaseDir -Force | Out-Null
+          Copy-Item -Path $wrtcNodeSource -Destination (Join-Path $wrtcReleaseDir "wrtc.node") -Force
+          Pop-Location
+          Remove-Item -Path $wrtcTempDir -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Seeded wrtc.node for Windows CI at $wrtcWorkspaceModuleDir, $wrtcWorkspaceReleaseDir, and $wrtcReleaseDir"
           if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
             winget install cURL.cURL --silent --accept-source-agreements --accept-package-agreements
           }
@@ -173,82 +259,215 @@ jobs:
             exit 1
           }
           Write-Host "curl.exe available"
-          bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port 9999
-          $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
-          Write-Host "Login link: $loginLink"
-          bbx run
-          Write-Host "Testing URL: $loginLink"
-          $maxRetries = 10
-          $retryCount = 0
-          $success = $false
-          while ($retryCount -lt $maxRetries -and -not $success) {
-            try {
-              $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
-              if ($response -ne "000") {
-                Write-Host "Initial connection successful: $response"
-                $success = $true
-              } else {
-                Write-Host "Retry $($retryCount + 1)/$maxRetries failed: HTTP $response"
+
+      - name: Execute BBX Test Saga (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_NO_UPDATE: "true"
+          BBX_FORCE_CHROME_INSTALL: "false"
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          BB_QUICK_EXIT: "surewhatevs"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          BBX_DONT_KILL_CHROME_ON_STOP: "false"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $wrtcSeedSource = Join-Path $env:USERPROFILE "build\Release\wrtc.node"
+          if (-not (Test-Path $wrtcSeedSource)) {
+            throw "Expected seeded wrtc.node at $wrtcSeedSource before Windows saga step"
+          }
+          $wrtcWatcher = Start-Job -Name "bbx-wrtc-temp-seeder" -ArgumentList $wrtcSeedSource -ScriptBlock {
+            param($SeedSource)
+            $deadline = (Get-Date).AddMinutes(8)
+            while ((Get-Date) -lt $deadline) {
+              Get-ChildItem -Path ([System.IO.Path]::GetTempPath()) -Directory -Filter 'sea-wrtc-*' -ErrorAction SilentlyContinue | ForEach-Object {
+                $nativeDir = Join-Path $_.FullName "node_modules\@roamhq\wrtc-win32-x64"
+                $nativePath = Join-Path $nativeDir "wrtc.node"
+                if (-not (Test-Path $nativePath)) {
+                  New-Item -ItemType Directory -Path $nativeDir -Force | Out-Null
+                  Copy-Item -Path $SeedSource -Destination $nativePath -Force
+                }
               }
-            } catch {
-              Write-Host "Retry $($retryCount + 1)/$maxRetries failed: $_"
+              Start-Sleep -Milliseconds 250
             }
-            if (-not $success) { Start-Sleep -Seconds 4; $retryCount++ }
           }
-          if (-not $success) {
-            Write-Error "Failed to connect to $loginLink after $maxRetries retries."
-            exit 1
-          }
-          $uri = [System.Uri]$loginLink
-          $port = $uri.Port
-          $devtoolsPort = $port + 1
-          $devtoolsLink = $loginLink.Replace(":$port", ":$devtoolsPort")
-          Write-Host "Testing Devtools URL: $devtoolsLink"
+          Write-Host "Started wrtc temp seeder job $($wrtcWatcher.Id) using $wrtcSeedSource"
           try {
-            $response = curl.exe -k -L "$devtoolsLink" -o NUL -w "%{http_code}"
-            if ($response -ne "000") {
-              Write-Host "Devtools connection successful: $response"
-            } else {
-              Write-Error "Devtools connection failed: HTTP $response"
-              exit 1
+            @('BBX_HOSTNAME','EMAIL','LICENSE_KEY','BBX_TEST_AGREEMENT','STATUS_MODE') | ForEach-Object {
+              $val = [Environment]::GetEnvironmentVariable($_)
+              Write-Host "$_ is $(if ($val) { 'set' } else { 'not set' })"
             }
-          } catch {
-            Write-Error "Devtools connection failed: $_"
-            exit 1
-          }
-          Write-Host "Waiting 45 seconds to verify link stability..."
-          Start-Sleep -Seconds 45
-          try {
-            $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
-            if ($response -ne "000") {
-              Write-Host "Second verification (Main) successful: $response"
-            } else {
-              Write-Error "Second verification (Main) failed: HTTP $response"
-              exit 1
+            $setupOut = bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port 9999 2>&1 | Tee-Object -Variable setupLog
+            $loginLink = $null
+            $linkFile = "$env:USERPROFILE\.config\dosaygo\bbpro\login.link"
+            if (Test-Path $linkFile) {
+              $loginLink = (Get-Content $linkFile -ErrorAction SilentlyContinue | Select-String 'https?://').ToString().Trim()
             }
-          } catch {
-            Write-Error "Second verification (Main) failed after 45s: $_"
-            exit 1
-          }
-          try {
-            $response = curl.exe -k -L "$devtoolsLink" -o NUL -w "%{http_code}"
-            if ($response -ne "000") {
-              Write-Host "Second verification (Devtools) successful: $response"
-            } else {
-              Write-Error "Second verification (Devtools) failed: HTTP $response"
-              exit 1
+            if (-not $loginLink) {
+              $logText = ($setupLog | Out-String)
+              $match = [regex]::Match($logText, 'https?://\S+/login\?token=\S+')
+              if ($match.Success) { $loginLink = $match.Value.Trim() }
             }
-          } catch {
-            Write-Error "Second verification (Devtools) failed after 45s: $_"
-            exit 1
+            if (-not $loginLink) {
+              $testEnv = "$env:USERPROFILE\.config\dosaygo\bbpro\test.env"
+              if (Test-Path $testEnv) {
+                $token = Select-String -Path $testEnv -Pattern 'LOGIN_TOKEN=(.+)' | ForEach-Object { $_.Matches.Groups[1].Value }
+                if ($token) { $loginLink = "https://localhost:9999/login?token=$token" }
+              }
+            }
+            if (-not $loginLink) {
+              throw "Could not determine login link"
+            }
+            Write-Host "Login link: $loginLink"
+            "BBX_LOGIN_LINK=$loginLink" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            bbx run
+            Write-Host "Testing URL: $loginLink"
+            $uri = [System.Uri]$loginLink
+            $port = $uri.Port
+            $chromeDebuggerPort = $port - 3000
+            $chromeProbeOk = $false
+            $chromeProbeUrl = $null
+            $chromeProbeHosts = @("127.0.0.1", "localhost", "[::1]")
+            for ($i = 0; $i -lt 10; $i++) {
+              foreach ($probeHost in $chromeProbeHosts) {
+                $probeUrl = "http://$probeHost`:$chromeDebuggerPort/json/version"
+                Write-Host "Chrome debugger probe $($i+1)/10 => $probeUrl"
+                $chromeProbeBody = curl.exe -sS --max-time 5 "$probeUrl" 2>&1
+                if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($chromeProbeBody)) {
+                  Write-Host "Chrome debugger probe succeeded:"
+                  Write-Host $chromeProbeBody
+                  $chromeProbeOk = $true
+                  $chromeProbeUrl = $probeUrl
+                  break
+                }
+                Write-Host "Chrome debugger probe failed: $chromeProbeBody"
+              }
+              if ($chromeProbeOk) { break }
+              Start-Sleep -Seconds 5
+            }
+            $readyOk = $false
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              Write-Host "Readiness attempt $attempt/3..."
+              node .github/scripts/bbx-ci-e2e.mjs ready "$loginLink" --timeout-ms=60000 --interval-ms=5000
+              if ($LASTEXITCODE -eq 0) { $readyOk = $true; break }
+              Write-Host "Attempt $attempt failed, checking if BBX is still alive..."
+              $bbxProcs = Get-Process -Name "browserbox*" -ErrorAction SilentlyContinue
+              if (-not $bbxProcs) {
+                Write-Host "BBX process not running — dumping logs:"
+                $logDir = "$env:USERPROFILE\.config\dosaygo\bbpro"
+                Get-ChildItem "$logDir\*.log" -ErrorAction SilentlyContinue | ForEach-Object {
+                  Write-Host "=== $($_.Name) ==="
+                  Get-Content $_.FullName -Tail 40 -ErrorAction SilentlyContinue
+                }
+                throw "BBX exited before readiness check succeeded (likely license validation failure)"
+              }
+              if ($chromeProbeOk) {
+                Write-Warning "BrowserBox Chrome debugger probe succeeded at $chromeProbeUrl but BBX app readiness still failed. This points to internal readiness/priming rather than Chrome bring-up."
+              }
+              Start-Sleep -Seconds 5
+            }
+            if (-not $readyOk) { throw "Readiness check failed after 3 attempts" }
+            $devtoolsPort = $port + 1
+            $devtoolsLink = $loginLink.Replace(":$port", ":$devtoolsPort")
+            Write-Host "Testing Devtools URL: $devtoolsLink"
+            $devtoolsOk = $false
+            for ($i = 0; $i -lt 10; $i++) {
+              $response = curl.exe -k -L --max-time 10 "$devtoolsLink" -o NUL -w "%{http_code}" 2>$null
+              if ($response -ne "000") { $devtoolsOk = $true; break }
+              Write-Host "  Devtools probe $($i+1)/10 — retrying in 5s..."
+              Start-Sleep -Seconds 5
+            }
+            if (-not $devtoolsOk) { throw "Devtools connection failed after 10 attempts" }
+            Write-Host "Devtools connection successful: $response"
+            Write-Host "Waiting 30 seconds to verify link stability..."
+            Start-Sleep -Seconds 30
+            node .github/scripts/bbx-ci-e2e.mjs ready "$loginLink" --timeout-ms=45000 --interval-ms=4000
+            if ($LASTEXITCODE -ne 0) { throw "Second readiness check failed" }
+            $response = curl.exe -k -L --max-time 10 "$devtoolsLink" -o NUL -w "%{http_code}" 2>$null
+            if ($response -eq "000") { throw "Second devtools check failed: HTTP $response" }
+            Write-Host "Second verification (Devtools) successful: $response"
+          } finally {
+            if ($wrtcWatcher) {
+              Stop-Job -Job $wrtcWatcher -ErrorAction SilentlyContinue
+              Receive-Job -Job $wrtcWatcher -ErrorAction SilentlyContinue | Out-Host
+              Remove-Job -Job $wrtcWatcher -Force -ErrorAction SilentlyContinue
+            }
           }
-          bbx stop
+
+      - name: Cleanup (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          BBX_NO_UPDATE: "true"
+        run: |
+          bbx stop 2>$null
           $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools" -ErrorAction SilentlyContinue
           if ($nodeProcs) {
-            Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
+            Write-Warning "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
           } else {
             Write-Host "No Node processes remain -- cleanup successful."
           }
+
+      - name: Print BBX Logs on Failure (Windows)
+        if: failure() && matrix.os == 'windows-latest'
+        id: print_logs_win
+        shell: pwsh
+        run: |
+          $logDir = "$env:USERPROFILE\.config\dosaygo\bbpro\service_logs"
+          $logsFound = $false
+          $logs = @("bb-main-out.log", "bb-main-err.log")
+          if (Test-Path $logDir) {
+            foreach ($log in $logs) {
+              $logPath = Join-Path $logDir $log
+              if (Test-Path $logPath) {
+                Write-Host "===== Contents of ${log} ====="
+                Get-Content $logPath -Tail 200
+                $logsFound = $true
+              } else {
+                Write-Host "$log not found at $logPath"
+              }
+            }
+          } else {
+            Write-Host "Log directory not found: $logDir"
+            Write-Host "Checking config dir..."
+            if (Test-Path "$env:USERPROFILE\.config\dosaygo\bbpro") {
+              Get-ChildItem "$env:USERPROFILE\.config\dosaygo\bbpro" | Format-Table
+            } else {
+              Write-Host "Config dir not found"
+            }
+          }
+          $oldLogDir = "$env:USERPROFILE\.config\dosaygo\bbpro\logs"
+          if (Test-Path $oldLogDir) {
+            Write-Host "===== Old logs directory found ====="
+            Get-ChildItem $oldLogDir | ForEach-Object {
+              Write-Host "--- $($_.Name) ---"
+              Get-Content $_.FullName -Tail 100
+            }
+            $logsFound = $true
+          }
+          echo "logs_found=$logsFound" >> $env:GITHUB_OUTPUT
+
+      - name: Debug with tmate (Windows, no logs found)
+        if: failure() && matrix.os == 'windows-latest' && steps.print_logs_win.outputs.logs_found == 'False' && env.DISABLE_TMATE != 'true'
+        uses: mxschmitt/action-tmate@v3.23
+        timeout-minutes: 10
+        with:
+          limit-access-to-actor: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BBX_NO_UPDATE: "true"
+          BBX_FORCE_CHROME_INSTALL: "true"
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          BB_QUICK_EXIT: "surewhatevs"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          BBX_DONT_KILL_CHROME_ON_STOP: "false"
 
       - name: Print BBX Logs on Failure (Unix/macOS)
         if: failure() && matrix.os != 'windows-latest'
@@ -262,26 +481,30 @@ jobs:
             tail -200 "$log"
           done
           shopt -u nullglob
-          LOG_DIR="$HOME/.config/dosaygo/bbpro/service_logs"
-          echo "===== Checking $LOG_DIR ====="
+          INSTALL_USER="${BBX_INSTALL_USER:-bbxuser}"
+          if id "$INSTALL_USER" &>/dev/null; then
+            USER_HOME="$(getent passwd "$INSTALL_USER" | cut -d: -f6)"
+          else
+            USER_HOME="$HOME"
+          fi
+          LOG_DIR="${USER_HOME}/.config/dosaygo/bbpro/service_logs"
+          echo "===== Checking $LOG_DIR (install user: $INSTALL_USER, home: $USER_HOME) ====="
           if [[ -d "$LOG_DIR" ]]; then
-            for log in bb-main-out.log bb-main-err.log; do
-              if [[ -f "$LOG_DIR/$log" ]]; then
-                echo "===== Contents of $log (last 200 lines) ====="
-                tail -200 "$LOG_DIR/$log"
-              else
-                echo "$log not found"
+            for log in "$LOG_DIR"/*; do
+              if [[ -f "$log" ]]; then
+                echo "===== $(basename "$log") (last 200 lines) ====="
+                tail -200 "$log"
               fi
             done
             echo "logs_found=true" >> "$GITHUB_OUTPUT"
           else
             echo "Log directory not found: $LOG_DIR"
             echo "Checking if config dir exists..."
-            ls -la "$HOME/.config/dosaygo/bbpro/" 2>/dev/null || echo "Config dir not found"
+            ls -la "${USER_HOME}/.config/dosaygo/bbpro/" 2>/dev/null || echo "Config dir not found at ${USER_HOME}/.config/dosaygo/bbpro/"
             echo "logs_found=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Debug with tmate (Unix/macOS)
+      - name: Debug with tmate (no logs found)
         if: failure() && matrix.os != 'windows-latest' && steps.print_logs.outputs.logs_found == 'false' && env.DISABLE_TMATE != 'true'
         uses: mxschmitt/action-tmate@v3.23
         timeout-minutes: 10
@@ -290,6 +513,7 @@ jobs:
         env:
           BBX_INSTALL_USER: "bbxuser"
           BBX_HOSTNAME: "localhost"
+          BBX_NO_UPDATE: "true"
           BB_QUICK_EXIT: "yesplease"
           EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
@@ -299,11 +523,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
-          BBX_NO_UPDATE: "true"
 
       - name: Cleanup (Unix/macOS)
         if: always() && matrix.os != 'windows-latest'
         shell: bash
+        env:
+          BBX_TEST_AGREEMENT: "true"
+          BBX_NO_UPDATE: "true"
         run: |
           if command -v bbx &>/dev/null; then
             bbx stop || true

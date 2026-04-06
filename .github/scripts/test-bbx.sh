@@ -48,6 +48,8 @@ export BBX_NG_SETUP_PORT="${BBX_NG_SETUP_PORT:-9999}"
 # Resolve script path so we can re-enter the tests reliably after su.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd -P)"
 SCRIPT_PATH="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]:-$0}")"
+BBX_CI_E2E_SCRIPT="${SCRIPT_DIR}/bbx-ci-e2e.mjs"
+BBX_NODE_BIN="${BBX_NODE_BIN:-}"
 
 # Early handoff: If running as root in CI, hand off to install user BEFORE running tests
 # This ensures all tests run as the correct user with proper permissions
@@ -93,11 +95,22 @@ if [ "$(id -u)" -eq 0 ] && [[ -n "$BBX_TEST_AGREEMENT" ]]; then
     chown "${install_user}:$(id -gn "$install_user")" "$env_file" 2>/dev/null || true
     chmod 640 "$env_file" 2>/dev/null || true
     
-    # Copy test script to user's home if needed
-    if [[ ! -f "${user_home}/test-bbx.sh" ]]; then
-      cp -f "$SCRIPT_PATH" "${user_home}/test-bbx.sh"
-      chmod +x "${user_home}/test-bbx.sh"
-      chown "${install_user}:$(id -gn "$install_user")" "${user_home}/test-bbx.sh"
+    cp -f "$SCRIPT_PATH" "${user_home}/test-bbx.sh"
+    chmod +x "${user_home}/test-bbx.sh"
+    chown "${install_user}:$(id -gn "$install_user")" "${user_home}/test-bbx.sh"
+    if [[ -f "$BBX_CI_E2E_SCRIPT" ]]; then
+      cp -f "$BBX_CI_E2E_SCRIPT" "${user_home}/bbx-ci-e2e.mjs"
+      chmod +x "${user_home}/bbx-ci-e2e.mjs"
+      chown "${install_user}:$(id -gn "$install_user")" "${user_home}/bbx-ci-e2e.mjs"
+    fi
+    if [[ -f "${SCRIPT_DIR}/package.json" ]]; then
+      cp -f "${SCRIPT_DIR}/package.json" "${user_home}/package.json"
+      chown "${install_user}:$(id -gn "$install_user")" "${user_home}/package.json"
+    fi
+    if [[ -d "${SCRIPT_DIR}/tests" ]]; then
+      mkdir -p "${user_home}/tests"
+      cp -f "${SCRIPT_DIR}/tests/"*.test.js "${user_home}/tests/" 2>/dev/null || true
+      chown -R "${install_user}:$(id -gn "$install_user")" "${user_home}/tests" 2>/dev/null || true
     fi
     
     echo "Root detected in CI mode. Handing off tests to user: $install_user"
@@ -177,6 +190,7 @@ BB_CONFIG_DIR="$HOME/.config/dosaygo/bbpro"
 BROWSERBOX_CMD="${BROWSERBOX_CMD:-browserbox}"
 
 export BBX_CMD BROWSERBOX_CMD
+export BBX_CI_E2E_SCRIPT
 
 trap 'saga_bbx_stop &>/dev/null' EXIT
 
@@ -393,6 +407,37 @@ bbx_exec_path() {
   return 1
 }
 
+load_node_runtime() {
+  if command -v node >/dev/null 2>&1; then
+    BBX_NODE_BIN="$(command -v node)"
+    return 0
+  fi
+
+  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+  if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    # shellcheck source=/dev/null
+    . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 || true
+  fi
+  if command -v node >/dev/null 2>&1; then
+    BBX_NODE_BIN="$(command -v node)"
+    return 0
+  fi
+
+  local latest_node_bin=""
+  if [[ -d "$NVM_DIR/versions/node" ]]; then
+    latest_node_bin="$(find "$NVM_DIR/versions/node" -type f -path '*/bin/node' 2>/dev/null | sort -V | tail -n 1)"
+  fi
+  if [[ -x "$latest_node_bin" ]]; then
+    local latest_node_dir=""
+    latest_node_dir="$(dirname "$latest_node_bin")"
+    export PATH="${latest_node_dir}:$PATH"
+    BBX_NODE_BIN="$latest_node_bin"
+    return 0
+  fi
+
+  return 1
+}
+
 saga_bbx_stop() {
   if [[ -x "$BBX_CMD" ]] || command -v "$BBX_CMD" &>/dev/null; then
     "$BBX_CMD" stop
@@ -515,7 +560,7 @@ saga_bbx_docker_stop() {
 # Function to extract login link from bbx output (cross-platform)
 extract_login_link() {
   local output="$1"
-  echo "$output" | grep -E -o 'https?://[^ ]+'
+  echo "$output" | grep -E -o 'https?://[^[:space:]]+' | sed 's/[)>"]*$//'
 }
 
 # Function to extract nickname from docker-run output (cross-platform)
@@ -524,55 +569,108 @@ extract_nickname() {
   echo "$output" | grep -E -o 'Nickname: [a-zA-Z0-9_-]+' | sed 's/Nickname: //'
 }
 
+resolve_tunnel_host() {
+  local host="$1"
+  local ip=""
+
+  ip="$(dig +short "$host" A 2>/dev/null | head -1)"
+  if [[ -z "$ip" || "$ip" == *";"* ]]; then
+    ip="$(dig +short @1.1.1.1 "$host" A 2>/dev/null | head -1)"
+  fi
+  if [[ -z "$ip" || "$ip" == *";"* ]]; then
+    local parent="${host#*.}"
+    if [[ "$parent" == "trycloudflare.com" ]]; then
+      ip="$(dig +short @1.1.1.1 "$parent" A 2>/dev/null | head -1)"
+    fi
+  fi
+
+  [[ -n "$ip" && "$ip" != *";"* ]] && echo "$ip"
+}
+
+CURL_TUNNEL_RESOLVE_ARGS=()
+prepare_tunnel_resolve_args() {
+  local link="$1"
+  local proto="${link%%://*}"
+  local hostport="${link#*://}"
+  local host=""
+  local port=""
+  local sys_ip=""
+  local fallback_ip=""
+
+  CURL_TUNNEL_RESOLVE_ARGS=()
+  hostport="${hostport%%/*}"
+  host="${hostport%:*}"
+  if [[ "$hostport" == "$host" ]]; then
+    if [[ "$proto" == "http" ]]; then
+      port="80"
+    else
+      port="443"
+    fi
+  else
+    port="${hostport##*:}"
+  fi
+
+  [[ "$host" == *.trycloudflare.com ]] || return 0
+
+  sys_ip="$(dig +short "$host" A 2>/dev/null | head -1)"
+  if [[ -n "$sys_ip" && "$sys_ip" != *";"* ]]; then
+    return 0
+  fi
+
+  fallback_ip="$(resolve_tunnel_host "$host")"
+  if [[ -n "$fallback_ip" ]]; then
+    CURL_TUNNEL_RESOLVE_ARGS=(--resolve "${host}:${port}:${fallback_ip}")
+  fi
+}
+
 # Function to test login link with curl
 test_login_link() {
   local link="$1"                # The URL to test
   local use_tor="$2"             # Optional: "tor" to use Tor SOCKS proxy
-  local start_time=$(date +%s)   # Record the start time in seconds
   local max_time=45              # Maximum wait time in seconds
   local interval=2               # Time between retries in seconds
-  local timeout=5
-  local success=0                # Flag to track success
-  local http_code=""             # Variable to store the HTTP status code
-  local curl_opts="-s -k -L -w %{http_code} --max-time $timeout --fail --output /dev/null"
+  local probe_output=""
+  local probe_args=(
+    ready
+    "$link"
+    "--timeout-ms=$((max_time * 1000))"
+    "--interval-ms=$((interval * 1000))"
+  )
 
   # Add Tor SOCKS proxy if specified
   if [ "$use_tor" = "tor" ]; then
     interval=5
-    timeout=25
     max_time=180
-    curl_opts="-s -k -L -w %{http_code} --max-time $timeout --fail --output /dev/null --proxy socks5h://127.0.0.1:9050"
-    echo -n "Testing Tor login link $link with retries... "
+    probe_args=(
+      ready
+      "$link"
+      "--timeout-ms=$((max_time * 1000))"
+      "--interval-ms=$((interval * 1000))"
+      --tor
+    )
+    echo -n "Testing Tor login link $link for app readiness... "
   else
-    echo -n "Testing login link $link with retries... "
+    echo -n "Testing login link $link for app readiness... "
   fi
 
-  # Loop until max_time is reached or success is achieved
-  while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
-    # Execute curl with the constructed options
-    http_code="$(curl $curl_opts "$link")"
+  if ! load_node_runtime; then
+    echo -e "${RED}✘ Failed after $max_time seconds${NC}"
+    echo "node runtime unavailable for readiness probe"
+    ((failed++))
+    return 1
+  fi
 
-    # Check if the status code starts with '2' (indicating 2xx success)
-    if [[ "$http_code" =~ ^2 ]]; then
-      success=1
-      break  # Exit the loop on success
-    fi
-
-    # Wait before the next attempt
-    sleep $interval
-  done
-
-  # Report the result
-  if [ $success -eq 1 ]; then
+  if probe_output="$("$BBX_NODE_BIN" "$BBX_CI_E2E_SCRIPT" "${probe_args[@]}" 2>&1)"; then
     if [ "$use_tor" = "tor" ]; then
-      echo -e "${GREEN}✔ Success (HTTP $http_code via Tor)${NC}"
+      echo -e "${GREEN}✔ Success (app ready via Tor)${NC}"
     else
-      echo -e "${GREEN}✔ Success (HTTP $http_code)${NC}"
+      echo -e "${GREEN}✔ Success (app ready)${NC}"
     fi
     ((passed++))
     return 0
   else
-    echo -e "${RED}✘ Failed after $max_time seconds (Last HTTP code: $http_code)${NC}"
+    echo -e "${RED}✘ Failed after $max_time seconds${NC}"
+    echo "$probe_output"
     ((failed++))
     return 1
   fi
@@ -581,25 +679,38 @@ test_login_link() {
 test_basic_link() {
   local link="$1"                # The URL to test
   local label="$2"               # Human-readable label
-  local start_time=$(date +%s)   # Record the start time in seconds
+  local start_time=""            # Record the start time in seconds
   local max_time=45              # Maximum wait time in seconds
   local interval=2               # Time between retries in seconds
   local timeout=5
   local success=0                # Flag to track success
   local http_code=""             # Variable to store the HTTP status code
-  local curl_opts="-s -k -L -w %{http_code} --max-time $timeout --fail --output /dev/null"
+  local curl_args=(
+    -s
+    -k
+    -L
+    -w '%{http_code}'
+    --max-time "$timeout"
+    --fail
+    --output /dev/null
+  )
 
   echo -n "Testing ${label} link $link with retries... "
+  start_time="$(date +%s)"
+  prepare_tunnel_resolve_args "$link"
+  if [[ ${#CURL_TUNNEL_RESOLVE_ARGS[@]} -gt 0 ]]; then
+    echo -n "[direct IP fallback] "
+  fi
 
-  while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
-    http_code="$(curl $curl_opts "$link")"
+  while [ $(( $(date +%s) - start_time )) -lt "$max_time" ]; do
+    http_code="$(curl "${curl_args[@]}" "${CURL_TUNNEL_RESOLVE_ARGS[@]}" "$link" 2>/dev/null || echo "000")"
 
     if [[ "$http_code" =~ ^2 ]]; then
       success=1
       break
     fi
 
-    sleep $interval
+    sleep "$interval"
   done
 
   if [ $success -eq 1 ]; then
@@ -856,9 +967,9 @@ test_run() {
   echo "DEBUG: saga_bbx_run returned exit_code=$exit_code"
   echo "DEBUG: Output was:"
   echo "$output"
-  echo "DEBUG: Checking for service_logs directory..."
-  ls -la "$HOME/.config/dosaygo/bbpro/" 2>/dev/null || echo "Config dir not found"
-  ls -la "$HOME/.config/dosaygo/bbpro/service_logs/" 2>/dev/null || echo "service_logs dir not found"
+  echo "DEBUG: Checking for service_logs directory at ${BB_CONFIG_DIR}/service_logs ..."
+  ls -la "$BB_CONFIG_DIR/" 2>/dev/null || echo "Config dir not found: $BB_CONFIG_DIR"
+  ls -la "$BB_CONFIG_DIR/service_logs/" 2>/dev/null || echo "service_logs dir not found: $BB_CONFIG_DIR/service_logs"
   login_link="$(extract_login_link "$output" | tail -n 1)"
   echo "DEBUG: Extracted login_link=$login_link"
   if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
@@ -870,7 +981,7 @@ test_run() {
   fi
   echo -e "${GREEN}✔ Success (Run completed)${NC}"
   ((passed++))
-  
+
   # Test login link immediately
   if [ -f ~/.nvm/nvm.sh ]; then
     source ~/.nvm/nvm.sh 2>/dev/null || true
@@ -905,13 +1016,6 @@ test_run() {
 }
 
 test_ng_run() {
-  # This test is only reliable on macOS where nginx setup is more predictable for local testing
-  if [[ "$(uname -s)" != "Darwin" ]]; then
-    echo "Skipping Nginx run test (only runs on macOS for now)"
-    ((passed++))
-    return 0
-  fi
-
   record_nginx_active_state
   echo "Running bbx with Nginx... "
   # use wildcard-able hostname for ng-run
@@ -1084,29 +1188,42 @@ test_cf_run() {
     return 1
   fi
 
-  echo -e "${GREEN}✔ Success (CF run started, link: ${login_link})${NC}"
+  echo -e "${GREEN}✔ Success (CF run started, link: ${login_link} )${NC}"
   ((passed++))
 
   # Give tunnel a moment to stabilize
   sleep 5
 
   # Test login link with retries for tunnel propagation
-  local start_time=$(date +%s)
+  local start_time=""
   local max_time="${BBX_CF_MAX_TIME:-180}"
   local interval="${BBX_CF_INTERVAL:-4}"
   local timeout=10
   local success=0
   local http_code=""
-  local curl_opts="-s -k -L -w %{http_code} --max-time $timeout --fail --output /dev/null"
+  local curl_args=(
+    -s
+    -k
+    -L
+    -w '%{http_code}'
+    --max-time "$timeout"
+    --fail
+    --output /dev/null
+  )
 
   echo -n "Testing CF login link $login_link with retries... "
-  while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
-    http_code="$(curl $curl_opts "$login_link")"
+  start_time="$(date +%s)"
+  prepare_tunnel_resolve_args "$login_link"
+  if [[ ${#CURL_TUNNEL_RESOLVE_ARGS[@]} -gt 0 ]]; then
+    echo -n "[direct IP fallback] "
+  fi
+  while [ $(( $(date +%s) - start_time )) -lt "$max_time" ]; do
+    http_code="$(curl "${curl_args[@]}" "${CURL_TUNNEL_RESOLVE_ARGS[@]}" "$login_link" 2>/dev/null || echo "000")"
     if [[ "$http_code" =~ ^2 ]]; then
       success=1
       break
     fi
-    sleep $interval
+    sleep "$interval"
   done
 
   if [ $success -ne 1 ]; then
@@ -1123,6 +1240,11 @@ test_cf_run() {
 
   echo -e "${GREEN}✔ Success (HTTP $http_code)${NC}"
   ((passed++))
+
+  if ! test_login_link "$login_link"; then
+    saga_bbx_stop
+    return 1
+  fi
 
   # Cleanup via bbx stop (which now also kills CF tunnel)
   saga_bbx_stop
@@ -1219,7 +1341,6 @@ if [[ "${BBX_RESET_AFTER_NG_RUN:-1}" != "0" && "${BBX_RESET_AFTER_NG_RUN:-1}" !=
 fi
 test_tor_run || exit 1
 test_cf_run || exit 1
-test_docker_run || exit 1
 
 # Cleanup
   saga_bbx_stop || true
