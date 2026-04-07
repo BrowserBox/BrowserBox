@@ -16,6 +16,7 @@
 
 <p align="center">
   <a href="https://win9-5.com/demo">Live Demo</a> |
+  <a href="./docs/CUSTOMER-GUIDE.pdf">Customer Guide</a> |
   <a href="https://win9-5.com/api/">Cloud API Docs</a> |
   <a href="https://win9-5.com/pricing/">Pricing</a> |
   <a href="mailto:api@browserbox.io">Support</a>
@@ -65,6 +66,10 @@ bbx certify YOUR_PRODUCT_KEY
 bbx setup
 bbx run
 ```
+
+## Documentation
+
+- [Customer Guide (PDF)](./docs/CUSTOMER-GUIDE.pdf)
 
 ## GitHub Actions
 
