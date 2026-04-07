@@ -63,13 +63,14 @@ fi
 
 # Function to find Tor control auth cookie across different platforms
 find_tor_cookie() {
+  # Ordered by priority: Homebrew > system > user home.
+  # Tor Browser is deliberately excluded — it runs a separate tor
+  # instance (ports 9150/9151) that does not serve our hidden services.
   local cookie_locations=(
     # macOS Homebrew (ARM)
     "/opt/homebrew/var/lib/tor/control_auth_cookie"
     # macOS Homebrew (Intel)
     "/usr/local/var/lib/tor/control_auth_cookie"
-    # Tor Browser (macOS)
-    "${HOME}/Library/Application Support/TorBrowser-Data/Tor/control_auth_cookie"
     # Linux systemd
     "/run/tor/control.authcookie"
     # Linux Debian/Ubuntu standard
@@ -1465,11 +1466,34 @@ getent_hosts() {
 }
 
 # Check if hostname is local
+is_ip_literal() {
+  local hostname="$1"
+  # IPv4
+  if [[ "$hostname" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    return 0
+  fi
+  # IPv6
+  if [[ "$hostname" == *:* ]]; then
+    return 0
+  fi
+  return 1
+}
+
 is_local_hostname() {
   local hostname="$1"
   local resolved_ips ip
   local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
   local has_valid_result=0
+
+  # .onion domains are Tor-only; treat as local (use mkcert, not certbot)
+  if [[ "$hostname" == *.onion ]]; then
+    return 0
+  fi
+
+  # IP literals can't get Let's Encrypt certs; treat as local for mkcert
+  if is_ip_literal "$hostname"; then
+    return 0
+  fi
 
   # Try DNS resolution
   for dns in "${public_dns_servers[@]}"; do
@@ -1688,6 +1712,32 @@ test_port_access() {
 
     printf "${GREEN}Port $port is accessible.${NC}\n"
     return 0
+}
+
+# Wait for BrowserBox to be ready on a local port.
+# Usage: wait_for_local_ready <port> <http|https> [max_wait_seconds]
+wait_for_local_ready() {
+  local port="$1"
+  local scheme="${2:-https}"
+  local max_wait="${3:-90}"
+  local interval=2
+  local elapsed=0
+  local curl_args=(-s -o /dev/null --connect-timeout 2 --max-time 3 --head)
+  [[ "$scheme" == "https" ]] && curl_args+=(-k)
+
+  printf "${YELLOW}Waiting for BrowserBox to be ready on port ${port} (${scheme})...${NC}\n"
+
+  while [ $elapsed -lt $max_wait ]; do
+    if curl "${curl_args[@]}" "${scheme}://127.0.0.1:${port}/" 2>/dev/null; then
+      printf "${GREEN}BrowserBox is ready on port ${port} (${elapsed}s)${NC}\n"
+      return 0
+    fi
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+
+  printf "${RED}BrowserBox did not become ready on port ${port} within ${max_wait}s${NC}\n"
+  return 1
 }
 
 # Ensure setup_tor is run for the user (assume global, check Tor service)
@@ -2221,14 +2271,14 @@ run() {
   # The binary's validateLicense polls for reservation.json on retry, so even if bbpro
   # wins the race the binary will pick up the file within a few seconds.
   export LICENSE_KEY;
-  local cert_log; cert_log="$(mktemp /tmp/bbx-certify-XXXXXX.log)"
+  local cert_log; cert_log="$(rm -f /tmp/bbx-certify-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-certify-XXXXXX.log)"
   printf "${YELLOW}[startup] Certifying license...${NC}\n"
   bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_NONINTERACTIVE=true; bbcertify" > "$cert_log" 2>&1 &
   local CERT_PID=$!
 
   # Start bbpro — keep stderr visible so failures aren't silent
   printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
-  local bbpro_log; bbpro_log="$(mktemp /tmp/bbx-bbpro-XXXXXX.log)"
+  local bbpro_log; bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
   local bbpro_rc
   if [[ -n ${BBX_DEBUG:-} ]]; then
     BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro "${run_args[@]}" 2>&1 | tee "$bbpro_log"
@@ -2444,6 +2494,7 @@ tor_run() {
   local _tor_success=false
 
   if $onion; then
+    # Step 1: Start torbb (retry loop for setup/startup only)
     while [ $_tor_attempt -lt $_tor_max_retries ]; do
       _tor_attempt=$((_tor_attempt + 1))
       if [ $_tor_attempt -gt 1 ]; then
@@ -2471,35 +2522,12 @@ tor_run() {
       fi
 
       TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
-
-      # Readiness gate: verify onion service is reachable via Tor SOCKS proxy
-      printf "${YELLOW}Verifying onion service reachability...${NC}\n"
-      local _tor_verify_ok=false
-      local _tor_verify_elapsed=0
-      local _tor_verify_max=90
-      local _tor_verify_interval=5
-      while [ $_tor_verify_elapsed -lt $_tor_verify_max ]; do
-        local _tor_http_code
-        _tor_http_code="$(curl -s -k -L --max-time 15 --output /dev/null -w '%{http_code}' \
-          --proxy "socks5h://127.0.0.1:9050" "$login_link" 2>/dev/null)" || true
-        if [[ "$_tor_http_code" =~ ^(200|302)$ ]]; then
-          printf "${GREEN}Onion service reachable (HTTP %s)${NC}\n" "$_tor_http_code"
-          _tor_verify_ok=true
-          break
-        fi
-        sleep "$_tor_verify_interval"
-        _tor_verify_elapsed=$((_tor_verify_elapsed + _tor_verify_interval))
-      done
-
-      if $_tor_verify_ok; then
-        _tor_success=true
-        break
-      fi
-      printf "${RED}Onion service not reachable after ${_tor_verify_max}s (attempt ${_tor_attempt}/${_tor_max_retries})${NC}\n"
+      _tor_success=true
+      break
     done
 
     if ! $_tor_success; then
-      printf "${RED}Failed to establish reachable Tor onion service after ${_tor_max_retries} attempts${NC}\n"
+      printf "${RED}Failed to start Tor onion service after ${_tor_max_retries} attempts${NC}\n"
       exit 1
     fi
   else
@@ -2512,7 +2540,15 @@ tor_run() {
       login_link="https://${BBX_HOSTNAME}:${PORT}/login?token=${TOKEN}"
       echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
   fi
-  sleep 2
+
+  # Gate: ensure BrowserBox is listening before continuing (both onion and clearnet paths)
+  wait_for_local_ready "$PORT" https 90 || {
+    printf "${RED}BrowserBox never became ready on port ${PORT}${NC}\n"
+    run_quietly stop_bbpro || true
+    exit 1
+  }
+
+  # Step 2: Show the login link immediately
   printf "${GREEN}BrowserBox with Tor started.${NC}\n"
   draw_box "Login Link: $login_link"
   save_config
@@ -2602,11 +2638,52 @@ tor_run() {
       return 1
   }
 
-  # Display Tor status without restarting
+  # Step 3: Tor bootstrap connectivity check
   if ! [ -r "$COOKIE_AUTH_FILE" ] && ! $SUDO test -r "$COOKIE_AUTH_FILE"; then
       printf "${YELLOW}Warning: Tor cookie file ($COOKIE_AUTH_FILE) not accessible. Skipping status check.${NC}\n"
   else
       show_tor_status
+  fi
+
+  # Step 4: Verify onion service is reachable via Tor SOCKS proxy
+  if $onion && [ -n "$login_link" ]; then
+    printf "${YELLOW}Verifying onion service reachability...${NC}\n"
+    local _tor_verify_ok=false
+    local _tor_verify_elapsed=0
+    local _tor_verify_max=180
+    local _tor_verify_interval=5
+    local _tor_probe_count=0
+    local _tor_total_probes=$((_tor_verify_max / _tor_verify_interval))
+    while [ $_tor_verify_elapsed -lt $_tor_verify_max ]; do
+      _tor_probe_count=$((_tor_probe_count + 1))
+      local _pct=$((_tor_verify_elapsed * 100 / _tor_verify_max))
+      local _bar_w=30
+      local _filled=$((_pct * _bar_w / 100))
+      local _empty=$((_bar_w - _filled))
+      printf "\r${YELLOW}Onion reachability: [${GREEN}"
+      for ((i = 0; i < _filled; i++)); do printf "█"; done
+      printf "${NC}"
+      for ((i = 0; i < _empty; i++)); do printf " "; done
+      printf "${NC}] %3d%% (probe %d, %ds/${_tor_verify_max}s)" "$_pct" "$_tor_probe_count" "$_tor_verify_elapsed"
+      local _tor_http_code
+      _tor_http_code="$(curl -s -k -L \
+        --connect-timeout 15 --max-time 25 \
+        --output /dev/null -w '%{http_code}' \
+        --proxy "socks5h://127.0.0.1:9050" "$login_link" 2>/dev/null)" || true
+      if [[ "$_tor_http_code" =~ ^(200|302)$ ]]; then
+        printf "\r${YELLOW}Onion reachability: [${GREEN}"
+        for ((i = 0; i < _bar_w; i++)); do printf "█"; done
+        printf "${NC}] 100%%                              \n"
+        printf "${GREEN}Onion service reachable (HTTP %s)${NC}\n" "$_tor_http_code"
+        _tor_verify_ok=true
+        break
+      fi
+      sleep "$_tor_verify_interval"
+      _tor_verify_elapsed=$((_tor_verify_elapsed + _tor_verify_interval))
+    done
+    if ! $_tor_verify_ok; then
+      printf "\n${YELLOW}Warning: Onion service not reachable after ${_tor_verify_max}s. It may still be propagating.${NC}\n"
+    fi
   fi
 }
 
@@ -2959,7 +3036,7 @@ cf_run() {
 
   # Start BrowserBox — keep stderr visible so failures aren't silent
   printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
-  local _cf_bbpro_log; _cf_bbpro_log="$(mktemp /tmp/bbx-bbpro-XXXXXX.log)"
+  local _cf_bbpro_log; _cf_bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
   local _cf_bbpro_rc
   if [[ -n ${BBX_DEBUG:-} ]]; then
     BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
@@ -2975,6 +3052,13 @@ cf_run() {
     exit 1
   fi
   rm -f "$_cf_bbpro_log"
+
+  # Wait for BrowserBox to actually be listening before starting the tunnel
+  wait_for_local_ready "$PORT" http 90 || {
+    printf "${RED}BrowserBox never became ready on port ${PORT}. Aborting tunnel.${NC}\n"
+    run_quietly stop_bbpro || true
+    exit 1
+  }
 
   # Reload config to capture final token
   load_config
@@ -3065,6 +3149,74 @@ cf_run() {
     [[ -n "$ip" && "$ip" != *";"* ]] && echo "$ip"
   }
 
+  run_dns_refresh_cmd() {
+    if "$@" >/dev/null 2>&1; then
+      return 0
+    fi
+    if [[ -n "${SUDO:-}" ]]; then
+      $SUDO "$@" >/dev/null 2>&1 && return 0
+    fi
+    return 1
+  }
+
+  refresh_local_dns_cache() {
+    local host="$1"
+    local attempted=0
+    local succeeded=0
+
+    printf "${YELLOW}System DNS miss for %s; attempting local DNS cache refresh...${NC}\n" "$host"
+
+    if command -v dscacheutil >/dev/null 2>&1; then
+      attempted=1
+      if run_dns_refresh_cmd dscacheutil -flushcache; then
+        succeeded=1
+        printf "${CYAN}Flushed local DNS cache via dscacheutil${NC}\n"
+      fi
+    fi
+
+    if command -v killall >/dev/null 2>&1; then
+      attempted=1
+      if run_dns_refresh_cmd killall -HUP mDNSResponder; then
+        succeeded=1
+        printf "${CYAN}Signaled mDNSResponder to reload DNS state${NC}\n"
+      fi
+    fi
+
+    if command -v resolvectl >/dev/null 2>&1; then
+      attempted=1
+      if run_dns_refresh_cmd resolvectl flush-caches; then
+        succeeded=1
+        printf "${CYAN}Flushed local DNS cache via resolvectl${NC}\n"
+      fi
+    elif command -v systemd-resolve >/dev/null 2>&1; then
+      attempted=1
+      if run_dns_refresh_cmd systemd-resolve --flush-caches; then
+        succeeded=1
+        printf "${CYAN}Flushed local DNS cache via systemd-resolve${NC}\n"
+      fi
+    fi
+
+    if command -v nscd >/dev/null 2>&1; then
+      attempted=1
+      if run_dns_refresh_cmd nscd -i hosts; then
+        succeeded=1
+        printf "${CYAN}Invalidated hosts cache via nscd${NC}\n"
+      fi
+    fi
+
+    if [[ "$attempted" -eq 0 ]]; then
+      printf "${YELLOW}No supported local DNS cache refresh capability detected; continuing with direct IP fallback if needed${NC}\n"
+      return 1
+    fi
+
+    if [[ "$succeeded" -eq 0 ]]; then
+      printf "${YELLOW}Local DNS cache refresh commands were available but did not succeed; continuing with direct IP fallback if needed${NC}\n"
+      return 1
+    fi
+
+    return 0
+  }
+
   # Verify that the tunnel actually serves BrowserBox (readiness gate)
   verify_cf_tunnel() {
     local url="$1"
@@ -3088,8 +3240,17 @@ cf_run() {
       local sys_test
       sys_test="$(curl -s -k --max-time 5 -o /dev/null -w '%{http_code}' "https://${host}/" 2>/dev/null)" || true
       if [[ "$sys_test" == "000" ]]; then
-        resolve_args=(--resolve "${host}:443:${pre_ip}")
-        printf "${YELLOW}System DNS can't resolve ${host}, using direct IP (${pre_ip})${NC}\n"
+        if refresh_local_dns_cache "$host"; then
+          printf "${YELLOW}Waiting 3 seconds for local DNS cache refresh to settle...${NC}\n"
+          sleep 3
+          sys_test="$(curl -s -k --max-time 5 -o /dev/null -w '%{http_code}' "https://${host}/" 2>/dev/null)" || true
+        fi
+        if [[ "$sys_test" == "000" ]]; then
+          resolve_args=(--resolve "${host}:443:${pre_ip}")
+          printf "${YELLOW}System DNS still can't resolve ${host}, using direct IP (${pre_ip})${NC}\n"
+        else
+          printf "${GREEN}System DNS resolved ${host} after local cache refresh${NC}\n"
+        fi
       fi
     fi
 
