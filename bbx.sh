@@ -3036,29 +3036,76 @@ cf_run() {
 
   # Start BrowserBox — keep stderr visible so failures aren't silent
   printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
-  local _cf_bbpro_log; _cf_bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
-  local _cf_bbpro_rc
-  if [[ -n ${BBX_DEBUG:-} ]]; then
-    BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
-    _cf_bbpro_rc=${PIPESTATUS[0]}
-  else
-    env BBX_NONINTERACTIVE=true bbpro > "$_cf_bbpro_log" 2>&1
-    _cf_bbpro_rc=$?
-  fi
-  if [[ "$_cf_bbpro_rc" -ne 0 ]]; then
-    printf "${RED}Failed to start BrowserBox (exit %d). Last output:${NC}\n" "$_cf_bbpro_rc"
-    tail -20 "$_cf_bbpro_log"
-    rm -f "$_cf_bbpro_log"
-    exit 1
-  fi
-  rm -f "$_cf_bbpro_log"
+  local _cf_start_max_attempts=3
+  local _cf_start_attempt=1
+  local _cf_start_wait=30
+  local _cf_retry_sleep=30
+  local _cf_ready=false
+  local _cf_startup_log="${BB_CONFIG_DIR}/cf-run-startup.log"
+  local _cf_service_log_dir="${BB_CONFIG_DIR}/service_logs"
 
-  # Wait for BrowserBox to actually be listening before starting the tunnel
-  wait_for_local_ready "$PORT" http 90 || {
+  while [[ "$_cf_start_attempt" -le "$_cf_start_max_attempts" ]]; do
+    local _cf_bbpro_log
+    _cf_bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
+    local _cf_bbpro_rc
+    local _cf_attempt_log="${BB_CONFIG_DIR}/cf-run-startup-attempt-${_cf_start_attempt}.log"
+
+    printf "${YELLOW}Launching BrowserBox startup attempt %d/%d...${NC}\n" "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
+
+    if [[ -n ${BBX_DEBUG:-} ]]; then
+      BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
+      _cf_bbpro_rc=${PIPESTATUS[0]}
+    else
+      env BBX_NONINTERACTIVE=true bbpro > "$_cf_bbpro_log" 2>&1
+      _cf_bbpro_rc=$?
+    fi
+
+    cp "$_cf_bbpro_log" "$_cf_startup_log" 2>/dev/null || true
+    cp "$_cf_bbpro_log" "$_cf_attempt_log" 2>/dev/null || true
+
+    if [[ "$_cf_bbpro_rc" -eq 0 ]] && wait_for_local_ready "$PORT" http "$_cf_start_wait"; then
+      _cf_ready=true
+      rm -f "$_cf_bbpro_log"
+      break
+    fi
+
+    if [[ "$_cf_bbpro_rc" -ne 0 ]]; then
+      printf "${RED}BrowserBox startup attempt %d/%d failed immediately (exit %d).${NC}\n" \
+        "$_cf_start_attempt" "$_cf_start_max_attempts" "$_cf_bbpro_rc" >&2
+      printf "${YELLOW}Saved startup log to %s${NC}\n" "$_cf_attempt_log" >&2
+      tail -20 "$_cf_bbpro_log" >&2
+    else
+      printf "${RED}BrowserBox did not become ready during startup attempt %d/%d.${NC}\n" \
+        "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
+      printf "${YELLOW}Saved startup log to %s${NC}\n" "$_cf_attempt_log" >&2
+      if [[ -f "${_cf_service_log_dir}/bb-main-out.log" ]]; then
+        printf "${YELLOW}===== bb-main-out.log (last 40 lines) =====${NC}\n" >&2
+        tail -40 "${_cf_service_log_dir}/bb-main-out.log" >&2
+      fi
+      if [[ -f "${_cf_service_log_dir}/bb-main-err.log" ]]; then
+        printf "${YELLOW}===== bb-main-err.log (last 40 lines) =====${NC}\n" >&2
+        tail -40 "${_cf_service_log_dir}/bb-main-err.log" >&2
+      fi
+      bbpro pm2 list >&2 || true
+    fi
+
+    rm -f "$_cf_bbpro_log"
+
+    if [[ "$_cf_start_attempt" -ge "$_cf_start_max_attempts" ]]; then
+      break
+    fi
+
+    printf "${YELLOW}Retrying Cloudflare startup in %ds...${NC}\n" "$_cf_retry_sleep" >&2
+    run_quietly stop_bbpro || true
+    sleep "$_cf_retry_sleep"
+    _cf_start_attempt=$((_cf_start_attempt + 1))
+  done
+
+  if [[ "$_cf_ready" != "true" ]]; then
     printf "${RED}BrowserBox never became ready on port ${PORT}. Aborting tunnel.${NC}\n"
     run_quietly stop_bbpro || true
     exit 1
-  }
+  fi
 
   # Reload config to capture final token
   load_config
@@ -3406,6 +3453,9 @@ cf_run() {
 }
 
 docker_run() {
+  # Docker runner retained for possible future re-enable.
+  # It is intentionally unreachable from the public bbx command dispatch
+  # while BrowserBox ships as a binary-first distribution.
   banner
   load_config
 
@@ -3579,6 +3629,9 @@ EOF
 }
 
 docker_stop() {
+  # Docker runner retained for possible future re-enable.
+  # It is intentionally unreachable from the public bbx command dispatch
+  # while BrowserBox ships as a binary-first distribution.
   banner
   load_config
 
@@ -5150,8 +5203,6 @@ usage() {
     printf "  ${GREEN}stop-user${NC}       Stop a BrowserBox instance for a specific user. ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n\n"
 
     printf "${BOLD}ADVANCED RUNNERS & TUNNELS${NC}\n"
-    printf "  ${GREEN}docker-start${NC}    Run BrowserBox inside a Docker container. ${BOLD}bbx docker-start [nickname] [--port|-p <port>]${NC}\n"
-    printf "  ${GREEN}docker-stop${NC}     Stop a Dockerized BrowserBox instance. ${BOLD}bbx docker-stop <nickname>${NC}\n"
     printf "  ${CYAN}cf-start${NC}        Run BrowserBox securely through a Cloudflare tunnel. ${BOLD}bbx cf-start [--port|-p <port>]${NC}\n"
     printf "  ${BLUE}zt-start${NC}        Expose BrowserBox on your ZeroTier network.\n"
     printf "  ${PURPLE}tor-start${NC}       Serve BrowserBox as a Tor hidden service. ${BOLD}bbx tor-start [--no-darkweb] [--no-onion]${NC}\n"
@@ -5164,7 +5215,7 @@ usage() {
     printf "  ${GREEN}--faq${NC}           Display frequently asked questions.\n"
     printf "  ${GREEN}--version${NC}       Show the version of the bbx CLI.\n"
     printf "  ${GREEN}--help${NC}          Show this help screen.\n\n"
-    printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2025${NC}\n"
+    printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2026${NC}\n"
 }
 
 show_policy_footer() {
@@ -5227,11 +5278,9 @@ faq() {
     printf "${BOLD}${CYAN}BrowserBox CLI - Frequently Asked Questions${NC}\n\n"
 
     printf "${BOLD}1) How do I run multiple BrowserBox instances?${NC}\n"
-    printf "   First, ensure your license has enough seats for multiple users. You can then either:\n"
-    printf "   a) Use the ${GREEN}start-as${NC} command to run a new instance under a different OS user.\n"
-    printf "      Example: ${BOLD}bbx start-as browserbox_user2 8081${NC}\n"
-    printf "   b) Use the ${GREEN}docker-start${NC} command to run isolated instances in containers.\n"
-    printf "      Example: ${BOLD}bbx docker-start team_a --port 8090${NC}\n"
+    printf "   First, ensure your license has enough seats for multiple users.\n"
+    printf "   Then use the ${GREEN}start-as${NC} command to run a new instance under a different OS user.\n"
+    printf "   Example: ${BOLD}bbx start-as browserbox_user2 8081${NC}\n"
     printf "   ${YELLOW}Important:${NC} Make sure the ports you specify for each instance are unique and do not overlap.\n\n"
 
     printf "${BOLD}2) How do I see whether a license seat is currently available?${NC}\n"
@@ -5386,8 +5435,10 @@ case "$1" in
     zt-run|zt-start) shift 1; banner_color=$BLUE; zt_run "$@";;
     cf-run|cf-start) shift 1; banner_color=$CYAN; cf_run "$@";;
     ng-run|ng-start) shift 1; banner_color=$GREEN; ng_run "$@";;
-    docker-run|docker-start) shift 1; docker_run "$@";;
-    docker-stop) shift 1; docker_stop "$@";;
+    # Docker commands intentionally disabled while BrowserBox is distributed
+    # as a binary-first product. Keep the implementation above for a future re-enable.
+    # docker-run|docker-start) shift 1; docker_run "$@";;
+    # docker-stop) shift 1; docker_stop "$@";;
     win9x-run|win9x-start) shift 1; banner_color=$YELLOW; win9x_run "$@";;
     policy)
       shift 1
