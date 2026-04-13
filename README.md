@@ -221,7 +221,7 @@ BrowserBox runs where real work happens — here's the current support matrix.
 | Rocky Linux              | ✅        | <img src="readme-files/rockylinux.svg" alt="Rocky Linux" width="100" title="Rocky Linux"> |
 | NixOS                    | ✅        | <img src="readme-files/nixos.svg" alt="NixOS" width="100" title="NixOS"> |
 | LXC                      | ✅        | <img src="readme-files/LXC.svg" alt="LXC" width="64" title="LXC"> |
-| Podman‡                  | 🚧        | <img src="readme-files/podman.svg" alt="Podman" width="64" title="Podman"> |
+| Podman                   | ✅        | <img src="readme-files/podman.svg" alt="Podman" width="64" title="Podman"> |
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.svg" alt="Windows 9x" width="64" title="Windows 9x"> |
 
 >[!NOTE]
@@ -229,7 +229,6 @@ BrowserBox runs where real work happens — here's the current support matrix.
 
 \*Tails is not supported because Chrome cannot be installed.
 
-‡Podman support is currently under consideration.
 
 †Windows 9x clients are supported via the `bbx win9x-run` command which outputs the login link for legacy clients (IE 5, IE 6, Netscape). Supported client OSes: Windows 95, 98, 2000, NT. The server still needs to run on a modern system. Modern clients can use the legacy endpoint too, but the experience is understandably retro.
 
