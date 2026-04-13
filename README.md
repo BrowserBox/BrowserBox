@@ -27,14 +27,14 @@
 
 ---
 
-BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, Linux, Docker, and LXC. **A product key is required for all self-hosted usage.**
+BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, Linux, and containers. **A product key is required for all self-hosted usage.**
 
 **At a glance:**
 - Clientless RBI — no plugins, no downloads for end users
 - 60 FPS streaming with real responsiveness
 - Embeds anywhere via `<browserbox-webview>`
 - Cloud API for ephemeral sessions, no self-hosting needed
-- Works on Windows, Linux, Docker, LXC
+- Works on Windows, Linux, and containers like Podman, and LXC
 - Policy controls, DLP, and audit-friendly workflows
 
 [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Customer Guide](./docs/CUSTOMER-GUIDE.pdf) | [Support](mailto:api@browserbox.io)
@@ -96,7 +96,7 @@ The web is genuinely dangerous, and standard browsing pushes that risk directly 
 
 - **Threat isolation:** malware, exploits, and bad sites hit the server — not client devices
 - **Clientless:** works in any browser, zero install for end users
-- **Cross-platform:** Windows, Linux (Debian, Ubuntu, RHEL, CentOS, NixOS), Docker, LXC
+- **Cross-platform:** Windows, Linux (Debian, Ubuntu, RHEL, CentOS, NixOS), and containers like LXC
 - **Smooth UX:** low-latency rendering, 60 FPS
 - **Solid CLI and embedding API** for builders and integrators
 
@@ -116,7 +116,7 @@ The web is genuinely dangerous, and standard browsing pushes that risk directly 
 
 ### Home Lab: The Always-On Jump Browser
 
-If you run a Synology NAS or any always-on home server, BrowserBox fits in naturally as a private jump browser for your local network. Install it once via Docker, and you've got a streamed Chrome session you can reach from any device — phone, laptop, whatever's in your hand — that can immediately access your router admin panel, IP cameras, smart home hubs, printers, and any other internal web UI that normally requires being on the same LAN.
+If you run a Synology NAS or any always-on home server, BrowserBox fits in naturally as a private jump browser for your local network. Install it once via CLI, and you've got a streamed Chrome session you can reach from any device — phone, laptop, whatever's in your hand — that can immediately access your router admin panel, IP cameras, smart home hubs, printers, and any other internal web UI that normally requires being on the same LAN.
 
 No port forwarding maze. No VPN just to check one device. You expose a single protected BrowserBox session, secured by token, and everything behind it stays private. Trigger large downloads and they land directly on NAS drives — no extra hops, no cloud middleman. When a site throws a captcha or anti-bot wall, just handle it visually in the remote browser. It's your network. This is how you reach it cleanly.
 
@@ -133,7 +133,7 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 ## 5. Core Features
 
 - **Clientless RBI** — access from any modern browser, no install required for end users
-- **Cross-platform** — Windows, Debian, Ubuntu, RHEL, CentOS, NixOS, Docker, LXC
+- **Cross-platform** — Windows, Debian, Ubuntu, RHEL, Rocky Linux, CentOS, NixOS, and containers like LXC
 - **`bbx` CLI** — manage install, licenses, users, run modes, and tunnels from the command line
 - **`<browserbox-webview>` embedding API** — drop a live browser session into any web product
 - **Cloud API** — purchase minute packs and spin up ephemeral sessions via REST, no self-hosting
@@ -212,22 +212,22 @@ BrowserBox runs where real work happens — here's the current support matrix.
 
 | Platform                 | Supported | Icon |
 | :----------------------- | :-------- | :--- |
-| Tails\*                  | ❌        | <img src="readme-files/tails.png" alt="Tails" width="100" title="Tails OS"> |
-| Windows & Windows Server | ✅        | <img src="readme-files/windows.png" alt="Windows" width="100" title="Windows and Windows Server"> |
-| Debian                   | ✅        | <img src="readme-files/debian.png" alt="Debian" height="64" title="Debian"> |
-| Ubuntu                   | ✅        | <img src="readme-files/ubuntu.png" alt="Ubuntu" width="100" title="Ubuntu"> |
-| CentOS Stream            | ✅        | <img src="readme-files/centos.png" alt="CentOS Stream" width="100" title="CentOS Stream"> |
-| RHEL                     | ✅        | <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" width="100" title="RHEL"> |
-| Rocky Linux              | ✅        | <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" width="100" title="RHEL"> |
-| NixOS                    | ✅        | <img src="readme-files/nixos.png" alt="NixOS" width="100" title="NixOS"> |
-| LXC                      | ✅        | <img src="readme-files/LXC.png" alt="LXC" height="64" title="LXC"> |
-| Podman‡                  | ✅        | <img src="readme-files/Podman.png" alt="Podman" width="64" title="Podman"> |
-| Windows 9x†              | ✅        | <img src="readme-files/windows-9x.png" alt="Windows 9x" width="64" title="Windows 9x"> |
+| Tails\*                  | ❌        | <img src="readme-files/tails.svg" alt="Tails" width="100" title="Tails OS"> |
+| Windows & Windows Server | ✅        | <img src="readme-files/windows.svg" alt="Windows" width="100" title="Windows and Windows Server"> |
+| Debian                   | ✅        | <img src="readme-files/debian.svg" alt="Debian" width="64" title="Debian"> |
+| Ubuntu                   | ✅        | <img src="readme-files/ubuntu.svg" alt="Ubuntu" width="100" title="Ubuntu"> |
+| CentOS Stream            | ✅        | <img src="readme-files/centos.svg" alt="CentOS Stream" width="100" title="CentOS Stream"> |
+| RHEL                     | ✅        | <img src="readme-files/rhel.svg" alt="Red Hat Enterprise Linux" width="100" title="RHEL"> |
+| Rocky Linux              | ✅        | <img src="readme-files/rockylinux.svg" alt="Rocky Linux" width="100" title="Rocky Linux"> |
+| NixOS                    | ✅        | <img src="readme-files/nixos.svg" alt="NixOS" width="100" title="NixOS"> |
+| LXC                      | ✅        | <img src="readme-files/LXC.svg" alt="LXC" width="64" title="LXC"> |
+| Podman‡                  | 🚧        | <img src="readme-files/podman.svg" alt="Podman" width="64" title="Podman"> |
+| Windows 9x†              | ✅        | <img src="readme-files/windows-9x.svg" alt="Windows 9x" width="64" title="Windows 9x"> |
 
 >[!NOTE]
 >Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v13+) with all fixes and features.
 
-\*Tails is not supported because neither Chrome nor Docker can be installed.
+\*Tails is not supported because Chrome cannot be installed.
 
 ‡Podman support is currently under consideration.
 
