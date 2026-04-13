@@ -218,10 +218,10 @@ BrowserBox runs where real work happens — here's the current support matrix.
 | Ubuntu                   | ✅        | <img src="readme-files/ubuntu.png" alt="Ubuntu" width="100" title="Ubuntu"> |
 | CentOS Stream            | ✅        | <img src="readme-files/centos.png" alt="CentOS Stream" width="100" title="CentOS Stream"> |
 | RHEL                     | ✅        | <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" width="100" title="RHEL"> |
+| Rocky Linux              | ✅        | <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" width="100" title="RHEL"> |
 | NixOS                    | ✅        | <img src="readme-files/nixos.png" alt="NixOS" width="100" title="NixOS"> |
-| Docker                   | ✅        | <img src="readme-files/docker.png" alt="Docker" width="100" title="Docker"> |
 | LXC                      | ✅        | <img src="readme-files/LXC.png" alt="LXC" height="64" title="LXC"> |
-| Podman‡                  | 🚧        | <img src="readme-files/Podman.png" alt="Podman" width="64" title="Podman"> |
+| Podman‡                  | ✅        | <img src="readme-files/Podman.png" alt="Podman" width="64" title="Podman"> |
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.png" alt="Windows 9x" width="64" title="Windows 9x"> |
 
 >[!NOTE]
@@ -231,7 +231,7 @@ BrowserBox runs where real work happens — here's the current support matrix.
 
 ‡Podman support is currently under consideration.
 
-†Windows 9x clients are supported via the `win9x_bbpro` command which outputs the login link for legacy clients (IE 5, IE 6, Netscape). Supported client OSes: Windows 95, 98, 2000, NT. The server still needs to run on a modern system. Modern clients can use the legacy endpoint too, but the experience is understandably retro.
+†Windows 9x clients are supported via the `bbx win9x-run` command which outputs the login link for legacy clients (IE 5, IE 6, Netscape). Supported client OSes: Windows 95, 98, 2000, NT. The server still needs to run on a modern system. Modern clients can use the legacy endpoint too, but the experience is understandably retro.
 
 <p align=center>
   <img src="readme-files/browserbox-running-in-windows-98-ie-5.jpg" alt="BrowserBox Legacy Client Running in IE 5 in Windows 98" title="BrowserBox Legacy Client Running in IE 5 in Windows 98" width="800">
