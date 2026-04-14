@@ -147,6 +147,7 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 - **Cloud API** — purchase minute packs at [win9-5.com/pricing](https://win9-5.com/pricing/) and create ephemeral browser sessions via REST. No server to manage.
 - **Windows 98½ Demo** — free 17-minute cloud sessions at [win9-5.com/demo](https://win9-5.com/demo), no signup.
+- **Flipbook Recording** — record any browsing session as a self-contained static flipbook site. Deploy to Cloudflare Pages with one command.
 - **Binary release system** — BrowserBox now ships as a signed binary. Install with one command, update the same way.
 - **60 FPS streaming** — real-time, low-latency rendering for a browsing experience that actually feels like a browser.
 - **Unified install endpoints** — `browserbox.io/install.sh` (Linux/macOS) and `browserbox.io/install.ps1` (Windows).
@@ -342,7 +343,57 @@ The `<browserbox-webview>` element provides a session-host API with namespaced s
 
 ---
 
-## 17. License Compliance & Privacy
+## 17. Flipbook Recording
+
+BrowserBox can record a browsing session as a **flipbook** — a self-contained static site of sequential JPEG frames with an interactive JavaScript viewer. Recordings are produced directly from the internal screencast pipeline with negligible overhead.
+
+### Quick Start
+
+```bash
+# Enable recording during setup
+bbx setup --flipbook-record ~/my-recording --flipbook-description "Demo walkthrough"
+
+# Run BrowserBox normally
+bbx run
+
+# Stop — frames are compiled into a flipbook site and optionally deployed
+bbx stop
+```
+
+### How It Works
+
+1. `bbx setup --flipbook-record <dir>` enables recording by writing `BBX_FLIPBOOK_DIR` to the BrowserBox config.
+2. At runtime, each screencast frame is captured as a JPEG + JSON metadata pair — zero overhead when recording is off (single boolean check per frame).
+3. On `bbx stop`, the built-in `browserbox flipbook-generate` command compiles the raw frames into a complete flipbook static site.
+4. If [Cloudflare Wrangler](https://developers.cloudflare.com/workers/wrangler/) is available, the site is deployed to Cloudflare Pages automatically.
+
+### Output
+
+Each recording produces a timestamped directory:
+
+```
+~/my-recording/
+  2026-04-14T02-25-00-000Z--2026-04-14T02-30-00-000Z/
+    site/
+      index.html        # self-contained viewer
+      manifest.json     # flipbook v1 manifest
+      pages/            # sequential JPEG frames (000000.jpg, 000001.jpg, ...)
+      assets/           # viewer.css, viewer.js, sw.js
+      meta/             # provenance.json with full per-frame metadata
+```
+
+Multiple runs to the same directory produce separate timestamped subdirectories — each is a standalone flipbook site that can be served with any static file server or deployed to any hosting platform.
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--flipbook-record <dir>` | Enable recording. Compiled flipbook sites are written here. |
+| `--flipbook-description <text>` | Optional description embedded in the manifest and provenance metadata. |
+
+---
+
+## 18. License Compliance & Privacy
 
 BrowserBox requires a valid license for all deployments — commercial, non-commercial, and evaluation. Usage data is collected solely for license compliance and operational purposes; it is never sold, never shared with third parties for marketing, and never used to profile users.
 
@@ -351,7 +402,7 @@ BrowserBox requires a valid license for all deployments — commercial, non-comm
 
 ---
 
-## 18. FAQ
+## 19. FAQ
 
 **Q: Can I get an evaluation license?**
 Yes. Apply for a free 7-day trial at [browserbox.io](https://browserbox.io). No credit card required to evaluate.
@@ -376,7 +427,7 @@ Reach out to [sales@dosaygo.com](mailto:sales@dosaygo.com). We handle compliance
 
 ---
 
-## 19. Licensing
+## 20. Licensing
 
 BrowserBox is a commercial product. All usage requires a valid license.
 
@@ -387,7 +438,7 @@ BrowserBox is a commercial product. All usage requires a valid license.
 
 ---
 
-## 20. Support
+## 21. Support
 
 - **API & Technical:** [api@browserbox.io](mailto:api@browserbox.io)
 - **General:** [support@dosaygo.com](mailto:support@dosaygo.com)
@@ -395,7 +446,7 @@ BrowserBox is a commercial product. All usage requires a valid license.
 
 ---
 
-## 21. About DOSAYGO
+## 22. About DOSAYGO
 
 DOSAYGO — do, say, go — those are three of the most universal human verbs, after "to be" (which no company has any business telling you what to do with). We're a small team building software that respects the people using it. Our products are BrowserBox (remote browser isolation) and DiskerNet (offline web archives). We don't do buzzwords. We ship things that work. Find us at [dosaygo.com](https://dosaygo.com).
 
