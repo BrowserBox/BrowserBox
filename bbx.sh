@@ -580,11 +580,16 @@ CONFIG_FILE="${BB_CONFIG_DIR}/config"
 CERT_META_FILE="${BB_CONFIG_DIR}/tickets/cert.meta.env"
 [ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
 
-DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
-[ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
+# Docker containers file — commented out, not removed. Docker support may be re-enabled.
+# DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
+# [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
 # Cloudflare tunnel PID file for background mode tracking
 CF_PID_FILE="${BB_CONFIG_DIR}/cloudflared.pid"
+
+# Sentinel file: prevents dying services from spawning a redundant `bbx stop`.
+# Written by stop() before stop_bbpro; checked by branch-bbx-stop.js.
+STOP_SENTINEL="${BB_CONFIG_DIR}/.stop-in-progress"
 
 # Kill any existing Cloudflare tunnel started by bbx
 kill_cf_tunnel() {
@@ -2012,12 +2017,17 @@ setup() {
   ensure_deps
   ensure_installation_id
 
+  # Cleanse stale stop sentinel (e.g. from a crash during previous stop)
+  rm -f "$STOP_SENTINEL"
+
   # Initialize local variables from config or defaults
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token=""
   local zeta_mode=""
   local backend_scheme="" # Will be 'http' or 'https'
+  local flipbook_record_dir=""
+  local flipbook_description=""
 
   # Capture original arguments to pass to run() later
   local original_args=("$@")
@@ -2065,6 +2075,22 @@ setup() {
             exit 1
         fi
         backend_scheme="$2"
+        shift 2
+        ;;
+      --flipbook-record)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: --flipbook-record requires a directory path${NC}\n"
+          exit 1
+        fi
+        flipbook_record_dir="$2"
+        shift 2
+        ;;
+      --flipbook-description)
+        if [ -z "$2" ]; then
+          printf "${RED}Error: --flipbook-description requires a text argument${NC}\n"
+          exit 1
+        fi
+        flipbook_description="$2"
         shift 2
         ;;
       *)
@@ -2152,6 +2178,18 @@ setup() {
   # Call setup_bbpro, which writes to test.env
   BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
 
+  # Append flipbook recording env vars to test.env if requested
+  if [[ -n "$flipbook_record_dir" ]]; then
+    # Resolve to absolute path
+    flipbook_record_dir="$(cd "$(dirname "$flipbook_record_dir")" 2>/dev/null && pwd)/$(basename "$flipbook_record_dir")"
+    mkdir -p "$flipbook_record_dir" || { printf "${RED}Cannot create flipbook directory: $flipbook_record_dir${NC}\n"; exit 1; }
+    printf '\nexport BBX_FLIPBOOK_DIR="%s"\n' "$flipbook_record_dir" >> "${BB_CONFIG_DIR}/test.env"
+    if [[ -n "$flipbook_description" ]]; then
+      printf 'export BBX_FLIPBOOK_DESCRIPTION="%s"\n' "$flipbook_description" >> "${BB_CONFIG_DIR}/test.env"
+    fi
+    printf "${GREEN}Flipbook recording enabled → %s${NC}\n" "$flipbook_record_dir"
+  fi
+
   # After setup_bbpro succeeds, reload config to get the new runtime values
   load_config
 
@@ -2171,6 +2209,9 @@ run() {
   banner
   load_config
   ensure_installation_id
+
+  # Cleanse stale stop sentinel (e.g. from a crash during previous stop)
+  rm -f "$STOP_SENTINEL"
 
   # Ensure setup has been run
   if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
@@ -2360,6 +2401,9 @@ run() {
   draw_box "Login Link: ${login_link}"
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
+  fi
+  if [[ -n "${BBX_FLIPBOOK_DIR:-}" ]]; then
+    printf "${YELLOW}  ■ Flipbook recording to: ${BBX_FLIPBOOK_DIR}${NC}\n"
   fi
 }
 
@@ -3453,9 +3497,13 @@ cf_run() {
 }
 
 docker_run() {
-  # Docker runner retained for possible future re-enable.
+  # Docker runner retained for possible future re-enable — do not remove.
   # It is intentionally unreachable from the public bbx command dispatch
   # while BrowserBox ships as a binary-first distribution.
+  # The entire function body is commented out below.
+  printf "${RED}Docker commands are currently disabled.${NC}\n"
+  exit 1
+: <<'DOCKER_RUN_DISABLED'
   banner
   load_config
 
@@ -3626,12 +3674,17 @@ EOF
     echo "$docker_output"
   fi
   save_config
+DOCKER_RUN_DISABLED
 }
 
 docker_stop() {
-  # Docker runner retained for possible future re-enable.
+  # Docker runner retained for possible future re-enable — do not remove.
   # It is intentionally unreachable from the public bbx command dispatch
   # while BrowserBox ships as a binary-first distribution.
+  # The entire function body is commented out below.
+  printf "${RED}Docker commands are currently disabled.${NC}\n"
+  exit 1
+: <<'DOCKER_STOP_DISABLED'
   banner
   load_config
 
@@ -3680,6 +3733,7 @@ docker_stop() {
   draw_box "Nickname: $nickname"
   draw_box "Container ID: $container_id"
   draw_box "Port: $port"
+DOCKER_STOP_DISABLED
 }
 
 
@@ -4033,15 +4087,138 @@ ng_run() {
   run "$@"
 }
 
+flipbook_finalize() {
+    # Thin launcher — all flipbook logic lives in `browserbox flipbook-finalize`.
+    # It handles: frame validation, site generation, cleanup.
+    # The process sets its own title so stop_bbpro's pkill won't kill it.
+    # All output flows directly to the terminal (interactive — wrangler can prompt).
+    local claimed_dir="${1:-}"
+    printf "${YELLOW}Finalizing flipbook recording...${NC}\n"
+
+    local fb_args=("$BBX_FLIPBOOK_DIR")
+    if [[ -n "$claimed_dir" ]]; then
+      fb_args+=("--recording-dir" "$claimed_dir")
+    fi
+
+    BBX_FLIPBOOK_DESCRIPTION="${BBX_FLIPBOOK_DESCRIPTION:-}" \
+      browserbox flipbook-finalize "${fb_args[@]}"
+    local rc=$?
+
+    # Exit codes from browserbox flipbook-finalize:
+    #   0  = success        10 = no recording
+    #   11 = already claimed 12 = no frames
+    #   1  = error
+    case "$rc" in
+      0)
+        printf "${GREEN}Flipbook site generated.${NC}\n"
+        flipbook_deploy_cf_pages || true
+        ;;
+      10|11|12)
+        # Benign — messages already printed by the Node process
+        ;;
+      *)
+        printf "${RED}Flipbook site generation failed (exit ${rc})${NC}\n"
+        ;;
+    esac
+    # Flipbook issues must never cause bbx stop to exit non-zero
+    return 0
+}
+
+flipbook_deploy_cf_pages() {
+    # Deploy the entire flipbook directory (index.html + all recording subdirs)
+    if [[ ! -f "${BBX_FLIPBOOK_DIR}/index.html" ]]; then
+      printf "${YELLOW}No flipbook index page found, skipping deploy${NC}\n"
+      return 0
+    fi
+
+    # Ensure wrangler is available
+    if ! command -v wrangler &>/dev/null; then
+      printf "${YELLOW}Installing wrangler (Cloudflare Pages CLI)...${NC}\n"
+      if command -v npm &>/dev/null; then
+        npm install -g wrangler 2>/dev/null || {
+          printf "${YELLOW}Could not install wrangler globally. Trying npx...${NC}\n"
+        }
+      fi
+    fi
+
+    local wrangler_cmd=""
+    if command -v wrangler &>/dev/null; then
+      wrangler_cmd="wrangler"
+    elif command -v npx &>/dev/null; then
+      wrangler_cmd="npx wrangler"
+    else
+      printf "${YELLOW}wrangler not available — skipping Cloudflare Pages deploy.${NC}\n"
+      printf "${YELLOW}Install with: npm install -g wrangler${NC}\n"
+      printf "${GREEN}Your flipbook is at: ${BBX_FLIPBOOK_DIR}/index.html${NC}\n"
+      return 0
+    fi
+
+    # Project name from directory basename (sanitize for CF Pages)
+    local project_name="$(basename "${BBX_FLIPBOOK_DIR}")"
+    project_name="$(echo "$project_name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')"
+    if [[ -z "$project_name" ]]; then
+      project_name="browserbox-flipbook"
+    fi
+
+    printf "${YELLOW}Deploying flipbook to Cloudflare Pages (project: ${project_name})...${NC}\n"
+    $wrangler_cmd pages deploy "$BBX_FLIPBOOK_DIR" --project-name "$project_name" || {
+      printf "${RED}Cloudflare Pages deploy failed.${NC}\n"
+      printf "${YELLOW}You may need to run: wrangler login${NC}\n"
+      printf "${GREEN}Your flipbook is at: ${BBX_FLIPBOOK_DIR}/index.html${NC}\n"
+      return 1
+    }
+
+    printf "${GREEN}Flipbook deployed to Cloudflare Pages!${NC}\n"
+}
+
 stop() {
     load_config
+
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
     # Also stop any Cloudflare tunnel started by bbx cf-run
     kill_cf_tunnel quiet
     # Clear login link so stale CF links aren't reused by next bbx run
     rm -f "${BB_CONFIG_DIR}/login.link"
-    run_quietly stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
+
+    # Write the stop sentinel BEFORE killing services.
+    # When dying services run their shutdown hooks (branch-bbx-stop.js),
+    # the sentinel tells them "an external stop is already handling cleanup"
+    # so they release their license but do NOT spawn a redundant `bbx stop`.
+    printf '%s' "$$" > "$STOP_SENTINEL"
+
+    # Reserve the flipbook recording dir BEFORE stop_bbpro kills the services.
+    # The atomic mv ensures only one stop instance can claim the recording.
+    # The actual flipbook logic (validation, generation, cleanup) is all in Node.
+    local _fb_claimed=""
+    if [[ -n "${BBX_FLIPBOOK_DIR:-}" ]]; then
+      local _fb_rec="${BB_CONFIG_DIR}/flipbook_recording"
+      if [[ -d "${_fb_rec}/pages" ]]; then
+        _fb_claimed="${_fb_rec}.claim.$$"
+        mv "${_fb_rec}" "${_fb_claimed}" 2>/dev/null || _fb_claimed=""
+      fi
+    fi
+
+    # Ignore SIGTERM for the rest of stop(). stop_bbpro sends process-group
+    # signals that can arrive asynchronously.
+    trap '' TERM
+
+    run_quietly stop_bbpro || {
+      printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"
+      rm -f "$STOP_SENTINEL"
+      trap - TERM
+      exit 1
+    }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
+
+    # Flipbook: finalize recording and deploy if BBX_FLIPBOOK_DIR is set.
+    # All flipbook logic (claim, generation, cleanup) lives in the Node process.
+    if [[ -n "${BBX_FLIPBOOK_DIR:-}" ]]; then
+      flipbook_finalize "$_fb_claimed"
+    fi
+
+    # Remove the sentinel — stop is complete.
+    rm -f "$STOP_SENTINEL"
+    trap - TERM
 }
 
 logs() {
@@ -5188,7 +5365,7 @@ usage() {
 
     printf "${BOLD}SETUP & MANAGEMENT${NC}\n"
     printf "  ${GREEN}uninstall${NC}      Remove all BrowserBox components.\n"
-    printf "  ${GREEN}setup${NC}          Configure core options. ${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z]${NC}\n"
+    printf "  ${GREEN}setup${NC}          Configure core options. ${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z] [--flipbook-record <dir>] [--flipbook-description <text>]${NC}\n"
     printf "  ${CYAN}activate${NC}       Activate a license for more users. ${BOLD}bbx activate [number_of_users]${NC}\n"
     printf "  ${GREEN}certify${NC}        Validate your current license status.\n"
     printf "  ${GREEN}update${NC}         Update BrowserBox to a specific or latest version. ${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
@@ -5411,6 +5588,7 @@ activate() {
 [ "$1" != "uninstall" ] && check_agreement
 # Call check_and_prepare_update with the first argument
 [ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
+
 case "$1" in
     install)
       printf "${YELLOW}Installation now uses the standalone installer:${NC}\n"
