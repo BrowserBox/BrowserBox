@@ -84,3 +84,11 @@
   - `Install BrowserBox`, `Verify bbx install`, and `Execute BBX Test Saga` all completed successfully on `rockylinux:9`.
   - This confirms the public Rocky blocker was not the release contents after all; it was the installer handoff falling back to `browserbox.io/install.sh` instead of staying on the tag-scoped installer under test.
 - **Conclusion:** Public Rocky is green on the feature branch when the workflow uses `DISPATCH_TOKEN`, pins `BBX_INSTALL_SCRIPT_URL` to the release-tagged installer, and keeps the Rocky bootstrap/logging parity fixes already proven earlier.
+
+### Experiment 6 - clean confirmation rerun
+- **Hypothesis:** After removing the temporary draft-release API probe, the public Rocky workflow should remain green with only the durable fixes left in place.
+- **Controls:** Keep the same `v16.2.9-draft2` release and workflow logic from Experiment 5; remove only the temporary probe output.
+- **Command summary:** Remove the temporary draft diagnostics from `bbx-saga.yaml`, then rerun the Rocky-only public saga against `v16.2.9-draft2`.
+- **Run:** `24497914634`
+- **Result:** Passed end-to-end.
+- **Conclusion:** The final public branch state is clean and green on Rocky without temporary debugging instrumentation.
