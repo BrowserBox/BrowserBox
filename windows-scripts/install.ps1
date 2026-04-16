@@ -73,6 +73,35 @@ function Get-LatestRelease {
     return $null
 }
 
+function Get-ReleaseMetadata {
+    param(
+        [string]$Repo,
+        [string]$Tag,
+        [hashtable]$Headers
+    )
+
+    if ($Tag) {
+        try {
+            return Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -TimeoutSec 10 -Headers $Headers -ErrorAction Stop
+        } catch {
+            Write-Host "Release tag lookup failed for $Repo@$Tag, checking release list..." -ForegroundColor Gray
+            $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -TimeoutSec 10 -Headers $Headers -ErrorAction Stop
+            $release = $releases | Where-Object { $_.tag_name -eq $Tag } | Select-Object -First 1
+            if (-not $release) {
+                throw "Release $Tag not found in $Repo"
+            }
+            return $release
+        }
+    }
+
+    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -TimeoutSec 10 -Headers $Headers -ErrorAction Stop
+    if (-not $releases -or $releases.Count -eq 0) {
+        throw "No releases found in $Repo"
+    }
+
+    return $releases[0]
+}
+
 function Download-Binary {
     param(
         [string]$Tag
@@ -94,17 +123,8 @@ function Download-Binary {
 
     try {
         if ($useAssetApi) {
-            if ($Tag) {
-                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$Tag" -Headers $headers -ErrorAction Stop
-            } else {
-                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases" -Headers $headers -ErrorAction Stop
-                if (-not $releases -or $releases.Count -eq 0) {
-                    Write-Error "No releases found in $ReleaseRepo"
-                    exit 1
-                }
-                $release = $releases[0]
-                $Tag = $release.tag_name
-            }
+            $release = Get-ReleaseMetadata -Repo $ReleaseRepo -Tag $Tag -Headers $headers
+            if (-not $Tag) { $Tag = $release.tag_name }
 
             $asset = $release.assets | Where-Object { $_.name -eq $RemoteAssetName } | Select-Object -First 1
             if (-not $asset) {
@@ -296,7 +316,7 @@ try {
     if ($Token -or $ReleaseRepo -ne $publicRepo) {
         if (-not $Token) { throw "GH_TOKEN/GITHUB_TOKEN is required to download manifests from $ReleaseRepo." }
         $headers = @{ Authorization = "Bearer $Token" }
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases/tags/$tag" -Headers $headers -ErrorAction Stop
+        $release = Get-ReleaseMetadata -Repo $ReleaseRepo -Tag $tag -Headers $headers
         $manifestAsset = $release.assets | Where-Object { $_.name -eq "release.manifest.json" } | Select-Object -First 1
         $sigAsset = $release.assets | Where-Object { $_.name -eq "release.manifest.json.sig" } | Select-Object -First 1
         if (-not $manifestAsset -or -not $sigAsset) { throw "Manifest assets not found on release $tag." }

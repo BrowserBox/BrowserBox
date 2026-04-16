@@ -186,7 +186,7 @@ jobs:
           $env:BBX_NO_UPDATE = "true"
           Write-Host "Using public release $($env:BBX_RELEASE_REPO)@$($env:BBX_RELEASE_TAG)"
           Write-Host "Installing BrowserBox..."
-          & pwsh -NoProfile -ExecutionPolicy Bypass -Command "irm browserbox.io/install.ps1 | iex"
+          & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $env:GITHUB_WORKSPACE "windows-scripts\install.ps1")
           if ($LASTEXITCODE -ne 0) { Write-Error "Install failed with exit code $LASTEXITCODE"; exit 1 }
           $bbxBinDir = "$env:LOCALAPPDATA\browserbox\bin"
           if (Test-Path $bbxBinDir) {
