@@ -617,9 +617,67 @@ fetch_release_json() {
   local json
   json=$(curl -sS --fail "${auth_header[@]}" "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases/tags/${tag}" 2>/dev/null || true)
   if [[ -z "$json" && -n "${GH_TOKEN:-}" ]]; then
-    json=$(curl -sS --fail "${auth_header[@]}" "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases" 2>/dev/null || true)
+    local releases_json
+    releases_json=$(curl -sS --fail "${auth_header[@]}" "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases?per_page=100" 2>/dev/null || true)
+    if [[ -n "$releases_json" ]]; then
+      json=$(printf '%s' "$releases_json" | extract_release_json_by_tag "$tag")
+    fi
   fi
   printf '%s' "$json"
+}
+
+extract_release_json_by_tag() {
+  local tag="$1"
+  if command -v jq >/dev/null 2>&1; then
+    jq -c --arg tag "$tag" '
+      if type == "array" then
+        map(select(.tag_name == $tag))[0] // empty
+      elif type == "object" and (.tag_name // empty) == $tag then
+        .
+      else
+        empty
+      end
+    ' 2>/dev/null | head -n1
+    return 0
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$tag" <<'PY'
+import json,sys
+tag=sys.argv[1]
+try:
+  data=json.load(sys.stdin)
+except Exception:
+  sys.exit(0)
+if isinstance(data, list):
+  for release in data:
+    if isinstance(release, dict) and release.get('tag_name') == tag:
+      print(json.dumps(release, separators=(',', ':')))
+      break
+elif isinstance(data, dict) and data.get('tag_name') == tag:
+  print(json.dumps(data, separators=(',', ':')))
+PY
+    return 0
+  fi
+
+  if command -v python >/dev/null 2>&1; then
+    python - "$tag" <<'PY'
+import json,sys
+tag=sys.argv[1]
+try:
+  data=json.load(sys.stdin)
+except Exception:
+  sys.exit(0)
+if isinstance(data, list):
+  for release in data:
+    if isinstance(release, dict) and release.get('tag_name') == tag:
+      print(json.dumps(release, separators=(',', ':')))
+      break
+elif isinstance(data, dict) and data.get('tag_name') == tag:
+  print(json.dumps(data, separators=(',', ':')))
+PY
+    return 0
+  fi
 }
 
 extract_asset_id() {

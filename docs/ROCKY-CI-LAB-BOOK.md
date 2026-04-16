@@ -8,6 +8,7 @@
 ## Baseline changes under test
 - `BrowserBox/.github/workflows/bbx-saga.yaml`
 - `BrowserBox/.github/scripts/test-bbx.sh`
+- `BrowserBox/deploy-scripts/install.sh`
 
 ## Experiment log
 
@@ -28,5 +29,11 @@
 - **Hypothesis:** If `BrowserBox/BrowserBox` gets a draft release `v16.2.9-draft` populated from the already-green private/source draft assets, the public Rocky saga on `rocky-ci-public` should pass without further workflow changes.
 - **Controls:** Keep the public workflow branch unchanged; change only the public release under test from `v16.2.8` to a draft release seeded from `BrowserBox-source@v16.2.9-draft`.
 - **Command summary:** Create/update a public draft release `BrowserBox/BrowserBox@v16.2.9-draft`, upload assets copied from `BrowserBox-source@v16.2.9-draft`, then rerun the public Rocky saga on `rocky-ci-public` against `release_tag=v16.2.9-draft`.
-- **Result:** Pending rerun.
-- **Conclusion:** Pending rerun.
+- **Runs:** `24496673573`, `24496734857`
+- **Result:** Two controlled install failures isolated; final rerun pending after installer fix.
+- **Observed evidence:**
+  - Run `24496673573` failed in `Install BrowserBox` with `curl: (22)` because the draft release existed but the backing git ref `refs/tags/v16.2.9-draft` did not, so `raw.githubusercontent.com/.../v16.2.9-draft/deploy-scripts/install.sh` returned 404.
+  - After explicitly creating `refs/tags/v16.2.9-draft` at public branch commit `093c1c6065de93dda3199ee3b51ec124919299e2`, the raw installer URL resolved and run `24496734857` advanced into `install.sh`.
+  - Run `24496734857` then failed with `Asset release.manifest.json not found on release v16.2.9-draft.`
+  - Root cause: `install.sh` falls back from `releases/tags/<tag>` to authenticated `releases`, but that fallback returns an array and the existing asset lookup treated it like a single release object, so draft-release assets were invisible even with a token.
+- **Conclusion:** Keep the draft-tag approach. The public repo also needs `install.sh` to select the matching release object from the authenticated `/releases` array before extracting draft assets; rerun Rocky after that fix and after moving the draft tag to the new installer commit.
