@@ -86,6 +86,7 @@ jobs:
           BBX_DEBUG_OS_LABEL: ${{ matrix.container_image != '' && matrix.container_image || matrix.os }}
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          BBX_INSTALL_SCRIPT_URL: https://raw.githubusercontent.com/BrowserBox/BrowserBox/${{ env.RELEASE_TAG }}/deploy-scripts/install.sh
           BBX_NO_UPDATE: "true"
         working-directory: ${{ env.BBX_TEST_DIR }}
         run: |

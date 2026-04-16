@@ -64,5 +64,18 @@
 - **Hypothesis:** The remaining failure is in what the runner can see from GitHub’s release API at execution time, not in the public draft release contents or the checked-in installer code.
 - **Controls:** Keep the `v16.2.9-draft2` release, PAT preference, and installer code unchanged; add only draft-only diagnostics ahead of `install.sh` to print token length, release endpoint HTTP status, and the matched draft-release asset summary.
 - **Command summary:** Instrument the public install step to query both `/releases/tags/<tag>` and `/releases?per_page=100` with the workflow token before invoking `install.sh`, then rerun the Rocky public saga.
+- **Run:** `24497476265`
+- **Result:** Failed again, but the probe exposed the real control-flow bug.
+- **Observed evidence:**
+  - The runner token is not the blocker: `GH_TOKEN_LENGTH=93`, `list_endpoint_status=200`, and the matched release summary includes all five assets, including `release.manifest.json`.
+  - The tag endpoint still returns `404`, but the authenticated release-list fallback on-runner is working and shows the correct draft release object.
+  - Therefore the `Asset release.manifest.json not found` message is not coming from a lack of release visibility in the workflow shell.
+  - The remaining explanation is the installer’s own re-entry behavior: when piped from stdin, `install.sh` downloads `BBX_INSTALL_SCRIPT_URL` (defaulting to `https://browserbox.io/install.sh`) into a temp file before root handoff. The public workflow was proving the tagged raw installer outside the script, then letting the script re-enter through the old site installer.
+- **Conclusion:** Public draft validation must set `BBX_INSTALL_SCRIPT_URL` to the same release-tagged raw installer URL so the root-handoff path uses the exact installer version under test.
+
+### Experiment 5 - pin installer re-entry to tagged script
+- **Hypothesis:** If the public workflow sets `BBX_INSTALL_SCRIPT_URL` to the same tag-scoped raw `install.sh` it initially pipes into `bash`, the root handoff will stay on the draft-aware installer and the Rocky public run should finally progress past manifest lookup.
+- **Controls:** Keep the `v16.2.9-draft2` public draft release, PAT preference, and release API probe unchanged; change only the installer re-entry URL passed into `install.sh`.
+- **Command summary:** Export `BBX_INSTALL_SCRIPT_URL=https://raw.githubusercontent.com/BrowserBox/BrowserBox/${RELEASE_TAG}/deploy-scripts/install.sh` in the public install step, then rerun the Rocky public saga against `v16.2.9-draft2`.
 - **Result:** Pending rerun.
 - **Conclusion:** Pending rerun.
