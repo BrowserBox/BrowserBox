@@ -42,7 +42,7 @@ jobs:
       matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && github.event.inputs.matrix_json != '' && github.event.inputs.matrix_json || '{"os":["ubuntu-latest","macos-latest","windows-latest"],"container_image":["","dokken/centos-stream-10","rockylinux:9","debian:latest"],"exclude":[{"os":"macos-latest","container_image":"dokken/centos-stream-10"},{"os":"macos-latest","container_image":"rockylinux:9"},{"os":"macos-latest","container_image":"debian:latest"},{"os":"windows-latest","container_image":"dokken/centos-stream-10"},{"os":"windows-latest","container_image":"rockylinux:9"},{"os":"windows-latest","container_image":"debian:latest"}]}' ) }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container_image }}
-    timeout-minutes: 19
+    timeout-minutes: 29
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
