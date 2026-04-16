@@ -450,6 +450,8 @@ dump_service_logs() {
   local label="${1:-}"
   local log_dir="${BB_CONFIG_DIR}/service_logs"
   local services=(bb-main bb-audio bb-devtools bb-docs)
+  local f=""
+  local chrome_lifecycle=""
 
   echo -e "${YELLOW}⚠ Collecting service logs${label:+ for }${label}...${NC}"
   if command -v "$BROWSERBOX_CMD" &>/dev/null; then
@@ -464,11 +466,20 @@ dump_service_logs() {
     done
   fi
   if [[ -d "$log_dir" ]]; then
-    for f in "$log_dir"/*.log "$log_dir"/*.err.log; do
+    while IFS= read -r f; do
       [[ -f "$f" ]] || continue
-      echo "== $(basename "$f") (tail) =="
+      echo "== ${f#"${log_dir}/"} (tail) =="
       tail -n 200 "$f" 2>/dev/null || true
-    done
+    done < <(find "$log_dir" -type f | sort)
+  else
+    echo "Service log directory not found: $log_dir"
+  fi
+  if [[ -d "$log_dir/chrome" ]]; then
+    chrome_lifecycle="$(find "$log_dir/chrome" -type f -name '*-lifecycle.ndjson' | sort | tail -n 1)"
+    if [[ -n "$chrome_lifecycle" && -f "$chrome_lifecycle" ]]; then
+      echo "== $(basename "$chrome_lifecycle") recent launch attempts =="
+      tail -n 50 "$chrome_lifecycle" 2>/dev/null || true
+    fi
   fi
 }
 
