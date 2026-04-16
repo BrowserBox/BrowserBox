@@ -4,6 +4,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ciE2EScript = Join-Path $PSScriptRoot 'bbx-ci-e2e.mjs'
+$setupPort = 11111
+if (-not [string]::IsNullOrWhiteSpace($env:BBX_NG_SETUP_PORT)) {
+  try {
+    $setupPort = [int]$env:BBX_NG_SETUP_PORT
+  } catch {
+    throw "BBX_NG_SETUP_PORT must be an integer; got '$($env:BBX_NG_SETUP_PORT)'"
+  }
+}
 
 function Reset-BbxState {
   Write-Host "Cleaning up BrowserBox state before retry..."
@@ -58,7 +66,8 @@ function Invoke-BbxSagaAttempt {
       Write-Host "$_ is $(if ($val) { 'set' } else { 'not set' })"
     }
 
-    $setupOut = bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port 9999 2>&1 | Tee-Object -Variable setupLog
+    Write-Host "Using Windows saga setup port $setupPort"
+    $setupOut = bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port $setupPort 2>&1 | Tee-Object -Variable setupLog
     $loginLink = $null
     $linkFile = "$env:USERPROFILE\.config\dosaygo\bbpro\login.link"
     if (Test-Path $linkFile) {
@@ -73,7 +82,7 @@ function Invoke-BbxSagaAttempt {
       $testEnv = "$env:USERPROFILE\.config\dosaygo\bbpro\test.env"
       if (Test-Path $testEnv) {
         $token = Select-String -Path $testEnv -Pattern 'LOGIN_TOKEN=(.+)' | ForEach-Object { $_.Matches.Groups[1].Value }
-        if ($token) { $loginLink = "https://localhost:9999/login?token=$token" }
+        if ($token) { $loginLink = "https://localhost:$setupPort/login?token=$token" }
       }
     }
     if (-not $loginLink) {
