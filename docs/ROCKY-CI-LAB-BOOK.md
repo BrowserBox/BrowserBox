@@ -92,3 +92,14 @@
 - **Run:** `24497914634`
 - **Result:** Passed end-to-end.
 - **Conclusion:** The final public branch state is clean and green on Rocky without temporary debugging instrumentation.
+
+### Experiment 7 - public main confirmation
+- **Hypothesis:** Fast-forwarding `rocky-ci-public` to `main` should preserve the green Rocky result because the branch had no divergence from `origin/main`.
+- **Controls:** Keep the same release under test (`v16.2.9-draft2`) and Rocky-only matrix; change only the workflow ref from `rocky-ci-public` to `main`.
+- **Command summary:** Fast-forward `main`, then dispatch the Rocky-only public saga against `v16.2.9-draft2` from `main`.
+- **Runs:** `24498333794`, `24498771393`
+- **Result:** Confirmed green on rerun.
+- **Observed evidence:**
+  - The first `main` confirmation run failed late in the Unix saga on Tor onion reachability after install and BrowserBox startup had already succeeded, which isolates it as an external runtime flake rather than a Rocky bootstrap/install regression.
+  - The clean rerun on `main` (`24498771393`) passed end-to-end.
+- **Conclusion:** BrowserBox public `main` is green on Rocky. The first miss was a transient Tor/onion flake, not a regression in the Rocky CI changes.
