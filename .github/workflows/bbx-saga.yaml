@@ -133,6 +133,26 @@ jobs:
           fi
           install_url="https://raw.githubusercontent.com/BrowserBox/BrowserBox/${RELEASE_TAG}/deploy-scripts/install.sh"
           echo "Using installer: ${install_url}"
+          if [[ "${BBX_RELEASE_TAG}" == *-draft* ]]; then
+            echo "Draft release API diagnostics..."
+            echo "GH_TOKEN_LENGTH=${#GH_TOKEN}"
+            tag_status=$(curl -sS -o /tmp/bbx-release-tag.json -w "%{http_code}" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases/tags/${BBX_RELEASE_TAG}" || true)
+            list_status=$(curl -sS -o /tmp/bbx-release-list.json -w "%{http_code}" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${BBX_RELEASE_REPO}/releases?per_page=100" || true)
+            echo "tag_endpoint_status=${tag_status}"
+            echo "list_endpoint_status=${list_status}"
+            if command -v jq >/dev/null 2>&1; then
+              echo "tag_endpoint_body:"
+              jq '.' /tmp/bbx-release-tag.json || true
+              echo "list_match_summary:"
+              jq --arg tag "${BBX_RELEASE_TAG}" \
+                'map(select(.tag_name == $tag))[0] | {tag_name, draft, assets: [.assets[].name]}' \
+                /tmp/bbx-release-list.json || true
+            fi
+          fi
           curl -fsSL "$install_url" | bash
 
       - name: Verify bbx install (Unix/macOS)

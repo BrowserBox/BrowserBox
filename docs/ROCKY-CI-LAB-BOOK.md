@@ -59,3 +59,10 @@
 - **Command summary:** Update `bbx-saga.yaml` to prefer `DISPATCH_TOKEN` (falling back to `github.token`), then rerun the Rocky public saga against `v16.2.9-draft2`.
 - **Result:** Pending rerun.
 - **Conclusion:** Pending rerun.
+
+### Experiment 4 - runner-side draft release API probe
+- **Hypothesis:** The remaining failure is in what the runner can see from GitHub’s release API at execution time, not in the public draft release contents or the checked-in installer code.
+- **Controls:** Keep the `v16.2.9-draft2` release, PAT preference, and installer code unchanged; add only draft-only diagnostics ahead of `install.sh` to print token length, release endpoint HTTP status, and the matched draft-release asset summary.
+- **Command summary:** Instrument the public install step to query both `/releases/tags/<tag>` and `/releases?per_page=100` with the workflow token before invoking `install.sh`, then rerun the Rocky public saga.
+- **Result:** Pending rerun.
+- **Conclusion:** Pending rerun.
