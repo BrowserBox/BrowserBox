@@ -327,6 +327,16 @@ jobs:
                 Write-Host "$log not found at $logPath"
               }
             }
+            $chromeLogDir = Join-Path $logDir "chrome"
+            if (Test-Path $chromeLogDir) {
+              Get-ChildItem $chromeLogDir -File | Sort-Object Name | ForEach-Object {
+                Write-Host "===== Contents of chrome/$($_.Name) ====="
+                Get-Content $_.FullName -Tail 200
+                $logsFound = $true
+              }
+            } else {
+              Write-Host "Chrome log directory not found at $chromeLogDir"
+            }
           } else {
             Write-Host "Log directory not found: $logDir"
             Write-Host "Checking config dir..."
