@@ -351,9 +351,19 @@ try {
 # Ensure cp_commands_only.ps1 copies the binary we just downloaded.
 $env:BBX_BINARY_SOURCE_PATH = $BinaryPath
 
+$existingBrowserBox = Get-Command browserbox -ErrorAction SilentlyContinue
+$forceFullInstall = $env:BBX_FULL_INSTALL -and $env:BBX_FULL_INSTALL -ne "" -and $env:BBX_FULL_INSTALL -ne "0" -and $env:BBX_FULL_INSTALL.ToLowerInvariant() -ne "false"
 $installArgs = @("--install")
-if ($env:BBX_FULL_INSTALL -and $env:BBX_FULL_INSTALL -ne "" -and $env:BBX_FULL_INSTALL -ne "0" -and $env:BBX_FULL_INSTALL.ToLowerInvariant() -ne "false") {
+if ($forceFullInstall -or -not $existingBrowserBox) {
     $installArgs = @("--full-install")
+}
+
+if ($forceFullInstall) {
+    Write-Host "BBX_FULL_INSTALL requested. Running full setup (--full-install)." -ForegroundColor Yellow
+} elseif ($existingBrowserBox) {
+    Write-Host "BrowserBox detected in PATH. Running update setup (--install)." -ForegroundColor Yellow
+} else {
+    Write-Host "BrowserBox not found in PATH. Running full setup (--full-install)." -ForegroundColor Yellow
 }
 
 Write-Host "Running BrowserBox installer: $BinaryPath $($installArgs -join ' ')" -ForegroundColor Yellow

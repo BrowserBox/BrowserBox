@@ -17,6 +17,14 @@ function Reset-BbxState {
     $nodeProcs | Stop-Process -Force -ErrorAction SilentlyContinue
   }
 
+  if ($env:BBX_DONT_KILL_CHROME_ON_STOP -ne "true") {
+    $browserProcs = Get-Process -Name "chrome", "msedge" -ErrorAction SilentlyContinue
+    if ($browserProcs) {
+      Write-Host "Cleaning up any remaining Chrome/Edge processes before retry..."
+      $browserProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+  }
+
   Start-Sleep -Seconds 5
 }
 
