@@ -44,5 +44,18 @@
 - **Hypothesis:** A new public draft release created only after its git tag already exists will let both the raw installer URL and the GitHub release API resolve the same tag, allowing the Rocky public saga to consume the fixed installer and the copied source assets successfully.
 - **Controls:** Keep the public workflow branch and installer code unchanged; change only the public draft release creation method and release tag under test.
 - **Command summary:** Create a fresh public git tag first, create a matching draft release from that tag, upload the same source draft assets, then rerun the Rocky public saga against the new draft tag.
+- **Run:** `24497229271`
+- **Result:** Failed with the same manifest lookup error.
+- **Observed evidence:**
+  - The fresh raw installer URL for `v16.2.9-draft2` definitely served the new `install.sh` code; a direct fetch confirmed the presence of `extract_release_json_by_tag`.
+  - The Rocky job still failed in `Install BrowserBox` with `Asset release.manifest.json not found on release v16.2.9-draft2.`
+  - Local reproduction of the exact `install.sh` functions against `BrowserBox/BrowserBox@v16.2.9-draft2` succeeds when run with the operator PAT from `gh auth token`.
+  - The remaining variable is therefore the workflow token identity, not the installer code or the freshness of the tag.
+- **Conclusion:** A fresh draft tag alone is not sufficient. The next experiment should switch the public workflow from the default `GITHUB_TOKEN` to the repo’s PAT-style `DISPATCH_TOKEN` for draft-release install/test steps.
+
+### Experiment 3 - PAT-backed public draft installs
+- **Hypothesis:** The public repo’s `DISPATCH_TOKEN` has the release visibility needed for draft-release asset lookup, while the default workflow `GITHUB_TOKEN` does not.
+- **Controls:** Keep the `v16.2.9-draft2` public draft release and the fixed `install.sh` unchanged; change only the token wired into `GH_TOKEN` for the public install/test workflow steps.
+- **Command summary:** Update `bbx-saga.yaml` to prefer `DISPATCH_TOKEN` (falling back to `github.token`), then rerun the Rocky public saga against `v16.2.9-draft2`.
 - **Result:** Pending rerun.
 - **Conclusion:** Pending rerun.

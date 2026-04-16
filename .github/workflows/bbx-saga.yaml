@@ -32,6 +32,7 @@ env:
   RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag || '' }}
   DISABLE_TMATE: ${{ github.event.inputs.disable_tmate || 'false' }}
   TARGET_RELEASE_REPO: BrowserBox/BrowserBox
+  WORKFLOW_GH_TOKEN: ${{ secrets.DISPATCH_TOKEN != '' && secrets.DISPATCH_TOKEN || github.token }}
 
 jobs:
   saga:
@@ -81,7 +82,7 @@ jobs:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_DEBUG_OS_LABEL: ${{ matrix.container_image != '' && matrix.container_image || matrix.os }}
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
@@ -160,7 +161,7 @@ jobs:
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
           BBX_CI_CONTAINER_IMAGE: ${{ matrix.container_image }}
@@ -174,7 +175,7 @@ jobs:
         shell: pwsh
         env:
           BBX_FORCE_CHROME_INSTALL: "false"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Host "Installing BrowserBox..."
@@ -271,7 +272,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_NO_UPDATE: "true"
           BBX_FORCE_CHROME_INSTALL: "false"
           BBX_HOSTNAME: "localhost"
@@ -465,7 +466,7 @@ jobs:
         with:
           limit-access-to-actor: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_NO_UPDATE: "true"
           BBX_FORCE_CHROME_INSTALL: "true"
           BBX_HOSTNAME: "localhost"
@@ -532,7 +533,7 @@ jobs:
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
 
