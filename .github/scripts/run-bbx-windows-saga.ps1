@@ -165,7 +165,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
       throw
     }
 
-    Write-Warning "BBX Windows saga failed on attempt $attempt/$MaxAttempts: $($_.Exception.Message)"
+    Write-Warning ("BBX Windows saga failed on attempt {0}/{1}: {2}" -f $attempt, $MaxAttempts, $_.Exception.Message)
     Reset-BbxState
   }
 }
