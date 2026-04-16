@@ -57,8 +57,9 @@
 - **Hypothesis:** The public repo’s `DISPATCH_TOKEN` has the release visibility needed for draft-release asset lookup, while the default workflow `GITHUB_TOKEN` does not.
 - **Controls:** Keep the `v16.2.9-draft2` public draft release and the fixed `install.sh` unchanged; change only the token wired into `GH_TOKEN` for the public install/test workflow steps.
 - **Command summary:** Update `bbx-saga.yaml` to prefer `DISPATCH_TOKEN` (falling back to `github.token`), then rerun the Rocky public saga against `v16.2.9-draft2`.
-- **Result:** Pending rerun.
-- **Conclusion:** Pending rerun.
+- **Run:** `24497354116`
+- **Result:** Failed with the same manifest lookup error.
+- **Conclusion:** The PAT-backed token was necessary but not sufficient. Draft asset visibility in the workflow shell was no longer the blocker; the remaining issue had to be inside installer control flow.
 
 ### Experiment 4 - runner-side draft release API probe
 - **Hypothesis:** The remaining failure is in what the runner can see from GitHub’s release API at execution time, not in the public draft release contents or the checked-in installer code.
@@ -77,5 +78,9 @@
 - **Hypothesis:** If the public workflow sets `BBX_INSTALL_SCRIPT_URL` to the same tag-scoped raw `install.sh` it initially pipes into `bash`, the root handoff will stay on the draft-aware installer and the Rocky public run should finally progress past manifest lookup.
 - **Controls:** Keep the `v16.2.9-draft2` public draft release, PAT preference, and release API probe unchanged; change only the installer re-entry URL passed into `install.sh`.
 - **Command summary:** Export `BBX_INSTALL_SCRIPT_URL=https://raw.githubusercontent.com/BrowserBox/BrowserBox/${RELEASE_TAG}/deploy-scripts/install.sh` in the public install step, then rerun the Rocky public saga against `v16.2.9-draft2`.
-- **Result:** Pending rerun.
-- **Conclusion:** Pending rerun.
+- **Run:** `24497589801`
+- **Result:** Passed end-to-end.
+- **Observed evidence:**
+  - `Install BrowserBox`, `Verify bbx install`, and `Execute BBX Test Saga` all completed successfully on `rockylinux:9`.
+  - This confirms the public Rocky blocker was not the release contents after all; it was the installer handoff falling back to `browserbox.io/install.sh` instead of staying on the tag-scoped installer under test.
+- **Conclusion:** Public Rocky is green on the feature branch when the workflow uses `DISPATCH_TOKEN`, pins `BBX_INSTALL_SCRIPT_URL` to the release-tagged installer, and keeps the Rocky bootstrap/logging parity fixes already proven earlier.
