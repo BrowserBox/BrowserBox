@@ -253,6 +253,8 @@ curl -fsSL https://browserbox.io/install.sh | bash
 irm https://browserbox.io/install.ps1 | iex
 ```
 
+For non-interactive full installs, set `BBX_INSTALL_HOSTNAME` and `BBX_INSTALL_EMAIL`. Legacy install aliases `BBX_HOSTNAME`, `BBX_EMAIL`, and `EMAIL` remain supported for compatibility.
+
 ### Via npm
 
 ```bash

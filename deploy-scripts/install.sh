@@ -80,8 +80,9 @@ Environment overrides:
   GH_TOKEN/GITHUB_TOKEN  GitHub token for private/internal repos
   BBX_NO_UPDATE      Skip release lookups (requires BBX_RELEASE_TAG)
   BBX_FULL_INSTALL   Force --full-install
-  BBX_HOSTNAME       Hostname for --full-install
-  EMAIL              Email for --full-install (Required for terms agreement)
+  BBX_INSTALL_HOSTNAME  Hostname for --full-install
+  BBX_INSTALL_EMAIL     Email for --full-install (Required for terms agreement)
+  Legacy aliases        BBX_HOSTNAME, BBX_EMAIL, EMAIL
   BBX_INSTALL_USER   Non-root install user when running as root
   BBX_SUDOLESS       Set to 'true' to skip sudo usage (for Docker/Cloud Run)
   BBX_LOCAL_ARTIFACTS  Path to directory with local build artifacts (skips download)
@@ -102,18 +103,20 @@ print_non_interactive_help() {
     echo "  BBX_INSTALL_USER  : System username to own the installation (CANNOT be root)" >&2
   fi
   
-  echo "  EMAIL             : Email address for Let's Encrypt / Terms Agreement" >&2
+  echo "  BBX_INSTALL_EMAIL : Email address for Let's Encrypt / Terms Agreement" >&2
   echo "" >&2
   echo "OPTIONAL VARIABLES:" >&2
-  echo "  BBX_HOSTNAME      : Domain name (Defaults to system hostname)" >&2
+  echo "  BBX_INSTALL_HOSTNAME : Domain name (Defaults to system hostname)" >&2
   echo "  BBX_FULL_INSTALL  : Set to 'true' to force a full reinstall" >&2
+  echo "  Legacy aliases    : BBX_HOSTNAME, BBX_EMAIL, EMAIL" >&2
   echo "" >&2
   echo "EXAMPLE usage:" >&2
   local ex_user=""
   if [[ "$(id -u)" -eq 0 ]]; then
     ex_user="BBX_INSTALL_USER=ubuntu "
   fi
-  echo "  export ${ex_user}EMAIL=me@example.com" >&2
+  echo "  export ${ex_user}BBX_INSTALL_HOSTNAME=localhost" >&2
+  echo "  export ${ex_user}BBX_INSTALL_EMAIL=me@example.com" >&2
   echo "  curl -fsSL https://browserbox.io/install.sh | bash" >&2
   echo "----------------------------------------------------------------" >&2
 }
@@ -127,6 +130,24 @@ fi
 if [[ -z "${GH_TOKEN:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
   GH_TOKEN="$GITHUB_TOKEN"
 fi
+
+normalize_install_env() {
+  local install_hostname="${BBX_INSTALL_HOSTNAME:-${BBX_HOSTNAME:-}}"
+  local install_email="${BBX_INSTALL_EMAIL:-${BBX_EMAIL:-${EMAIL:-}}}"
+
+  if [[ -n "$install_hostname" ]]; then
+    BBX_INSTALL_HOSTNAME="$install_hostname"
+    BBX_HOSTNAME="$install_hostname"
+  fi
+
+  if [[ -n "$install_email" ]]; then
+    BBX_INSTALL_EMAIL="$install_email"
+    BBX_EMAIL="$install_email"
+    EMAIL="$install_email"
+  fi
+}
+
+normalize_install_env
 
 script_source="${BASH_SOURCE[0]:-$0}"
 script_source_base="$(basename "$script_source")"
@@ -299,7 +320,10 @@ handoff_env_args() {
     GITHUB_TOKEN
     BBX_NO_UPDATE
     BBX_FULL_INSTALL
+    BBX_INSTALL_HOSTNAME
     BBX_HOSTNAME
+    BBX_INSTALL_EMAIL
+    BBX_EMAIL
     EMAIL
     BBX_TEST_AGREEMENT
     BBX_INSTALL_USER
@@ -979,19 +1003,21 @@ if [[ "$manifest_full" == "true" || "$legacy_full" == "true" ]]; then
 fi
 
 config_dir="${HOME}/.config/dosaygo/bbpro"
-if [[ -z "${BBX_HOSTNAME:-}" && -f "$config_dir/test.env" ]]; then
-  BBX_HOSTNAME="$(sed -n 's/^DOMAIN=//p' "$config_dir/test.env" | tail -n1)"
+if [[ -z "${BBX_INSTALL_HOSTNAME:-${BBX_HOSTNAME:-}}" && -f "$config_dir/test.env" ]]; then
+  BBX_INSTALL_HOSTNAME="$(sed -n 's/^DOMAIN=//p' "$config_dir/test.env" | tail -n1)"
 fi
 
-if [[ -z "${EMAIL:-}" && -f "$config_dir/.agreed" ]]; then
+if [[ -z "${BBX_INSTALL_EMAIL:-${BBX_EMAIL:-${EMAIL:-}}}" && -f "$config_dir/.agreed" ]]; then
   agreed_val="$(tail -n1 "$config_dir/.agreed" | tr -d '\r' | tr -d '\n')"
   if [[ "$agreed_val" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-    EMAIL="$agreed_val"
+    BBX_INSTALL_EMAIL="$agreed_val"
   fi
 fi
 
-hostname_default="${BBX_HOSTNAME:-$(hostname)}"
-email_value="${EMAIL:-}"
+normalize_install_env
+
+hostname_default="${BBX_INSTALL_HOSTNAME:-$(hostname)}"
+email_value="${BBX_INSTALL_EMAIL:-}"
 
 is_local_hostname() {
   case "$1" in
@@ -1002,19 +1028,21 @@ is_local_hostname() {
 }
 
 if [[ "$full_install" == "true" ]]; then
-  if [[ -z "${BBX_HOSTNAME:-}" ]]; then
+  if [[ -z "${BBX_INSTALL_HOSTNAME:-}" ]]; then
     if is_interactive; then
-      prompt_input "Enter hostname (default: ${hostname_default}): " BBX_HOSTNAME
+      prompt_input "Enter hostname (default: ${hostname_default}): " BBX_INSTALL_HOSTNAME
     fi
   fi
-  BBX_HOSTNAME="${BBX_HOSTNAME:-$hostname_default}"
+  BBX_INSTALL_HOSTNAME="${BBX_INSTALL_HOSTNAME:-$hostname_default}"
+  BBX_HOSTNAME="$BBX_INSTALL_HOSTNAME"
 
-  # FIX: Email is now strictly required for full install
-  if [[ -z "$email_value" ]]; then
+  if [[ -z "${BBX_INSTALL_EMAIL:-}" ]]; then
     if is_interactive; then
-      prompt_input "Enter your email for Let's Encrypt and BrowserBox terms agreement (required): " email_value
+      prompt_input "Enter your email for Let's Encrypt and BrowserBox terms agreement (required): " BBX_INSTALL_EMAIL
     fi
   fi
+
+  email_value="${BBX_INSTALL_EMAIL:-$email_value}"
 
   if [[ -z "$email_value" ]]; then
     if ! is_interactive; then
@@ -1031,6 +1059,10 @@ if [[ "$full_install" == "true" ]]; then
     echo "Error: '$email_value' is not a valid email address." >&2
     exit 1
   fi
+
+  BBX_INSTALL_EMAIL="$email_value"
+  BBX_EMAIL="$email_value"
+  EMAIL="$email_value"
   
   # FIX: Handle terms agreement inside the script using /dev/tty
   # so we can export BBX_TEST_AGREEMENT=true, avoiding stdin pipe exhaustion.
@@ -1102,7 +1134,14 @@ fi
 if [[ "$full_install" == "true" ]]; then
   echo "Running full install..." >&2
   # BBX_TEST_AGREEMENT environment variable is used instead of --yes
-  "$temp_binary" --full-install "$BBX_HOSTNAME" "$email_value"
+  full_install_hostname="$BBX_INSTALL_HOSTNAME"
+  full_install_email="$email_value"
+  BBX_INSTALL_HOSTNAME="$full_install_hostname" \
+  BBX_HOSTNAME="$full_install_hostname" \
+  BBX_INSTALL_EMAIL="$full_install_email" \
+  BBX_EMAIL="$full_install_email" \
+  EMAIL="$full_install_email" \
+  "$temp_binary" --full-install "$full_install_hostname" "$full_install_email"
 else
   echo "Running update install..." >&2
   "$temp_binary" --install

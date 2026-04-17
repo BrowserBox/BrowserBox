@@ -78,9 +78,9 @@ jobs:
         env:
           BBX_INSTALL_USER: "bbxuser"
           BBX_TEST_AGREEMENT: "true"
-          BBX_HOSTNAME: "localhost"
+          BBX_INSTALL_HOSTNAME: "localhost"
           BB_QUICK_EXIT: "yesplease"
-          EMAIL: "test@example.com"
+          BBX_INSTALL_EMAIL: "test@example.com"
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           INSTALL_DOC_VIEWER: "false"
@@ -178,6 +178,9 @@ jobs:
         shell: pwsh
         env:
           BBX_FORCE_CHROME_INSTALL: "false"
+          BBX_INSTALL_HOSTNAME: "localhost"
+          BBX_INSTALL_EMAIL: "test@example.com"
+          BBX_TEST_AGREEMENT: "true"
           GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
         run: |
           $ErrorActionPreference = 'Stop'

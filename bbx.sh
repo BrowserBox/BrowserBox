@@ -2016,33 +2016,40 @@ install_bbx() {
     fi
 
     # 4. Config inputs
-    local default_hostname=$(get_system_hostname)
-    if [ -z "$BBX_HOSTNAME" ]; then
+    local install_hostname="${BBX_INSTALL_HOSTNAME:-${BBX_HOSTNAME:-}}"
+    local install_email="${BBX_INSTALL_EMAIL:-${BBX_EMAIL:-${EMAIL:-}}}"
+    local default_hostname
+    default_hostname=$(get_system_hostname)
+    if [ -z "$install_hostname" ]; then
       if [[ -n "$BBX_TEST_AGREEMENT" ]]; then
-        BBX_HOSTNAME="localhost"
+        install_hostname="localhost"
       else
-        read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
+        read -r -p "Enter hostname (default: $default_hostname): " install_hostname
       fi
     fi
-    BBX_HOSTNAME="${BBX_HOSTNAME:-$default_hostname}"
+    install_hostname="${install_hostname:-$default_hostname}"
 
-    local strictness="mandatory"
-    if is_local_hostname "$BBX_HOSTNAME"; then
-        strictness="optional"
-        ensure_hosts_entry "$BBX_HOSTNAME"
+    if is_local_hostname "$install_hostname"; then
+        ensure_hosts_entry "$install_hostname"
     fi
 
-    if [ -z "$EMAIL" ]; then
-      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then
-        EMAIL=""
-      else
-        read -r -p "Enter your email for Let's Encrypt ($strictness for $BBX_HOSTNAME): " EMAIL
-      fi
-      if [[ "$strictness" == "mandatory" ]] && [[ -z "$EMAIL" ]]; then
-        echo "An email is required for a public DNS hostname." >&2
-        exit 1
-      fi
+    if [ -z "$install_email" ]; then
+      read -r -p "Enter your email for Let's Encrypt and BrowserBox terms agreement (required): " install_email
     fi
+    if [[ -z "$install_email" ]]; then
+      echo "An email is required for terms agreement and Let's Encrypt." >&2
+      exit 1
+    fi
+    if [[ ! "$install_email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+      echo "Error: '$install_email' is not a valid email address." >&2
+      exit 1
+    fi
+
+    BBX_INSTALL_HOSTNAME="$install_hostname"
+    BBX_HOSTNAME="$install_hostname"
+    BBX_INSTALL_EMAIL="$install_email"
+    BBX_EMAIL="$install_email"
+    EMAIL="$install_email"
 
     # 5. Execute
     if [[ "$is_update" == "true" ]]; then
@@ -2050,12 +2057,7 @@ install_bbx() {
         "$exe_to_run" --install
     else
         printf "${YELLOW}BrowserBox not found in PATH. Running full setup (--full-install)...${NC}\n"
-        if [ -t 0 ] && [[ -z "$BBX_TEST_AGREEMENT" ]]; then
-            yes yes 2>/dev/null | "$exe_to_run" --full-install "$BBX_HOSTNAME" "$EMAIL"
-        else
-            # FIX: Silence 'yes' stderr to prevent "Broken pipe" logs
-            yes yes 2>/dev/null | "$exe_to_run" --full-install "$BBX_HOSTNAME" "$EMAIL"
-        fi
+        yes yes 2>/dev/null | BBX_INSTALL_HOSTNAME="$install_hostname" BBX_HOSTNAME="$install_hostname" BBX_INSTALL_EMAIL="$install_email" BBX_EMAIL="$install_email" EMAIL="$install_email" "$exe_to_run" --full-install "$install_hostname" "$install_email"
     fi
     local install_exit=$?
 
@@ -3970,7 +3972,8 @@ pre_install() {
         # Build a comprehensive env file to persist vars across the login shell.
         # Include all BBX-related vars plus PATH-related vars for nvm/node.
         local su_env_vars=(
-          BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE
+          BBX_INSTALL_HOSTNAME BBX_INSTALL_EMAIL BBX_HOSTNAME BBX_EMAIL EMAIL
+          LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE
           INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG
           TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER
           BB_QUICK_EXIT NVM_DIR NODE_PATH

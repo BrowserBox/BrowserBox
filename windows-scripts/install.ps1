@@ -13,6 +13,8 @@ if ($Help -or $args -contains '-help') {
     Write-Host ""
     Write-Host "Environment overrides:" -ForegroundColor Cyan
     Write-Host "  BBX_RELEASE_REPO, BBX_RELEASE_TAG, GH_TOKEN/GITHUB_TOKEN, BBX_NO_UPDATE" -ForegroundColor White
+    Write-Host "  BBX_INSTALL_HOSTNAME, BBX_INSTALL_EMAIL (preferred for full install)" -ForegroundColor White
+    Write-Host "  BBX_HOSTNAME, BBX_EMAIL, EMAIL (legacy full-install aliases)" -ForegroundColor White
     $global:LASTEXITCODE = 0
     return
 }
@@ -29,6 +31,32 @@ if ($null -ne $env:BBX_NO_UPDATE -and $env:BBX_NO_UPDATE -ne "") {
     } catch {
         $NoUpdate = ($env:BBX_NO_UPDATE.ToLowerInvariant() -in @("1", "true", "yes", "y", "on"))
     }
+}
+
+function Get-FirstNonEmpty {
+    param([string[]]$Values)
+
+    foreach ($value in $Values) {
+        if (-not [string]::IsNullOrWhiteSpace($value)) {
+            return $value
+        }
+    }
+
+    return $null
+}
+
+$InstallHostname = Get-FirstNonEmpty @($env:BBX_INSTALL_HOSTNAME, $env:BBX_HOSTNAME)
+$InstallEmail = Get-FirstNonEmpty @($env:BBX_INSTALL_EMAIL, $env:BBX_EMAIL, $env:EMAIL)
+
+if ($InstallHostname) {
+    $env:BBX_INSTALL_HOSTNAME = $InstallHostname
+    $env:BBX_HOSTNAME = $InstallHostname
+}
+
+if ($InstallEmail) {
+    $env:BBX_INSTALL_EMAIL = $InstallEmail
+    $env:BBX_EMAIL = $InstallEmail
+    $env:EMAIL = $InstallEmail
 }
 
 $BinaryDir = "$env:LOCALAPPDATA\browserbox\bin"
@@ -356,6 +384,9 @@ $forceFullInstall = $env:BBX_FULL_INSTALL -and $env:BBX_FULL_INSTALL -ne "" -and
 $installArgs = @("--install")
 if ($forceFullInstall -or -not $existingBrowserBox) {
     $installArgs = @("--full-install")
+    if ($InstallHostname -and $InstallEmail) {
+        $installArgs += @($InstallHostname, $InstallEmail)
+    }
 }
 
 if ($forceFullInstall) {
