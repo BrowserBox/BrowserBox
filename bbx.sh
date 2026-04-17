@@ -552,6 +552,79 @@ else
   fi
 fi
 
+# --for <target_user>: cross-cutting principal-switching support.
+# Allows a privileged operator to run BBX commands on behalf of an
+# unprivileged target runtime user. The operator supplies privilege
+# for system-level work; the target user owns runtime state and processes.
+BBX_FOR_USER=""
+BBX_OPERATOR_USER=""
+
+_bbx_for_active() { [[ -n "$BBX_FOR_USER" ]]; }
+
+# Extract --for <user> from positional args before command dispatch.
+_bbx_new_args=()
+while (( $# )); do
+  if [[ "$1" == "--for" ]]; then
+    if [[ -z "${2:-}" ]]; then
+      printf "${RED}Error: --for requires a username argument${NC}\n"
+      exit 1
+    fi
+    BBX_FOR_USER="$2"
+    shift 2
+  elif [[ "$1" == --for=* ]]; then
+    BBX_FOR_USER="${1#--for=}"
+    if [[ -z "$BBX_FOR_USER" ]]; then
+      printf "${RED}Error: --for requires a username argument${NC}\n"
+      exit 1
+    fi
+    shift
+  else
+    _bbx_new_args+=("$1")
+    shift
+  fi
+done
+set -- "${_bbx_new_args[@]}"
+unset _bbx_new_args
+
+if _bbx_for_active; then
+  BBX_OPERATOR_USER="$(id -un)"
+
+  # --for is incompatible with sudoless mode
+  if [[ "${BBX_SUDOLESS:-false}" == "true" ]]; then
+    printf "${RED}Error: --for requires sudo and is incompatible with BBX_SUDOLESS=true.${NC}\n"
+    exit 1
+  fi
+
+  # Target user must exist
+  if ! id "$BBX_FOR_USER" >/dev/null 2>&1; then
+    printf "${RED}Error: --for target user '%s' does not exist.${NC}\n" "$BBX_FOR_USER"
+    printf "  Create the user first, then retry.\n"
+    exit 1
+  fi
+
+  # Operator must not be root (use a non-root account with sudo)
+  if [[ "$(id -u)" -eq 0 ]]; then
+    printf "${RED}Error: --for must be invoked from a non-root operator account with passwordless sudo.${NC}\n"
+    exit 1
+  fi
+
+  # Operator must have passwordless sudo
+  if ! sudo -n true 2>/dev/null; then
+    printf "${RED}Error: --for requires the operator (%s) to have passwordless sudo.${NC}\n" "$BBX_OPERATOR_USER"
+    printf "  Edit /etc/sudoers with visudo to enable.\n"
+    exit 1
+  fi
+
+  # Operator and target must be different users
+  if [[ "$BBX_FOR_USER" == "$BBX_OPERATOR_USER" ]]; then
+    printf "${YELLOW}Warning: --for target is the same as the operator. Running normally.${NC}\n"
+    BBX_FOR_USER=""
+    BBX_OPERATOR_USER=""
+  else
+    printf "${CYAN}[--for %s] Operating on behalf of target user (operator: %s)${NC}\n" "$BBX_FOR_USER" "$BBX_OPERATOR_USER"
+  fi
+fi
+
 # env
 export BBX_DONT_KILL_CHROME_ON_STOP="${BBX_DONT_KILL_CHROME_ON_STOP-true}"
 export BBX_REQUIRE_RELEASE=1
@@ -2013,6 +2086,11 @@ install_bbx() {
 }
 
 setup() {
+  if _bbx_for_active; then
+    _for_setup "$@"
+    return $?
+  fi
+
   load_config
   ensure_deps
   ensure_installation_id
@@ -2207,6 +2285,12 @@ restart() {
 
 run() {
   banner
+
+  if _bbx_for_active; then
+    _for_run "$@"
+    return $?
+  fi
+
   load_config
   ensure_installation_id
 
@@ -4058,6 +4142,11 @@ certify() {
 }
 
 ng_run() {
+  if _bbx_for_active; then
+    _for_ng_run "$@"
+    return $?
+  fi
+
   banner
   load_config
   ensure_deps
@@ -4172,6 +4261,11 @@ flipbook_deploy_cf_pages() {
 }
 
 stop() {
+    if _bbx_for_active; then
+      _for_stop "$@"
+      return $?
+    fi
+
     load_config
 
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
@@ -4770,6 +4864,11 @@ license() {
 }
 
 status() {
+    if _bbx_for_active; then
+      _for_status "$@"
+      return $?
+    fi
+
     load_config
     printf "${YELLOW}Checking BrowserBox status...${NC}\n"
     if [ -n "$PORT" ] && curl -s --max-time 2 "https://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
@@ -5046,6 +5145,371 @@ create_user() {
     id "$user" >/dev/null 2>&1 || { printf "${RED}Failed to create user $user${NC}\n"; exit 1; }
     printf "${GREEN}Created user: $user${NC}\n"
 }
+
+# ─── --for <user> principal-aware execution helpers ─────────────────
+# These are used when BBX_FOR_USER is set to route steps through
+# the correct principal: operator (system-level) or target user (runtime).
+
+# Target user's home directory
+_tu_home() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    printf '%s' "/Users/$BBX_FOR_USER"
+  else
+    getent passwd "$BBX_FOR_USER" 2>/dev/null | cut -d: -f6 || printf '%s' "/home/$BBX_FOR_USER"
+  fi
+}
+
+# Target user's BrowserBox config directory
+_tu_config_dir() {
+  printf '%s' "$(_tu_home)/.config/dosaygo/bbpro"
+}
+
+# Ensure target user's config directory exists with correct ownership
+_tu_ensure_config_dir() {
+  local tu_dir="$(_tu_config_dir)"
+  if [[ ! -d "$tu_dir" ]]; then
+    sudo -n mkdir -p "$tu_dir"
+    sudo -n chown -R "$BBX_FOR_USER":"$(id -gn "$BBX_FOR_USER")" "$(_tu_home)/.config"
+  fi
+}
+
+# Run a command as the target user with environment propagation.
+# Usage: _tu_run <command> [args...]
+_tu_run() {
+  local _env_prefix=""
+  printf -v _env_prefix 'export PATH=/usr/local/bin:/usr/bin:/bin:"$PATH"'
+  printf -v _env_prefix '%s; export BBX_NO_UPDATE=true' "$_env_prefix"
+  [[ -n "${LICENSE_KEY:-}" ]] && printf -v _env_prefix '%s; export LICENSE_KEY=%q' "$_env_prefix" "$LICENSE_KEY"
+  [[ -n "${BBX_MINIMAL_MODE:-}" ]] && printf -v _env_prefix '%s; export BBX_MINIMAL_MODE=%q' "$_env_prefix" "$BBX_MINIMAL_MODE"
+  [[ -n "${BBX_NONINTERACTIVE:-}" ]] && printf -v _env_prefix '%s; export BBX_NONINTERACTIVE=%q' "$_env_prefix" "$BBX_NONINTERACTIVE"
+  [[ -n "${BBX_DEBUG:-}" ]] && printf -v _env_prefix '%s; export BBX_DEBUG=%q' "$_env_prefix" "$BBX_DEBUG"
+  [[ -n "${EMAIL:-}" ]] && printf -v _env_prefix '%s; export EMAIL=%q' "$_env_prefix" "$EMAIL"
+  [[ -n "${BBX_HOSTNAME:-}" ]] && printf -v _env_prefix '%s; export BBX_HOSTNAME=%q' "$_env_prefix" "$BBX_HOSTNAME"
+  [[ -n "${HOST_PER_SERVICE:-}" ]] && printf -v _env_prefix '%s; export HOST_PER_SERVICE=%q' "$_env_prefix" "$HOST_PER_SERVICE"
+  [[ -n "${BBX_HTTP_ONLY:-}" ]] && printf -v _env_prefix '%s; export BBX_HTTP_ONLY=%q' "$_env_prefix" "$BBX_HTTP_ONLY"
+  [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP:-}" ]] && printf -v _env_prefix '%s; export BBX_DONT_KILL_CHROME_ON_STOP=%q' "$_env_prefix" "$BBX_DONT_KILL_CHROME_ON_STOP"
+
+  local _cmd_str=""
+  local _arg
+  for _arg in "$@"; do
+    printf -v _arg '%q' "$_arg"
+    _cmd_str="${_cmd_str} ${_arg}"
+  done
+
+  sudo -n -u "$BBX_FOR_USER" bash -c "${_env_prefix};${_cmd_str}"
+}
+
+# Load config from target user's config directory into the current shell.
+_tu_load_config() {
+  local _tcd="$(_tu_config_dir)"
+  local _tcf="${_tcd}/config"
+  local _tte="${_tcd}/test.env"
+
+  # Preserve caller-provided values
+  local _env_lk="${LICENSE_KEY:-}"
+  local _env_em="${EMAIL:-}"
+  local _env_hn="${BBX_HOSTNAME:-}"
+
+  if sudo -n test -f "$_tcf" 2>/dev/null; then
+    eval "$(sudo -n cat "$_tcf" 2>/dev/null)"
+  fi
+  if sudo -n test -f "$_tte" 2>/dev/null; then
+    eval "$(sudo -n cat "$_tte" 2>/dev/null)"
+    PORT="${APP_PORT:-$PORT}"
+    TOKEN="${LOGIN_TOKEN:-$TOKEN}"
+    if [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
+      BBX_HOSTNAME="$DOMAIN"
+    fi
+  fi
+
+  # Restore caller-provided values (highest priority)
+  [[ -n "$_env_lk" ]] && LICENSE_KEY="$_env_lk"
+  [[ -n "$_env_em" ]] && EMAIL="$_env_em"
+  [[ -n "$_env_hn" ]] && BBX_HOSTNAME="$_env_hn"
+}
+
+# ─── --for <user> delegated command implementations ─────────────────
+
+# Delegated setup: system-level work as operator, user-level as target.
+_for_setup() {
+  load_config
+  ensure_deps
+
+  _tu_ensure_config_dir
+  # Ensure installation_id for target user
+  _tu_run bash -c 'dir="${HOME}/.config/dosaygo/bbpro"; mkdir -p "$dir"; if [ ! -f "$dir/installation_id" ]; then uuidgen > "$dir/installation_id" 2>/dev/null || openssl rand -hex 16 > "$dir/installation_id"; fi'
+
+  local port="${PORT:-$(find_free_port_block)}"
+  local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  local token=""
+  local zeta_mode=""
+  local backend_scheme=""
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port|-p)
+        [[ -z "$2" ]] && { printf "${RED}Error: $1 requires an argument${NC}\n"; exit 1; }
+        port="$2"; shift 2 ;;
+      --hostname|-h)
+        [[ -z "$2" ]] && { printf "${RED}Error: $1 requires an argument${NC}\n"; exit 1; }
+        hostname="$2"; shift 2 ;;
+      --token|-t)
+        [[ -z "$2" ]] && { printf "${RED}Error: $1 requires an argument${NC}\n"; exit 1; }
+        token="$2"; shift 2 ;;
+      --zeta|-z) zeta_mode="true"; shift ;;
+      --http-only|-o) backend_scheme="http"; shift ;;
+      --backend)
+        [[ "$2" != "http" && "$2" != "https" ]] && { printf "${RED}Error: --backend must be http or https${NC}\n"; exit 1; }
+        backend_scheme="$2"; shift 2 ;;
+      --flipbook-record|--flipbook-description) shift 2 ;; # skip flipbook for --for
+      *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
+    esac
+  done
+
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+    printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+    exit 1
+  fi
+
+  local normalized_hostname
+  normalized_hostname="$(normalize_hostname_for_local_use "$hostname")"
+  hostname="$normalized_hostname"
+
+  local setup_port="$port"
+  local setup_hostname="$hostname"
+  local setup_token="${token:-$(openssl rand -hex 16)}"
+
+  printf "${YELLOW}[--for %s] Setting up BrowserBox on %s:%s...${NC}\n" "$BBX_FOR_USER" "$setup_hostname" "$setup_port"
+
+  # System-level: hosts entry (operator context)
+  if [[ -z "${BBX_CLOUD_RUN:-}" ]] && [[ "${BBX_FLY:-}" != "true" ]]; then
+    if ! is_local_hostname "$setup_hostname"; then
+      wait_for_hostname "$setup_hostname" || { printf "${RED}Hostname %s not resolving${NC}\n" "$setup_hostname"; exit 1; }
+    else
+      ensure_hosts_entry "$setup_hostname"
+    fi
+    # TLS certificate — generate into the *target user's* home so Node.js can
+    # read them when running as the target user.  tls writes to $HOME/sslcerts
+    # and mkcert may need sudo, so we pass HOME and run via sudo.
+    if [[ "$backend_scheme" != "http" ]]; then
+      local _tls_path
+      _tls_path="$(command -v tls 2>/dev/null || true)"
+      if [[ -n "$_tls_path" ]]; then
+        sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" BB_USER_EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" "$_tls_path" "$setup_hostname" \
+          || { printf "${RED}Hostname %s certificate not acquired${NC}\n" "$setup_hostname"; exit 1; }
+        # Fix ownership so the target user's Node.js can read the certs
+        local _tu_ssl="$(_tu_home)/sslcerts"
+        if sudo -n test -d "$_tu_ssl" 2>/dev/null; then
+          sudo -n chown -R "${BBX_FOR_USER}:" "$_tu_ssl"
+        fi
+      fi
+    fi
+  fi
+
+  # License validation (operator context)
+  if ! validate_license_key; then
+    printf "${RED}License key invalid or missing. Run 'bbx activate' or visit dosaygo.com.${NC}\n"
+  fi
+
+  # Port testing (operator context)
+  pkill ncat &>/dev/null
+  for i in {-2..2}; do
+    test_port_access $((setup_port+i)) || { printf "${RED}Port $((setup_port+i)) blocked.${NC}\n"; exit 1; }
+  done
+  test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked.${NC}\n"; exit 1; }
+
+  BBX_HOSTNAME="$setup_hostname"
+
+  # Target-user: run setup_bbpro
+  local setup_args=("--port" "$setup_port" "--token" "$setup_token")
+  [[ -n "$zeta_mode" ]] && setup_args+=("--zeta")
+  [[ -n "$backend_scheme" ]] && setup_args+=("--backend" "$backend_scheme")
+
+  printf "${CYAN}[--for %s] Running setup_bbpro as target user...${NC}\n" "$BBX_FOR_USER"
+  _tu_run setup_bbpro "${setup_args[@]}" || { printf "${RED}[--for %s] setup_bbpro failed.${NC}\n" "$BBX_FOR_USER"; exit 1; }
+
+  _tu_load_config
+
+  printf "${GREEN}[--for %s] Setup complete.${NC}\n" "$BBX_FOR_USER"
+  local tu_config_dir="$(_tu_config_dir)"
+  draw_box "Login Link: $(sudo -n cat "${tu_config_dir}/login.link" 2>/dev/null || echo "https://${setup_hostname}:${setup_port}/login?token=${setup_token}")"
+  if [[ -n "$zeta_mode" ]]; then
+    printf "${PURPLE}[ZETA MODE]${NC}${BOLD} Your login link above WILL change. Await the run command for your correct login link.\n"
+  fi
+}
+
+# Delegated run: certify + launch services as target user.
+_for_run() {
+  local tu_config_dir="$(_tu_config_dir)"
+
+  # Load target user's config
+  _tu_load_config
+
+  # Verify setup has been run for target user
+  if [[ -z "${PORT:-}" ]] || ! sudo -n test -f "${tu_config_dir}/test.env" 2>/dev/null; then
+    printf "${YELLOW}[--for %s] BrowserBox not configured. Running setup first...${NC}\n" "$BBX_FOR_USER"
+    _for_setup "$@"
+    _tu_load_config
+  fi
+
+  local port="${PORT}"
+  local hostname="${BBX_HOSTNAME:-localhost}"
+  hostname="$(normalize_hostname_for_local_use "$hostname")"
+  local zeta_mode="${HOST_PER_SERVICE:-}"
+  local http_only="${BBX_HTTP_ONLY:-}"
+
+  if [[ -z "${LICENSE_KEY:-}" ]]; then
+    printf "${RED}No LICENSE_KEY found. Set it in env or run 'bbx certify'.${NC}\n"
+    exit 1
+  fi
+
+  if ! is_local_hostname "$hostname"; then
+    wait_for_hostname "$hostname" || { printf "${RED}Hostname %s not resolving${NC}\n" "$hostname"; exit 1; }
+  else
+    ensure_hosts_entry "$hostname"
+  fi
+
+  printf "${YELLOW}[--for %s] Starting BrowserBox on %s:%s...${NC}\n" "$BBX_FOR_USER" "$hostname" "$port"
+
+  # Certify license as target user (background)
+  printf "${YELLOW}[--for %s] Certifying license...${NC}\n" "$BBX_FOR_USER"
+  local cert_log; cert_log="$(mktemp /tmp/bbx-for-cert-XXXXXX.log)"
+  _tu_run bbcertify > "$cert_log" 2>&1 &
+  local CERT_PID=$!
+
+  # Start bbpro as target user
+  printf "${YELLOW}[--for %s] Starting services...${NC}\n" "$BBX_FOR_USER"
+  local bbpro_log; bbpro_log="$(mktemp /tmp/bbx-for-bbpro-XXXXXX.log)"
+  if [[ -n "${BBX_DEBUG:-}" ]]; then
+    _tu_run bbpro 2>&1 | tee "$bbpro_log"
+    local bbpro_rc=${PIPESTATUS[0]}
+  else
+    _tu_run bbpro > "$bbpro_log" 2>&1
+    local bbpro_rc=$?
+  fi
+  if [[ "$bbpro_rc" -ne 0 ]]; then
+    printf "${RED}[--for %s] Failed to start (exit %d). Output:${NC}\n" "$BBX_FOR_USER" "$bbpro_rc"
+    tail -20 "$bbpro_log"
+    rm -f "$bbpro_log" "$cert_log"
+    kill "$CERT_PID" 2>/dev/null
+    exit 1
+  fi
+  rm -f "$bbpro_log"
+
+  # Wait for certification (bounded: 120s)
+  local _cert_t0=$SECONDS
+  while kill -0 "$CERT_PID" 2>/dev/null; do
+    if (( SECONDS - _cert_t0 >= 120 )); then
+      printf "${RED}[--for %s] License certification timed out.${NC}\n" "$BBX_FOR_USER"
+      tail -20 "$cert_log"
+      kill "$CERT_PID" 2>/dev/null; rm -f "$cert_log"
+      exit 1
+    fi
+    sleep 1
+  done
+  if ! wait "$CERT_PID"; then
+    printf "${RED}[--for %s] License check failed.${NC}\n" "$BBX_FOR_USER"
+    tail -20 "$cert_log"
+    rm -f "$cert_log"
+    exit 1
+  fi
+  rm -f "$cert_log"
+  printf "${GREEN}[--for %s] License certified.${NC}\n" "$BBX_FOR_USER"
+
+  # Reload config and display login link
+  _tu_load_config
+  local login_link=""
+  local login_scheme="https"
+  [[ -n "$http_only" ]] && login_scheme="http"
+
+  if [[ -n "$zeta_mode" ]] && sudo -n test -f "${tu_config_dir}/hosts.env" 2>/dev/null; then
+    eval "$(sudo -n cat "${tu_config_dir}/hosts.env" 2>/dev/null)"
+    local addr_var_name="ADDR_${PORT}"
+    local zeta_host="${!addr_var_name}"
+    login_link="${login_scheme}://${zeta_host}/login?token=${TOKEN}"
+  else
+    login_link="${login_scheme}://${hostname}:${port}/login?token=${TOKEN}"
+  fi
+
+  # Save login link to target user's config
+  printf '%s' "$login_link" | sudo -n -u "$BBX_FOR_USER" tee "${tu_config_dir}/login.link" >/dev/null
+
+  draw_box "Login Link: ${login_link}"
+}
+
+# Delegated ng-run: system nginx as operator, then delegated setup + run.
+_for_ng_run() {
+  banner
+  load_config
+  ensure_deps
+
+  # Trigger setup if not fully configured for target user
+  _tu_load_config
+  if [[ -z "${HOST_PER_SERVICE:-}" ]] || [[ -z "${PORT:-}" ]] || [[ -z "${BBX_HOSTNAME:-}" ]] || ! sudo -n test -f "$(_tu_config_dir)/test.env" 2>/dev/null; then
+    printf "${YELLOW}[--for %s] BrowserBox not fully set up. Running setup first...${NC}\n" "$BBX_FOR_USER"
+    _for_setup -z "$@"
+    _tu_load_config
+  fi
+
+  # System-level: nginx setup (operator context — nginx is global)
+  # setup_nginx reads config from $HOME/.config/dosaygo/bbpro/test.env and
+  # writes to $HOME/sslcerts. We point HOME at the target user's home so it
+  # finds the right config. We run via sudo so it can both write nginx system
+  # config and access the target user's 700-perm home directory.
+  printf "${YELLOW}[--for %s] Starting Nginx setup (operator)...${NC}\n" "$BBX_FOR_USER"
+  if command -v setup_nginx &>/dev/null; then
+    local _sn_path
+    _sn_path="$(command -v setup_nginx)"
+    if ! sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" "$_sn_path"; then
+      printf "${RED}[--for %s] Nginx setup failed.${NC}\n" "$BBX_FOR_USER"
+      exit 1
+    fi
+    # mkcert runs as root so certs are root-owned. The target user's Node.js
+    # process needs to read them for TLS (e.g. bbx run --for). Fix ownership.
+    local _tu_ssl="$(_tu_home)/sslcerts"
+    if sudo -n test -d "$_tu_ssl" 2>/dev/null; then
+      sudo -n chown -R "${BBX_FOR_USER}:" "$_tu_ssl"
+    fi
+    printf "${GREEN}[--for %s] Nginx setup complete.${NC}\n" "$BBX_FOR_USER"
+  else
+    printf "${YELLOW}[--for %s] Warning: setup_nginx not found. Skipped.${NC}\n" "$BBX_FOR_USER"
+  fi
+
+  # Target-user: run
+  _for_run "$@"
+}
+
+# Delegated stop: stop services as target user.
+_for_stop() {
+  printf "${YELLOW}[--for %s] Stopping BrowserBox...${NC}\n" "$BBX_FOR_USER"
+  # Clear login link
+  local tu_config_dir="$(_tu_config_dir)"
+  sudo -n rm -f "${tu_config_dir}/login.link" 2>/dev/null
+
+  _tu_run stop_bbpro 2>/dev/null || {
+    printf "${RED}[--for %s] Failed to stop. Check if BrowserBox is running for this user.${NC}\n" "$BBX_FOR_USER"
+    exit 1
+  }
+  printf "${GREEN}[--for %s] BrowserBox stopped.${NC}\n" "$BBX_FOR_USER"
+}
+
+# Delegated status: check target user's services.
+_for_status() {
+  local tu_config_dir="$(_tu_config_dir)"
+  _tu_load_config
+  printf "${CYAN}[--for %s] BrowserBox status:${NC}\n" "$BBX_FOR_USER"
+
+  if _tu_run bbpro pm2 list 2>/dev/null; then
+    printf "${GREEN}[--for %s] Services running.${NC}\n" "$BBX_FOR_USER"
+  else
+    printf "${YELLOW}[--for %s] No services detected.${NC}\n" "$BBX_FOR_USER"
+  fi
+
+  if sudo -n test -f "${tu_config_dir}/login.link" 2>/dev/null; then
+    printf "Login: %s\n" "$(sudo -n cat "${tu_config_dir}/login.link" 2>/dev/null)"
+  fi
+}
+# ─── end --for <user> helpers ───────────────────────────────────────
 
 # run-as subcommand
 run_as() {
@@ -5378,6 +5842,12 @@ usage() {
     printf "  ${GREEN}stop${NC}            Stop the BrowserBox instance for the current user.\n"
     printf "  ${GREEN}start-as${NC}        Run a new instance as a different OS user. ${BOLD}bbx start-as [--temporary] [username] [port]${NC}\n"
     printf "  ${GREEN}stop-user${NC}       Stop a BrowserBox instance for a specific user. ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n\n"
+
+    printf "${BOLD}CROSS-USER EXECUTION${NC}\n"
+    printf "  ${CYAN}--for <user>${NC}    Run any supported command on behalf of another user.\n"
+    printf "                  The operator provides privilege; the target user owns runtime.\n"
+    printf "                  ${BOLD}bbx <command> --for <user> [args...]${NC}\n"
+    printf "                  Supported: setup, start, stop, status, ng-start\n\n"
 
     printf "${BOLD}ADVANCED RUNNERS & TUNNELS${NC}\n"
     printf "  ${CYAN}cf-start${NC}        Run BrowserBox securely through a Cloudflare tunnel. ${BOLD}bbx cf-start [--port|-p <port>]${NC}\n"
