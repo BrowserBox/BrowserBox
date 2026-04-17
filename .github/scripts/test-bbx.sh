@@ -43,7 +43,7 @@ export BBX_NO_UPDATE="true"
 export BBX_SKIP_INSTALL_TESTS="${BBX_SKIP_INSTALL_TESTS:-}"
 export BBX_BINARY="${BBX_BINARY:-}"  # Path to local browserbox binary for testing
 export BBX_SETUP_PORT="${BBX_SETUP_PORT:-9090}"
-export BBX_NG_SETUP_PORT="${BBX_NG_SETUP_PORT:-9999}"
+export BBX_NG_SETUP_PORT="${BBX_NG_SETUP_PORT:-11111}"
 
 # Resolve script path so we can re-enter the tests reliably after su.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd -P)"
@@ -84,7 +84,7 @@ if [ "$(id -u)" -eq 0 ] && [[ -n "$BBX_TEST_AGREEMENT" ]]; then
     fi
     
     # Build env file if it doesn't exist (or refresh it)
-    su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT NVM_DIR NODE_PATH)
+    su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT NVM_DIR NODE_PATH BBX_SETUP_PORT BBX_NG_SETUP_PORT)
     : > "$env_file"
     for var in "${su_env_vars[@]}"; do
       val="${!var-}"
@@ -391,6 +391,22 @@ ensure_setup_port() {
       fi
     done
   fi
+  return 1
+}
+
+ensure_ng_setup_port() {
+  local base="$1"
+  if port_block_free "$base"; then
+    return 0
+  fi
+  local candidate
+  for candidate in 12111 13111 14111 15111; do
+    if port_block_free "$candidate"; then
+      echo "NG port block ${base} is busy; switching setup port to ${candidate}." >&2
+      export BBX_NG_SETUP_PORT="$candidate"
+      return 0
+    fi
+  done
   return 1
 }
 
@@ -1030,6 +1046,11 @@ test_ng_run() {
   record_nginx_active_state
   echo "Running bbx with Nginx... "
   # use wildcard-able hostname for ng-run
+  if ! ensure_ng_setup_port "${BBX_NG_SETUP_PORT}"; then
+    echo -e "${RED}✘ Failed (No free ng-run setup port available)${NC}"
+    ((failed++))
+    return 1
+  fi
   if ! saga_bbx_setup --port "${BBX_NG_SETUP_PORT}" --hostname "ci.test" -z; then
     echo -e "${RED}✘ Failed (bbx setup failed for ng-run)${NC}"
     ((failed++))

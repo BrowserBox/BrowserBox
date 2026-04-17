@@ -42,7 +42,7 @@ jobs:
       matrix: ${{ fromJSON(github.event_name == 'workflow_dispatch' && github.event.inputs.matrix_json != '' && github.event.inputs.matrix_json || '{"os":["ubuntu-latest","macos-latest","windows-latest"],"container_image":["","dokken/centos-stream-10","rockylinux:9","debian:latest"],"exclude":[{"os":"macos-latest","container_image":"dokken/centos-stream-10"},{"os":"macos-latest","container_image":"rockylinux:9"},{"os":"macos-latest","container_image":"debian:latest"},{"os":"windows-latest","container_image":"dokken/centos-stream-10"},{"os":"windows-latest","container_image":"rockylinux:9"},{"os":"windows-latest","container_image":"debian:latest"}]}' ) }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container_image }}
-    timeout-minutes: 19
+    timeout-minutes: 29
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -64,8 +64,10 @@ jobs:
           set -euo pipefail
           cp .github/scripts/test-bbx.sh "$HOME/test-bbx.sh"
           cp .github/scripts/bbx-ci-e2e.mjs "$HOME/bbx-ci-e2e.mjs"
+          cp .github/scripts/run-bbx-unix-saga.sh "$HOME/run-bbx-unix-saga.sh"
           chmod +x "$HOME/test-bbx.sh"
           chmod +x "$HOME/bbx-ci-e2e.mjs"
+          chmod +x "$HOME/run-bbx-unix-saga.sh"
           echo "BBX_TEST_DIR=$HOME" >> "$GITHUB_ENV"
           rm -rf "$GITHUB_WORKSPACE"
           mkdir -p "$GITHUB_WORKSPACE"
@@ -169,7 +171,7 @@ jobs:
         working-directory: ${{ env.BBX_TEST_DIR }}
         run: |
           set -euo pipefail
-          ./test-bbx.sh
+          ./run-bbx-unix-saga.sh
 
       - name: Install BrowserBox (Windows)
         if: matrix.os == 'windows-latest'
@@ -179,8 +181,12 @@ jobs:
           GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
         run: |
           $ErrorActionPreference = 'Stop'
+          $env:BBX_RELEASE_REPO = $env:TARGET_RELEASE_REPO
+          $env:BBX_RELEASE_TAG = $env:RELEASE_TAG
+          $env:BBX_NO_UPDATE = "true"
+          Write-Host "Using public release $($env:BBX_RELEASE_REPO)@$($env:BBX_RELEASE_TAG)"
           Write-Host "Installing BrowserBox..."
-          & pwsh -NoProfile -ExecutionPolicy Bypass -Command "irm browserbox.io/install.ps1 | iex"
+          & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $env:GITHUB_WORKSPACE "windows-scripts\install.ps1")
           if ($LASTEXITCODE -ne 0) { Write-Error "Install failed with exit code $LASTEXITCODE"; exit 1 }
           $bbxBinDir = "$env:LOCALAPPDATA\browserbox\bin"
           if (Test-Path $bbxBinDir) {
@@ -275,6 +281,8 @@ jobs:
         env:
           GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_NO_UPDATE: "true"
+          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
           BBX_FORCE_CHROME_INSTALL: "false"
           BBX_HOSTNAME: "localhost"
           EMAIL: "test@example.com"
@@ -284,128 +292,7 @@ jobs:
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
           BBX_DONT_KILL_CHROME_ON_STOP: "false"
         run: |
-          $ErrorActionPreference = 'Stop'
-          $wrtcSeedSource = Join-Path $env:USERPROFILE "build\Release\wrtc.node"
-          if (-not (Test-Path $wrtcSeedSource)) {
-            throw "Expected seeded wrtc.node at $wrtcSeedSource before Windows saga step"
-          }
-          $wrtcWatcher = Start-Job -Name "bbx-wrtc-temp-seeder" -ArgumentList $wrtcSeedSource -ScriptBlock {
-            param($SeedSource)
-            $deadline = (Get-Date).AddMinutes(8)
-            while ((Get-Date) -lt $deadline) {
-              Get-ChildItem -Path ([System.IO.Path]::GetTempPath()) -Directory -Filter 'sea-wrtc-*' -ErrorAction SilentlyContinue | ForEach-Object {
-                $nativeDir = Join-Path $_.FullName "node_modules\@roamhq\wrtc-win32-x64"
-                $nativePath = Join-Path $nativeDir "wrtc.node"
-                if (-not (Test-Path $nativePath)) {
-                  New-Item -ItemType Directory -Path $nativeDir -Force | Out-Null
-                  Copy-Item -Path $SeedSource -Destination $nativePath -Force
-                }
-              }
-              Start-Sleep -Milliseconds 250
-            }
-          }
-          Write-Host "Started wrtc temp seeder job $($wrtcWatcher.Id) using $wrtcSeedSource"
-          try {
-            @('BBX_HOSTNAME','EMAIL','LICENSE_KEY','BBX_TEST_AGREEMENT','STATUS_MODE') | ForEach-Object {
-              $val = [Environment]::GetEnvironmentVariable($_)
-              Write-Host "$_ is $(if ($val) { 'set' } else { 'not set' })"
-            }
-            $setupOut = bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL" -Port 9999 2>&1 | Tee-Object -Variable setupLog
-            $loginLink = $null
-            $linkFile = "$env:USERPROFILE\.config\dosaygo\bbpro\login.link"
-            if (Test-Path $linkFile) {
-              $loginLink = (Get-Content $linkFile -ErrorAction SilentlyContinue | Select-String 'https?://').ToString().Trim()
-            }
-            if (-not $loginLink) {
-              $logText = ($setupLog | Out-String)
-              $match = [regex]::Match($logText, 'https?://\S+/login\?token=\S+')
-              if ($match.Success) { $loginLink = $match.Value.Trim() }
-            }
-            if (-not $loginLink) {
-              $testEnv = "$env:USERPROFILE\.config\dosaygo\bbpro\test.env"
-              if (Test-Path $testEnv) {
-                $token = Select-String -Path $testEnv -Pattern 'LOGIN_TOKEN=(.+)' | ForEach-Object { $_.Matches.Groups[1].Value }
-                if ($token) { $loginLink = "https://localhost:9999/login?token=$token" }
-              }
-            }
-            if (-not $loginLink) {
-              throw "Could not determine login link"
-            }
-            Write-Host "Login link: $loginLink"
-            "BBX_LOGIN_LINK=$loginLink" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-            bbx run
-            Write-Host "Testing URL: $loginLink"
-            $uri = [System.Uri]$loginLink
-            $port = $uri.Port
-            $chromeDebuggerPort = $port - 3000
-            $chromeProbeOk = $false
-            $chromeProbeUrl = $null
-            $chromeProbeHosts = @("127.0.0.1", "localhost", "[::1]")
-            for ($i = 0; $i -lt 10; $i++) {
-              foreach ($probeHost in $chromeProbeHosts) {
-                $probeUrl = "http://$probeHost`:$chromeDebuggerPort/json/version"
-                Write-Host "Chrome debugger probe $($i+1)/10 => $probeUrl"
-                $chromeProbeBody = curl.exe -sS --max-time 5 "$probeUrl" 2>&1
-                if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($chromeProbeBody)) {
-                  Write-Host "Chrome debugger probe succeeded:"
-                  Write-Host $chromeProbeBody
-                  $chromeProbeOk = $true
-                  $chromeProbeUrl = $probeUrl
-                  break
-                }
-                Write-Host "Chrome debugger probe failed: $chromeProbeBody"
-              }
-              if ($chromeProbeOk) { break }
-              Start-Sleep -Seconds 5
-            }
-            $readyOk = $false
-            for ($attempt = 1; $attempt -le 3; $attempt++) {
-              Write-Host "Readiness attempt $attempt/3..."
-              node .github/scripts/bbx-ci-e2e.mjs ready "$loginLink" --timeout-ms=60000 --interval-ms=5000
-              if ($LASTEXITCODE -eq 0) { $readyOk = $true; break }
-              Write-Host "Attempt $attempt failed, checking if BBX is still alive..."
-              $bbxProcs = Get-Process -Name "browserbox*" -ErrorAction SilentlyContinue
-              if (-not $bbxProcs) {
-                Write-Host "BBX process not running — dumping logs:"
-                $logDir = "$env:USERPROFILE\.config\dosaygo\bbpro"
-                Get-ChildItem "$logDir\*.log" -ErrorAction SilentlyContinue | ForEach-Object {
-                  Write-Host "=== $($_.Name) ==="
-                  Get-Content $_.FullName -Tail 40 -ErrorAction SilentlyContinue
-                }
-                throw "BBX exited before readiness check succeeded (likely license validation failure)"
-              }
-              if ($chromeProbeOk) {
-                Write-Warning "BrowserBox Chrome debugger probe succeeded at $chromeProbeUrl but BBX app readiness still failed. This points to internal readiness/priming rather than Chrome bring-up."
-              }
-              Start-Sleep -Seconds 5
-            }
-            if (-not $readyOk) { throw "Readiness check failed after 3 attempts" }
-            $devtoolsPort = $port + 1
-            $devtoolsLink = $loginLink.Replace(":$port", ":$devtoolsPort")
-            Write-Host "Testing Devtools URL: $devtoolsLink"
-            $devtoolsOk = $false
-            for ($i = 0; $i -lt 10; $i++) {
-              $response = curl.exe -k -L --max-time 10 "$devtoolsLink" -o NUL -w "%{http_code}" 2>$null
-              if ($response -ne "000") { $devtoolsOk = $true; break }
-              Write-Host "  Devtools probe $($i+1)/10 — retrying in 5s..."
-              Start-Sleep -Seconds 5
-            }
-            if (-not $devtoolsOk) { throw "Devtools connection failed after 10 attempts" }
-            Write-Host "Devtools connection successful: $response"
-            Write-Host "Waiting 30 seconds to verify link stability..."
-            Start-Sleep -Seconds 30
-            node .github/scripts/bbx-ci-e2e.mjs ready "$loginLink" --timeout-ms=45000 --interval-ms=4000
-            if ($LASTEXITCODE -ne 0) { throw "Second readiness check failed" }
-            $response = curl.exe -k -L --max-time 10 "$devtoolsLink" -o NUL -w "%{http_code}" 2>$null
-            if ($response -eq "000") { throw "Second devtools check failed: HTTP $response" }
-            Write-Host "Second verification (Devtools) successful: $response"
-          } finally {
-            if ($wrtcWatcher) {
-              Stop-Job -Job $wrtcWatcher -ErrorAction SilentlyContinue
-              Receive-Job -Job $wrtcWatcher -ErrorAction SilentlyContinue | Out-Host
-              Remove-Job -Job $wrtcWatcher -Force -ErrorAction SilentlyContinue
-            }
-          }
+          & .github/scripts/run-bbx-windows-saga.ps1 -MaxAttempts 2
 
       - name: Cleanup (Windows)
         if: always() && matrix.os == 'windows-latest'
@@ -439,6 +326,16 @@ jobs:
               } else {
                 Write-Host "$log not found at $logPath"
               }
+            }
+            $chromeLogDir = Join-Path $logDir "chrome"
+            if (Test-Path $chromeLogDir) {
+              Get-ChildItem $chromeLogDir -File | Sort-Object Name | ForEach-Object {
+                Write-Host "===== Contents of chrome/$($_.Name) ====="
+                Get-Content $_.FullName -Tail 200
+                $logsFound = $true
+              }
+            } else {
+              Write-Host "Chrome log directory not found at $chromeLogDir"
             }
           } else {
             Write-Host "Log directory not found: $logDir"
