@@ -826,6 +826,35 @@ elseif ($CommandArgs -and ($CommandArgs -contains "-Help")) {
 
 Invoke-UpdateCheck -Command $normalizedCommand -CommandArgs $CommandArgs
 
+# Chrome guard: commands that launch BrowserBox require a browser
+$chromeNeededCommands = @("run", "start", "restart")
+if ($normalizedCommand -in $chromeNeededCommands) {
+    $chromeFound = $false
+    if ($env:CHROME_PATH -and (Test-Path $env:CHROME_PATH)) {
+        $chromeFound = $true
+    }
+    if (-not $chromeFound) {
+        $chromePaths = @(
+            "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe",
+            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+        )
+        foreach ($p in $chromePaths) {
+            if (Test-Path $p) { $chromeFound = $true; break }
+        }
+    }
+    if (-not $chromeFound) {
+        $reg = Get-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue
+        if ($reg) { $chromeFound = $true }
+    }
+    if (-not $chromeFound) {
+        Write-Host "Chrome/Chromium is not installed." -ForegroundColor Red
+        Write-Host "BrowserBox requires a Chrome-family browser to run."
+        Write-Host "Install it with:  browserbox --full-install <hostname> <email>"
+        exit 1
+    }
+}
+
 if ($normalizedCommand -in @("run", "start")) {
     # Mirror Unix bbx.sh: run certify in background, launch binary concurrently,
     # wait for certify. The binary's validateLicense polls for reservation.json.

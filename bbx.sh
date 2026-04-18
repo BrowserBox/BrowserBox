@@ -629,6 +629,11 @@ fi
 export BBX_DONT_KILL_CHROME_ON_STOP="${BBX_DONT_KILL_CHROME_ON_STOP-true}"
 export BBX_REQUIRE_RELEASE=1
 
+# Map BBX_SSLCERTS_DIR to SSLCERTS_DIR for setup_nginx, tls, and Node runtime
+if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
+  export SSLCERTS_DIR="${BBX_SSLCERTS_DIR}"
+fi
+
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 BBX_NEW_DIR="${BBX_HOME}/new"
@@ -1353,6 +1358,14 @@ load_config() {
     if [[ -n "$env_hostname" ]]; then
         BBX_HOSTNAME="$env_hostname"
     fi
+    # SSLCERTS_DIR in test.env is absolute and user-specific — it may reference
+    # a different user's home (e.g. root's path from a build step). Always
+    # reset to the current user's default unless BBX_SSLCERTS_DIR overrides.
+    if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
+        SSLCERTS_DIR="$BBX_SSLCERTS_DIR"
+    else
+        SSLCERTS_DIR="${HOME}/sslcerts"
+    fi
 }
 
 load_config
@@ -1557,6 +1570,20 @@ is_ip_literal() {
   return 1
 }
 
+# Returns 0 if the given IP address is private/loopback/link-local, 1 if public.
+is_private_ip() {
+  local ip="$1"
+  # IPv4 private ranges
+  if [[ "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.|0\.) ]]; then
+    return 0
+  fi
+  # IPv6 loopback and link-local
+  if [[ "$ip" == "::1" ]] || [[ "$ip" =~ ^[Ff][Ee]80: ]] || [[ "$ip" =~ ^[Ff][CcDd] ]]; then
+    return 0
+  fi
+  return 1
+}
+
 is_local_hostname() {
   local hostname="$1"
   local resolved_ips ip
@@ -1568,9 +1595,12 @@ is_local_hostname() {
     return 0
   fi
 
-  # IP literals can't get Let's Encrypt certs; treat as local for mkcert
+  # IP literals: public IPs get LE via acme.sh (shortlived), private → mkcert
   if is_ip_literal "$hostname"; then
-    return 0
+    if is_private_ip "$hostname"; then
+      return 0  # local → mkcert
+    fi
+    return 1    # public IP → handled specially in tls script
   fi
 
   # Try DNS resolution
@@ -2256,7 +2286,7 @@ setup() {
   fi
 
   # Call setup_bbpro, which writes to test.env
-  BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_HOSTNAME="${BBX_HOSTNAME}" BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
 
   # Append flipbook recording env vars to test.env if requested
   if [[ -n "$flipbook_record_dir" ]]; then
@@ -5191,6 +5221,10 @@ _tu_run() {
   [[ -n "${HOST_PER_SERVICE:-}" ]] && printf -v _env_prefix '%s; export HOST_PER_SERVICE=%q' "$_env_prefix" "$HOST_PER_SERVICE"
   [[ -n "${BBX_HTTP_ONLY:-}" ]] && printf -v _env_prefix '%s; export BBX_HTTP_ONLY=%q' "$_env_prefix" "$BBX_HTTP_ONLY"
   [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP:-}" ]] && printf -v _env_prefix '%s; export BBX_DONT_KILL_CHROME_ON_STOP=%q' "$_env_prefix" "$BBX_DONT_KILL_CHROME_ON_STOP"
+  # Only propagate SSLCERTS_DIR if explicitly set via BBX_SSLCERTS_DIR.
+  # The operator's test.env sets SSLCERTS_DIR to *their* cert path — passing
+  # that to the target user would corrupt the operator's cert dir on chown.
+  [[ -n "${BBX_SSLCERTS_DIR:-}" ]] && printf -v _env_prefix '%s; export SSLCERTS_DIR=%q' "$_env_prefix" "$BBX_SSLCERTS_DIR"
 
   local _cmd_str=""
   local _arg
@@ -5229,6 +5263,13 @@ _tu_load_config() {
   [[ -n "$_env_lk" ]] && LICENSE_KEY="$_env_lk"
   [[ -n "$_env_em" ]] && EMAIL="$_env_em"
   [[ -n "$_env_hn" ]] && BBX_HOSTNAME="$_env_hn"
+  # Never trust persisted SSLCERTS_DIR from target user's test.env in --for path.
+  # Use BBX_SSLCERTS_DIR if explicit, otherwise target user's ~/sslcerts.
+  if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
+    SSLCERTS_DIR="$BBX_SSLCERTS_DIR"
+  else
+    SSLCERTS_DIR="$(_tu_home)/sslcerts"
+  fi
 }
 
 # ─── --for <user> delegated command implementations ─────────────────
@@ -5298,10 +5339,12 @@ _for_setup() {
       local _tls_path
       _tls_path="$(command -v tls 2>/dev/null || true)"
       if [[ -n "$_tls_path" ]]; then
-        sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" BB_USER_EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" "$_tls_path" "$setup_hostname" \
+        local _tls_env_extra=""
+        [[ -n "${BBX_SSLCERTS_DIR:-}" ]] && _tls_env_extra="SSLCERTS_DIR=${BBX_SSLCERTS_DIR}"
+        sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" BB_USER_EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" ${_tls_env_extra} "$_tls_path" "$setup_hostname" \
           || { printf "${RED}Hostname %s certificate not acquired${NC}\n" "$setup_hostname"; exit 1; }
         # Fix ownership so the target user's Node.js can read the certs
-        local _tu_ssl="$(_tu_home)/sslcerts"
+        local _tu_ssl="${BBX_SSLCERTS_DIR:-$(_tu_home)/sslcerts}"
         if sudo -n test -d "$_tu_ssl" 2>/dev/null; then
           sudo -n chown -R "${BBX_FOR_USER}:" "$_tu_ssl"
         fi
@@ -5463,13 +5506,15 @@ _for_ng_run() {
   if command -v setup_nginx &>/dev/null; then
     local _sn_path
     _sn_path="$(command -v setup_nginx)"
-    if ! sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" "$_sn_path"; then
+    local _sn_env_extra=""
+    [[ -n "${BBX_SSLCERTS_DIR:-}" ]] && _sn_env_extra="SSLCERTS_DIR=${BBX_SSLCERTS_DIR}"
+    if ! sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" ${_sn_env_extra} "$_sn_path"; then
       printf "${RED}[--for %s] Nginx setup failed.${NC}\n" "$BBX_FOR_USER"
       exit 1
     fi
     # mkcert runs as root so certs are root-owned. The target user's Node.js
     # process needs to read them for TLS (e.g. bbx run --for). Fix ownership.
-    local _tu_ssl="$(_tu_home)/sslcerts"
+    local _tu_ssl="${BBX_SSLCERTS_DIR:-$(_tu_home)/sslcerts}"
     if sudo -n test -d "$_tu_ssl" 2>/dev/null; then
       sudo -n chown -R "${BBX_FOR_USER}:" "$_tu_ssl"
     fi
@@ -6061,6 +6106,38 @@ activate() {
 [ "$1" != "uninstall" ] && check_agreement
 # Call check_and_prepare_update with the first argument
 [ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
+
+# Chrome guard: commands that launch BrowserBox require a browser
+_needs_chrome() {
+  case "$1" in
+    run|start|restart|run-as|start-as|ng-run|ng-start|tor-run|tor-start|zt-run|zt-start|cf-run|cf-start|win9x-run|win9x-start)
+      return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+_has_chrome() {
+  if [[ -n "${CHROME_PATH:-}" && -x "${CHROME_PATH}" ]]; then
+    return 0
+  fi
+  local candidates=(
+    google-chrome-stable google-chrome chromium-browser chromium
+    /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
+  )
+  for c in "${candidates[@]}"; do
+    command -v "$c" >/dev/null 2>&1 && return 0
+  done
+  return 1
+}
+
+if _needs_chrome "${1:-}"; then
+  if ! _has_chrome; then
+    printf "${RED}Chrome/Chromium is not installed.${NC}\n"
+    printf "BrowserBox requires a Chrome-family browser to run.\n"
+    printf "Install it with:  ${BOLD}browserbox --full-install <hostname> <email>${NC}\n"
+    exit 1
+  fi
+fi
 
 case "$1" in
     install)
