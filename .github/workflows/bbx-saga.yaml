@@ -284,6 +284,9 @@ jobs:
         env:
           GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
           BBX_NO_UPDATE: "true"
+          BBX_CI_APP_PORT: "11111"
+          BBX_WINDOWS_STARTUP_TRACE: "true"
+          BBX_CHROME_STDIO_LOGGING: "true"
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
           BBX_FORCE_CHROME_INSTALL: "false"
@@ -297,13 +300,37 @@ jobs:
         run: |
           & .github/scripts/run-bbx-windows-saga.ps1 -MaxAttempts 2
 
+      - name: Collect Windows startup artifacts
+        if: always() && matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          BBX_NO_UPDATE: "true"
+          BBX_CI_APP_PORT: "11111"
+          BBX_WINDOWS_STARTUP_TRACE: "true"
+          BBX_CHROME_STDIO_LOGGING: "true"
+        run: |
+          & .github/scripts/collect-windows-startup-artifacts.ps1 `
+            -OutputDir "$env:RUNNER_TEMP\bbx-windows-startup-artifacts"
+
+      - name: Upload Windows startup artifacts
+        if: always() && matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bbx-windows-startup-artifacts-${{ github.run_id }}
+          path: ${{ runner.temp }}\bbx-windows-startup-artifacts
+          if-no-files-found: warn
+
       - name: Cleanup (Windows)
         if: always() && matrix.os == 'windows-latest'
         shell: pwsh
         env:
           BBX_NO_UPDATE: "true"
         run: |
-          bbx stop 2>$null
+          if (Get-Command bbx -ErrorAction SilentlyContinue) {
+            bbx stop 2>$null
+          } else {
+            Write-Host "bbx not installed; skipping stop."
+          }
           $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools" -ErrorAction SilentlyContinue
           if ($nodeProcs) {
             Write-Warning "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
