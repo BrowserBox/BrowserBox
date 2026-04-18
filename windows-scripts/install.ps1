@@ -12,7 +12,7 @@ if ($Help -or $args -contains '-help') {
     Write-Host "  -Help    Show this help message" -ForegroundColor White
     Write-Host ""
     Write-Host "Environment overrides:" -ForegroundColor Cyan
-    Write-Host "  BBX_RELEASE_REPO, BBX_RELEASE_TAG, GH_TOKEN/GITHUB_TOKEN, BBX_NO_UPDATE" -ForegroundColor White
+    Write-Host "  BBX_RELEASE_REPO, BBX_RELEASE_TAG, BBX_RELEASE_ASSET_DIR, GH_TOKEN/GITHUB_TOKEN, BBX_NO_UPDATE" -ForegroundColor White
     Write-Host "  BBX_INSTALL_HOSTNAME, BBX_INSTALL_EMAIL (preferred for full install)" -ForegroundColor White
     Write-Host "  BBX_HOSTNAME, BBX_EMAIL, EMAIL (legacy full-install aliases)" -ForegroundColor White
     $global:LASTEXITCODE = 0
@@ -63,6 +63,7 @@ $BinaryDir = "$env:LOCALAPPDATA\browserbox\bin"
 $BinaryName = "browserbox.exe"
 $RemoteAssetName = "browserbox-win-x64.exe"
 $BinaryPath = Join-Path $BinaryDir $BinaryName
+$PreseededReleaseAssetDir = if ($env:BBX_RELEASE_ASSET_DIR) { $env:BBX_RELEASE_ASSET_DIR } else { "" }
 
 function Ensure-BinaryDir {
     if (-not (Test-Path $BinaryDir)) {
@@ -101,33 +102,60 @@ function Get-LatestRelease {
     return $null
 }
 
-function Get-ReleaseMetadata {
+function Get-ReleaseByTag {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$Repo,
+        [Parameter(Mandatory = $true)]
         [string]$Tag,
-        [hashtable]$Headers
+        [hashtable]$Headers = @{},
+        [int]$PerPage = 100,
+        [int]$MaxPages = 20
     )
 
-    if ($Tag) {
-        try {
-            return Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -TimeoutSec 10 -Headers $Headers -ErrorAction Stop
-        } catch {
-            Write-Host "Release tag lookup failed for $Repo@$Tag, checking release list..." -ForegroundColor Gray
-            $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -TimeoutSec 10 -Headers $Headers -ErrorAction Stop
-            $release = $releases | Where-Object { $_.tag_name -eq $Tag } | Select-Object -First 1
-            if (-not $release) {
-                throw "Release $Tag not found in $Repo"
+    try {
+        return Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers -ErrorAction Stop
+    } catch {
+        Write-Host "Direct tag lookup failed (common for drafts), scanning release list pages..." -ForegroundColor Gray
+        for ($page = 1; $page -le $MaxPages; $page++) {
+            $uri = "https://api.github.com/repos/$Repo/releases?per_page=$PerPage&page=$page"
+            $releases = @(Invoke-RestMethod -Uri $uri -Headers $Headers -ErrorAction Stop)
+            if (-not $releases -or $releases.Count -eq 0) {
+                break
             }
-            return $release
+
+            $release = $releases | Where-Object { $_.tag_name -eq $Tag } | Select-Object -First 1
+            if ($release) {
+                Write-Host "Resolved release $Tag on page $page." -ForegroundColor Gray
+                return $release
+            }
+
+            if ($releases.Count -lt $PerPage) {
+                break
+            }
         }
     }
 
-    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -TimeoutSec 10 -Headers $Headers -ErrorAction Stop
-    if (-not $releases -or $releases.Count -eq 0) {
-        throw "No releases found in $Repo"
+    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+    if ($ghCmd) {
+        try {
+            Write-Host "Release list scan missed $Tag, trying gh release view fallback..." -ForegroundColor Gray
+            $releaseJson = & $ghCmd.Source release view $Tag --repo $Repo --json tagName,isDraft,isPrerelease,assets,id 2>&1
+            if ($LASTEXITCODE -eq 0 -and $releaseJson) {
+                $release = $releaseJson | ConvertFrom-Json
+                if ($release -and $release.tagName -eq $Tag) {
+                    Write-Host "Resolved release $Tag via gh release view." -ForegroundColor Gray
+                    return $release
+                }
+            } elseif ($LASTEXITCODE -ne 0) {
+                Write-Host "gh release view fallback exited ${LASTEXITCODE}: $releaseJson" -ForegroundColor Gray
+            }
+        } catch {
+            Write-Host "gh release view fallback failed for $Tag." -ForegroundColor Gray
+        }
     }
 
-    return $releases[0]
+    return $null
 }
 
 function Download-Binary {
@@ -150,9 +178,29 @@ function Download-Binary {
     }
 
     try {
-        if ($useAssetApi) {
-            $release = Get-ReleaseMetadata -Repo $ReleaseRepo -Tag $Tag -Headers $headers
-            if (-not $Tag) { $Tag = $release.tag_name }
+        if ($PreseededReleaseAssetDir) {
+            Write-Host "Using preseeded release assets from $PreseededReleaseAssetDir" -ForegroundColor Gray
+            $preseededBinary = Join-Path $PreseededReleaseAssetDir $RemoteAssetName
+            if (-not (Test-Path $preseededBinary)) {
+                $preseededBinary = Join-Path $PreseededReleaseAssetDir $BinaryName
+            }
+            if (-not (Test-Path $preseededBinary)) {
+                Write-Error "Preseeded release assets do not contain $RemoteAssetName or $BinaryName."
+                exit 1
+            }
+            Copy-Item -Path $preseededBinary -Destination $tempFile -Force
+        } elseif ($useAssetApi) {
+            if ($Tag) {
+                $release = Get-ReleaseByTag -Repo $ReleaseRepo -Tag $Tag -Headers $headers
+            } else {
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$ReleaseRepo/releases" -Headers $headers -ErrorAction Stop
+                if (-not $releases -or $releases.Count -eq 0) {
+                    Write-Error "No releases found in $ReleaseRepo"
+                    exit 1
+                }
+                $release = $releases[0]
+                $Tag = $release.tag_name
+            }
 
             $asset = $release.assets | Where-Object { $_.name -eq $RemoteAssetName } | Select-Object -First 1
             if (-not $asset) {
@@ -341,10 +389,18 @@ $sigPath = Join-Path $tempDir "release.manifest.json.sig"
 Write-Host "Downloading release manifest to $locationDesc..." -ForegroundColor Yellow
 try {
     $publicRepo = if ($PublicRepo) { $PublicRepo } else { "BrowserBox/BrowserBox" }
-    if ($Token -or $ReleaseRepo -ne $publicRepo) {
+    if ($PreseededReleaseAssetDir) {
+        $preseededManifest = Join-Path $PreseededReleaseAssetDir "release.manifest.json"
+        $preseededSig = Join-Path $PreseededReleaseAssetDir "release.manifest.json.sig"
+        if (-not (Test-Path $preseededManifest) -or -not (Test-Path $preseededSig)) {
+            throw "Preseeded release assets are missing release.manifest.json or release.manifest.json.sig."
+        }
+        Copy-Item $preseededManifest $manifestPath -Force
+        Copy-Item $preseededSig $sigPath -Force
+    } elseif ($Token -or $ReleaseRepo -ne $publicRepo) {
         if (-not $Token) { throw "GH_TOKEN/GITHUB_TOKEN is required to download manifests from $ReleaseRepo." }
         $headers = @{ Authorization = "Bearer $Token" }
-        $release = Get-ReleaseMetadata -Repo $ReleaseRepo -Tag $tag -Headers $headers
+        $release = Get-ReleaseByTag -Repo $ReleaseRepo -Tag $tag -Headers $headers
         $manifestAsset = $release.assets | Where-Object { $_.name -eq "release.manifest.json" } | Select-Object -First 1
         $sigAsset = $release.assets | Where-Object { $_.name -eq "release.manifest.json.sig" } | Select-Object -First 1
         if (-not $manifestAsset -or -not $sigAsset) { throw "Manifest assets not found on release $tag." }

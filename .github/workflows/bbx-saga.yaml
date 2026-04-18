@@ -30,6 +30,8 @@ permissions:
 
 env:
   RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag || '' }}
+  PRIVATE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag || '' }}
+  USE_PRIVATE_RELEASE: "true"
   DISABLE_TMATE: ${{ github.event.inputs.disable_tmate || 'false' }}
   TARGET_RELEASE_REPO: BrowserBox/BrowserBox
   WORKFLOW_GH_TOKEN: ${{ secrets.DISPATCH_TOKEN != '' && secrets.DISPATCH_TOKEN || github.token }}
@@ -181,22 +183,66 @@ jobs:
           BBX_INSTALL_HOSTNAME: "localhost"
           BBX_INSTALL_EMAIL: "test@example.com"
           BBX_TEST_AGREEMENT: "true"
-          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          PRIVATE_TAG: ${{ env.PRIVATE_TAG }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $env:BBX_RELEASE_REPO = $env:TARGET_RELEASE_REPO
-          $env:BBX_RELEASE_TAG = $env:RELEASE_TAG
-          $env:BBX_NO_UPDATE = "true"
-          Write-Host "Using public release $($env:BBX_RELEASE_REPO)@$($env:BBX_RELEASE_TAG)"
+          if ($env:USE_PRIVATE_RELEASE -eq "true") {
+            if ([string]::IsNullOrWhiteSpace($env:PRIVATE_TAG)) {
+              Write-Error "PRIVATE_RELEASE_TAG is required when use_private_release=true"
+            }
+            $env:BBX_RELEASE_REPO = $env:TARGET_RELEASE_REPO
+            $env:BBX_RELEASE_TAG = $env:PRIVATE_TAG
+            $env:BBX_NO_UPDATE = "true"
+            Write-Host "Using private release $($env:BBX_RELEASE_REPO)@$($env:BBX_RELEASE_TAG)"
+            $releaseAssetDir = Join-Path $env:RUNNER_TEMP "bbx-private-release"
+            Remove-Item -Path $releaseAssetDir -Recurse -Force -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Path $releaseAssetDir -Force | Out-Null
+            Write-Host "Downloading private release assets into $releaseAssetDir"
+            $releaseJson = gh release view $env:PRIVATE_TAG --repo $env:TARGET_RELEASE_REPO --json tagName,isDraft,assets 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to inspect private release via gh release view: $releaseJson"
+              exit 1
+            }
+            $release = $releaseJson | ConvertFrom-Json
+            if (-not $release -or $release.tagName -ne $env:PRIVATE_TAG) {
+              Write-Error "gh release view returned an unexpected release payload for $env:PRIVATE_TAG"
+              exit 1
+            }
+            $requiredAssets = @("browserbox-win-x64.exe", "release.manifest.json", "release.manifest.json.sig")
+            foreach ($assetName in $requiredAssets) {
+              $asset = $release.assets | Where-Object { $_.name -eq $assetName } | Select-Object -First 1
+              if (-not $asset) {
+                Write-Error "Private release $($release.tagName) is missing required asset $assetName"
+                exit 1
+              }
+              $targetPath = Join-Path $releaseAssetDir $assetName
+              Invoke-WebRequest -Uri $asset.apiUrl -Headers @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = "application/octet-stream" } -OutFile $targetPath
+              if (-not (Test-Path $targetPath)) {
+                Write-Error "Failed to download asset $assetName from $($asset.apiUrl)"
+                exit 1
+              }
+            }
+            $env:BBX_RELEASE_ASSET_DIR = $releaseAssetDir
+            Get-ChildItem -Path $releaseAssetDir | Format-Table Name, Length
+          }
           Write-Host "Installing BrowserBox..."
-          & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $env:GITHUB_WORKSPACE "windows-scripts\install.ps1")
+          if ($env:USE_PRIVATE_RELEASE -eq "true") {
+            & pwsh -NoProfile -ExecutionPolicy Bypass -File "$env:GITHUB_WORKSPACE\windows-scripts\install.ps1"
+          } else {
+            # Run hosted install in a subprocess — install.ps1 calls exit which would kill this step
+            & pwsh -NoProfile -ExecutionPolicy Bypass -Command "irm browserbox.io/install.ps1 | iex"
+          }
           if ($LASTEXITCODE -ne 0) { Write-Error "Install failed with exit code $LASTEXITCODE"; exit 1 }
+          # Ensure binary directory is in PATH for subsequent steps
           $bbxBinDir = "$env:LOCALAPPDATA\browserbox\bin"
           if (Test-Path $bbxBinDir) {
             $env:PATH = "$bbxBinDir;$env:PATH"
             "$bbxBinDir" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
             Write-Host "Added $bbxBinDir to PATH"
           }
+          # Verify
           $bbxCmd = Get-Command bbx -ErrorAction SilentlyContinue
           if (-not $bbxCmd) {
             Write-Error "bbx not found in PATH after install"
@@ -269,6 +315,7 @@ jobs:
           Pop-Location
           Remove-Item -Path $wrtcTempDir -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Seeded wrtc.node for Windows CI at $wrtcWorkspaceModuleDir, $wrtcWorkspaceReleaseDir, and $wrtcReleaseDir"
+          # Ensure curl.exe is available
           if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
             winget install cURL.cURL --silent --accept-source-agreements --accept-package-agreements
           }
@@ -282,13 +329,11 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         env:
-          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BBX_NO_UPDATE: "true"
           BBX_CI_APP_PORT: "11111"
           BBX_WINDOWS_STARTUP_TRACE: "true"
           BBX_CHROME_STDIO_LOGGING: "true"
-          BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
-          BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
           BBX_FORCE_CHROME_INSTALL: "false"
           BBX_HOSTNAME: "localhost"
           EMAIL: "test@example.com"
@@ -299,6 +344,7 @@ jobs:
           BBX_DONT_KILL_CHROME_ON_STOP: "false"
         run: |
           & .github/scripts/run-bbx-windows-saga.ps1 -MaxAttempts 2
+
 
       - name: Collect Windows startup artifacts
         if: always() && matrix.os == 'windows-latest'
@@ -337,7 +383,7 @@ jobs:
           } else {
             Write-Host "No Node processes remain -- cleanup successful."
           }
-
+     
       - name: Print BBX Logs on Failure (Windows)
         if: failure() && matrix.os == 'windows-latest'
         id: print_logs_win
@@ -376,10 +422,11 @@ jobs:
               Write-Host "Config dir not found"
             }
           }
+          # Also check old log location
           $oldLogDir = "$env:USERPROFILE\.config\dosaygo\bbpro\logs"
           if (Test-Path $oldLogDir) {
             Write-Host "===== Old logs directory found ====="
-            Get-ChildItem $oldLogDir | ForEach-Object {
+            Get-ChildItem $oldLogDir | ForEach-Object { 
               Write-Host "--- $($_.Name) ---"
               Get-Content $_.FullName -Tail 100
             }
@@ -394,7 +441,7 @@ jobs:
         with:
           limit-access-to-actor: true
         env:
-          GH_TOKEN: ${{ env.WORKFLOW_GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BBX_NO_UPDATE: "true"
           BBX_FORCE_CHROME_INSTALL: "true"
           BBX_HOSTNAME: "localhost"
@@ -403,6 +450,8 @@ jobs:
           LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
           BBX_TEST_AGREEMENT: "true"
           STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          TARGET_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
+          PRIVATE_TAG: ${{ env.PRIVATE_TAG }}
           BBX_DONT_KILL_CHROME_ON_STOP: "false"
 
       - name: Print BBX Logs on Failure (Unix/macOS)
