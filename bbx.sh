@@ -5507,8 +5507,10 @@ _for_ng_run() {
     local _sn_path
     _sn_path="$(command -v setup_nginx)"
     local _sn_env_extra=""
+    local _sn_operator_user="${BBX_OPERATOR_USER:-$(id -un)}"
     [[ -n "${BBX_SSLCERTS_DIR:-}" ]] && _sn_env_extra="SSLCERTS_DIR=${BBX_SSLCERTS_DIR}"
-    if ! sudo -n HOME="$(_tu_home)" EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" ${_sn_env_extra} "$_sn_path"; then
+    # Preserve operator identity for user-prefixed nginx config filenames and cleanup.
+    if ! sudo -n HOME="$(_tu_home)" USER="$_sn_operator_user" LOGNAME="$_sn_operator_user" EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" ${_sn_env_extra} "$_sn_path"; then
       printf "${RED}[--for %s] Nginx setup failed.${NC}\n" "$BBX_FOR_USER"
       exit 1
     fi
