@@ -335,6 +335,18 @@ Full API documentation: [win9-5.com/api](https://win9-5.com/api/)
 
 The `<browserbox-webview>` element provides a session-host API with namespaced surfaces for tabs, pages, capture, augmentation, selection, and policy-gated capability control.
 
+### Install via npm
+
+The embedding element is also published as [`@browserbox/webview-element`](https://www.npmjs.com/package/@browserbox/webview-element) for use in bundled apps:
+
+```bash
+npm i @browserbox/webview-element
+```
+
+```js
+import '@browserbox/webview-element';
+```
+
 ---
 
 ## 16. Advanced Usage
