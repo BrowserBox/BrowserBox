@@ -633,6 +633,8 @@ export BBX_REQUIRE_RELEASE=1
 if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
   export SSLCERTS_DIR="${BBX_SSLCERTS_DIR}"
 fi
+BBX_CALLER_DOMAIN="${DOMAIN:-}"
+export BBX_CALLER_DOMAIN
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
@@ -1327,6 +1329,7 @@ load_config() {
     local env_license_key="${LICENSE_KEY:-}"
     local env_email="${EMAIL:-}"
     local env_hostname="${BBX_HOSTNAME:-}"
+    local env_domain="${BBX_CALLER_DOMAIN:-}"
     # Load persistent config first
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
     if [[ -n "$env_license_key" ]]; then
@@ -1357,6 +1360,9 @@ load_config() {
     fi
     if [[ -n "$env_hostname" ]]; then
         BBX_HOSTNAME="$env_hostname"
+    fi
+    if [[ -n "$env_domain" ]]; then
+        DOMAIN="$env_domain"
     fi
     # SSLCERTS_DIR in test.env is absolute and user-specific — it may reference
     # a different user's home (e.g. root's path from a build step). Always
@@ -4194,7 +4200,7 @@ ng_run() {
   # Always run setup_nginx for ng-run (it's a standalone command installed in PATH)
   printf "${YELLOW}Starting Nginx setup...${NC}\n"
   if command -v setup_nginx &>/dev/null; then
-    if ! setup_nginx; then
+    if ! DOMAIN="${BBX_CALLER_DOMAIN:-}" setup_nginx; then
       printf "${RED}Nginx setup failed. Aborting.${NC}\n"
       exit 1
     fi
@@ -5217,6 +5223,7 @@ _tu_run() {
   [[ -n "${BBX_NONINTERACTIVE:-}" ]] && printf -v _env_prefix '%s; export BBX_NONINTERACTIVE=%q' "$_env_prefix" "$BBX_NONINTERACTIVE"
   [[ -n "${BBX_DEBUG:-}" ]] && printf -v _env_prefix '%s; export BBX_DEBUG=%q' "$_env_prefix" "$BBX_DEBUG"
   [[ -n "${EMAIL:-}" ]] && printf -v _env_prefix '%s; export EMAIL=%q' "$_env_prefix" "$EMAIL"
+  [[ -n "${BBX_CALLER_DOMAIN:-}" ]] && printf -v _env_prefix '%s; export DOMAIN=%q; export BBX_CALLER_DOMAIN=%q' "$_env_prefix" "$BBX_CALLER_DOMAIN" "$BBX_CALLER_DOMAIN"
   [[ -n "${BBX_HOSTNAME:-}" ]] && printf -v _env_prefix '%s; export BBX_HOSTNAME=%q' "$_env_prefix" "$BBX_HOSTNAME"
   [[ -n "${HOST_PER_SERVICE:-}" ]] && printf -v _env_prefix '%s; export HOST_PER_SERVICE=%q' "$_env_prefix" "$HOST_PER_SERVICE"
   [[ -n "${BBX_HTTP_ONLY:-}" ]] && printf -v _env_prefix '%s; export BBX_HTTP_ONLY=%q' "$_env_prefix" "$BBX_HTTP_ONLY"
@@ -5242,27 +5249,38 @@ _tu_load_config() {
   local _tcf="${_tcd}/config"
   local _tte="${_tcd}/test.env"
 
-  # Preserve caller-provided values
+  # Preserve caller-provided identity and explicit DOMAIN override.
   local _env_lk="${LICENSE_KEY:-}"
   local _env_em="${EMAIL:-}"
   local _env_hn="${BBX_HOSTNAME:-}"
+  local _env_domain="${BBX_CALLER_DOMAIN:-}"
+  local _target_domain=""
 
   if sudo -n test -f "$_tcf" 2>/dev/null; then
     eval "$(sudo -n cat "$_tcf" 2>/dev/null)"
+    _target_domain="${BBX_HOSTNAME:-}"
   fi
   if sudo -n test -f "$_tte" 2>/dev/null; then
     eval "$(sudo -n cat "$_tte" 2>/dev/null)"
     PORT="${APP_PORT:-$PORT}"
     TOKEN="${LOGIN_TOKEN:-$TOKEN}"
-    if [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
-      BBX_HOSTNAME="$DOMAIN"
+    _target_domain="${DOMAIN:-${BBX_HOSTNAME:-}}"
+    if [[ -n "$_target_domain" ]]; then
+      DOMAIN="$_target_domain"
+      BBX_HOSTNAME="$_target_domain"
     fi
   fi
 
-  # Restore caller-provided values (highest priority)
+  # Restore caller-provided identity. Target runtime config owns host/domain;
+  # DOMAIN is the explicit operator override path for cross-user runs.
   [[ -n "$_env_lk" ]] && LICENSE_KEY="$_env_lk"
   [[ -n "$_env_em" ]] && EMAIL="$_env_em"
-  [[ -n "$_env_hn" ]] && BBX_HOSTNAME="$_env_hn"
+  if [[ -n "$_env_domain" ]]; then
+    DOMAIN="$_env_domain"
+    BBX_HOSTNAME="$_env_domain"
+  elif [[ -z "$_target_domain" && -n "$_env_hn" ]]; then
+    BBX_HOSTNAME="$_env_hn"
+  fi
   # Never trust persisted SSLCERTS_DIR from target user's test.env in --for path.
   # Use BBX_SSLCERTS_DIR if explicit, otherwise target user's ~/sslcerts.
   if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
@@ -5322,6 +5340,11 @@ _for_setup() {
   local setup_port="$port"
   local setup_hostname="$hostname"
   local setup_token="${token:-$(openssl rand -hex 16)}"
+
+  if [[ -n "$zeta_mode" ]] && [[ "$setup_hostname" == "localhost" ]]; then
+    printf "${YELLOW}localhost is incompatible with zeta mode due to widespread conventions against *.localhost subdomains. Changing hostname to bbx.test${NC}\n"
+    setup_hostname="bbx.test"
+  fi
 
   printf "${YELLOW}[--for %s] Setting up BrowserBox on %s:%s...${NC}\n" "$BBX_FOR_USER" "$setup_hostname" "$setup_port"
 
@@ -5496,21 +5519,34 @@ _for_ng_run() {
     _for_setup -z "$@"
     _tu_load_config
   fi
+  local _target_domain="${DOMAIN:-${BBX_HOSTNAME:-}}"
 
   # System-level: nginx setup (operator context — nginx is global)
-  # setup_nginx reads config from $HOME/.config/dosaygo/bbpro/test.env and
-  # writes to $HOME/sslcerts. We point HOME at the target user's home so it
-  # finds the right config. We run via sudo so it can both write nginx system
-  # config and access the target user's 700-perm home directory.
+  # setup_nginx reads target config via BBX_CONFIG_DIR and writes certs under
+  # HOME. Keep HOME pointed at the target user for default cert locations, but
+  # do not rely on sudo preserving HOME for config discovery.
   printf "${YELLOW}[--for %s] Starting Nginx setup (operator)...${NC}\n" "$BBX_FOR_USER"
   if command -v setup_nginx &>/dev/null; then
     local _sn_path
     _sn_path="$(command -v setup_nginx)"
-    local _sn_env_extra=""
     local _sn_operator_user="${BBX_OPERATOR_USER:-$(id -un)}"
-    [[ -n "${BBX_SSLCERTS_DIR:-}" ]] && _sn_env_extra="SSLCERTS_DIR=${BBX_SSLCERTS_DIR}"
+    local _tu_config_dir="$(_tu_config_dir)"
+    local _sn_env=(
+      "HOME=$(_tu_home)"
+      "BBX_CONFIG_DIR=${_tu_config_dir}"
+      "USER=$_sn_operator_user"
+      "LOGNAME=$_sn_operator_user"
+      "EMAIL=${EMAIL:-s@dosaygo.com}"
+      "BBX_FOR_TARGET_DOMAIN=${_target_domain}"
+      "BBX_HOSTNAME=${_target_domain}"
+      "PATH=/usr/local/bin:${PATH}"
+    )
+    if [[ -n "${BBX_CALLER_DOMAIN:-}" ]]; then
+      _sn_env+=("DOMAIN=${BBX_CALLER_DOMAIN}" "BBX_CALLER_DOMAIN=${BBX_CALLER_DOMAIN}")
+    fi
+    [[ -n "${BBX_SSLCERTS_DIR:-}" ]] && _sn_env+=("SSLCERTS_DIR=${BBX_SSLCERTS_DIR}")
     # Preserve operator identity for user-prefixed nginx config filenames and cleanup.
-    if ! sudo -n HOME="$(_tu_home)" USER="$_sn_operator_user" LOGNAME="$_sn_operator_user" EMAIL="${EMAIL:-s@dosaygo.com}" PATH="/usr/local/bin:${PATH}" ${_sn_env_extra} "$_sn_path"; then
+    if ! sudo -n "${_sn_env[@]}" "$_sn_path"; then
       printf "${RED}[--for %s] Nginx setup failed.${NC}\n" "$BBX_FOR_USER"
       exit 1
     fi
