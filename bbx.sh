@@ -1330,8 +1330,10 @@ load_config() {
     local env_email="${EMAIL:-}"
     local env_hostname="${BBX_HOSTNAME:-}"
     local env_domain="${BBX_CALLER_DOMAIN:-}"
+
     # Load persistent config first
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+
     if [[ -n "$env_license_key" ]]; then
         LICENSE_KEY="$env_license_key"
     fi
@@ -1341,6 +1343,7 @@ load_config() {
     if [[ -n "$env_hostname" ]]; then
         BBX_HOSTNAME="$env_hostname"
     fi
+
     if [[ -z "${EMAIL:-}" && -f "${BB_CONFIG_DIR}/.agreed" ]]; then
         local agreed_email=""
         agreed_email="$(tail -n1 "${BB_CONFIG_DIR}/.agreed" | tr -d '\r' | tr -d '\n')"
@@ -1348,22 +1351,40 @@ load_config() {
             EMAIL="$agreed_email"
         fi
     fi
+
     # Then load runtime config, which can override for the session
     if [ -f "${BB_CONFIG_DIR}/test.env" ]; then
+        # Preserve ambient context to detect "downgrade to localhost" attempts
+        local ambient_hn="${BBX_HOSTNAME:-}"
+
         source "$BB_CONFIG_DIR/test.env"
+
         # For backward compatibility, ensure top-level vars are set from test.env
         PORT="${APP_PORT:-$PORT}"
         TOKEN="${LOGIN_TOKEN:-$TOKEN}"
-        if [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
+
+        # PRECEDENCE RULES:
+        # 1. Explicit DOMAIN/BBX_CALLER_DOMAIN wins (handled after source)
+        # 2. Saved DOMAIN wins over ambient localhost
+        if [[ -n "${DOMAIN:-}" ]] && [[ "$ambient_hn" == "localhost" ]]; then
+            BBX_HOSTNAME="$DOMAIN"
+        elif [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
             BBX_HOSTNAME="$DOMAIN"
         fi
     fi
+
+    # Explicit overrides are authoritative, but ambient localhost does not 
+    # downgrade a saved non-localhost hostname or route domain.
     if [[ -n "$env_hostname" ]]; then
-        BBX_HOSTNAME="$env_hostname"
+        if [[ "$env_hostname" != "localhost" ]] || [[ -z "${BBX_HOSTNAME:-}" ]] || [[ "${BBX_HOSTNAME:-}" == "localhost" ]]; then
+            BBX_HOSTNAME="$env_hostname"
+        fi
     fi
     if [[ -n "$env_domain" ]]; then
         DOMAIN="$env_domain"
+        BBX_HOSTNAME="$env_domain"
     fi
+
     # SSLCERTS_DIR in test.env is absolute and user-specific — it may reference
     # a different user's home (e.g. root's path from a build step). Always
     # reset to the current user's default unless BBX_SSLCERTS_DIR overrides.
@@ -5254,20 +5275,22 @@ _tu_load_config() {
   local _env_em="${EMAIL:-}"
   local _env_hn="${BBX_HOSTNAME:-}"
   local _env_domain="${BBX_CALLER_DOMAIN:-}"
-  local _target_domain=""
 
   if sudo -n test -f "$_tcf" 2>/dev/null; then
     eval "$(sudo -n cat "$_tcf" 2>/dev/null)"
-    _target_domain="${BBX_HOSTNAME:-}"
   fi
   if sudo -n test -f "$_tte" 2>/dev/null; then
     eval "$(sudo -n cat "$_tte" 2>/dev/null)"
     PORT="${APP_PORT:-$PORT}"
     TOKEN="${LOGIN_TOKEN:-$TOKEN}"
-    _target_domain="${DOMAIN:-${BBX_HOSTNAME:-}}"
-    if [[ -n "$_target_domain" ]]; then
-      DOMAIN="$_target_domain"
-      BBX_HOSTNAME="$_target_domain"
+
+    # PRECEDENCE RULES:
+    # 1. Explicit DOMAIN/BBX_CALLER_DOMAIN wins (handled after eval)
+    # 2. Saved DOMAIN wins over ambient localhost
+    if [[ -n "${DOMAIN:-}" ]] && [[ "$_env_hn" == "localhost" ]]; then
+        BBX_HOSTNAME="$DOMAIN"
+    elif [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
+        BBX_HOSTNAME="$DOMAIN"
     fi
   fi
 
@@ -5275,12 +5298,16 @@ _tu_load_config() {
   # DOMAIN is the explicit operator override path for cross-user runs.
   [[ -n "$_env_lk" ]] && LICENSE_KEY="$_env_lk"
   [[ -n "$_env_em" ]] && EMAIL="$_env_em"
+
   if [[ -n "$_env_domain" ]]; then
     DOMAIN="$_env_domain"
     BBX_HOSTNAME="$_env_domain"
-  elif [[ -z "$_target_domain" && -n "$_env_hn" ]]; then
-    BBX_HOSTNAME="$_env_hn"
+  elif [[ -n "$_env_hn" ]]; then
+    if [[ "$_env_hn" != "localhost" ]] || [[ -z "${BBX_HOSTNAME:-}" ]] || [[ "${BBX_HOSTNAME:-}" == "localhost" ]]; then
+        BBX_HOSTNAME="$_env_hn"
+    fi
   fi
+
   # Never trust persisted SSLCERTS_DIR from target user's test.env in --for path.
   # Use BBX_SSLCERTS_DIR if explicit, otherwise target user's ~/sslcerts.
   if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
