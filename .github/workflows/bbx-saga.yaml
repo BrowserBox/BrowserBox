@@ -19,6 +19,11 @@ on:
         required: false
         default: ""
         type: string
+      ng_only:
+        description: "Run only install + setup + nginx run"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.repository }}-bbx-saga
@@ -170,6 +175,7 @@ jobs:
           BBX_RELEASE_REPO: ${{ env.TARGET_RELEASE_REPO }}
           BBX_RELEASE_TAG: ${{ env.RELEASE_TAG }}
           BBX_CI_CONTAINER_IMAGE: ${{ matrix.container_image }}
+          BBX_NG_ONLY: ${{ github.event.inputs.ng_only || 'false' }}
         working-directory: ${{ env.BBX_TEST_DIR }}
         run: |
           set -euo pipefail
@@ -475,12 +481,15 @@ jobs:
           LOG_DIR="${USER_HOME}/.config/dosaygo/bbpro/service_logs"
           echo "===== Checking $LOG_DIR (install user: $INSTALL_USER, home: $USER_HOME) ====="
           if [[ -d "$LOG_DIR" ]]; then
-            mapfile -t log_files < <(find "$LOG_DIR" -type f | sort)
-            if ((${#log_files[@]})); then
-              for log in "${log_files[@]}"; do
+            logs_found=false
+            while IFS= read -r log; do
+              logs_found=true
+              if [[ -f "$log" ]]; then
                 echo "===== ${log#"${LOG_DIR}/"} (last 200 lines) ====="
                 tail -200 "$log"
-              done
+              fi
+            done < <(find "$LOG_DIR" -type f | sort)
+            if [[ "$logs_found" == "true" ]]; then
               echo "logs_found=true" >> "$GITHUB_OUTPUT"
             else
               echo "No files found under $LOG_DIR"

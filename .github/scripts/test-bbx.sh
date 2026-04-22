@@ -44,6 +44,10 @@ export BBX_SKIP_INSTALL_TESTS="${BBX_SKIP_INSTALL_TESTS:-}"
 export BBX_BINARY="${BBX_BINARY:-}"  # Path to local browserbox binary for testing
 export BBX_SETUP_PORT="${BBX_SETUP_PORT:-9090}"
 export BBX_NG_SETUP_PORT="${BBX_NG_SETUP_PORT:-11111}"
+export BBX_NG_ONLY="${BBX_NG_ONLY:-false}"
+export BBX_NG_STRESS_ONLY="${BBX_NG_STRESS_ONLY:-false}"
+export BBX_FOR_SETUP_PORT="${BBX_FOR_SETUP_PORT:-16111}"
+export BBX_SKIP_FOR_TEST="${BBX_SKIP_FOR_TEST:-false}"
 
 # Resolve script path so we can re-enter the tests reliably after su.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd -P)"
@@ -84,7 +88,7 @@ if [ "$(id -u)" -eq 0 ] && [[ -n "$BBX_TEST_AGREEMENT" ]]; then
     fi
     
     # Build env file if it doesn't exist (or refresh it)
-    su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT NVM_DIR NODE_PATH BBX_SETUP_PORT BBX_NG_SETUP_PORT)
+    su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT BBX_NG_ONLY BBX_NG_STRESS_ONLY NVM_DIR NODE_PATH BBX_SETUP_PORT BBX_NG_SETUP_PORT BBX_FOR_SETUP_PORT BBX_SKIP_FOR_TEST)
     : > "$env_file"
     for var in "${su_env_vars[@]}"; do
       val="${!var-}"
@@ -440,13 +444,9 @@ load_node_runtime() {
   fi
 
   local latest_node_bin=""
-  if [[ -d "$NVM_DIR/versions/node" ]]; then
-    latest_node_bin="$(find "$NVM_DIR/versions/node" -type f -path '*/bin/node' 2>/dev/null | sort -V | tail -n 1)"
-  fi
+  latest_node_bin="$(ls -1d "$NVM_DIR"/versions/node/*/bin/node 2>/dev/null | sort -V | tail -n 1)"
   if [[ -x "$latest_node_bin" ]]; then
-    local latest_node_dir=""
-    latest_node_dir="$(dirname "$latest_node_bin")"
-    export PATH="${latest_node_dir}:$PATH"
+    export PATH="$(dirname "$latest_node_bin"):$PATH"
     BBX_NODE_BIN="$latest_node_bin"
     return 0
   fi
@@ -567,33 +567,10 @@ saga_bbx_cf_run() {
   return 1
 }
 
-saga_bbx_docker_run() {
-  ensure_bbx_cmd || true
-  if [[ -x "$BBX_CMD" ]] || command -v "$BBX_CMD" &>/dev/null; then
-    "$BBX_CMD" docker-run "$@"
-    return $?
-  fi
-  return 1
-}
-
-saga_bbx_docker_stop() {
-  if [[ -x "$BBX_CMD" ]] || command -v "$BBX_CMD" &>/dev/null; then
-    "$BBX_CMD" docker-stop "$@"
-    return $?
-  fi
-  return 1
-}
-
 # Function to extract login link from bbx output (cross-platform)
 extract_login_link() {
   local output="$1"
   echo "$output" | grep -E -o 'https?://[^[:space:]]+' | sed 's/[)>"]*$//'
-}
-
-# Function to extract nickname from docker-run output (cross-platform)
-extract_nickname() {
-  local output="$1"
-  echo "$output" | grep -E -o 'Nickname: [a-zA-Z0-9_-]+' | sed 's/Nickname: //'
 }
 
 resolve_tunnel_host() {
@@ -933,7 +910,7 @@ test_install() {
           chown -R "${install_user}:${install_group}" "$BB_CONFIG_DIR" 2>/dev/null || true
         fi
         # Forward BBX-related env plus PATH vars via file in user's home.
-        su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT NVM_DIR NODE_PATH)
+        su_env_vars=(BBX_HOSTNAME EMAIL LICENSE_KEY BBX_TEST_AGREEMENT STATUS_MODE INSTALL_DOC_VIEWER BBX_NO_UPDATE BBX_RELEASE_REPO BBX_RELEASE_TAG TARGET_RELEASE_REPO PRIVATE_TAG GH_TOKEN GITHUB_TOKEN BBX_INSTALL_USER BB_QUICK_EXIT BBX_NG_ONLY BBX_NG_STRESS_ONLY NVM_DIR NODE_PATH BBX_FOR_SETUP_PORT BBX_SKIP_FOR_TEST)
         env_file="${user_home}/.bbx_env_restore.sh"
         : > "$env_file"
         for var in "${su_env_vars[@]}"; do
@@ -1071,9 +1048,9 @@ test_ng_run() {
     fi
   fi
   if [[ -n "$timeout_cmd" ]] && command -v "$timeout_cmd" &>/dev/null; then
-    "$timeout_cmd" -k 15s "$TEST_NG_RUN_TIMEOUT" "$bbx_exec" ng-run 2>&1
+    DOMAIN=ci.test "$timeout_cmd" -k 15s "$TEST_NG_RUN_TIMEOUT" "$bbx_exec" ng-run 2>&1
   else
-    "$bbx_exec" ng-run 2>&1
+    DOMAIN=ci.test "$bbx_exec" ng-run 2>&1
   fi
   exit_code=$?
   output="$(cat "${BB_CONFIG_DIR}/login.link")"
@@ -1111,6 +1088,32 @@ test_ng_run() {
   if [[ "${BBX_STOP_NGINX_AFTER_NG_RUN:-1}" != "0" && "${BBX_STOP_NGINX_AFTER_NG_RUN:-1}" != "false" ]]; then
     cleanup_nginx_sites
   fi
+  return 0
+}
+
+test_run_interstitial() {
+  echo "Running interstitial bbx... "
+  output="$(saga_bbx_run 2>&1)"
+  exit_code=$?
+  login_link="$(extract_login_link "$output" | tail -n 1)"
+  if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
+    echo -e "${RED}✘ Failed (Interstitial run failed)${NC}"
+    echo "$output"
+    ((failed++))
+    saga_bbx_stop
+    return 1
+  fi
+  echo -e "${GREEN}✔ Success (Interstitial run completed)${NC}"
+  ((passed++))
+  if ! test_login_link "$login_link"; then
+    saga_bbx_stop
+    return 1
+  fi
+  if ! test_service_links "$login_link"; then
+    saga_bbx_stop
+    return 1
+  fi
+  saga_bbx_stop
   return 0
 }
 
@@ -1287,92 +1290,193 @@ test_cf_run() {
 }
 
 test_docker_run() {
-  # Self-detect if running in a Docker container
-  if [[ -n "$SKIP_DOCKER" ]] || [ -f /.dockerenv ] || ([[ "$(uname -s)" == "Darwin" ]] && ! command -v docker &>/dev/null); then
-    echo "Skipping Dockerized bbx test (detected running in Docker container or macOS, or environment has SKIP_DOCKER)"
-    ((passed++))  # Increment passed to maintain test count
+  echo "Skipping Dockerized bbx test (docker commands removed from bbx CLI)"
+  ((passed++))
+  return 0
+}
+
+# Test cross-user --for <target_user> principal-switching.
+# Only on Linux: requires useradd, sudo -u, etc. Skipped on macOS/Windows.
+test_for_user() {
+  if [[ "${BBX_SKIP_FOR_TEST}" == "true" ]]; then
+    echo -e "${YELLOW}⚠ Skipping --for user test (BBX_SKIP_FOR_TEST=true)${NC}"
+    ((passed++))
+    return 0
+  fi
+  if [[ "$(uname -s)" != "Linux" ]]; then
+    echo -e "${YELLOW}⚠ Skipping --for user test (Linux only)${NC}"
+    ((passed++))
+    return 0
+  fi
+  if ! sudo -n true 2>/dev/null; then
+    echo -e "${YELLOW}⚠ Skipping --for user test (operator needs passwordless sudo)${NC}"
+    ((passed++))
     return 0
   fi
 
-  echo "Running Dockerized bbx... "
-  nickname="test-docker"
+  echo "Testing bbx ng-run --for <target_user> (cross-user principal switching)..."
+
+  local target_user="bbxfortest"
   local bbx_exec=""
   local timeout_cmd="timeout"
+
   if ! bbx_exec="$(bbx_exec_path)"; then
     echo -e "${RED}✘ Failed (bbx command not found)${NC}"
     ((failed++))
     return 1
   fi
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    if command -v gtimeout &>/dev/null; then
-      timeout_cmd="gtimeout"
-    else
-      timeout_cmd=""
+
+  echo "  Creating non-sudo target user: ${target_user}"
+  if id "$target_user" &>/dev/null; then
+    echo "  User ${target_user} already exists, reusing."
+  else
+    if ! sudo -n useradd -m -s /bin/bash "$target_user" 2>/dev/null; then
+      echo -e "${YELLOW}⚠ Skipping --for user test (cannot create user)${NC}"
+      ((passed++))
+      return 0
     fi
   fi
-  if [[ -n "$timeout_cmd" ]] && command -v "$timeout_cmd" &>/dev/null; then
-    output="$(timeout -k 15s 10m "$bbx_exec" docker-run "$nickname" 2>&1)"
-  else
-    output="$("$bbx_exec" docker-run "$nickname" 2>&1)"
-  fi
-  echo "$output"
-  exit_code=$?
-  login_link="$(extract_login_link "$output" | tail -n 1)"
-  if [ -z "$login_link" ] || [ -z "$nickname" ] || [ $exit_code -ne 0 ]; then
-    echo -e "${RED}✘ Failed (No login link, nickname, or docker-run failed)${NC}"
-    echo "$output"
-    ((failed++))
-    saga_bbx_docker_stop "$nickname"
-    return 1
-  fi
-  echo -e "${GREEN}✔ Success (Docker run completed)${NC}"
-  ((passed++))
-  
-  # Test login link
-  if ! test_login_link "$login_link"; then
-    saga_bbx_docker_stop "$nickname"
-    return 1
-  fi
 
-  # Wait 25 seconds and test again
-  if is_quick_exit; then
-    return 0
-  fi
-  echo "Waiting 25 seconds to check instance activity... "
-  sleep 25
-  echo -e "${GREEN}✔ Wait complete${NC}"
-  ((passed++))
-
-  # Test login link
-  if ! test_login_link "$login_link"; then
-    saga_bbx_docker_stop "$nickname"
-    return 1
-  fi
-  
-  # Stop Docker instance with nickname
-  echo "Stopping Dockerized bbx with nickname $nickname... "
-  if saga_bbx_docker_stop "$nickname"; then
-    echo -e "${GREEN}✔ Success${NC}"
-    ((passed++))
-  else
-    echo -e "${RED}✘ Failed${NC}"
+  if sudo -n -u "$target_user" sudo -n true 2>/dev/null; then
+    echo -e "${RED}✘ Failed (target user unexpectedly has sudo)${NC}"
     ((failed++))
     return 1
   fi
+  echo -e "  ${GREEN}✔ Target user has no sudo${NC}"
+  ((passed++))
+
+  local for_port="${BBX_FOR_SETUP_PORT}"
+  if ! port_block_free "$for_port"; then
+    local candidate
+    for candidate in 16111 17111 18111 19111; do
+      if port_block_free "$candidate"; then
+        for_port="$candidate"
+        break
+      fi
+    done
+    if ! port_block_free "$for_port"; then
+      echo -e "${RED}✘ Failed (no free port for --for test)${NC}"
+      "$bbx_exec" stop --for "$target_user" 2>/dev/null || true
+      ((failed++))
+      return 1
+    fi
+  fi
+  echo "  Using port: ${for_port}"
+
+  local for_hostname="ci-for.test"
+  echo "  Running: bbx setup --port ${for_port} --hostname ${for_hostname} -z --for ${target_user}"
+  if ! "$bbx_exec" setup --port "${for_port}" --hostname "$for_hostname" -z --for "$target_user" 2>&1; then
+    echo -e "${RED}✘ Failed (bbx setup --for failed)${NC}"
+    "$bbx_exec" stop --for "$target_user" 2>/dev/null || true
+    ((failed++))
+    return 1
+  fi
+  echo -e "  ${GREEN}✔ setup --for succeeded${NC}"
+  ((passed++))
+
+  echo "  Running: DOMAIN=${for_hostname} BBX_HOSTNAME=${for_hostname} bbx ng-run --for ${target_user}"
+  if command -v timeout &>/dev/null; then
+    DOMAIN="$for_hostname" BBX_HOSTNAME="$for_hostname" timeout -k 15s "$TEST_NG_RUN_TIMEOUT" "$bbx_exec" ng-run --for "$target_user" 2>&1
+  else
+    DOMAIN="$for_hostname" BBX_HOSTNAME="$for_hostname" "$bbx_exec" ng-run --for "$target_user" 2>&1
+  fi
+  local exit_code=$?
+
+  local target_home
+  target_home="$(getent passwd "$target_user" | cut -d: -f6)"
+  local target_config="${target_home}/.config/dosaygo/bbpro"
+
+  local login_link=""
+  if sudo -n test -f "${target_config}/login.link" 2>/dev/null; then
+    login_link="$(sudo -n cat "${target_config}/login.link" 2>/dev/null)"
+  fi
+
+  if [[ -z "$login_link" ]] || [[ $exit_code -ne 0 ]]; then
+    echo -e "${RED}✘ Failed (ng-run --for failed or no login link)${NC}"
+    echo "  exit_code=$exit_code login_link=${login_link:-<empty>}"
+    "$bbx_exec" stop --for "$target_user" 2>/dev/null || true
+    ((failed++))
+    return 1
+  fi
+  echo -e "  ${GREEN}✔ ng-run --for succeeded, login link: ${login_link}${NC}"
+  ((passed++))
+
+  local runtime_procs
+  runtime_procs="$(ps -u "$target_user" -o comm= 2>/dev/null | grep -c 'browserbox' || true)"
+  if [[ "$runtime_procs" -lt 1 ]]; then
+    echo -e "${RED}✘ Failed (no BrowserBox processes running as ${target_user})${NC}"
+    "$bbx_exec" stop --for "$target_user" 2>/dev/null || true
+    ((failed++))
+    return 1
+  fi
+  echo -e "  ${GREEN}✔ Runtime identity verified (${runtime_procs} browserbox process(es) as ${target_user})${NC}"
+  ((passed++))
+
+  local config_owner
+  config_owner="$(sudo -n stat -c '%U' "${target_config}" 2>/dev/null \
+    || sudo -n ls -ld "${target_config}" 2>/dev/null | awk '{print $3}' \
+    || true)"
+  if [[ "$config_owner" != "$target_user" ]]; then
+    echo -e "${RED}✘ Failed (config dir owned by '${config_owner}', expected '${target_user}')${NC}"
+    "$bbx_exec" stop --for "$target_user" 2>/dev/null || true
+    ((failed++))
+    return 1
+  fi
+  echo -e "  ${GREEN}✔ Ownership verified (config dir owned by ${target_user})${NC}"
+  ((passed++))
+
+  echo "  Running: bbx status --for ${target_user}"
+  "$bbx_exec" status --for "$target_user" 2>&1 || true
+  echo -e "  ${GREEN}✔ status --for completed${NC}"
+  ((passed++))
+
+  "$bbx_exec" stop --for "$target_user" 2>/dev/null || true
+  if [[ "${BBX_STOP_NGINX_AFTER_NG_RUN:-1}" != "0" && "${BBX_STOP_NGINX_AFTER_NG_RUN:-1}" != "false" ]]; then
+    cleanup_nginx_sites
+  fi
+
+  echo -e "${GREEN}✔ --for user test completed successfully${NC}"
+  ((passed++))
+  return 0
+}
+
+test_ng_run_stress() {
+  echo "Running bbx ng-run stress sequence..."
+  test_ng_run || return 1
+  test_for_user || return 1
+  test_setup || return 1
+  test_run_interstitial || return 1
+  test_ng_run || return 1
   return 0
 }
 
 # Main test sequence
 echo "Starting bbx Test Saga..."
 
+if [[ "${BBX_NG_STRESS_ONLY}" == "true" ]]; then
+  test_ng_run_stress || exit 1
+  saga_bbx_stop || true
+  echo "bbx Nginx-stress Saga completed!"
+  exit 0
+fi
+
+if [[ "${BBX_NG_ONLY}" == "true" ]]; then
+  test_ng_run || exit 1
+  saga_bbx_stop || true
+  echo "bbx Nginx-only Saga completed!"
+  exit 0
+fi
+
 test_setup || exit 1
 test_run || exit 1
 test_ng_run || exit 1
+test_for_user || exit 1
 if [[ "${BBX_RESET_AFTER_NG_RUN:-1}" != "0" && "${BBX_RESET_AFTER_NG_RUN:-1}" != "false" ]]; then
   test_setup || exit 1
 fi
 test_tor_run || exit 1
 test_cf_run || exit 1
+test_docker_run || exit 1
 
 # Cleanup
   saga_bbx_stop || true
