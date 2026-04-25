@@ -19,7 +19,6 @@
 </p>
 
 <p align="center">
-  <strong>🆕 FEBRUARY 2026:</strong> Windows 98½ Demo now live!<br>
   Try BrowserBox with our nostalgic <a href="https://win9-5.com/demo">Windows 98½ demo</a> — free 17-minute cloud browser sessions, no signup required.<br>
   <strong>Cloud API:</strong> Purchase minutes and create on-demand cloud browser sessions via REST API.<br>
   <a href="https://win9-5.com/api/">API Docs</a> · <a href="https://win9-5.com/pricing/">Pricing</a> · <a href="https://win9-5.com/demo">Live Demo</a>
