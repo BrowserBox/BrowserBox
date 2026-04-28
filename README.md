@@ -19,9 +19,14 @@
 </p>
 
 <p align="center">
-  Try BrowserBox with our nostalgic <a href="https://win9-5.com/demo">Windows 98½ demo</a> — free 17-minute cloud browser sessions, no signup required.<br>
+  <strong>🆕 APRIL 2026:</strong> <a href="https://www.hyper-frame.art"><strong>Hyper-Frame</strong></a> — the unlimited iframe — is live!<br>
+  Embed any website, automate remote browsers, and build web-in-web apps. <a href="https://www.hyper-frame.art/console">Try the live console →</a>
+</p>
+
+<p align="center">
+  <strong>Windows 98½ Demo:</strong> Try BrowserBox with our nostalgic <a href="https://win9-5.com/demo">Windows 98½ demo</a> — free 17-minute cloud browser sessions, no signup required.<br>
   <strong>Cloud API:</strong> Purchase minutes and create on-demand cloud browser sessions via REST API.<br>
-  <a href="https://win9-5.com/api/">API Docs</a> · <a href="https://win9-5.com/pricing/">Pricing</a> · <a href="https://win9-5.com/demo">Live Demo</a>
+  <a href="https://win9-5.com/api/">API Docs</a> · <a href="https://win9-5.com/pricing/">Pricing</a> · <a href="https://win9-5.com/demo">Live Demo</a> · <a href="https://www.hyper-frame.art">Hyper-Frame</a>
 </p>
 
 ---
@@ -31,14 +36,14 @@ BrowserBox is a remote browser isolation (RBI) platform. It streams a full, mode
 **At a glance:**
 - Clientless RBI — no plugins, no downloads for end users
 - 60 FPS streaming with real responsiveness
-- Embeds anywhere via `<browserbox-webview>`
+- Embeds anywhere via `<hyper-frame>` ([Hyper-Frame](https://www.hyper-frame.art)) or `<browserbox-webview>`
 - Cloud API for ephemeral sessions, no self-hosting needed
 - Works on Windows, Linux, and containers like Podman, and LXC
 - Policy controls, DLP, and audit-friendly workflows
 
-[ASCIInema Recordings](https://asciinema.org/~dosaygo) | [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Customer Guide](./docs/BrowserBox_Customer_Guide_v16.9.0.pdf) | [Support](mailto:api@browserbox.io)
+[ASCIInema Recordings](https://asciinema.org/~dosaygo) | [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Customer Guide](./docs/CUSTOMER-GUIDE.pdf) | [Support](mailto:api@browserbox.io)
 
-Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), [CloudTabs](https://browse.cloudtabs.net)
+Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), [Hyper-Frame](https://www.hyper-frame.art), [CloudTabs](https://browse.cloudtabs.net)
 
 
 
@@ -277,7 +282,7 @@ bbx run
 
 ## 12. Documentation
 
-- [Customer Guide (PDF)](./docs/BrowserBox_Customer_Guide_v16.6.8.pdf)
+- [Customer Guide (PDF)](./docs/CUSTOMER-GUIDE.pdf)
 
 ---
 
