@@ -41,7 +41,7 @@ BrowserBox is a remote browser isolation (RBI) platform. It streams a full, mode
 - Works on Windows, Linux, and containers like Podman, and LXC
 - Policy controls, DLP, and audit-friendly workflows
 
-[ASCIInema Recordings](https://asciinema.org/~dosaygo) | [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Customer Guide](./docs/CUSTOMER-GUIDE.pdf) | [Support](mailto:api@browserbox.io)
+[ASCIInema Recordings](https://asciinema.org/~dosaygo) | [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) | [Support](mailto:api@browserbox.io)
 
 Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), [Hyper-Frame](https://www.hyper-frame.art), [CloudTabs](https://browse.cloudtabs.net)
 
@@ -282,7 +282,7 @@ bbx run
 
 ## 12. Documentation
 
-- [Customer Guide (PDF)](./docs/CUSTOMER-GUIDE.pdf)
+- [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf)
 
 ---
 
