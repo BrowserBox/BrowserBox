@@ -1895,67 +1895,110 @@ ensure_cloudflared() {
     if command -v cloudflared >/dev/null 2>&1; then
         return 0
     fi
-    
-    printf "${YELLOW}cloudflared not found. Installing...${NC}\n"
-    
+
+    printf "${YELLOW}cloudflared not found. Installing...${NC}\n" >&2
+
+    # Map uname -m to cloudflared asset arch names
+    local um; um="$(uname -m)"
+    local deb_arch bin_arch rpm_arch
+    case "$um" in
+        x86_64)        deb_arch="amd64"  bin_arch="amd64"  rpm_arch="x86_64"  ;;
+        aarch64|arm64) deb_arch="arm64"  bin_arch="arm64"  rpm_arch="aarch64" ;;
+        armv7l|armv6l) deb_arch="arm"    bin_arch="arm"    rpm_arch="arm"     ;;
+        i686|i386)     deb_arch="386"    bin_arch="386"    rpm_arch="386"     ;;
+        *)
+            printf "${RED}Unsupported architecture: %s${NC}\n" "$um" >&2
+            return 1
+            ;;
+    esac
+
     if [[ "$(uname -s)" == "Darwin" ]]; then
-        # macOS: use Homebrew
         if command -v brew >/dev/null 2>&1; then
             brew install cloudflared || {
-                printf "${RED}Failed to install cloudflared via Homebrew${NC}\n"
+                printf "${RED}Failed to install cloudflared via Homebrew${NC}\n" >&2
                 return 1
             }
         else
-            printf "${RED}Homebrew not found. Please install cloudflared manually from:${NC}\n"
-            printf "https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/\n"
+            printf "${RED}Homebrew not found. Please install cloudflared manually from:${NC}\n" >&2
+            printf "https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/\n" >&2
             return 1
         fi
+
     elif [[ -f /etc/debian_version ]]; then
-        # Debian/Ubuntu: try apt, fallback to binary
-        if $SUDO apt-get install -y cloudflared 2>/dev/null; then
-            printf "${GREEN}Installed cloudflared via apt${NC}\n"
+        local installed=false
+
+        # Try the official Cloudflare apt repo (provides managed updates via apt)
+        local codename
+        codename="$(. /etc/os-release 2>/dev/null && printf '%s' "${VERSION_CODENAME:-}")"
+        [[ -z "$codename" ]] && codename="any"
+
+        if curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+                | $SUDO tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null 2>&1 \
+           && printf 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared %s main\n' "$codename" \
+                | $SUDO tee /etc/apt/sources.list.d/cloudflared.list >/dev/null \
+           && $SUDO apt-get update -qq \
+           && $SUDO apt-get install -y cloudflared; then
+            installed=true
+            printf "${GREEN}Installed cloudflared via Cloudflare apt repo${NC}\n" >&2
         else
-            # Fallback to binary download
-            local arch="amd64"
-            if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-                arch="arm64"
-            fi
-            curl -L --output /tmp/cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${arch}.deb" || {
-                printf "${RED}Failed to download cloudflared${NC}\n"
-                return 1
-            }
-            $SUDO dpkg -i /tmp/cloudflared.deb || {
-                printf "${RED}Failed to install cloudflared${NC}\n"
-                rm -f /tmp/cloudflared.deb
-                return 1
-            }
-            rm -f /tmp/cloudflared.deb
+            printf "${YELLOW}Cloudflare apt repo failed, falling back to .deb download${NC}\n" >&2
+            $SUDO rm -f /etc/apt/sources.list.d/cloudflared.list \
+                        /usr/share/keyrings/cloudflare-main.gpg
         fi
+
+        if [[ "$installed" == false ]]; then
+            local tmp_deb; tmp_deb="$(mktemp /tmp/cloudflared-XXXXXX.deb)"
+            curl -fsSL --output "$tmp_deb" \
+                "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${deb_arch}.deb" || {
+                printf "${RED}Failed to download cloudflared .deb${NC}\n" >&2
+                rm -f "$tmp_deb"; return 1
+            }
+            $SUDO dpkg -i "$tmp_deb" || {
+                printf "${RED}Failed to install cloudflared .deb${NC}\n" >&2
+                rm -f "$tmp_deb"; return 1
+            }
+            rm -f "$tmp_deb"
+            printf "${GREEN}Installed cloudflared via .deb download${NC}\n" >&2
+        fi
+
+    elif [[ -f /etc/redhat-release || -f /etc/fedora-release ]]; then
+        local tmp_rpm; tmp_rpm="$(mktemp /tmp/cloudflared-XXXXXX.rpm)"
+        curl -fsSL --output "$tmp_rpm" \
+            "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${rpm_arch}.rpm" || {
+            printf "${RED}Failed to download cloudflared .rpm${NC}\n" >&2
+            rm -f "$tmp_rpm"; return 1
+        }
+        $SUDO rpm -i "$tmp_rpm" 2>/dev/null \
+            || $SUDO dnf install -y "$tmp_rpm" \
+            || {
+                printf "${RED}Failed to install cloudflared .rpm${NC}\n" >&2
+                rm -f "$tmp_rpm"; return 1
+            }
+        rm -f "$tmp_rpm"
+        printf "${GREEN}Installed cloudflared via .rpm download${NC}\n" >&2
+
     else
-        # Other Linux: download static binary
-        local arch="amd64"
-        if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
-            arch="arm64"
-        fi
-        curl -L --output /tmp/cloudflared "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${arch}" || {
-            printf "${RED}Failed to download cloudflared${NC}\n"
-            return 1
+        # Generic Linux: static binary
+        local tmp_bin; tmp_bin="$(mktemp /tmp/cloudflared-XXXXXX)"
+        curl -fsSL --output "$tmp_bin" \
+            "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${bin_arch}" || {
+            printf "${RED}Failed to download cloudflared binary${NC}\n" >&2
+            rm -f "$tmp_bin"; return 1
         }
-        $SUDO install -m 755 /tmp/cloudflared /usr/local/bin/cloudflared || {
-            printf "${RED}Failed to install cloudflared to /usr/local/bin${NC}\n"
-            rm -f /tmp/cloudflared
-            return 1
+        $SUDO install -m 755 "$tmp_bin" /usr/local/bin/cloudflared || {
+            printf "${RED}Failed to install cloudflared to /usr/local/bin${NC}\n" >&2
+            rm -f "$tmp_bin"; return 1
         }
-        rm -f /tmp/cloudflared
+        rm -f "$tmp_bin"
+        printf "${GREEN}Installed cloudflared via static binary${NC}\n" >&2
     fi
-    
-    # Validate installation
+
     if ! command -v cloudflared >/dev/null 2>&1; then
-        printf "${RED}cloudflared installation failed validation${NC}\n"
+        printf "${RED}cloudflared installation failed validation${NC}\n" >&2
         return 1
     fi
-    
-    printf "${GREEN}cloudflared installed successfully${NC}\n"
+
+    printf "${GREEN}cloudflared installed successfully (%s)${NC}\n" "$(cloudflared --version 2>&1 | head -1)" >&2
     return 0
 }
 
