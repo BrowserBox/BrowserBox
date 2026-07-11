@@ -485,7 +485,7 @@ BrowserBox is a commercial product. All usage requires a valid license.
 
 ## 21. Support
 
-- **API & Technical:** [api@browserbox.io](mailto:api@browserbox.io)
+- **API & Technical:** [api@browserbox.io](mailto:api@dosaygo.com)
 - **General:** [support@dosaygo.com](mailto:support@dosaygo.com)
 - **Sales & Licensing:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 
