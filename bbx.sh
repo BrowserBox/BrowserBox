@@ -2115,12 +2115,29 @@ install_bbx() {
           printf "${YELLOW}Downloading release manifest...${NC}\n"
           local temp_manifest_dir
           temp_manifest_dir="$(mktemp -d)"
-          if download_release_manifest "$tag" "$temp_manifest_dir"; then
-            if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
-              printf "${YELLOW}Warning: Failed to install release manifest${NC}\n"
-            fi
-          else
-            printf "${YELLOW}Warning: Failed to download release manifest${NC}\n"
+          if ! download_release_manifest "$tag" "$temp_manifest_dir"; then
+            printf "${RED}Failed to download the signed release manifest.${NC}\n"
+            rm -rf "$temp_manifest_dir"
+            rm -f "$exe_to_run"
+            return 1
+          fi
+          local artifact_key
+          case "$platform" in
+            macos) artifact_key="darwin-arm64" ;;
+            linux) artifact_key="linux-x64" ;;
+            *) printf "${RED}Unsupported install platform: %s${NC}\n" "$platform"; rm -rf "$temp_manifest_dir"; rm -f "$exe_to_run"; return 1 ;;
+          esac
+          if ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$exe_to_run" "$artifact_key"; then
+            printf "${RED}Downloaded BrowserBox failed integrity verification; refusing to install.${NC}\n"
+            rm -rf "$temp_manifest_dir"
+            rm -f "$exe_to_run"
+            return 1
+          fi
+          if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
+            printf "${RED}Failed to install the verified release manifest.${NC}\n"
+            rm -rf "$temp_manifest_dir"
+            rm -f "$exe_to_run"
+            return 1
           fi
           rm -rf "$temp_manifest_dir"
     fi
@@ -3326,7 +3343,7 @@ cf_run() {
         printf "${YELLOW}===== bb-main-err.log (last 40 lines) =====${NC}\n" >&2
         tail -40 "${_cf_service_log_dir}/bb-main-err.log" >&2
       fi
-      bbpro pm2 list >&2 || true
+      browserbox pm2 list >&2 || true
     fi
 
     rm -f "$_cf_bbpro_log"
@@ -4448,8 +4465,8 @@ stop() {
 
 logs() {
     printf "${YELLOW}Displaying BrowserBox logs...${NC}\n"
-    bbpro pm2 list || printf "${YELLOW}bbpro pm2 list failed (shim may not be running).${NC}\n"
-    printf "${YELLOW}Tail a service log with:${NC} bbpro pm2 logs bb-main --lines 50\n"
+    browserbox pm2 list || printf "${YELLOW}browserbox pm2 list failed (services may not be running).${NC}\n"
+    printf "${YELLOW}Tail a service log with:${NC} browserbox pm2 logs bb-main --lines 50\n"
 }
 
 # Helper function to convert epoch time to a timestamp format for touch -t
@@ -4616,10 +4633,91 @@ download_release_manifest() {
     curl_auth=(-H "Authorization: token ${GH_TOKEN}")
   fi
   mkdir -p "$dest_dir" || return 1
-  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json" "$manifest_url" || return 1
-  curl -L --fail --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json.sig" "$sig_url" || return 1
+  curl -L --fail --retry 3 --retry-all-errors --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json" "$manifest_url" || return 1
+  curl -L --fail --retry 3 --retry-all-errors --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json.sig" "$sig_url" || return 1
   chmod 644 "${dest_dir}/release.manifest.json" "${dest_dir}/release.manifest.json.sig" 2>/dev/null || true
   return 0
+}
+
+release_integrity_public_key() {
+  cat <<'KEY'
+-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnqKI++Z5x+cHF1je6Ww9
+r3hNRuefjZzlJGPD56IQTbVIDXZT45uGNHelg+BjlZezdGH86y29zKgx2g3pt8cC
+Yp8KMSgg69uo9EVFlDw8HQ1Sf7rciiU89neb48lkm5GfzXtAyIFWQj83AHDblQUq
+UJoXuu7YQLskHiRa0YPOkPf5KUHS8Yv1OJwXldsmd/+NGCrZki1o6xEt55B5qo3J
+89jUiVnSafUhZXuQiwYfRT5MVoBBFl6TK/kg3qTF4oVBvz0r4HO/C1uAEytaDEI4
+CFy2XO6i64DgSbkjzXCsomlHU0ywPbLxXPUst5AZwX62f/caGKGZs7IrZDBYNI2k
+bBZ5fCAFhExwI0HUVIFC31YFpFRZB3UnVQdE0q8UuZyCstubPk7gdkEljnCXDnMB
+bvgk5+5y8WgCrbu3mndlbb4K9NqxFq3tJppM8Gq8Rip94DghUBlRMXCBwaZ+EsBZ
+ZwkpTdoWvsJcO+NwHscRvHNRcDRUrDwMrTpSs/cfCRMUo0ze0ZxpenCQuQpae7ei
+Rs4+aW0rrwZBFo+o5GNWDOADAoD4JEPBNuSJyOw4mjdTgf8O9pIJfDF7HtX7pHr7
+e8u3jamSWvZSZA+50fI6iL05JUDA4cQ529voRTxiLALgLkSnlGY2EQrDr9A8lH4/
+hYdYq1pXWapoaFZTuPK4ln8CAwEAAQ==
+-----END PUBLIC KEY-----
+KEY
+}
+
+verify_release_bundle() {
+  local manifest_path="$1"
+  local signature_path="$2"
+  local binary_path="$3"
+  local artifact_key="$4"
+  local work_dir
+  work_dir="$(mktemp -d)" || return 1
+
+  if ! command -v openssl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+    printf "${RED}openssl and jq are required to verify BrowserBox updates.${NC}\n" >&2
+    rm -rf "$work_dir"
+    return 1
+  fi
+
+  release_integrity_public_key > "$work_dir/key.pem"
+  printf 'INTEGRITY/RELEASE_MANIFEST/v1\0' > "$work_dir/payload"
+  cat "$manifest_path" >> "$work_dir/payload"
+
+  if command -v xxd >/dev/null 2>&1; then
+    xxd -r -p "$signature_path" > "$work_dir/signature.bin"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 - "$signature_path" "$work_dir/signature.bin" <<'PY'
+import binascii
+import pathlib
+import sys
+pathlib.Path(sys.argv[2]).write_bytes(binascii.unhexlify(pathlib.Path(sys.argv[1]).read_text().strip()))
+PY
+  else
+    printf "${RED}xxd or python3 is required to verify the release signature.${NC}\n" >&2
+    rm -rf "$work_dir"
+    return 1
+  fi
+
+  if ! openssl dgst -sha256 -verify "$work_dir/key.pem" -signature "$work_dir/signature.bin" "$work_dir/payload" >/dev/null 2>&1; then
+    printf "${RED}Release manifest signature verification failed.${NC}\n" >&2
+    rm -rf "$work_dir"
+    return 1
+  fi
+
+  local expected_sha actual_sha
+  expected_sha="$(jq -er --arg key "$artifact_key" '.artifacts[$key].sha256 | select(test("^[0-9a-fA-F]{64}$"))' "$manifest_path" 2>/dev/null)" || {
+    printf "${RED}Release manifest is missing a valid ${artifact_key} checksum.${NC}\n" >&2
+    rm -rf "$work_dir"
+    return 1
+  }
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual_sha="$(sha256sum "$binary_path" | awk '{print $1}')"
+  else
+    actual_sha="$(shasum -a 256 "$binary_path" | awk '{print $1}')"
+  fi
+
+  rm -rf "$work_dir"
+  actual_sha="$(printf '%s' "$actual_sha" | tr '[:upper:]' '[:lower:]')"
+  expected_sha="$(printf '%s' "$expected_sha" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$actual_sha" != "$expected_sha" ]]; then
+    printf "${RED}Downloaded BrowserBox checksum mismatch for ${artifact_key}.${NC}\n" >&2
+    printf "Expected: %s\nActual:   %s\n" "$expected_sha" "$actual_sha" >&2
+    return 1
+  fi
+  printf "${GREEN}Verified signed release manifest and BrowserBox checksum.${NC}\n" >&2
 }
 
 install_release_manifest_from_dir() {
@@ -4690,6 +4788,18 @@ check_prepare_and_install() {
             printf "${RED}Error: Prepared manifest files not found${NC}\n"
             return 1
           fi
+        fi
+
+        local prepared_platform prepared_artifact_key
+        prepared_platform="$(detect_platform)"
+        case "$prepared_platform" in
+          macos) prepared_artifact_key="darwin-arm64" ;;
+          linux) prepared_artifact_key="linux-x64" ;;
+          *) printf "${RED}Unsupported update platform: %s${NC}\n" "$prepared_platform"; return 1 ;;
+        esac
+        if ! verify_release_bundle "$prepared_manifest" "$prepared_manifest_sig" "$prepared_binary" "$prepared_artifact_key" >> "$LOG_FILE" 2>&1; then
+          printf "${RED}Prepared update failed integrity verification; refusing to install.${NC}\n"
+          return 1
         fi
 
         printf "${YELLOW}Installing release manifest...${NC}\n" >> "$LOG_FILE"
@@ -4845,6 +4955,19 @@ update() {
     return 1
   fi
 
+  local artifact_key
+  case "$platform" in
+    macos) artifact_key="darwin-arm64" ;;
+    linux) artifact_key="linux-x64" ;;
+    *) printf "${RED}Unsupported update platform: %s${NC}\n" "$platform"; rm -rf "$temp_manifest_dir"; rm -f "$temp_exe"; return 1 ;;
+  esac
+  if ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$temp_exe" "$artifact_key"; then
+    printf "${RED}Downloaded update failed integrity verification; refusing to install.${NC}\n"
+    rm -rf "$temp_manifest_dir"
+    rm -f "$temp_exe"
+    return 1
+  fi
+
   if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
     printf "${RED}Failed to install release manifest anywhere. Integrity checks will fail.${NC}\n"
     rm -rf "$temp_manifest_dir"
@@ -4971,6 +5094,18 @@ update_background() {
     $SUDO rm -f "$PREPARING_FILE"
     rm -f "$temp_binary" 2>/dev/null
     rm -rf "$BBX_NEW_DIR" 2>/dev/null
+    return 1
+  fi
+
+  local artifact_key
+  case "$platform" in
+    macos) artifact_key="darwin-arm64" ;;
+    linux) artifact_key="linux-x64" ;;
+  esac
+  if ! verify_release_bundle "$temp_manifest" "$temp_manifest_sig" "$temp_binary" "$artifact_key" >> "$LOG_FILE" 2>&1; then
+    printf "${RED}Downloaded update failed integrity verification; refusing to prepare it.${NC}\n" >> "$LOG_FILE"
+    $SUDO rm -f "$PREPARING_FILE"
+    rm -rf "$BBX_NEW_DIR"
     return 1
   fi
 
@@ -5683,7 +5818,7 @@ _for_status() {
   _tu_load_config
   printf "${CYAN}[--for %s] BrowserBox status:${NC}\n" "$BBX_FOR_USER"
 
-  if _tu_run bbpro pm2 list 2>/dev/null; then
+  if _tu_run browserbox pm2 list 2>/dev/null; then
     printf "${GREEN}[--for %s] Services running.${NC}\n" "$BBX_FOR_USER"
   else
     printf "${YELLOW}[--for %s] No services detected.${NC}\n" "$BBX_FOR_USER"
@@ -6476,6 +6611,7 @@ _has_chrome() {
 }
 
 if _needs_chrome "${1:-}"; then
+  load_config
   if ! _has_chrome; then
     printf "${RED}Chrome/Chromium is not installed.${NC}\n"
     printf "BrowserBox requires a Chrome-family browser to run.\n"

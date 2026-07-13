@@ -226,6 +226,55 @@ is_truthy() {
   esac
 }
 
+has_browser_dep() {
+  if [[ -n "${CHROME_PATH:-}" && -x "${CHROME_PATH}" ]]; then
+    return 0
+  fi
+
+  local candidate
+  local candidates=(
+    google-chrome-stable
+    google-chrome
+    chromium-browser
+    chromium
+  )
+  for candidate in "${candidates[@]}"; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+ensure_browser_dep() {
+  local chrome_installer
+  local installer_cmd=()
+
+  if has_browser_dep; then
+    return 0
+  fi
+
+  chrome_installer="${script_dir}/../src/zombie-lord/dlchrome.sh"
+  if [[ -f "$chrome_installer" ]]; then
+    installer_cmd=(bash "$chrome_installer")
+  elif command -v sudo >/dev/null 2>&1 && sudo -n test -f "$chrome_installer" 2>/dev/null; then
+    installer_cmd=(sudo -n bash "$chrome_installer")
+  else
+    echo "Browser dependency missing and installer helper not found at ${chrome_installer}." >&2
+    return 1
+  fi
+
+  echo "Installing Chrome browser dependency..." >&2
+  "${installer_cmd[@]}"
+
+  if has_browser_dep; then
+    return 0
+  fi
+
+  echo "Browser dependency is still missing after running ${chrome_installer}." >&2
+  return 1
+}
+
 is_interactive() {
   if [[ -t 0 && -t 1 ]]; then
     return 0
@@ -1019,7 +1068,25 @@ normalize_install_env
 hostname_default="${BBX_INSTALL_HOSTNAME:-$(hostname)}"
 email_value="${BBX_INSTALL_EMAIL:-}"
 
+is_ip_literal() {
+  local hostname="$1"
+
+  if [[ "$hostname" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    return 0
+  fi
+
+  if [[ "$hostname" == *:* ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
 is_local_hostname() {
+  if is_ip_literal "$1"; then
+    return 0
+  fi
+
   case "$1" in
     localhost|127.0.0.1|::1) return 0 ;;
     *.local|*.test|*.example) return 0 ;;
@@ -1145,6 +1212,10 @@ if [[ "$full_install" == "true" ]]; then
 else
   echo "Running update install..." >&2
   "$temp_binary" --install
+fi
+
+if [[ "$(uname -s)" == "Linux" ]]; then
+  ensure_browser_dep
 fi
 
 echo "Installation complete. Type 'bbx' to get started. Get a license key at https://browserbox.io and install your license key with bbx certify." >&2
