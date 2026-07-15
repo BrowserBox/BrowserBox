@@ -2911,7 +2911,15 @@ tor_run() {
     local _tor_verify_interval=5
     local _tor_probe_count=0
     local _tor_total_probes=$((_tor_verify_max / _tor_verify_interval))
-    while [ $_tor_verify_elapsed -lt $_tor_verify_max ]; do
+    local _tor_verify_started
+    local _tor_verify_now
+    _tor_verify_started="$(date +%s)"
+    while true; do
+      _tor_verify_now="$(date +%s)"
+      _tor_verify_elapsed=$((_tor_verify_now - _tor_verify_started))
+      if [ $_tor_verify_elapsed -ge $_tor_verify_max ]; then
+        break
+      fi
       _tor_probe_count=$((_tor_probe_count + 1))
       local _pct=$((_tor_verify_elapsed * 100 / _tor_verify_max))
       local _bar_w=30
@@ -2936,7 +2944,6 @@ tor_run() {
         break
       fi
       sleep "$_tor_verify_interval"
-      _tor_verify_elapsed=$((_tor_verify_elapsed + _tor_verify_interval))
     done
     if ! $_tor_verify_ok; then
       printf "\n${YELLOW}Warning: Onion service not reachable after ${_tor_verify_max}s. It may still be propagating.${NC}\n"
