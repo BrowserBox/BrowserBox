@@ -208,7 +208,9 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 ## 8. Supported Network Topologies
 
-BrowserBox isn't fussy about how your network is wired. Whether you're behind a corporate NAT, routing through Tor, or running a Cloudflare tunnel for a quick demo, it fits in without requiring you to restructure anything. The table below covers the supported topologies — pick what matches your situation.
+BrowserBox isn't fussy about how your network is wired. Whether you're behind a corporate NAT, routing through Tor, or running a Cloudflare tunnel for a quick demo, it fits in without requiring you to restructure anything. Access can be browser-based over HTTPS/WSS/WebRTC or terminal-native over SSH. The SSH access topology is provided by the optional **KRNL BrowserBox add-on**, which presents the remote browser as an interactive terminal user interface (TUI) in an SSH session with PTY allocation. KRNL is available with BrowserBox as a [BrowserBox + KRNL bundle](https://win9-5.com/krnl).
+
+The table below covers the supported topologies — pick what matches your situation.
 
 | Topology | Description | Public Access? | Key Features & Benefits | OS Support (Ubuntu/macOS/Windows) | Best For |
 |----------|-------------|----------------|--------------------------|------------------------------------|----------|
@@ -217,7 +219,7 @@ BrowserBox isn't fussy about how your network is wired. Whether you're behind a 
 | **HTTPS/WSS/WebRTC** | Secure HTTPS with WebSocket Secure and WebRTC for encrypted, peer-to-peer media streaming. | Yes (if exposed) | End-to-end encryption; auto-cert handling; custom/standard ports (443 default). | ✅ / ✅ / ✅ | Video calls, secure file sharing, or real-time collaboration in production. |
 | **Tor/HTTP** | Tor onion service over HTTP for pseudonymous access. | Yes (via .onion) | High privacy; bypasses censorship; slow but reliable. Requires Tor Browser. | ✅ / ✅ / ✅ | Privacy-focused demos or restricted environments. |
 | **Tor/HTTPS** | Secure Tor onion service with HTTPS encryption. | Yes (via .onion) | Adds TLS to Tor for extra security; reliable NAT traversal. | ✅ / ✅ / ✅ | Anonymous secure access in high-threat scenarios. |
-| **SSH Text Mode ([KRNL](https://win9-5.com/krnl))** | Full text-mode browser rendered in your terminal over plain SSH — no browser or GUI on the client at all. | Yes (any SSH client) | Works from servers, air-gapped jump boxes, and terminals; try it now: `ssh krnl.duetbrowser.com`. | ✅ / ✅ / ✅ | Terminal-only environments, ops boxes, and minimal-footprint access. |
+| **SSH / Interactive Terminal ([KRNL add-on](https://win9-5.com/krnl))** | Terminal-native BrowserBox access through an interactive SSH session with a PTY-backed TUI; no graphical browser is required on the client. | Public or private (standard SSH) | Remote browsing from an SSH client; try the hosted demo with `ssh krnl.duetbrowser.com`, or purchase the BrowserBox + KRNL bundle. | ✅ / ✅ / ✅ | Bastion hosts, jump boxes, terminal-first operations, and constrained client environments. |
 | **SSH Port Forward, HTTP** | SSH-based port forwarding tunneling HTTP traffic. | No (private) | Secure, low-latency; forwards to custom/standard ports. Upcoming auto-cert orchestration. | ✅ / ✅ / ✅ | Private homelab access or secure internal routing. |
 | **SSH Port Forward, HTTPS** | SSH forwarding with HTTPS for encrypted tunnels. | No (private) | Combines SSH reliability with TLS; flexible port options. Native enhancements incoming. | ✅ / ✅ / ✅ | Enterprise-grade secure remote sessions. |
 | **Custom Ports** | User-defined ports (e.g., 8080, 9999, 11111) across any protocol. | Varies | Total control; avoids conflicts; integrates with all topologies. | ✅ / ✅ / ✅ | Tailored setups for specialized apps or multi-service hosts. |
@@ -232,6 +234,7 @@ BrowserBox isn't fussy about how your network is wired. Whether you're behind a 
 | **ZeroTier** | Overlay network for peer-to-peer private access. | No (private network) | LAN-like; very high reliability. Native `bbx zt-run` support soon. Tokens required; client on access device. | ✅ / ✅ / ✅ | Secure P2P demos in overlays. |
 
 **Notes on Flexibility & Power:**
+- KRNL terminal access is distinct from SSH port forwarding: KRNL provides an interactive TUI over SSH, while port forwarding carries BrowserBox's HTTP(S) access path through a private tunnel.
 - BrowserBox supports mixing and matching topologies — you can run HTTPS with a Cloudflare tunnel on custom ports, or Tor over SSH forwarding. The topology is yours to compose.
 - The `bbx` CLI handles tunnel setup, cert orchestration, and run modes in one place, so you're not stitching together a dozen separate tools to get a working deployment.
 
