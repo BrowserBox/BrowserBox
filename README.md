@@ -52,7 +52,7 @@
 
 ---
 
-BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, macOS, Linux, and containers. **A product key is required for all self-hosted usage.**
+BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, macOS, Linux, and containers. **BrowserBox is commercial software. A valid license is required for all use, including development and evaluation. BrowserBox is not open source.**
 
 **At a glance:**
 - Clientless RBI — no plugins, no downloads for end users
@@ -275,6 +275,8 @@ BrowserBox runs where real work happens — here's the current support matrix.
 
 ## 10. Install
 
+BrowserBox is commercial software. A valid license is required for **all** use, including development and evaluation. BrowserBox is not open source. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate) or [purchase a license](https://dosaygo.com/commerce).
+
 ### Linux & macOS
 
 ```bash
@@ -299,6 +301,8 @@ npm i -g @browserbox/browserbox
 
 ## 11. Quick Start
 
+A product key is required. Obtain one via [paid evaluation](https://browserbox.io/evaluate) or [commercial / non-commercial purchase](https://dosaygo.com/pricing.html).
+
 ```bash
 bbx install
 bbx certify YOUR_PRODUCT_KEY
@@ -321,7 +325,7 @@ Launch BrowserBox directly on a GitHub Actions runner with [BrowserBox/browserbo
 - Supports `tunnel: none`, `cloudflare`, and `tor`
 - Defaults to a minimal runner footprint with `BBX_MINIMAL_MODE=true`
 - Disables update checks during runner launches with `BBX_NO_UPDATE=true`
-- Requires a BrowserBox license key from [browserbox.io](https://browserbox.io)
+- Requires a BrowserBox license key ([paid evaluation](https://browserbox.io/evaluate) or [purchase](https://dosaygo.com/commerce))
 
 ```yaml
 jobs:
@@ -453,7 +457,7 @@ BrowserBox requires a valid license for all deployments — commercial, non-comm
 ## 19. FAQ
 
 **Q: Can I get an evaluation license?**
-Yes. Apply for a free 7-day trial at [browserbox.io](https://browserbox.io). No credit card required to evaluate.
+Yes. Lock in your 7-day BrowserBox evaluation. Pay a one-time fee based on seats ($20 per seat with work email / $40 per seat with free or anonymous email providers), verify your ID via Stripe, and receive your license key by email. No subscriptions. Trial ends in 7 days, upgrade anytime. Your evaluation fee is deducted from your full license should you proceed to purchase. All sales final — no refunds under any circumstances. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate).
 
 **Q: Why is a license required?**
 BrowserBox is commercial software. A license funds continued development, security research, and support. It also gives you a legitimate, supportable deployment — not a fork of old code that diverged 1,000+ commits ago.
@@ -477,11 +481,11 @@ Reach out to [sales@dosaygo.com](mailto:sales@dosaygo.com). We handle compliance
 
 ## 20. Licensing
 
-BrowserBox is a commercial product. All usage requires a valid license.
+BrowserBox is commercial software. A valid license is required for **all** use, including development and evaluation. BrowserBox is not open source.
 
 - **Commercial:** Starts at $119/user/year. [Purchase](https://dosaygo.com/commerce)
 - **Non-Commercial:** $49/user/year (non-profits, government). [Purchase](https://dosaygo.com/noncommercial)
-- **Evaluation:** [Apply for a 7-day trial](https://browserbox.io)
+- **Evaluation:** 7-day paid evaluation license (one-time fee per seat with ID verification via Stripe; fee credited toward full license on upgrade). All sales final. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate)
 - **Enterprise / Source Access:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 
 ---
@@ -502,7 +506,7 @@ DOSAYGO — do, say, go — those are three of the most universal human verbs, a
 
 <p align="center">
   <strong>Ready to get started?</strong><br>
-  <a href="https://dosaygo.com/commerce">Commercial License</a> · <a href="https://dosaygo.com/noncommercial">Non-Commercial License</a> · <a href="mailto:sales@dosaygo.com?subject=Demo">Request a Demo</a>
+  <a href="https://browserbox.io/evaluate">Start 7-Day Paid Evaluation</a> · <a href="https://dosaygo.com/commerce">Commercial License</a> · <a href="https://dosaygo.com/noncommercial">Non-Commercial License</a> · <a href="mailto:sales@dosaygo.com?subject=Demo">Request a Demo</a>
 </p>
 
 BrowserBox&trade; is &copy; 2018-2026 DOSAYGO Corporation USA. All rights reserved.
