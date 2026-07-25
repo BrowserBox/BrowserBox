@@ -4536,7 +4536,8 @@ check_and_prepare_update() {
     return 0
   fi
   # Skip update checks for these commands
-  ([ "$1" = "uninstall" ] || [ "$1" = "update" ] || [ "$1" = "install" ] || [ "$1" = "update-background" ]) && return 0
+  # (fleet: acquire/release are machine-to-machine fast paths)
+  ([ "$1" = "uninstall" ] || [ "$1" = "update" ] || [ "$1" = "install" ] || [ "$1" = "update-background" ] || [ "$1" = "fleet" ]) && return 0
 
   load_config
   mkdir -p "$BB_CONFIG_DIR"
@@ -5450,7 +5451,9 @@ _tu_ensure_config_dir() {
 # Usage: _tu_run <command> [args...]
 _tu_run() {
   local _env_prefix=""
-  printf -v _env_prefix 'export PATH=/usr/local/bin:/usr/bin:/bin:"$PATH"'
+  # BBX_DELEGATE_PATH_PREFIX allows non-standard install locations to
+  # take precedence in the delegated environment (default unchanged).
+  printf -v _env_prefix 'export PATH=%s:"$PATH"' "${BBX_DELEGATE_PATH_PREFIX:-/usr/local/bin:/usr/bin:/bin}"
   printf -v _env_prefix '%s; export BBX_NO_UPDATE=true' "$_env_prefix"
   [[ -n "${LICENSE_KEY:-}" ]] && printf -v _env_prefix '%s; export LICENSE_KEY=%q' "$_env_prefix" "$LICENSE_KEY"
   [[ -n "${BBX_MINIMAL_MODE:-}" ]] && printf -v _env_prefix '%s; export BBX_MINIMAL_MODE=%q' "$_env_prefix" "$BBX_MINIMAL_MODE"
@@ -5462,6 +5465,16 @@ _tu_run() {
   [[ -n "${HOST_PER_SERVICE:-}" ]] && printf -v _env_prefix '%s; export HOST_PER_SERVICE=%q' "$_env_prefix" "$HOST_PER_SERVICE"
   [[ -n "${BBX_HTTP_ONLY:-}" ]] && printf -v _env_prefix '%s; export BBX_HTTP_ONLY=%q' "$_env_prefix" "$BBX_HTTP_ONLY"
   [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP:-}" ]] && printf -v _env_prefix '%s; export BBX_DONT_KILL_CHROME_ON_STOP=%q' "$_env_prefix" "$BBX_DONT_KILL_CHROME_ON_STOP"
+  [[ -n "${BBX_CLEAN_SLATE:-}" ]] && printf -v _env_prefix '%s; export BBX_CLEAN_SLATE=%q' "$_env_prefix" "$BBX_CLEAN_SLATE"
+  # Fleet-wide BrowserBox defaults (populated only by bbx fleet from
+  # its validated defaults.env; empty for ordinary --for usage).
+  if [[ -n "${BBX_FLEET_EXTRA_ENV+x}" ]]; then
+    local _fleet_kv
+    for _fleet_kv in "${BBX_FLEET_EXTRA_ENV[@]}"; do
+      [[ "${_fleet_kv%%=*}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+      printf -v _env_prefix '%s; export %s=%q' "$_env_prefix" "${_fleet_kv%%=*}" "${_fleet_kv#*=}"
+    done
+  fi
   # Only propagate SSLCERTS_DIR if explicitly set via BBX_SSLCERTS_DIR.
   # The operator's test.env sets SSLCERTS_DIR to *their* cert path — passing
   # that to the target user would corrupt the operator's cert dir on chown.
@@ -5836,6 +5849,2515 @@ _for_status() {
   fi
 }
 # ─── end --for <user> helpers ───────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# FLEET — machine-level pool of ephemeral clean-slate BrowserBox
+# sessions (Linux only). A privileged operator initializes a fixed
+# pool of reusable OS-user "seats"; an external application acquires
+# and releases allocations. Reuses the --for delegated-user machinery
+# (_tu_*/_for_*) for all per-seat BrowserBox lifecycle work.
+# ═══════════════════════════════════════════════════════════════════
+
+# Fleet state layout (operator-owned, mode 0700/0600):
+#   ${BB_CONFIG_DIR}/fleet/
+#     fleet.env        deployment configuration
+#     defaults.env     fleet-wide BrowserBox env defaults
+#     routing.env      routing/DNS/cert status metadata
+#     lock             flock serialization point
+#     seats/           one record per seat
+#     allocations/     one record per active allocation
+#     nginx/           generated nginx config + previous good copy
+#     diagnostics/     doctor/reconcile reports
+
+FLEET_JSON=0
+_FLEET_STDOUT_FD=1
+_FLEET_LOCK_FD=""
+FLEET_DIR=""
+FLEET_NGINX_SITE_NAME="bbx-fleet.conf"
+
+# Fleet configuration (loaded from fleet.env; defaults per spec)
+FLEET_SIZE=10
+FLEET_USER_PREFIX="bbx-seat-"
+FLEET_USER_WIDTH=4
+FLEET_PORT_START=7000
+FLEET_PORT_END=20000
+FLEET_DOMAIN=""
+FLEET_ROUTING_MODE="subdomain"
+FLEET_SUBDOMAIN_MODE="port"
+FLEET_BACKEND="https"
+FLEET_SESSION_TIMEOUT=0
+FLEET_CLEAN_SLATE=true
+
+# Stale reserved/starting allocations older than this (seconds) with no
+# runtime are auto-cleaned during acquire-time reconciliation.
+FLEET_STALE_RESERVE_SECS="${FLEET_STALE_RESERVE_SECS:-900}"
+
+# ── Output helpers ──────────────────────────────────────────────────
+
+_fleet_json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+# Emit final JSON (or text) to the real stdout even when stdout has
+# been redirected to stderr for JSON purity.
+_fleet_emit() {
+  printf '%s\n' "$1" >&"$_FLEET_STDOUT_FD"
+}
+
+_fleet_info() { printf '%b\n' "${CYAN}[fleet]${NC} $1" >&2; }
+_fleet_warn() { printf '%b\n' "${YELLOW}[fleet] $1${NC}" >&2; }
+
+# _fleet_fail <code> <message> — emit stable error and exit nonzero.
+_fleet_fail() {
+  local code="$1" msg="$2"
+  if (( FLEET_JSON )); then
+    _fleet_emit "{\"ok\":false,\"error\":{\"code\":\"$(_fleet_json_escape "$code")\",\"message\":\"$(_fleet_json_escape "$msg")\"}}"
+  else
+    printf '%b\n' "${RED}Error: ${msg}${NC}" >&2
+    printf '  (error code: %s)\n' "$code" >&2
+  fi
+  _fleet_unlock
+  exit 1
+}
+
+# ── Platform / privilege gates ──────────────────────────────────────
+
+_fleet_require_linux() {
+  if [[ "$(uname -s)" != "Linux" ]]; then
+    if (( FLEET_JSON )); then
+      _fleet_emit '{"ok":false,"error":{"code":"fleet_unsupported_platform","message":"bbx fleet is supported only on Linux."}}'
+    else
+      printf 'Error: bbx fleet is supported only on Linux.\n' >&2
+    fi
+    exit 1
+  fi
+}
+
+_fleet_require_priv() {
+  if ! command -v sudo >/dev/null 2>&1; then
+    _fleet_fail fleet_privilege_required "bbx fleet requires sudo to be installed (used for per-seat delegation)."
+  fi
+  if [[ "$EUID" -ne 0 ]] && ! sudo -n true 2>/dev/null; then
+    _fleet_fail fleet_privilege_required "bbx fleet requires root or an operator with passwordless sudo."
+  fi
+}
+
+_fleet_now() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }
+_fleet_epoch() { date +%s; }
+
+# Convert a stored ISO-8601 UTC timestamp to epoch (0 on parse failure).
+_fleet_ts_to_epoch() {
+  local ts="$1"
+  [[ "$ts" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] || { echo 0; return; }
+  date -u -d "${ts%Z}" +%s 2>/dev/null || echo 0
+}
+
+# ── Validation primitives ───────────────────────────────────────────
+# Every value read from Fleet state or CLI input is validated before
+# use. State records are never sourced or eval'd.
+
+_fleet_valid_int() { [[ "$1" =~ ^[0-9]{1,10}$ ]]; }
+_fleet_valid_port() { [[ "$1" =~ ^[0-9]{2,5}$ ]] && (( $1 >= 1024 && $1 <= 65535 )); }
+_fleet_valid_username() { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; }
+_fleet_valid_user_prefix() { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,24}$ ]]; }
+_fleet_valid_label() { [[ "$1" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]]; }
+_fleet_valid_state() { case "$1" in reserved|starting|running|releasing|failed) return 0;; *) return 1;; esac; }
+_fleet_valid_alloc_id() { [[ "$1" =~ ^bbxf-[a-f0-9]{32}$ ]]; }
+_fleet_valid_bool() { [[ "$1" == "true" || "$1" == "false" ]]; }
+_fleet_valid_envkey() { [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; }
+_fleet_valid_ts() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; }
+
+_fleet_valid_domain() {
+  local d="$1"
+  [[ -n "$d" ]] || return 1
+  (( ${#d} <= 253 )) || return 1
+  [[ "$d" != *"://"* && "$d" != */* && "$d" != *" "* ]] || return 1
+  [[ "$d" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$ ]]
+}
+
+_fleet_valid_hostname() { _fleet_valid_domain "$1"; }
+
+_fleet_valid_url() {
+  [[ "$1" =~ ^https?://[A-Za-z0-9._~:/?#=\&%-]+$ ]]
+}
+
+# Local-only domains route via /etc/hosts + local certs (no public DNS).
+_fleet_is_local_domain() {
+  case "$1" in
+    localhost|*.localhost|*.local|*.lan|*.home|*.internal|*.test) return 0;;
+    *) return 1;;
+  esac
+}
+
+# ── State directory management ──────────────────────────────────────
+
+_fleet_set_dir() {
+  FLEET_DIR="${BB_CONFIG_DIR}/fleet"
+}
+
+# Reject symlinked state directories/records (symlink attack guard).
+_fleet_assert_not_symlink() {
+  local p="$1"
+  if [[ -L "$p" ]]; then
+    _fleet_fail fleet_state_inconsistent "Fleet state path is a symlink (refusing): $p"
+  fi
+}
+
+_fleet_dirs_ready() {
+  [[ -d "$FLEET_DIR" && -f "${FLEET_DIR}/fleet.env" ]]
+}
+
+_fleet_dirs_init() {
+  local d
+  for d in "$FLEET_DIR" "${FLEET_DIR}/seats" "${FLEET_DIR}/allocations" "${FLEET_DIR}/nginx" "${FLEET_DIR}/diagnostics"; do
+    _fleet_assert_not_symlink "$d"
+    mkdir -p "$d"
+    chmod 700 "$d"
+  done
+  if [[ ! -f "${FLEET_DIR}/lock" ]]; then
+    : > "${FLEET_DIR}/lock"
+  fi
+  chmod 600 "${FLEET_DIR}/lock"
+}
+
+_fleet_require_init() {
+  _fleet_set_dir
+  if ! _fleet_dirs_ready; then
+    _fleet_fail fleet_not_initialized "Fleet is not initialized. Run: sudo bbx fleet init --size <n> [--domain <host>]"
+  fi
+  _fleet_assert_not_symlink "$FLEET_DIR"
+  _fleet_assert_not_symlink "${FLEET_DIR}/seats"
+  _fleet_assert_not_symlink "${FLEET_DIR}/allocations"
+  _fleet_config_load
+}
+
+# ── Locking ─────────────────────────────────────────────────────────
+# All seat/allocation ownership decisions happen under this exclusive
+# lock. The lock is NEVER held across long-running lifecycle work
+# (setup, certification, startup, shutdown, cert issuance).
+
+_fleet_lock() {
+  local timeout="${1:-30}"
+  [[ -n "$_FLEET_LOCK_FD" ]] && return 0
+  if ! command -v flock >/dev/null 2>&1; then
+    _fleet_fail fleet_state_inconsistent "flock is required for bbx fleet but was not found."
+  fi
+  exec {_FLEET_LOCK_FD}>>"${FLEET_DIR}/lock" || _fleet_fail fleet_state_inconsistent "Cannot open Fleet lock file."
+  if ! flock -w "$timeout" "$_FLEET_LOCK_FD"; then
+    exec {_FLEET_LOCK_FD}>&-
+    _FLEET_LOCK_FD=""
+    _fleet_fail fleet_state_inconsistent "Timed out waiting for the Fleet lock (${timeout}s)."
+  fi
+}
+
+_fleet_unlock() {
+  [[ -n "$_FLEET_LOCK_FD" ]] || return 0
+  flock -u "$_FLEET_LOCK_FD" 2>/dev/null || true
+  exec {_FLEET_LOCK_FD}>&- 2>/dev/null || true
+  _FLEET_LOCK_FD=""
+}
+
+# ── Record I/O ──────────────────────────────────────────────────────
+# Records are plain KEY=VALUE lines. They are parsed with a constrained
+# reader — never sourced, never eval'd — and every value is validated
+# against a per-key pattern before use.
+
+# _fleet_record_kv_valid <key> <value>
+_fleet_record_kv_valid() {
+  local key="$1" val="$2"
+  case "$key" in
+    SEAT_INDEX|MAIN_PORT|TIMEOUT_SECONDS|FLEET_SIZE|FLEET_USER_WIDTH|FLEET_PORT_START|FLEET_PORT_END|FLEET_SESSION_TIMEOUT)
+      _fleet_valid_int "$val" ;;
+    SEAT_NAME|LINUX_USER)
+      _fleet_valid_username "$val" ;;
+    FLEET_USER_PREFIX)
+      _fleet_valid_user_prefix "$val" ;;
+    PUBLIC_HOSTNAME|HOST_M2|HOST_M1|HOST_MAIN|HOST_P1|HOST_P2)
+      _fleet_valid_hostname "$val" ;;
+    FLEET_DOMAIN|DNS_CHECK_HOST)
+      [[ -z "$val" ]] || _fleet_valid_domain "$val" ;;
+    ROUTING_LABEL|LABEL_M2|LABEL_M1|LABEL_P1|LABEL_P2)
+      _fleet_valid_label "$val" ;;
+    STATE)
+      _fleet_valid_state "$val" ;;
+    ALLOCATION_ID)
+      _fleet_valid_alloc_id "$val" ;;
+    ELIGIBLE|FLEET_CLEAN_SLATE|DNS_VALID|DNS_PROXIED|CERT_VALID|NGINX_APPLIED)
+      _fleet_valid_bool "$val" ;;
+    CREATED_AT|UPDATED_AT|CHECKED_AT)
+      _fleet_valid_ts "$val" ;;
+    LOGIN_URL)
+      [[ -z "$val" ]] || _fleet_valid_url "$val" ;;
+    ROUTING_MODE|FLEET_ROUTING_MODE)
+      [[ "$val" == "subdomain" || "$val" == "direct-port" ]] ;;
+    FLEET_SUBDOMAIN_MODE)
+      [[ "$val" == "port" || "$val" == "seat" || "$val" == "random" ]] ;;
+    FLEET_BACKEND)
+      [[ "$val" == "http" || "$val" == "https" ]] ;;
+    RUNTIME_MARKER)
+      [[ "$val" =~ ^[0-9]{1,12}$ ]] ;;
+    CERT_FILE|KEY_FILE)
+      [[ -z "$val" ]] || [[ "$val" =~ ^/[A-Za-z0-9._/-]+$ && "$val" != *".."* ]] ;;
+    *)
+      return 1 ;;
+  esac
+}
+
+# _fleet_record_get <file> <key> — print validated value or fail.
+_fleet_record_get() {
+  local file="$1" key="$2" line val
+  [[ -f "$file" && ! -L "$file" ]] || return 1
+  line="$(grep -m1 -E "^${key}=" "$file" 2>/dev/null)" || return 1
+  val="${line#*=}"
+  _fleet_record_kv_valid "$key" "$val" || return 1
+  printf '%s' "$val"
+}
+
+# _fleet_record_write <file> KEY=VALUE... — atomic replace, mode 0600.
+# Every pair is validated before writing.
+_fleet_record_write() {
+  local file="$1"; shift
+  local dir tmp kv key val
+  _fleet_assert_not_symlink "$file"
+  dir="$(dirname "$file")"
+  tmp="$(mktemp "${dir}/.rec.XXXXXX")" || _fleet_fail fleet_state_inconsistent "Cannot create temp record in ${dir}."
+  chmod 600 "$tmp"
+  for kv in "$@"; do
+    key="${kv%%=*}"
+    val="${kv#*=}"
+    if ! _fleet_record_kv_valid "$key" "$val"; then
+      rm -f "$tmp"
+      _fleet_fail fleet_state_inconsistent "Refusing to write invalid record field ${key}."
+    fi
+    printf '%s=%s\n' "$key" "$val" >> "$tmp"
+  done
+  mv -f "$tmp" "$file"
+}
+
+# _fleet_record_update <file> KEY=VALUE... — rewrite with given keys
+# replaced, all other existing valid keys preserved.
+_fleet_record_update() {
+  local file="$1"; shift
+  local -a out=()
+  local -A newkeys=()
+  local kv key line val
+  for kv in "$@"; do
+    newkeys["${kv%%=*}"]=1
+    out+=("$kv")
+  done
+  if [[ -f "$file" && ! -L "$file" ]]; then
+    while IFS= read -r line; do
+      key="${line%%=*}"
+      val="${line#*=}"
+      [[ -n "$key" && "$line" == *"="* ]] || continue
+      [[ -n "${newkeys[$key]:-}" ]] && continue
+      _fleet_record_kv_valid "$key" "$val" || continue
+      out+=("${key}=${val}")
+    done < "$file"
+  fi
+  _fleet_record_write "$file" "${out[@]}"
+}
+
+# ── Fleet configuration ─────────────────────────────────────────────
+
+_fleet_config_path() { printf '%s' "${FLEET_DIR}/fleet.env"; }
+
+_fleet_config_load() {
+  local f; f="$(_fleet_config_path)"
+  [[ -f "$f" ]] || return 0
+  local v
+  v="$(_fleet_record_get "$f" FLEET_SIZE)" && FLEET_SIZE="$v"
+  v="$(_fleet_record_get "$f" FLEET_USER_PREFIX)" && FLEET_USER_PREFIX="$v"
+  v="$(_fleet_record_get "$f" FLEET_USER_WIDTH)" && FLEET_USER_WIDTH="$v"
+  v="$(_fleet_record_get "$f" FLEET_PORT_START)" && FLEET_PORT_START="$v"
+  v="$(_fleet_record_get "$f" FLEET_PORT_END)" && FLEET_PORT_END="$v"
+  v="$(_fleet_record_get "$f" FLEET_DOMAIN)" && FLEET_DOMAIN="$v"
+  v="$(_fleet_record_get "$f" FLEET_ROUTING_MODE)" && FLEET_ROUTING_MODE="$v"
+  v="$(_fleet_record_get "$f" FLEET_SUBDOMAIN_MODE)" && FLEET_SUBDOMAIN_MODE="$v"
+  v="$(_fleet_record_get "$f" FLEET_BACKEND)" && FLEET_BACKEND="$v"
+  v="$(_fleet_record_get "$f" FLEET_SESSION_TIMEOUT)" && FLEET_SESSION_TIMEOUT="$v"
+  v="$(_fleet_record_get "$f" FLEET_CLEAN_SLATE)" && FLEET_CLEAN_SLATE="$v"
+  return 0
+}
+
+_fleet_config_validate() {
+  _fleet_valid_int "$FLEET_SIZE" && (( FLEET_SIZE >= 1 )) \
+    || _fleet_fail fleet_invalid_config "Fleet size must be a positive integer."
+  _fleet_valid_user_prefix "$FLEET_USER_PREFIX" \
+    || _fleet_fail fleet_invalid_config "Invalid Fleet user prefix '${FLEET_USER_PREFIX}'."
+  _fleet_valid_int "$FLEET_USER_WIDTH" && (( FLEET_USER_WIDTH >= 1 && FLEET_USER_WIDTH <= 6 )) \
+    || _fleet_fail fleet_invalid_config "Fleet user width must be 1-6."
+  (( FLEET_SIZE <= 10 ** FLEET_USER_WIDTH )) \
+    || _fleet_fail fleet_invalid_config "User width ${FLEET_USER_WIDTH} is insufficient for size ${FLEET_SIZE}."
+  (( ${#FLEET_USER_PREFIX} + FLEET_USER_WIDTH <= 32 )) \
+    || _fleet_fail fleet_invalid_config "Prefix plus width exceeds the 32-character Linux username limit."
+  _fleet_valid_int "$FLEET_PORT_START" && _fleet_valid_int "$FLEET_PORT_END" \
+    || _fleet_fail fleet_invalid_config "Fleet port bounds must be integers."
+  (( FLEET_PORT_START >= 4024 )) \
+    || _fleet_fail fleet_invalid_config "Fleet main ports must be at least 4024 (CDP port = main - 3000 must be >= 1024)."
+  (( FLEET_PORT_END <= 65533 )) \
+    || _fleet_fail fleet_invalid_config "Fleet port end must be at most 65533 (port set spans main+2)."
+  (( FLEET_PORT_START <= FLEET_PORT_END )) \
+    || _fleet_fail fleet_invalid_config "Fleet port start must not exceed port end."
+  if [[ -n "$FLEET_DOMAIN" ]] && ! _fleet_valid_domain "$FLEET_DOMAIN"; then
+    _fleet_fail fleet_invalid_config "Invalid Fleet domain '${FLEET_DOMAIN}' (hostname only; no scheme or path)."
+  fi
+  case "$FLEET_ROUTING_MODE" in subdomain|direct-port) ;; *)
+    _fleet_fail fleet_invalid_config "Routing mode must be 'subdomain' or 'direct-port'." ;; esac
+  case "$FLEET_SUBDOMAIN_MODE" in port|seat|random) ;; *)
+    _fleet_fail fleet_invalid_config "Subdomain mode must be 'port', 'seat', or 'random'." ;; esac
+  case "$FLEET_BACKEND" in http|https) ;; *)
+    _fleet_fail fleet_invalid_config "Backend must be 'http' or 'https'." ;; esac
+  _fleet_valid_int "$FLEET_SESSION_TIMEOUT" \
+    || _fleet_fail fleet_invalid_config "Session timeout must be a nonnegative integer."
+  _fleet_valid_bool "$FLEET_CLEAN_SLATE" \
+    || _fleet_fail fleet_invalid_config "Clean slate must be 'true' or 'false'."
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" && -z "$FLEET_DOMAIN" ]]; then
+    _fleet_fail fleet_invalid_config "Subdomain routing requires --domain <hostname>."
+  fi
+}
+
+_fleet_config_write() {
+  _fleet_record_write "$(_fleet_config_path)" \
+    "FLEET_SIZE=${FLEET_SIZE}" \
+    "FLEET_USER_PREFIX=${FLEET_USER_PREFIX}" \
+    "FLEET_USER_WIDTH=${FLEET_USER_WIDTH}" \
+    "FLEET_PORT_START=${FLEET_PORT_START}" \
+    "FLEET_PORT_END=${FLEET_PORT_END}" \
+    "FLEET_DOMAIN=${FLEET_DOMAIN}" \
+    "FLEET_ROUTING_MODE=${FLEET_ROUTING_MODE}" \
+    "FLEET_SUBDOMAIN_MODE=${FLEET_SUBDOMAIN_MODE}" \
+    "FLEET_BACKEND=${FLEET_BACKEND}" \
+    "FLEET_SESSION_TIMEOUT=${FLEET_SESSION_TIMEOUT}" \
+    "FLEET_CLEAN_SLATE=${FLEET_CLEAN_SLATE}"
+}
+# ── Port helpers ────────────────────────────────────────────────────
+# One BrowserBox allocation consumes the full set:
+#   main-2 (audio), main-1 (docs), main, main+1 (devtools),
+#   main+2 (reserved), main-3000 (CDP).
+
+_fleet_port_set() {
+  local p="$1"
+  printf '%s %s %s %s %s %s' "$((p-2))" "$((p-1))" "$p" "$((p+1))" "$((p+2))" "$((p-3000))"
+}
+
+# Two main ports conflict if any member of their port sets overlaps.
+_fleet_port_sets_conflict() {
+  local a="$1" b="$2" x y
+  for x in $(_fleet_port_set "$a"); do
+    for y in $(_fleet_port_set "$b"); do
+      [[ "$x" == "$y" ]] && return 0
+    done
+  done
+  return 1
+}
+
+# True if something is listening on the port (loopback or any-addr).
+_fleet_port_listening() {
+  local p="$1"
+  if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
+    return 0
+  fi
+  if command -v ss >/dev/null 2>&1; then
+    ss -H -ltn 2>/dev/null | awk '{print $4}' | grep -Eq "[:.]${p}\$" && return 0
+  fi
+  return 1
+}
+
+# True if every port in the set of <main> is free of listeners.
+_fleet_port_set_free() {
+  local main="$1" p
+  for p in $(_fleet_port_set "$main"); do
+    _fleet_port_listening "$p" && return 1
+  done
+  return 0
+}
+
+# ── Seat records ────────────────────────────────────────────────────
+
+_fleet_seat_name() {
+  local idx="$1"
+  printf '%s%0*d' "$FLEET_USER_PREFIX" "$FLEET_USER_WIDTH" "$idx"
+}
+
+_fleet_seat_record_path() {
+  local seat="$1"
+  _fleet_valid_username "$seat" || _fleet_fail fleet_state_inconsistent "Invalid seat name."
+  printf '%s' "${FLEET_DIR}/seats/${seat}.record"
+}
+
+# Print all seat names that have records, sorted.
+_fleet_seat_list() {
+  local f base
+  for f in "${FLEET_DIR}/seats/"*.record; do
+    [[ -e "$f" ]] || continue
+    base="$(basename "$f" .record)"
+    _fleet_valid_username "$base" || continue
+    printf '%s\n' "$base"
+  done | sort
+}
+
+# _fleet_assert_managed_user <user> — destructive/delegated operations
+# may target only a user that exactly matches a configured seat record.
+_fleet_assert_managed_user() {
+  local user="$1" rec seat_user
+  _fleet_valid_username "$user" || _fleet_fail fleet_state_inconsistent "Invalid target username."
+  case "$user" in
+    "${FLEET_USER_PREFIX}"*) ;;
+    *) _fleet_fail fleet_state_inconsistent "User '${user}' is outside the configured Fleet seat prefix." ;;
+  esac
+  local suffix="${user#"$FLEET_USER_PREFIX"}"
+  [[ "$suffix" =~ ^[0-9]+$ ]] && (( ${#suffix} == FLEET_USER_WIDTH )) \
+    || _fleet_fail fleet_state_inconsistent "User '${user}' does not match the Fleet seat naming scheme."
+  rec="$(_fleet_seat_record_path "$user")"
+  [[ -f "$rec" ]] || _fleet_fail fleet_state_inconsistent "No seat record for user '${user}'."
+  seat_user="$(_fleet_record_get "$rec" LINUX_USER)" \
+    || _fleet_fail fleet_state_inconsistent "Seat record for '${user}' is corrupt."
+  [[ "$seat_user" == "$user" ]] \
+    || _fleet_fail fleet_state_inconsistent "Seat record user mismatch for '${user}'."
+  id "$user" >/dev/null 2>&1 \
+    || _fleet_fail fleet_state_inconsistent "Seat user '${user}' does not exist on this system."
+  # The system-reported home (getent, not the record) must be an
+  # absolute per-seat directory named after the seat user — cleanup can
+  # never be redirected at another account's data or a system path.
+  local home
+  home="$(getent passwd "$user" | cut -d: -f6)"
+  if [[ "$home" != /* || "$home" == "/" || "$home" == "/root" || "$(basename "$home")" != "$user" ]]; then
+    _fleet_fail fleet_state_inconsistent "Seat user '${user}' has unexpected home '${home}'."
+  fi
+}
+
+# ── Routing labels / hostnames ──────────────────────────────────────
+
+_fleet_random_label() {
+  local l=""
+  while [[ ! "$l" =~ ^[a-z][a-z0-9]{9}$ ]]; do
+    l="$(openssl rand -base64 48 | tr -dc 'a-z0-9' | cut -c1-10)"
+  done
+  printf '%s' "$l"
+}
+
+# Compute the five routing labels for a seat (order: m2 m1 main p1 p2).
+# random mode generates fresh labels — only called at seat creation;
+# labels are then stable in the seat record across allocations.
+_fleet_seat_labels() {
+  local seat="$1" main_port="$2"
+  case "$FLEET_SUBDOMAIN_MODE" in
+    port)
+      printf '%s %s %s %s %s' "p$((main_port-2))" "p$((main_port-1))" "p${main_port}" "p$((main_port+1))" "p$((main_port+2))"
+      ;;
+    seat)
+      printf '%s %s %s %s %s' "${seat}-a" "${seat}-b" "${seat}" "${seat}-c" "${seat}-d"
+      ;;
+    random)
+      printf '%s %s %s %s %s' "$(_fleet_random_label)" "$(_fleet_random_label)" "$(_fleet_random_label)" "$(_fleet_random_label)" "$(_fleet_random_label)"
+      ;;
+  esac
+}
+
+# ── Certificate helpers ─────────────────────────────────────────────
+
+_fleet_cert_dns_names() {
+  local cert="$1" san
+  san="$(sudo -n openssl x509 -in "$cert" -noout -ext subjectAltName 2>/dev/null)" || san=""
+  if ! printf '%s' "$san" | grep -q 'DNS:'; then
+    san="$(sudo -n openssl x509 -in "$cert" -noout -text 2>/dev/null | awk '/Subject Alternative Name/ { getline; print; exit }')"
+  fi
+  printf '%s\n' "$san" | tr ',' '\n' | sed -n 's/^[[:space:]]*DNS:[[:space:]]*//p' | tr '[:upper:]' '[:lower:]'
+}
+
+_fleet_dns_name_covers() {
+  local dns_name="$1" host="$2" suffix left
+  dns_name="$(printf '%s' "$dns_name" | tr '[:upper:]' '[:lower:]')"
+  host="$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')"
+  [[ -n "$dns_name" && -n "$host" ]] || return 1
+  if [[ "$dns_name" != *'*'* ]]; then
+    [[ "$host" == "$dns_name" ]]; return $?
+  fi
+  [[ "$dns_name" == "*."* ]] || return 1
+  suffix="${dns_name#*.}"
+  [[ -n "$suffix" && "$suffix" != *'*'* ]] || return 1
+  [[ "$host" == *".${suffix}" ]] || return 1
+  left="${host%."$suffix"}"
+  [[ -n "$left" && "$left" != *.* ]]
+}
+
+_fleet_cert_covers() {
+  local cert="$1" host="$2" name
+  while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    _fleet_dns_name_covers "$name" "$host" && return 0
+  done < <(_fleet_cert_dns_names "$cert")
+  return 1
+}
+
+# Validate an operator-supplied cert/key pair for the Fleet domain.
+# Emits failure via _fleet_fail on hard errors.
+_fleet_cert_validate() {
+  local cert="$1" key="$2" domain="$3"
+  sudo -n test -r "$cert" || _fleet_fail fleet_certificate_invalid "Certificate file not readable: ${cert}"
+  sudo -n test -r "$key" || _fleet_fail fleet_certificate_invalid "Key file not readable: ${key}"
+  local mode
+  mode="$(sudo -n stat -c '%a' "$key" 2>/dev/null || echo 999)"
+  if [[ "$mode" =~ [2-7]$ ]] || [[ "${mode: -2:1}" =~ [2-7] ]]; then
+    _fleet_fail fleet_certificate_invalid "Key file ${key} is group/world accessible (mode ${mode}); tighten to 600/640."
+  fi
+  local cpub kpub
+  cpub="$(sudo -n openssl x509 -in "$cert" -noout -pubkey 2>/dev/null | sudo -n openssl sha256 2>/dev/null)"
+  kpub="$(sudo -n openssl pkey -in "$key" -pubout 2>/dev/null | sudo -n openssl sha256 2>/dev/null)"
+  [[ -n "$cpub" && "$cpub" == "$kpub" ]] \
+    || _fleet_fail fleet_certificate_invalid "Certificate and key do not match."
+  sudo -n openssl x509 -in "$cert" -noout -checkend 0 >/dev/null 2>&1 \
+    || _fleet_fail fleet_certificate_invalid "Certificate is expired."
+  if ! sudo -n openssl x509 -in "$cert" -noout -checkend 2592000 >/dev/null 2>&1; then
+    _fleet_warn "Certificate expires within 30 days."
+  fi
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    _fleet_cert_covers "$cert" "bbxfleetcheck.${domain}" \
+      || _fleet_fail fleet_certificate_invalid "Certificate SAN does not cover *.${domain}."
+  else
+    _fleet_cert_covers "$cert" "$domain" \
+      || _fleet_fail fleet_certificate_invalid "Certificate SAN does not cover ${domain}."
+  fi
+}
+
+# Generate a local (mkcert if available, else self-signed) wildcard
+# cert into ${FLEET_DIR}/nginx/local-certs for local/test domains.
+_fleet_local_cert_generate() {
+  local domain="$1"
+  local dir="${FLEET_DIR}/nginx/local-certs"
+  mkdir -p "$dir"; chmod 700 "$dir"
+  if [[ -s "${dir}/fullchain.pem" && -s "${dir}/privkey.pem" ]] \
+     && _fleet_cert_covers "${dir}/fullchain.pem" "bbxfleetcheck.${domain}" \
+     && sudo -n openssl x509 -in "${dir}/fullchain.pem" -noout -checkend 86400 >/dev/null 2>&1; then
+    FLEET_CERT_FILE="${dir}/fullchain.pem"
+    FLEET_KEY_FILE="${dir}/privkey.pem"
+    return 0
+  fi
+  if command -v mkcert >/dev/null 2>&1; then
+    _fleet_info "Generating locally trusted wildcard certificate via mkcert."
+    mkcert -install >/dev/null 2>&1 || true
+    mkcert -cert-file "${dir}/fullchain.pem" -key-file "${dir}/privkey.pem" \
+      "$domain" "*.${domain}" "localhost" "127.0.0.1" >/dev/null 2>&1 \
+      || _fleet_fail fleet_certificate_invalid "mkcert failed to generate a local certificate."
+  else
+    _fleet_info "mkcert not found; generating a self-signed wildcard certificate (curl -k / test use)."
+    local cnf="${dir}/openssl.cnf"
+    cat > "$cnf" <<EOF
+[req]
+distinguished_name = dn
+x509_extensions = v3_req
+prompt = no
+[dn]
+CN = ${domain}
+[v3_req]
+subjectAltName = DNS:${domain}, DNS:*.${domain}, DNS:localhost, IP:127.0.0.1
+EOF
+    openssl req -x509 -newkey rsa:2048 -nodes -days 30 -sha256 \
+      -keyout "${dir}/privkey.pem" -out "${dir}/fullchain.pem" \
+      -config "$cnf" >/dev/null 2>&1 \
+      || _fleet_fail fleet_certificate_invalid "openssl failed to generate a local certificate."
+  fi
+  chmod 600 "${dir}/fullchain.pem" "${dir}/privkey.pem"
+  FLEET_CERT_FILE="${dir}/fullchain.pem"
+  FLEET_KEY_FILE="${dir}/privkey.pem"
+}
+
+# ── DNS helpers ─────────────────────────────────────────────────────
+
+_fleet_machine_ip() {
+  local ip url
+  for url in "https://api.ipify.org" "https://ipv4.icanhazip.com" "https://checkip.amazonaws.com"; do
+    ip="$(curl -fsS --max-time 3 "$url" 2>/dev/null || true)"
+    ip="${ip//$'\r'/}"; ip="${ip//$'\n'/}"
+    if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then printf '%s' "$ip"; return 0; fi
+  done
+  if command -v ip >/dev/null 2>&1; then
+    ip="$(ip -4 addr show scope global 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 | head -n1)"
+    [[ -n "$ip" ]] && { printf '%s' "$ip"; return 0; }
+  fi
+  return 1
+}
+
+# Resolve A records for a host (dig preferred, host fallback, then getent).
+_fleet_dns_a() {
+  local h="$1"
+  if command -v dig >/dev/null 2>&1; then
+    dig +time=2 +tries=1 +short A "$h" @1.1.1.1 2>/dev/null | grep -E '^[0-9]+\.' || \
+    dig +time=2 +tries=1 +short A "$h" 2>/dev/null | grep -E '^[0-9]+\.' || true
+  elif command -v host >/dev/null 2>&1; then
+    host "$h" 2>/dev/null | awk '/has address/{print $NF}' || true
+  else
+    getent hosts "$h" 2>/dev/null | awk '{print $1}' | grep -E '^[0-9]+\.' || true
+  fi
+}
+
+# Validate wildcard DNS for the Fleet domain using two distinct
+# candidate subdomains. Sets FLEET_DNS_VALID / FLEET_DNS_PROXIED.
+# allow_proxied: "true" accepts resolution that does not match this
+# machine's address (load balancer / proxy deployments).
+_fleet_dns_validate() {
+  local domain="$1" allow_proxied="$2"
+  local machine_ip="" ok_resolve=0 ok_match=0
+  local c1 c2 host addrs
+  c1="bbxchk$(_fleet_random_label | cut -c1-6)"
+  c2="bbxchk$(_fleet_random_label | cut -c1-6)"
+  machine_ip="$(_fleet_machine_ip || true)"
+  for host in "${c1}.${domain}" "${c2}.${domain}"; do
+    addrs="$(_fleet_dns_a "$host")"
+    if [[ -z "$addrs" ]]; then
+      FLEET_DNS_VALID=false
+      FLEET_DNS_PROXIED=false
+      return 1
+    fi
+    ok_resolve=1
+    if [[ -n "$machine_ip" ]] && printf '%s\n' "$addrs" | grep -Fxq "$machine_ip"; then
+      ok_match=$((ok_match+1))
+    fi
+  done
+  if (( ok_resolve )) && (( ok_match == 2 )); then
+    FLEET_DNS_VALID=true
+    FLEET_DNS_PROXIED=false
+    return 0
+  fi
+  if (( ok_resolve )) && [[ "$allow_proxied" == "true" ]]; then
+    FLEET_DNS_VALID=true
+    FLEET_DNS_PROXIED=true
+    _fleet_warn "DNS resolves but not (verifiably) to this machine — accepted via --allow-proxied-domain."
+    return 0
+  fi
+  FLEET_DNS_VALID=false
+  FLEET_DNS_PROXIED=false
+  return 1
+}
+
+_fleet_print_dns_instructions() {
+  local domain="$1" ip="$2"
+  {
+    printf '\n'
+    printf '%b\n' "${BOLD}Create this DNS record before continuing:${NC}"
+    printf '\n'
+    printf '  Type: A\n'
+    printf '  Name: *.%s\n' "$domain"
+    printf '  Value: %s\n' "${ip:-<this machine public IPv4>}"
+    printf '\n'
+    printf '  Optionally also point the base hostname at this machine:\n'
+    printf '  Type: A\n'
+    printf '  Name: %s\n' "$domain"
+    printf '  Value: %s\n' "${ip:-<this machine public IPv4>}"
+    printf '\n'
+    printf '  If this machine uses IPv6, add matching AAAA records.\n'
+    printf '\n'
+  } >&2
+}
+
+# ── Nginx generation and application ────────────────────────────────
+
+# Detect nginx include layout, mirroring _setup_nginx.sh conventions.
+# Sets FLEET_NGINX_TARGET (installed conf path) and, for
+# sites-available layouts, FLEET_NGINX_LINK.
+_fleet_nginx_paths() {
+  FLEET_NGINX_TARGET=""
+  FLEET_NGINX_LINK=""
+  # Operator override for non-standard nginx include layouts.
+  if [[ -n "${BBX_FLEET_NGINX_DIR:-}" ]]; then
+    [[ -d "$BBX_FLEET_NGINX_DIR" ]] || return 1
+    FLEET_NGINX_TARGET="${BBX_FLEET_NGINX_DIR}/${FLEET_NGINX_SITE_NAME}"
+    return 0
+  fi
+  if [[ -d /etc/nginx/sites-available && -d /etc/nginx/sites-enabled ]]; then
+    FLEET_NGINX_TARGET="/etc/nginx/sites-available/${FLEET_NGINX_SITE_NAME}"
+    FLEET_NGINX_LINK="/etc/nginx/sites-enabled/${FLEET_NGINX_SITE_NAME}"
+  elif [[ -d /etc/nginx/conf.d ]]; then
+    FLEET_NGINX_TARGET="/etc/nginx/conf.d/${FLEET_NGINX_SITE_NAME}"
+  else
+    return 1
+  fi
+  return 0
+}
+
+# Generate the complete Fleet nginx config (all eligible seats) to
+# stdout. Requires FLEET_CERT_FILE/FLEET_KEY_FILE to be set.
+# Server blocks preserve the known-good ng-run proxy behavior
+# (WebSocket upgrade, forwarding headers, backend TLS).
+_fleet_nginx_generate() {
+  local cert="$1" key="$2"
+  local seat rec eligible main_port hosts ports i
+  local proxy_ssl=""
+  if [[ "$FLEET_BACKEND" == "https" ]]; then
+    proxy_ssl=$'        proxy_ssl_server_name on;\n        proxy_ssl_verify off;'
+  fi
+  printf '# Auto-generated by bbx fleet — do not edit by hand.\n'
+  printf '# Fleet domain: %s\n' "$FLEET_DOMAIN"
+  printf '# Backend scheme: %s\n' "$FLEET_BACKEND"
+  printf '# Generated: %s\n' "$(_fleet_now)"
+  while IFS= read -r seat; do
+    rec="$(_fleet_seat_record_path "$seat")"
+    eligible="$(_fleet_record_get "$rec" ELIGIBLE || echo false)"
+    [[ "$eligible" == "true" ]] || continue
+    main_port="$(_fleet_record_get "$rec" MAIN_PORT)" || continue
+    hosts=(
+      "$(_fleet_record_get "$rec" HOST_M2 || true)"
+      "$(_fleet_record_get "$rec" HOST_M1 || true)"
+      "$(_fleet_record_get "$rec" HOST_MAIN || true)"
+      "$(_fleet_record_get "$rec" HOST_P1 || true)"
+      "$(_fleet_record_get "$rec" HOST_P2 || true)"
+    )
+    ports=( "$((main_port-2))" "$((main_port-1))" "$main_port" "$((main_port+1))" "$((main_port+2))" )
+    printf '\n# Seat: %s (main port %s)\n' "$seat" "$main_port"
+    for i in 0 1 2 3 4; do
+      [[ -n "${hosts[$i]}" ]] || continue
+      cat <<NGX
+
+server {
+    listen 443 ssl;
+    server_name ${hosts[$i]};
+    ssl_certificate ${cert};
+    ssl_certificate_key ${key};
+    location / {
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+${proxy_ssl}
+        proxy_pass ${FLEET_BACKEND}://127.0.0.1:${ports[$i]};
+    }
+}
+NGX
+    done
+  done < <(_fleet_seat_list)
+}
+
+_fleet_nginx_reload() {
+  if command -v systemctl >/dev/null 2>&1 && sudo -n systemctl is-active nginx >/dev/null 2>&1; then
+    sudo -n systemctl reload nginx >/dev/null 2>&1 && return 0
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    sudo -n systemctl start nginx >/dev/null 2>&1 && return 0
+  fi
+  if sudo -n pgrep -x nginx >/dev/null 2>&1; then
+    sudo -n nginx -s reload >/dev/null 2>&1 && return 0
+  fi
+  sudo -n nginx >/dev/null 2>&1 && return 0
+  return 1
+}
+
+# Atomically install the generated Fleet routing config: validate,
+# install, reload; roll back to the previous valid config on failure.
+_fleet_nginx_apply() {
+  local cert="$1" key="$2"
+  local gen="${FLEET_DIR}/nginx/fleet.conf.candidate"
+  local active_copy="${FLEET_DIR}/nginx/fleet.conf"
+  command -v nginx >/dev/null 2>&1 \
+    || _fleet_fail fleet_routing_failed "nginx is not installed. Install nginx and re-run 'bbx fleet routing apply'."
+  _fleet_nginx_paths \
+    || _fleet_fail fleet_routing_failed "Could not locate an nginx include directory (sites-available or conf.d)."
+  _fleet_nginx_generate "$cert" "$key" > "$gen"
+  chmod 600 "$gen"
+
+  local had_prev=0
+  if sudo -n test -f "$FLEET_NGINX_TARGET" 2>/dev/null; then
+    had_prev=1
+    sudo -n cp -f "$FLEET_NGINX_TARGET" "${FLEET_DIR}/nginx/fleet.conf.prev"
+  fi
+
+  sudo -n cp -f "$gen" "$FLEET_NGINX_TARGET"
+  sudo -n chmod 644 "$FLEET_NGINX_TARGET"
+  if [[ -n "$FLEET_NGINX_LINK" ]] && ! sudo -n test -e "$FLEET_NGINX_LINK" 2>/dev/null; then
+    sudo -n ln -s "$FLEET_NGINX_TARGET" "$FLEET_NGINX_LINK"
+  fi
+
+  if ! sudo -n nginx -t >/dev/null 2>&1; then
+    _fleet_warn "nginx config validation failed; rolling back."
+    if (( had_prev )); then
+      sudo -n cp -f "${FLEET_DIR}/nginx/fleet.conf.prev" "$FLEET_NGINX_TARGET"
+    else
+      sudo -n rm -f "$FLEET_NGINX_TARGET"
+      [[ -n "$FLEET_NGINX_LINK" ]] && sudo -n rm -f "$FLEET_NGINX_LINK"
+    fi
+    sudo -n nginx -t >/dev/null 2>&1 || true
+    _fleet_nginx_reload || true
+    _fleet_fail fleet_routing_failed "Generated nginx config failed validation; previous config restored."
+  fi
+
+  if ! _fleet_nginx_reload; then
+    _fleet_warn "nginx reload failed; rolling back."
+    if (( had_prev )); then
+      sudo -n cp -f "${FLEET_DIR}/nginx/fleet.conf.prev" "$FLEET_NGINX_TARGET"
+    else
+      sudo -n rm -f "$FLEET_NGINX_TARGET"
+      [[ -n "$FLEET_NGINX_LINK" ]] && sudo -n rm -f "$FLEET_NGINX_LINK"
+    fi
+    _fleet_nginx_reload || true
+    _fleet_fail fleet_routing_failed "nginx reload failed; previous config restored."
+  fi
+
+  cp -f "$gen" "$active_copy"
+  chmod 600 "$active_copy"
+  rm -f "$gen"
+  return 0
+}
+# ── Seat provisioning ───────────────────────────────────────────────
+
+# Create one Fleet seat user (idempotent). Mirrors the create_user()
+# Linux conventions: bash shell (delegated execution requires bash),
+# locked password, BrowserBox groups, lingering — and never sudo.
+_fleet_create_seat_user() {
+  local user="$1"
+  if id "$user" >/dev/null 2>&1; then
+    return 1  # already existed
+  fi
+  if [ -f /etc/redhat-release ]; then
+    sudo -n useradd -m -s /bin/bash -c "BrowserBox fleet seat" "$user" \
+      || _fleet_fail fleet_setup_failed "Failed to create seat user ${user}."
+  else
+    sudo -n adduser --disabled-password --gecos "BrowserBox fleet seat" "$user" >/dev/null 2>&1 \
+      || sudo -n useradd -m -s /bin/bash -c "BrowserBox fleet seat" "$user" \
+      || _fleet_fail fleet_setup_failed "Failed to create seat user ${user}."
+  fi
+  sudo -n usermod -L "$user" 2>/dev/null || true
+  # Seat homes hold login capabilities (login.link, test.env) — they
+  # must not be readable by other local users or sibling seats.
+  local _seat_home
+  _seat_home="$(getent passwd "$user" 2>/dev/null | cut -d: -f6)"
+  if [[ "$_seat_home" == /*/"$user" ]]; then
+    sudo -n chmod 700 "$_seat_home" 2>/dev/null || true
+  fi
+  local group
+  for group in browsers renice; do
+    if ! getent group "$group" >/dev/null 2>&1; then
+      sudo -n groupadd "$group" 2>/dev/null || true
+    fi
+    sudo -n usermod -aG "$group" "$user" 2>/dev/null || true
+  done
+  if command -v loginctl >/dev/null 2>&1; then
+    sudo -n loginctl enable-linger "$user" 2>/dev/null || true
+  fi
+  return 0
+}
+
+# Assign a stable main port for a new seat: deterministic upward scan
+# from FLEET_PORT_START, skipping any candidate whose complete port
+# set overlaps a set already assigned to another seat.
+_fleet_assign_seat_port() {
+  local -a taken=()
+  local seat rec p candidate ok other
+  while IFS= read -r seat; do
+    rec="$(_fleet_seat_record_path "$seat")"
+    p="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    [[ -n "$p" ]] && taken+=("$p")
+  done < <(_fleet_seat_list)
+  candidate="$FLEET_PORT_START"
+  while (( candidate <= FLEET_PORT_END )); do
+    ok=1
+    (( candidate - 3000 >= 1024 && candidate + 2 <= 65535 )) || ok=0
+    if (( ok )); then
+      for other in "${taken[@]:-}"; do
+        [[ -n "$other" ]] || continue
+        if _fleet_port_sets_conflict "$candidate" "$other"; then ok=0; break; fi
+      done
+    fi
+    if (( ok )); then
+      printf '%s' "$candidate"
+      return 0
+    fi
+    candidate=$((candidate + 1))
+  done
+  return 1
+}
+
+# Create/refresh the record for a seat, assigning stable port and
+# routing hostnames on first creation only.
+_fleet_ensure_seat_record() {
+  local seat="$1" idx="$2" eligible="$3"
+  local rec main_port host_m2 host_m1 host_main host_p1 host_p2 now
+  local l0 l1 l2 l3 l4
+  rec="$(_fleet_seat_record_path "$seat")"
+  now="$(_fleet_now)"
+  if [[ -f "$rec" ]]; then
+    _fleet_record_update "$rec" "ELIGIBLE=${eligible}" "UPDATED_AT=${now}" "SEAT_INDEX=${idx}"
+    return 0
+  fi
+  main_port="$(_fleet_assign_seat_port)" \
+    || _fleet_fail fleet_port_exhausted "No non-overlapping port set available in ${FLEET_PORT_START}-${FLEET_PORT_END} for seat ${seat}."
+  host_m2=""; host_m1=""; host_main=""; host_p1=""; host_p2=""
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    read -r l0 l1 l2 l3 l4 <<< "$(_fleet_seat_labels "$seat" "$main_port")"
+    host_m2="${l0}.${FLEET_DOMAIN}"
+    host_m1="${l1}.${FLEET_DOMAIN}"
+    host_main="${l2}.${FLEET_DOMAIN}"
+    host_p1="${l3}.${FLEET_DOMAIN}"
+    host_p2="${l4}.${FLEET_DOMAIN}"
+  else
+    host_main="${FLEET_DOMAIN:-$(get_system_hostname)}"
+  fi
+  local -a fields=(
+    "SEAT_INDEX=${idx}"
+    "SEAT_NAME=${seat}"
+    "LINUX_USER=${seat}"
+    "MAIN_PORT=${main_port}"
+    "PUBLIC_HOSTNAME=${host_main}"
+    "ELIGIBLE=${eligible}"
+    "CREATED_AT=${now}"
+    "UPDATED_AT=${now}"
+  )
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    fields+=(
+      "HOST_M2=${host_m2}" "HOST_M1=${host_m1}" "HOST_MAIN=${host_main}"
+      "HOST_P1=${host_p1}" "HOST_P2=${host_p2}"
+      "ROUTING_LABEL=${host_main%%.*}"
+    )
+  fi
+  _fleet_record_write "$rec" "${fields[@]}"
+}
+
+# ── Allocation records ──────────────────────────────────────────────
+
+_fleet_alloc_path() {
+  local id="$1"
+  _fleet_valid_alloc_id "$id" || _fleet_fail fleet_allocation_not_found "Malformed allocation ID."
+  printf '%s' "${FLEET_DIR}/allocations/${id}.record"
+}
+
+_fleet_alloc_list() {
+  local f base
+  for f in "${FLEET_DIR}/allocations/"bbxf-*.record; do
+    [[ -e "$f" ]] || continue
+    base="$(basename "$f" .record)"
+    _fleet_valid_alloc_id "$base" || continue
+    printf '%s\n' "$base"
+  done | sort
+}
+
+# Print the allocation ID currently holding <seat>, if any.
+_fleet_alloc_for_seat() {
+  local seat="$1" id rec s
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    s="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
+    if [[ "$s" == "$seat" ]]; then
+      printf '%s' "$id"
+      return 0
+    fi
+  done < <(_fleet_alloc_list)
+  return 1
+}
+
+_fleet_alloc_id_gen() {
+  printf 'bbxf-%s' "$(openssl rand -hex 16)"
+}
+
+# ── Delegated-user glue ─────────────────────────────────────────────
+# Fleet reuses the --for machinery (_tu_run etc.) by setting
+# BBX_FOR_USER after its own validation. Unlike the interactive --for
+# CLI path, Fleet permits a root operator (spec §4).
+
+_fleet_enter_target() {
+  local user="$1"
+  _fleet_assert_managed_user "$user"
+  BBX_FOR_USER="$user"
+  BBX_OPERATOR_USER="$(id -un)"
+}
+
+_fleet_exit_target() {
+  BBX_FOR_USER=""
+  BBX_OPERATOR_USER=""
+}
+
+# Apply fleet defaults.env (operator-authored) to the delegated
+# environment via the BBX_FLEET_EXTRA_ENV hook in _tu_run.
+_fleet_apply_defaults_env() {
+  BBX_FLEET_EXTRA_ENV=()
+  local f="${FLEET_DIR}/defaults.env" line key val
+  [[ -f "$f" && ! -L "$f" ]] || return 0
+  while IFS= read -r line; do
+    [[ "$line" == *"="* ]] || continue
+    key="${line%%=*}"
+    val="${line#*=}"
+    _fleet_valid_envkey "$key" || continue
+    case "$key" in
+      LICENSE_KEY|GH_TOKEN|GITHUB_TOKEN|PATH|HOME|SUDO|BBX_FOR_USER) continue ;;
+    esac
+    BBX_FLEET_EXTRA_ENV+=("${key}=${val}")
+  done < "$f"
+}
+
+# Write the seat's hosts.env (zeta-mode service-host map) as the seat
+# user. Content is fully operator-generated and validated.
+_fleet_write_seat_hostsenv() {
+  local rec="$1" main_port="$2"
+  local h0 h1 h2 h3 h4
+  h0="$(_fleet_record_get "$rec" HOST_M2)" || return 1
+  h1="$(_fleet_record_get "$rec" HOST_M1)" || return 1
+  h2="$(_fleet_record_get "$rec" HOST_MAIN)" || return 1
+  h3="$(_fleet_record_get "$rec" HOST_P1)" || return 1
+  h4="$(_fleet_record_get "$rec" HOST_P2)" || return 1
+  local content
+  printf -v content 'export DOMAIN=%q\nexport ADDR_%d=%q\nexport ADDR_%d=%q\nexport ADDR_%d=%q\nexport ADDR_%d=%q\nexport ADDR_%d=%q\n' \
+    "$FLEET_DOMAIN" \
+    "$((main_port-2))" "$h0" \
+    "$((main_port-1))" "$h1" \
+    "$main_port" "$h2" \
+    "$((main_port+1))" "$h3" \
+    "$((main_port+2))" "$h4"
+  printf '%s' "$content" | sudo -n -u "$BBX_FOR_USER" tee "$(_tu_config_dir)/hosts.env" >/dev/null
+}
+
+# Install the Fleet TLS material into the seat's ~/sslcerts so the
+# per-seat BrowserBox backend can terminate its local TLS.
+_fleet_install_seat_certs() {
+  local cert="$1" key="$2"
+  local tu_home ssl_dir
+  tu_home="$(_tu_home)"
+  ssl_dir="${tu_home}/sslcerts"
+  sudo -n mkdir -p "$ssl_dir"
+  sudo -n cp -f "$cert" "${ssl_dir}/fullchain.pem"
+  sudo -n cp -f "$key" "${ssl_dir}/privkey.pem"
+  sudo -n chown -R "${BBX_FOR_USER}:" "$ssl_dir"
+  sudo -n chmod 700 "$ssl_dir"
+  sudo -n chmod 600 "${ssl_dir}/fullchain.pem" "${ssl_dir}/privkey.pem"
+}
+
+# Ensure the canonical clean-slate mechanism (BBX_CLEAN_SLATE) is
+# active for the seat: persist into the seat's test.env so every
+# service start wipes the browser profile on initial launch.
+_fleet_ensure_clean_slate() {
+  [[ "$FLEET_CLEAN_SLATE" == "true" ]] || return 0
+  local te="$(_tu_config_dir)/test.env"
+  if ! sudo -n grep -q '^export BBX_CLEAN_SLATE="true"$' "$te" 2>/dev/null; then
+    printf '\nexport BBX_CLEAN_SLATE="true"\n' | sudo -n -u "$BBX_FOR_USER" tee -a "$te" >/dev/null
+  fi
+}
+
+# Stop the seat runtime and wait for BrowserBox/Chrome processes to
+# exit; bounded. Only ever called after _fleet_assert_managed_user.
+_fleet_stop_seat_runtime() {
+  local user="$BBX_FOR_USER" waited=0
+  sudo -n rm -f "$(_tu_config_dir)/login.link" 2>/dev/null || true
+  if sudo -n pgrep -u "$user" >/dev/null 2>&1; then
+    ( _tu_run stop_bbpro ) >/dev/null 2>&1 || true
+  fi
+  while (( waited < 30 )); do
+    if ! sudo -n pgrep -u "$user" -f 'browserbox|bbpro|chrome' >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  if sudo -n pgrep -u "$user" -f 'browserbox|bbpro|chrome' >/dev/null 2>&1; then
+    sudo -n pkill -u "$user" -f 'browserbox|bbpro|chrome' 2>/dev/null || true
+    sleep 2
+    sudo -n pkill -9 -u "$user" -f 'browserbox|bbpro|chrome' 2>/dev/null || true
+  fi
+}
+
+# Verify/apply clean-slate cleanup at release: remove the browser
+# profile (the same user-data dir BBX_CLEAN_SLATE clears at startup)
+# and caches, executing strictly as the seat user with fixed
+# home-relative paths.
+_fleet_wipe_seat_profile() {
+  _tu_run bash -c 'rm -rf "${HOME}/.config/dosaygo/bbpro/browser-cache" "${HOME}/.cache/dosaygo/bbpro" "${HOME}/.config/dosaygo/bbpro/targetCount" 2>/dev/null; true' \
+    >/dev/null 2>&1 || true
+  if sudo -n test -d "$(_tu_config_dir)/browser-cache" 2>/dev/null; then
+    return 1
+  fi
+  return 0
+}
+
+# Delegated run for Fleet: certify + launch as the seat user via the
+# existing _tu_run/bbcertify/bbpro path, WITHOUT eval-ing seat-owned
+# config in the operator context and without exiting the caller.
+# Returns nonzero on failure.
+_fleet_delegated_run() {
+  local cert_log bbpro_log rc=0
+  cert_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-cert-XXXXXX.log")"
+  bbpro_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-bbpro-XXXXXX.log")"
+
+  _fleet_info "[${BBX_FOR_USER}] Certifying license..."
+  ( _tu_run bbcertify ) > "$cert_log" 2>&1 &
+  local cert_pid=$!
+
+  _fleet_info "[${BBX_FOR_USER}] Starting BrowserBox services..."
+  if ! ( _tu_run bbpro ) > "$bbpro_log" 2>&1; then
+    _fleet_warn "bbpro failed for ${BBX_FOR_USER}. Last output:"
+    tail -20 "$bbpro_log" >&2
+    kill "$cert_pid" 2>/dev/null || true
+    rm -f "$cert_log" "$bbpro_log"
+    return 1
+  fi
+  rm -f "$bbpro_log"
+
+  local waited=0
+  while kill -0 "$cert_pid" 2>/dev/null; do
+    if (( waited >= 120 )); then
+      _fleet_warn "License certification timed out for ${BBX_FOR_USER}."
+      kill "$cert_pid" 2>/dev/null || true
+      rm -f "$cert_log"
+      return 2
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  if ! wait "$cert_pid"; then
+    _fleet_warn "License certification failed for ${BBX_FOR_USER}:"
+    tail -20 "$cert_log" >&2
+    rm -f "$cert_log"
+    return 2
+  fi
+  rm -f "$cert_log"
+  _fleet_info "[${BBX_FOR_USER}] License certified."
+  return 0
+}
+
+# Probe the externally valid login URL. The hostname is pinned to
+# loopback so the check exercises the local nginx fan-out (subdomain)
+# or the backend itself (direct-port) even before global DNS
+# converges and regardless of hairpin-NAT behavior.
+_fleet_probe_public_url() {
+  local url="$1" host="$2" mode="$3" port="${4:-443}"
+  local -a curl_args=(-k -s -o /dev/null -w '%{http_code}' --connect-timeout 3 --max-time 6)
+  if [[ "$mode" == "subdomain" ]]; then
+    curl_args+=(--resolve "${host}:443:127.0.0.1")
+  else
+    curl_args+=(--resolve "${host}:${port}:127.0.0.1")
+  fi
+  local attempt code
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    code="$(curl "${curl_args[@]}" "$url" 2>/dev/null || true)"
+    if [[ "$code" =~ ^[23][0-9][0-9]$ ]]; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+# ── fleet init ──────────────────────────────────────────────────────
+
+fleet_init() {
+  local opt_size="" opt_prefix="" opt_width="" opt_port_start="" opt_port_end=""
+  local opt_domain="" opt_routing="" opt_submode="" opt_backend=""
+  local opt_cert="" opt_key="" allow_proxied="false"
+
+  while (( $# )); do
+    case "$1" in
+      --size) opt_size="${2:-}"; shift 2 ;;
+      --user-prefix) opt_prefix="${2:-}"; shift 2 ;;
+      --user-width) opt_width="${2:-}"; shift 2 ;;
+      --port-start) opt_port_start="${2:-}"; shift 2 ;;
+      --port-end) opt_port_end="${2:-}"; shift 2 ;;
+      --domain) opt_domain="${2:-}"; shift 2 ;;
+      --routing) opt_routing="${2:-}"; shift 2 ;;
+      --subdomain-mode) opt_submode="${2:-}"; shift 2 ;;
+      --backend) opt_backend="${2:-}"; shift 2 ;;
+      --cert-file) opt_cert="${2:-}"; shift 2 ;;
+      --key-file) opt_key="${2:-}"; shift 2 ;;
+      --allow-proxied-domain) allow_proxied="true"; shift ;;
+      --json) shift ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet init option: $1" ;;
+    esac
+  done
+
+  check_agreement
+
+  _fleet_set_dir
+  _fleet_dirs_init
+  _fleet_config_load
+
+  local prev_domain="$FLEET_DOMAIN" prev_routing="$FLEET_ROUTING_MODE"
+  local prev_submode="$FLEET_SUBDOMAIN_MODE" prev_backend="$FLEET_BACKEND"
+  local prev_prefix="$FLEET_USER_PREFIX" prev_width="$FLEET_USER_WIDTH"
+  local prev_pstart="$FLEET_PORT_START" prev_pend="$FLEET_PORT_END"
+
+  [[ -n "$opt_size" ]] && FLEET_SIZE="$opt_size"
+  [[ -n "$opt_prefix" ]] && FLEET_USER_PREFIX="$opt_prefix"
+  [[ -n "$opt_width" ]] && FLEET_USER_WIDTH="$opt_width"
+  [[ -n "$opt_port_start" ]] && FLEET_PORT_START="$opt_port_start"
+  [[ -n "$opt_port_end" ]] && FLEET_PORT_END="$opt_port_end"
+  [[ -n "$opt_domain" ]] && FLEET_DOMAIN="$opt_domain"
+  [[ -n "$opt_routing" ]] && FLEET_ROUTING_MODE="$opt_routing"
+  [[ -n "$opt_submode" ]] && FLEET_SUBDOMAIN_MODE="$opt_submode"
+  [[ -n "$opt_backend" ]] && FLEET_BACKEND="$opt_backend"
+  _fleet_config_validate
+
+  # ── Locked: topology guard, config write, seat records ──
+  # (User creation itself is idempotent syscall work; the lock protects
+  # record and configuration state.)
+  _fleet_lock 60
+
+  # Routing topology changes are deployment-wide; refuse them while
+  # allocations are active (they would invalidate issued login URLs).
+  local active_count
+  active_count="$(_fleet_alloc_list | wc -l | tr -d ' ')"
+  if (( active_count > 0 )); then
+    if [[ "$FLEET_DOMAIN" != "$prev_domain" || "$FLEET_ROUTING_MODE" != "$prev_routing" \
+       || "$FLEET_SUBDOMAIN_MODE" != "$prev_submode" || "$FLEET_BACKEND" != "$prev_backend" \
+       || "$FLEET_USER_PREFIX" != "$prev_prefix" || "$FLEET_USER_WIDTH" != "$prev_width" \
+       || "$FLEET_PORT_START" != "$prev_pstart" || "$FLEET_PORT_END" != "$prev_pend" ]]; then
+      _fleet_fail fleet_active_allocations "Cannot change Fleet topology while ${active_count} allocation(s) are active. Release them first."
+    fi
+  fi
+
+  _fleet_config_write
+
+  # ── Seat users and records ──
+  local created=0 existing=0 idx seat
+  for (( idx=0; idx < FLEET_SIZE; idx++ )); do
+    seat="$(_fleet_seat_name "$idx")"
+    if _fleet_create_seat_user "$seat"; then
+      created=$((created + 1))
+      _fleet_info "Created seat user ${seat}."
+    else
+      existing=$((existing + 1))
+    fi
+    _fleet_ensure_seat_record "$seat" "$idx" "true"
+  done
+  # Seats beyond the configured size stay (never deleted) but become
+  # ineligible for new allocations.
+  local rec sidx
+  while IFS= read -r seat; do
+    rec="$(_fleet_seat_record_path "$seat")"
+    sidx="$(_fleet_record_get "$rec" SEAT_INDEX 2>/dev/null || echo 999999)"
+    if (( sidx >= FLEET_SIZE )); then
+      _fleet_record_update "$rec" "ELIGIBLE=false" "UPDATED_AT=$(_fleet_now)"
+    fi
+  done < <(_fleet_seat_list)
+
+  _fleet_unlock
+
+  # ── Certificates ──
+  FLEET_CERT_FILE=""
+  FLEET_KEY_FILE=""
+  local is_local=0
+  local eff_domain="${FLEET_DOMAIN:-$(get_system_hostname)}"
+  _fleet_is_local_domain "$eff_domain" && is_local=1
+  local need_tls=0
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" || "$FLEET_BACKEND" == "https" ]]; then
+    need_tls=1
+  fi
+  if (( need_tls )); then
+    if [[ -n "$opt_cert" || -n "$opt_key" ]]; then
+      [[ -n "$opt_cert" && -n "$opt_key" ]] \
+        || _fleet_fail fleet_certificate_invalid "--cert-file and --key-file must be provided together."
+      _fleet_cert_validate "$opt_cert" "$opt_key" "$eff_domain"
+      FLEET_CERT_FILE="$opt_cert"
+      FLEET_KEY_FILE="$opt_key"
+    elif (( is_local )); then
+      _fleet_local_cert_generate "$eff_domain"
+    else
+      # No safe automated wildcard issuance path exists in this repo
+      # (certbot DNS-01 here is manual/interactive). Ask the operator
+      # to supply a wildcard certificate rather than pretending.
+      _fleet_fail fleet_certificate_invalid "A wildcard TLS certificate for *.${eff_domain} is required. Re-run with --cert-file <fullchain.pem> --key-file <privkey.pem> (issue one via your DNS provider / certbot DNS-01), or use a local test domain (e.g. bbx-fleet.test)."
+    fi
+  fi
+
+  # ── DNS ──
+  FLEET_DNS_VALID=false
+  FLEET_DNS_PROXIED=false
+  local machine_ip=""
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    if (( is_local )); then
+      _fleet_info "Local domain '${eff_domain}': writing /etc/hosts entries for all seat hostnames."
+      local h k
+      while IFS= read -r seat; do
+        rec="$(_fleet_seat_record_path "$seat")"
+        [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+        for k in HOST_M2 HOST_M1 HOST_MAIN HOST_P1 HOST_P2; do
+          h="$(_fleet_record_get "$rec" "$k" 2>/dev/null || true)"
+          [[ -n "$h" ]] && ensure_hosts_entry "$h"
+        done
+      done < <(_fleet_seat_list)
+      FLEET_DNS_VALID=true
+    else
+      machine_ip="$(_fleet_machine_ip || true)"
+      _fleet_print_dns_instructions "$eff_domain" "$machine_ip"
+      _fleet_info "Validating wildcard DNS for *.${eff_domain} (two probe subdomains)..."
+      if ! _fleet_dns_validate "$eff_domain" "$allow_proxied"; then
+        _fleet_fail fleet_dns_invalid "Wildcard DNS for *.${eff_domain} does not resolve to this machine (${machine_ip:-unknown IP}). Create the records above, or use --allow-proxied-domain if traffic is deliberately routed through a proxy/load balancer."
+      fi
+      if [[ "$FLEET_DNS_PROXIED" == "true" ]]; then
+        _fleet_info "DNS resolves successfully (proxied deployment accepted)."
+      else
+        _fleet_info "DNS is confirmed to resolve directly to this machine."
+      fi
+    fi
+  fi
+
+  # ── Per-seat runtime prerequisites (config dir + backend TLS) ──
+  while IFS= read -r seat; do
+    rec="$(_fleet_seat_record_path "$seat")"
+    [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+    _fleet_enter_target "$seat"
+    _tu_ensure_config_dir
+    if [[ -n "$FLEET_CERT_FILE" ]]; then
+      _fleet_install_seat_certs "$FLEET_CERT_FILE" "$FLEET_KEY_FILE"
+    fi
+    _fleet_exit_target
+  done < <(_fleet_seat_list)
+
+  # ── Nginx (subdomain mode) ──
+  local nginx_applied=false
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    if ! command -v nginx >/dev/null 2>&1; then
+      _fleet_info "Installing nginx..."
+      if [ -f /etc/debian_version ]; then
+        sudo -n apt-get update -y >/dev/null 2>&1; sudo -n apt-get install -y nginx >/dev/null 2>&1 || true
+      elif [ -f /etc/redhat-release ]; then
+        sudo -n dnf install -y nginx >/dev/null 2>&1 || sudo -n yum install -y nginx >/dev/null 2>&1 || true
+      fi
+    fi
+    _fleet_nginx_apply "$FLEET_CERT_FILE" "$FLEET_KEY_FILE"
+    nginx_applied=true
+    _fleet_info "Fleet nginx routing applied for all eligible seats."
+  fi
+
+  _fleet_record_write "${FLEET_DIR}/routing.env" \
+    "CERT_FILE=${FLEET_CERT_FILE}" \
+    "KEY_FILE=${FLEET_KEY_FILE}" \
+    "DNS_VALID=${FLEET_DNS_VALID}" \
+    "DNS_PROXIED=${FLEET_DNS_PROXIED}" \
+    "NGINX_APPLIED=${nginx_applied}" \
+    "CHECKED_AT=$(_fleet_now)"
+
+  local cert_valid=false
+  [[ -n "$FLEET_CERT_FILE" ]] && cert_valid=true
+
+  if (( FLEET_JSON )); then
+    _fleet_emit "{\"ok\":true,\"fleet_size\":${FLEET_SIZE},\"created_users\":${created},\"existing_users\":${existing},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"nginx_applied\":${nginx_applied},\"dns_valid\":${FLEET_DNS_VALID},\"dns_proxied\":${FLEET_DNS_PROXIED},\"certificate_valid\":${cert_valid}},\"clean_slate\":${FLEET_CLEAN_SLATE},\"fleet_dir\":\"$(_fleet_json_escape "$FLEET_DIR")\"}"
+  else
+    printf '%b\n' "${GREEN}Fleet initialized.${NC}" >&2
+    {
+      printf '  Seats:          %s (%s created, %s existing)\n' "$FLEET_SIZE" "$created" "$existing"
+      printf '  User prefix:    %s (width %s)\n' "$FLEET_USER_PREFIX" "$FLEET_USER_WIDTH"
+      printf '  Ports:          %s-%s (5-port set + CDP per seat)\n' "$FLEET_PORT_START" "$FLEET_PORT_END"
+      printf '  Routing:        %s' "$FLEET_ROUTING_MODE"
+      [[ "$FLEET_ROUTING_MODE" == "subdomain" ]] && printf ' (%s labels, domain %s)' "$FLEET_SUBDOMAIN_MODE" "$FLEET_DOMAIN"
+      printf '\n'
+      printf '  Backend:        %s\n' "$FLEET_BACKEND"
+      printf '  Clean slate:    %s\n' "$FLEET_CLEAN_SLATE"
+      printf '  State:          %s\n' "$FLEET_DIR"
+      printf '\nNext: acquire a session with: sudo -n bbx fleet acquire --json\n'
+    } >&2
+  fi
+}
+
+# ── fleet acquire ───────────────────────────────────────────────────
+
+fleet_acquire() {
+  local opt_timeout="" opt_seat="" opt_port=""
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      --timeout) opt_timeout="${2:-}"; shift 2 ;;
+      --seat) opt_seat="${2:-}"; shift 2 ;;
+      --port) opt_port="${2:-}"; shift 2 ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet acquire option: $1" ;;
+    esac
+  done
+  _fleet_require_init
+  _fleet_config_validate
+
+  local timeout_secs="${FLEET_SESSION_TIMEOUT}"
+  if [[ -n "$opt_timeout" ]]; then
+    _fleet_valid_int "$opt_timeout" || _fleet_fail fleet_invalid_config "--timeout must be a nonnegative integer."
+    timeout_secs="$opt_timeout"
+  fi
+  if [[ -n "$opt_port" && "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    _fleet_fail fleet_invalid_config "--port cannot override subdomain routing (seat ports are preconfigured in nginx)."
+  fi
+  if ! _has_chrome; then
+    _fleet_fail fleet_setup_failed "Chrome/Chromium is not installed on this machine."
+  fi
+
+  # ── Phase 1 (locked): reconcile dead reservations, choose a seat,
+  #    validate its port set, persist the reservation. ──
+  _fleet_lock
+
+  local id rec state upd age user mp now_epoch
+  now_epoch="$(_fleet_epoch)"
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+    if [[ -z "$state" ]]; then
+      # Corrupt/invalid record: never execute; quarantine it.
+      mv -f "$rec" "${FLEET_DIR}/diagnostics/$(basename "$rec").corrupt" 2>/dev/null || rm -f "$rec"
+      continue
+    fi
+    if [[ "$state" == "reserved" || "$state" == "starting" ]]; then
+      upd="$(_fleet_record_get "$rec" UPDATED_AT 2>/dev/null || true)"
+      age=$(( now_epoch - $(_fleet_ts_to_epoch "${upd:-}") ))
+      user="$(_fleet_record_get "$rec" LINUX_USER 2>/dev/null || true)"
+      mp="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+      if (( age > FLEET_STALE_RESERVE_SECS )) && [[ -n "$user" && -n "$mp" ]] \
+         && ! _fleet_port_listening "$mp" \
+         && ! sudo -n pgrep -u "$user" -f 'browserbox|bbpro' >/dev/null 2>&1; then
+        _fleet_info "Reclaiming stale ${state} allocation ${id} (age ${age}s)."
+        rm -f "$rec"
+      fi
+    fi
+  done < <(_fleet_alloc_list)
+
+  local chosen="" chosen_rec="" main_port="" seat
+  if [[ -n "$opt_seat" ]]; then
+    _fleet_valid_username "$opt_seat" || _fleet_fail fleet_invalid_config "Invalid --seat name."
+    [[ -f "$(_fleet_seat_record_path "$opt_seat")" ]] || _fleet_fail fleet_invalid_config "Unknown seat '${opt_seat}'."
+  fi
+  while IFS= read -r seat; do
+    [[ -n "$opt_seat" && "$seat" != "$opt_seat" ]] && continue
+    rec="$(_fleet_seat_record_path "$seat")"
+    [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+    _fleet_alloc_for_seat "$seat" >/dev/null 2>&1 && continue
+    main_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    [[ -n "$main_port" ]] || continue
+    [[ -n "$opt_port" ]] && main_port="$opt_port"
+    _fleet_valid_port "$main_port" || continue
+    # Complete port set must be free of listeners and not overlap any
+    # other active allocation's set.
+    if ! _fleet_port_set_free "$main_port"; then
+      _fleet_warn "Seat ${seat}: port set around ${main_port} is busy; skipping."
+      continue
+    fi
+    local other_id other_rec other_port conflict=0
+    while IFS= read -r other_id; do
+      other_rec="$(_fleet_alloc_path "$other_id")"
+      other_port="$(_fleet_record_get "$other_rec" MAIN_PORT 2>/dev/null || true)"
+      [[ -n "$other_port" ]] || continue
+      if _fleet_port_sets_conflict "$main_port" "$other_port"; then conflict=1; break; fi
+    done < <(_fleet_alloc_list)
+    (( conflict )) && { _fleet_warn "Seat ${seat}: port set conflicts with allocation ${other_id}; skipping."; continue; }
+    chosen="$seat"
+    chosen_rec="$rec"
+    break
+  done < <(_fleet_seat_list)
+
+  if [[ -z "$chosen" ]]; then
+    if [[ -n "$opt_port" ]]; then
+      _fleet_fail fleet_port_exhausted "No eligible free seat with a usable port set is available."
+    fi
+    _fleet_fail fleet_exhausted "No locally available Fleet seats remain."
+  fi
+
+  local alloc_id public_host now
+  alloc_id="$(_fleet_alloc_id_gen)"
+  public_host="$(_fleet_record_get "$chosen_rec" PUBLIC_HOSTNAME 2>/dev/null || echo "")"
+  [[ -z "$public_host" ]] && public_host="${FLEET_DOMAIN:-$(get_system_hostname)}"
+  now="$(_fleet_now)"
+  _fleet_record_write "$(_fleet_alloc_path "$alloc_id")" \
+    "ALLOCATION_ID=${alloc_id}" \
+    "SEAT_NAME=${chosen}" \
+    "LINUX_USER=${chosen}" \
+    "MAIN_PORT=${main_port}" \
+    "PUBLIC_HOSTNAME=${public_host}" \
+    "ROUTING_MODE=${FLEET_ROUTING_MODE}" \
+    "STATE=reserved" \
+    "CREATED_AT=${now}" \
+    "UPDATED_AT=${now}" \
+    "TIMEOUT_SECONDS=${timeout_secs}" \
+    "RUNTIME_MARKER=$(_fleet_epoch)"
+  _fleet_unlock
+
+  # ── Phase 2 (unlocked): delegated lifecycle on the reserved seat. ──
+  local rollback_reason="" rollback_code=""
+  _fleet_enter_target "$chosen"
+  _fleet_apply_defaults_env
+
+  # Stop any stale runtime attributable to this free managed seat.
+  if sudo -n pgrep -u "$chosen" -f 'browserbox|bbpro' >/dev/null 2>&1; then
+    _fleet_info "Stopping stale runtime on ${chosen}..."
+    _fleet_stop_seat_runtime
+  fi
+  sudo -n rm -f "$(_tu_config_dir)/login.link" 2>/dev/null || true
+
+  local token scheme login_url=""
+  token="$(openssl rand -hex 16)"
+  scheme="https"
+  [[ "$FLEET_BACKEND" == "http" ]] && scheme="http"
+
+  local -a setup_args=(--port "$main_port" --token "$token" --backend "$FLEET_BACKEND")
+  local seat_hostname="$public_host"
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    setup_args+=(--zeta)
+    seat_hostname="$FLEET_DOMAIN"
+  fi
+
+  _tu_ensure_config_dir
+  if [[ -z "$rollback_reason" ]]; then
+    _fleet_info "[${chosen}] Running delegated setup (port ${main_port})..."
+    if ! BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _tu_run setup_bbpro "${setup_args[@]}" >/dev/null 2>&1; then
+      rollback_reason="Delegated BrowserBox setup failed for seat ${chosen}."
+      rollback_code="fleet_setup_failed"
+    fi
+  fi
+
+  if [[ -z "$rollback_reason" && "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    if ! _fleet_write_seat_hostsenv "$chosen_rec" "$main_port"; then
+      rollback_reason="Failed to write seat service-host map (hosts.env)."
+      rollback_code="fleet_setup_failed"
+    fi
+  fi
+
+  if [[ -z "$rollback_reason" ]]; then
+    _fleet_ensure_clean_slate
+    local fleet_routing_env_file="${FLEET_DIR}/routing.env"
+    local cf kf
+    cf="$(_fleet_record_get "$fleet_routing_env_file" CERT_FILE 2>/dev/null || true)"
+    kf="$(_fleet_record_get "$fleet_routing_env_file" KEY_FILE 2>/dev/null || true)"
+    if [[ -n "$cf" && -n "$kf" ]]; then
+      _fleet_install_seat_certs "$cf" "$kf" || true
+    fi
+  fi
+
+  local alloc_rec_path
+  alloc_rec_path="$(_fleet_alloc_path "$alloc_id")"
+
+  if [[ -z "$rollback_reason" ]]; then
+    _fleet_lock
+    _fleet_record_update "$alloc_rec_path" "STATE=starting" "UPDATED_AT=$(_fleet_now)"
+    _fleet_unlock
+    local run_rc=0
+    BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _fleet_delegated_run || run_rc=$?
+    if (( run_rc == 2 )); then
+      rollback_reason="License certification failed for seat ${chosen}."
+      rollback_code="fleet_license_unavailable"
+    elif (( run_rc != 0 )); then
+      rollback_reason="BrowserBox failed to start for seat ${chosen}."
+      rollback_code="fleet_start_failed"
+    fi
+  fi
+
+  if [[ -z "$rollback_reason" ]]; then
+    if ! wait_for_local_ready "$main_port" "$scheme" 90 >/dev/null 2>&1; then
+      rollback_reason="BrowserBox did not become ready on port ${main_port}."
+      rollback_code="fleet_start_failed"
+    fi
+  fi
+
+  if [[ -z "$rollback_reason" ]]; then
+    if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+      login_url="https://${public_host}/login?token=${token}"
+    else
+      login_url="${scheme}://${public_host}:${main_port}/login?token=${token}"
+    fi
+    printf '%s\n' "$login_url" | sudo -n -u "$chosen" tee "$(_tu_config_dir)/login.link" >/dev/null 2>&1 || true
+    _fleet_info "Verifying public login URL..."
+    if ! _fleet_probe_public_url "$login_url" "$public_host" "$FLEET_ROUTING_MODE" "$main_port"; then
+      rollback_reason="Public login URL did not respond for seat ${chosen}."
+      rollback_code="fleet_public_route_failed"
+    fi
+  fi
+
+  if [[ -n "$rollback_reason" ]]; then
+    _fleet_warn "Acquire failed: ${rollback_reason} Rolling back."
+    _fleet_stop_seat_runtime
+    local wiped=0
+    _fleet_wipe_seat_profile && wiped=1
+    _fleet_exit_target
+    _fleet_lock
+    if (( wiped )); then
+      rm -f "$alloc_rec_path"
+    else
+      _fleet_record_update "$alloc_rec_path" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
+    fi
+    _fleet_unlock
+    _fleet_fail "${rollback_code:-fleet_start_failed}" "$rollback_reason"
+  fi
+
+  _fleet_exit_target
+
+  # ── Phase 3 (locked): confirm the reservation is still ours, mark running. ──
+  _fleet_lock
+  local check_id
+  check_id="$(_fleet_record_get "$alloc_rec_path" ALLOCATION_ID 2>/dev/null || true)"
+  if [[ "$check_id" != "$alloc_id" ]]; then
+    _fleet_unlock
+    _fleet_enter_target "$chosen"
+    _fleet_stop_seat_runtime
+    _fleet_wipe_seat_profile || true
+    _fleet_exit_target
+    _fleet_fail fleet_state_inconsistent "Reservation for ${alloc_id} disappeared during startup."
+  fi
+  _fleet_record_update "$alloc_rec_path" \
+    "STATE=running" \
+    "UPDATED_AT=$(_fleet_now)" \
+    "LOGIN_URL=${login_url}"
+  _fleet_unlock
+
+  if (( FLEET_JSON )); then
+    _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"state\":\"running\",\"login_url\":\"$(_fleet_json_escape "$login_url")\",\"created_at\":\"${now}\",\"timeout_seconds\":${timeout_secs},\"runtime\":{\"seat\":\"${chosen}\",\"main_port\":${main_port}}}"
+  else
+    printf '%b\n' "${GREEN}Allocation ready.${NC}" >&2
+    draw_box "Login Link: ${login_url}" >&2
+    printf '  Allocation ID: %s\n  Seat: %s (port %s)\n' "$alloc_id" "$chosen" "$main_port" >&2
+    printf '  Release with: sudo -n bbx fleet release %s\n' "$alloc_id" >&2
+  fi
+}
+
+# ── fleet release ───────────────────────────────────────────────────
+
+fleet_release() {
+  local alloc_id="" force=0
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      --force) force=1; shift ;;
+      -*) _fleet_fail fleet_invalid_config "Unknown fleet release option: $1" ;;
+      *) [[ -z "$alloc_id" ]] && alloc_id="$1" || _fleet_fail fleet_invalid_config "Unexpected extra argument: $1"; shift ;;
+    esac
+  done
+  [[ -n "$alloc_id" ]] || _fleet_fail fleet_invalid_config "Usage: bbx fleet release <allocation-id> [--json] [--force]"
+  _fleet_valid_alloc_id "$alloc_id" || _fleet_fail fleet_allocation_not_found "Malformed allocation ID '${alloc_id}'."
+  _fleet_require_init
+
+  local rec user main_port
+  rec="$(_fleet_alloc_path "$alloc_id")"
+
+  _fleet_lock
+  if [[ ! -f "$rec" ]]; then
+    _fleet_unlock
+    # Idempotent: a well-formed, already-absent allocation is success.
+    if (( FLEET_JSON )); then
+      _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":false,\"note\":\"already released\"}"
+    else
+      _fleet_info "Allocation ${alloc_id} is already released."
+    fi
+    return 0
+  fi
+  user="$(_fleet_record_get "$rec" LINUX_USER 2>/dev/null || true)"
+  main_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+  if [[ -z "$user" || -z "$main_port" ]]; then
+    if (( force )); then
+      mv -f "$rec" "${FLEET_DIR}/diagnostics/$(basename "$rec").corrupt" 2>/dev/null || rm -f "$rec"
+      _fleet_unlock
+      _fleet_fail fleet_state_inconsistent "Allocation record was corrupt; quarantined (--force)."
+    fi
+    _fleet_unlock
+    _fleet_fail fleet_state_inconsistent "Allocation record for ${alloc_id} is corrupt. Re-run with --force to quarantine it."
+  fi
+  _fleet_record_update "$rec" "STATE=releasing" "UPDATED_AT=$(_fleet_now)"
+  _fleet_unlock
+
+  # Delegated stop + clean-slate cleanup (validates the recorded user
+  # against the configured seat range before any destructive action).
+  _fleet_enter_target "$user"
+  _fleet_stop_seat_runtime
+  local wiped=0
+  _fleet_wipe_seat_profile && wiped=1
+  _fleet_exit_target
+
+  local ports_free=1 p
+  for p in $(_fleet_port_set "$main_port"); do
+    if _fleet_port_listening "$p"; then ports_free=0; break; fi
+  done
+
+  if (( ! wiped )) && (( ! force )); then
+    _fleet_lock
+    _fleet_record_update "$rec" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
+    _fleet_unlock
+    _fleet_fail fleet_release_failed "Could not verify clean-slate profile removal for seat ${user}. Investigate, then re-run with --force."
+  fi
+  if (( ! ports_free )) && (( ! force )); then
+    _fleet_lock
+    _fleet_record_update "$rec" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
+    _fleet_unlock
+    _fleet_fail fleet_release_failed "Ports for seat ${user} are still in use after stop. Investigate, then re-run with --force."
+  fi
+
+  _fleet_lock
+  rm -f "$rec"
+  _fleet_unlock
+
+  if (( FLEET_JSON )); then
+    _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":true,\"seat\":\"${user}\"}"
+  else
+    printf '%b\n' "${GREEN}Released allocation ${alloc_id} (seat ${user} returned to pool).${NC}" >&2
+  fi
+}
+# ── fleet list ──────────────────────────────────────────────────────
+
+# Health of one allocation: "running" if main port listening and seat
+# has BrowserBox processes, else "down"/"partial".
+_fleet_alloc_health() {
+  local user="$1" main_port="$2"
+  local listening=0 procs=0
+  _fleet_port_listening "$main_port" && listening=1
+  sudo -n pgrep -u "$user" -f 'browserbox|bbpro' >/dev/null 2>&1 && procs=1
+  if (( listening && procs )); then printf 'healthy'
+  elif (( listening || procs )); then printf 'partial'
+  else printf 'down'; fi
+}
+
+_fleet_age_of() {
+  local ts="$1" now epoch
+  now="$(_fleet_epoch)"
+  epoch="$(_fleet_ts_to_epoch "$ts")"
+  if (( epoch == 0 )); then printf '?'; return; fi
+  local s=$(( now - epoch ))
+  if (( s < 120 )); then printf '%ss' "$s"
+  elif (( s < 7200 )); then printf '%sm' "$((s/60))"
+  else printf '%sh' "$((s/3600))"; fi
+}
+
+fleet_list() {
+  local show_all=0
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      --all) show_all=1; shift ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet list option: $1" ;;
+    esac
+  done
+  _fleet_require_init
+
+  local id rec state seat host port created health login_url
+  local json_items="" first=1
+  local -a rows=()
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || echo '?')"
+    if (( ! show_all )) && [[ "$state" == "failed" ]]; then continue; fi
+    seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || echo '?')"
+    host="$(_fleet_record_get "$rec" PUBLIC_HOSTNAME 2>/dev/null || echo '?')"
+    port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || echo 0)"
+    created="$(_fleet_record_get "$rec" CREATED_AT 2>/dev/null || echo '')"
+    login_url="$(_fleet_record_get "$rec" LOGIN_URL 2>/dev/null || echo '')"
+    health="down"
+    [[ "$seat" != "?" && "$port" != 0 ]] && health="$(_fleet_alloc_health "$seat" "$port")"
+    rows+=("$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s' "$id" "$state" "$(_fleet_age_of "$created")" "$seat" "$host" "$port" "$health")")
+    if (( FLEET_JSON )); then
+      (( first )) || json_items+=","
+      first=0
+      # login_url is included in privileged JSON mode only — never in
+      # the human table.
+      json_items+="{\"allocation_id\":\"${id}\",\"state\":\"${state}\",\"created_at\":\"${created}\",\"seat\":\"$(_fleet_json_escape "$seat")\",\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"main_port\":${port:-0},\"health\":\"${health}\",\"login_url\":\"$(_fleet_json_escape "$login_url")\"}"
+    fi
+  done < <(_fleet_alloc_list)
+
+  if (( FLEET_JSON )); then
+    _fleet_emit "{\"ok\":true,\"allocations\":[${json_items}]}"
+  else
+    {
+      printf '%-38s %-10s %-5s %-14s %-30s %-6s %s\n' "ALLOCATION" "STATE" "AGE" "SEAT" "PUBLIC HOSTNAME" "PORT" "HEALTH"
+      local row
+      for row in "${rows[@]:-}"; do
+        [[ -n "$row" ]] || continue
+        IFS=$'\t' read -r id state created seat host port health <<< "$row"
+        printf '%-38s %-10s %-5s %-14s %-30s %-6s %s\n' "$id" "$state" "$created" "$seat" "$host" "$port" "$health"
+      done
+      (( ${#rows[@]} == 0 )) && printf '(no active allocations)\n'
+    } >&2
+  fi
+}
+
+# ── fleet status ────────────────────────────────────────────────────
+
+_fleet_vacancy_advisory() {
+  # Advisory license-vacancy snapshot; never authoritative, never fatal.
+  local api="${BBX_LICENSE_SERVER_URL:-https://master.dosaygo.com}"
+  [[ -n "${LICENSE_KEY:-}" ]] || { printf 'unavailable'; return; }
+  command -v jq >/dev/null 2>&1 || { printf 'unavailable'; return; }
+  local resp free
+  resp="$(curl -sS --connect-timeout 4 --max-time 8 -H "Authorization: Bearer ${LICENSE_KEY}" "${api}/v1/occupancy" 2>/dev/null || true)"
+  free="$(printf '%s' "$resp" | jq -r '.occupancy.totals.freeNow // empty' 2>/dev/null || true)"
+  if [[ "$free" =~ ^[0-9]+$ ]]; then printf '%s' "$free"; else printf 'unavailable'; fi
+}
+
+fleet_status() {
+  local target_id=""
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      -*) _fleet_fail fleet_invalid_config "Unknown fleet status option: $1" ;;
+      *) [[ -z "$target_id" ]] && target_id="$1" || _fleet_fail fleet_invalid_config "Unexpected extra argument: $1"; shift ;;
+    esac
+  done
+  _fleet_require_init
+
+  if [[ -n "$target_id" ]]; then
+    _fleet_valid_alloc_id "$target_id" || _fleet_fail fleet_allocation_not_found "Malformed allocation ID."
+    local rec="$(_fleet_alloc_path "$target_id")"
+    [[ -f "$rec" ]] || _fleet_fail fleet_allocation_not_found "No allocation ${target_id}."
+    local state seat port host login_url health has_link=false clean=false route_ok=false
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || echo '?')"
+    seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || echo '')"
+    port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || echo 0)"
+    host="$(_fleet_record_get "$rec" PUBLIC_HOSTNAME 2>/dev/null || echo '')"
+    login_url="$(_fleet_record_get "$rec" LOGIN_URL 2>/dev/null || echo '')"
+    health="$(_fleet_alloc_health "$seat" "$port")"
+    if [[ -n "$seat" ]]; then
+      _fleet_enter_target "$seat"
+      sudo -n test -f "$(_tu_config_dir)/login.link" 2>/dev/null && has_link=true
+      sudo -n grep -q '^export BBX_CLEAN_SLATE="true"$' "$(_tu_config_dir)/test.env" 2>/dev/null && clean=true
+      _fleet_exit_target
+    fi
+    if [[ -n "$login_url" ]] && _fleet_probe_public_url "$login_url" "$host" "$FLEET_ROUTING_MODE" "$port"; then
+      route_ok=true
+    fi
+    if (( FLEET_JSON )); then
+      _fleet_emit "{\"ok\":true,\"allocation_id\":\"${target_id}\",\"state\":\"${state}\",\"seat\":\"$(_fleet_json_escape "$seat")\",\"main_port\":${port:-0},\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"health\":\"${health}\",\"login_link_present\":${has_link},\"clean_slate\":${clean},\"public_route_ok\":${route_ok}}"
+    else
+      {
+        printf 'Allocation:      %s\n' "$target_id"
+        printf 'State:           %s\n' "$state"
+        printf 'Seat:            %s (port %s)\n' "$seat" "$port"
+        printf 'Public hostname: %s\n' "$host"
+        printf 'Runtime health:  %s\n' "$health"
+        printf 'Login link file: %s\n' "$has_link"
+        printf 'Clean slate:     %s\n' "$clean"
+        printf 'Public route OK: %s\n' "$route_ok"
+      } >&2
+    fi
+    return 0
+  fi
+
+  local total=0 eligible=0 active=0 running=0 starting=0 failed=0
+  local seat rec id state
+  while IFS= read -r seat; do
+    total=$((total + 1))
+    rec="$(_fleet_seat_record_path "$seat")"
+    [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] && eligible=$((eligible + 1))
+  done < <(_fleet_seat_list)
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || echo failed)"
+    case "$state" in
+      running) running=$((running + 1)); active=$((active + 1)) ;;
+      starting|reserved|releasing) starting=$((starting + 1)); active=$((active + 1)) ;;
+      failed) failed=$((failed + 1)) ;;
+    esac
+  done < <(_fleet_alloc_list)
+  local free=$(( eligible - active ))
+  (( free < 0 )) && free=0
+
+  local routing_env="${FLEET_DIR}/routing.env"
+  local dns_valid nginx_applied cert_file cert_state="none"
+  dns_valid="$(_fleet_record_get "$routing_env" DNS_VALID 2>/dev/null || echo false)"
+  nginx_applied="$(_fleet_record_get "$routing_env" NGINX_APPLIED 2>/dev/null || echo false)"
+  cert_file="$(_fleet_record_get "$routing_env" CERT_FILE 2>/dev/null || true)"
+  if [[ -n "$cert_file" ]]; then
+    if sudo -n openssl x509 -in "$cert_file" -noout -checkend 0 >/dev/null 2>&1; then
+      cert_state="valid"
+    else
+      cert_state="expired"
+    fi
+  fi
+  local nginx_state="inactive"
+  if command -v nginx >/dev/null 2>&1 && sudo -n nginx -t >/dev/null 2>&1; then
+    nginx_state="config-ok"
+    sudo -n pgrep -x nginx >/dev/null 2>&1 && nginx_state="active"
+  fi
+  local vacancy
+  load_config >/dev/null 2>&1 || true
+  vacancy="$(_fleet_vacancy_advisory)"
+
+  if (( FLEET_JSON )); then
+    local vac_json="null"
+    [[ "$vacancy" =~ ^[0-9]+$ ]] && vac_json="$vacancy"
+    _fleet_emit "{\"ok\":true,\"seats\":{\"configured\":${FLEET_SIZE},\"eligible\":${eligible},\"records\":${total}},\"allocations\":{\"active\":${active},\"running\":${running},\"starting\":${starting},\"failed\":${failed},\"locally_free\":${free}},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"nginx\":\"${nginx_state}\",\"dns_valid\":${dns_valid},\"certificate\":\"${cert_state}\"},\"clean_slate\":${FLEET_CLEAN_SLATE},\"ports\":{\"start\":${FLEET_PORT_START},\"end\":${FLEET_PORT_END}},\"license_vacancy_advisory\":${vac_json}}"
+  else
+    {
+      printf 'Fleet status\n'
+      printf '  Seats:        %s configured, %s eligible\n' "$FLEET_SIZE" "$eligible"
+      printf '  Allocations:  %s active (%s running, %s starting/transitional), %s failed/stale\n' "$active" "$running" "$starting" "$failed"
+      printf '  Locally free: %s seats\n' "$free"
+      printf '  Routing:      %s' "$FLEET_ROUTING_MODE"
+      [[ "$FLEET_ROUTING_MODE" == "subdomain" ]] && printf ' (%s labels, domain %s)' "$FLEET_SUBDOMAIN_MODE" "$FLEET_DOMAIN"
+      printf '\n'
+      printf '  Nginx:        %s\n' "$nginx_state"
+      printf '  DNS valid:    %s\n' "$dns_valid"
+      printf '  Certificate:  %s\n' "$cert_state"
+      printf '  Clean slate:  %s\n' "$FLEET_CLEAN_SLATE"
+      printf '  Port range:   %s-%s\n' "$FLEET_PORT_START" "$FLEET_PORT_END"
+      printf '  License vacancy (advisory): %s\n' "$vacancy"
+      printf '\nNote: local free seats do not guarantee globally free license seats.\n'
+    } >&2
+  fi
+}
+
+# ── fleet reconcile ─────────────────────────────────────────────────
+
+fleet_reconcile() {
+  local fix=0
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      --fix) fix=1; shift ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet reconcile option: $1" ;;
+    esac
+  done
+  _fleet_require_init
+  _fleet_lock 60
+
+  local -a findings=()
+  local id rec state seat port health user
+
+  # Allocation state vs runtime.
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+    seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
+    port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    if [[ -z "$state" || -z "$seat" || -z "$port" ]]; then
+      findings+=("corrupt-record ${id}")
+      (( fix )) && { mv -f "$rec" "${FLEET_DIR}/diagnostics/$(basename "$rec").corrupt" 2>/dev/null || rm -f "$rec"; }
+      continue
+    fi
+    health="$(_fleet_alloc_health "$seat" "$port")"
+    case "$state" in
+      starting)
+        if [[ "$health" == "healthy" ]]; then
+          findings+=("starting-but-healthy ${id}")
+          (( fix )) && _fleet_record_update "$rec" "STATE=running" "UPDATED_AT=$(_fleet_now)"
+        fi
+        ;;
+      running)
+        if [[ "$health" == "down" ]]; then
+          findings+=("running-but-dead ${id}")
+          (( fix )) && { rm -f "$rec"; }
+        fi
+        ;;
+      releasing)
+        if [[ "$health" == "down" ]]; then
+          findings+=("stale-releasing ${id}")
+          (( fix )) && rm -f "$rec"
+        fi
+        ;;
+    esac
+  done < <(_fleet_alloc_list)
+
+  # Orphan runtimes: processes under managed users with no allocation.
+  # Reported only — never killed automatically.
+  while IFS= read -r seat; do
+    user="$seat"
+    if sudo -n pgrep -u "$user" -f 'browserbox|bbpro' >/dev/null 2>&1; then
+      if ! _fleet_alloc_for_seat "$seat" >/dev/null 2>&1; then
+        findings+=("orphan-runtime ${seat} (operator review required; not killed)")
+      fi
+    fi
+    # Stale login.link on free seats.
+    local home
+    home="$(getent passwd "$seat" 2>/dev/null | cut -d: -f6)"
+    if [[ "$home" == /*/"$seat" ]] && ! _fleet_alloc_for_seat "$seat" >/dev/null 2>&1; then
+      if sudo -n test -f "${home}/.config/dosaygo/bbpro/login.link" 2>/dev/null; then
+        findings+=("stale-login-link ${seat}")
+        (( fix )) && sudo -n rm -f "${home}/.config/dosaygo/bbpro/login.link"
+      fi
+    fi
+  done < <(_fleet_seat_list)
+
+  # State hygiene: permissions and leftover temp files.
+  local f
+  for f in "${FLEET_DIR}/seats"/.rec.* "${FLEET_DIR}/allocations"/.rec.*; do
+    [[ -e "$f" ]] || continue
+    findings+=("incomplete-temp-file $(basename "$f")")
+    (( fix )) && rm -f "$f"
+  done
+  local perms
+  perms="$(stat -c '%a' "$FLEET_DIR" 2>/dev/null || echo 700)"
+  if [[ "$perms" != "700" ]]; then
+    findings+=("state-permission-drift ${FLEET_DIR} (${perms})")
+    (( fix )) && chmod 700 "$FLEET_DIR"
+  fi
+
+  _fleet_unlock
+
+  local applied="report-only"
+  (( fix )) && applied="fixes-applied"
+  if (( FLEET_JSON )); then
+    local items="" first=1 fnd
+    for fnd in "${findings[@]:-}"; do
+      [[ -n "$fnd" ]] || continue
+      (( first )) || items+=","
+      first=0
+      items+="\"$(_fleet_json_escape "$fnd")\""
+    done
+    _fleet_emit "{\"ok\":true,\"mode\":\"${applied}\",\"findings\":[${items}]}"
+  else
+    {
+      printf 'Fleet reconcile (%s): %s finding(s)\n' "$applied" "${#findings[@]}"
+      local fnd
+      for fnd in "${findings[@]:-}"; do
+        [[ -n "$fnd" ]] && printf '  - %s\n' "$fnd"
+      done
+    } >&2
+  fi
+}
+
+# ── fleet doctor ────────────────────────────────────────────────────
+
+fleet_doctor() {
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet doctor option: $1" ;;
+    esac
+  done
+
+  local -a names=() states=() details=()
+  local fails=0 warns=0
+  _fd_check() { # <pass|warning|fail> <name> [detail]
+    names+=("$2"); states+=("$1"); details+=("${3:-}")
+    [[ "$1" == "fail" ]] && fails=$((fails + 1))
+    [[ "$1" == "warning" ]] && warns=$((warns + 1))
+    return 0
+  }
+
+  [[ "$(uname -s)" == "Linux" ]] && _fd_check pass "Linux supported" || _fd_check fail "Linux supported" "bbx fleet is Linux-only"
+  if [[ "$EUID" -eq 0 ]] || sudo -n true 2>/dev/null; then _fd_check pass "Privileged operator"; else _fd_check fail "Privileged operator" "need root or passwordless sudo"; fi
+  local tool
+  for tool in flock getent pgrep pkill useradd; do
+    command -v "$tool" >/dev/null 2>&1 && _fd_check pass "${tool} available" || _fd_check fail "${tool} available" "install it"
+  done
+  if command -v ss >/dev/null 2>&1 || command -v lsof >/dev/null 2>&1; then
+    _fd_check pass "port-inspection tool (ss/lsof)"
+  else
+    _fd_check warning "port-inspection tool (ss/lsof)" "falling back to /dev/tcp probes"
+  fi
+  command -v browserbox >/dev/null 2>&1 && _fd_check pass "BrowserBox binary installed" || _fd_check fail "BrowserBox binary installed" "run the BrowserBox installer first"
+  command -v setup_bbpro >/dev/null 2>&1 && _fd_check pass "Delegated lifecycle commands (setup_bbpro)" || _fd_check fail "Delegated lifecycle commands (setup_bbpro)" "BrowserBox install incomplete"
+  _has_chrome && _fd_check pass "Chrome/Chromium present" || _fd_check warning "Chrome/Chromium present" "acquire will fail until a browser is installed"
+
+  _fleet_set_dir
+  if _fleet_dirs_ready; then
+    _fd_check pass "Fleet initialized"
+    _fleet_config_load
+    local cfg_ok=1
+    ( FLEET_JSON=0 _fleet_config_validate ) >/dev/null 2>&1 || cfg_ok=0
+    (( cfg_ok )) && _fd_check pass "Fleet configuration valid" || _fd_check fail "Fleet configuration valid" "run bbx fleet init to repair"
+    local perms
+    perms="$(stat -c '%a' "$FLEET_DIR" 2>/dev/null || echo '?')"
+    [[ "$perms" == "700" ]] && _fd_check pass "Fleet state permissions (0700)" || _fd_check warning "Fleet state permissions (0700)" "found ${perms}; run bbx fleet reconcile --fix"
+
+    local present=0 missing=0 seat idx
+    for (( idx=0; idx < FLEET_SIZE; idx++ )); do
+      seat="$(_fleet_seat_name "$idx")"
+      if id "$seat" >/dev/null 2>&1; then present=$((present + 1)); else missing=$((missing + 1)); fi
+    done
+    if (( missing == 0 )); then
+      _fd_check pass "${present}/${FLEET_SIZE} managed users present"
+    else
+      _fd_check fail "${present}/${FLEET_SIZE} managed users present" "run bbx fleet init to create missing users"
+    fi
+
+    # Port-set collision audit across seat records.
+    local -a mains=()
+    local rec p q collision=0
+    while IFS= read -r seat; do
+      rec="$(_fleet_seat_record_path "$seat")"
+      [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+      p="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+      [[ -n "$p" ]] || continue
+      for q in "${mains[@]:-}"; do
+        [[ -n "$q" ]] || continue
+        _fleet_port_sets_conflict "$p" "$q" && collision=1
+      done
+      mains+=("$p")
+    done < <(_fleet_seat_list)
+    (( collision )) && _fd_check fail "Seat port sets non-overlapping" "collision detected; re-run init" || _fd_check pass "Seat port sets non-overlapping"
+
+    if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+      command -v nginx >/dev/null 2>&1 && _fd_check pass "nginx available" || _fd_check fail "nginx available" "install nginx"
+      if command -v nginx >/dev/null 2>&1; then
+        if _fleet_nginx_paths && sudo -n test -f "$FLEET_NGINX_TARGET" 2>/dev/null; then
+          _fd_check pass "Fleet nginx configuration installed"
+          sudo -n nginx -t >/dev/null 2>&1 && _fd_check pass "nginx syntax valid" || _fd_check fail "nginx syntax valid" "nginx -t failed"
+        else
+          _fd_check fail "Fleet nginx configuration installed" "run bbx fleet routing apply"
+        fi
+      fi
+      local routing_env="${FLEET_DIR}/routing.env" cert_file
+      cert_file="$(_fleet_record_get "$routing_env" CERT_FILE 2>/dev/null || true)"
+      if [[ -n "$cert_file" ]] && sudo -n test -r "$cert_file" 2>/dev/null; then
+        if sudo -n openssl x509 -in "$cert_file" -noout -checkend 0 >/dev/null 2>&1; then
+          if _fleet_cert_covers "$cert_file" "bbxfleetcheck.${FLEET_DOMAIN}"; then
+            _fd_check pass "Wildcard certificate covers *.${FLEET_DOMAIN}"
+          else
+            _fd_check fail "Wildcard certificate covers *.${FLEET_DOMAIN}" "SAN mismatch"
+          fi
+        else
+          _fd_check fail "Wildcard certificate valid" "expired"
+        fi
+      else
+        _fd_check fail "Wildcard certificate configured" "run bbx fleet init with --cert-file/--key-file"
+      fi
+      if _fleet_is_local_domain "$FLEET_DOMAIN"; then
+        _fd_check pass "Fleet domain DNS (local /etc/hosts mode)"
+      else
+        local dns_ok=1
+        FLEET_DNS_VALID=false; FLEET_DNS_PROXIED=false
+        _fleet_dns_validate "$FLEET_DOMAIN" "true" >/dev/null 2>&1 || dns_ok=0
+        if (( dns_ok )); then
+          if [[ "$FLEET_DNS_PROXIED" == "true" ]]; then
+            _fd_check warning "Wildcard DNS resolves" "resolves, but not verifiably to this machine"
+          else
+            _fd_check pass "Wildcard DNS resolves to this machine"
+          fi
+        else
+          _fd_check fail "Wildcard DNS resolves" "create *.${FLEET_DOMAIN} A record"
+        fi
+      fi
+      # Representative public route probe against the first eligible seat.
+      local probe_seat probe_rec probe_host probe_port
+      probe_seat="$(_fleet_seat_list | head -n1)"
+      if [[ -n "$probe_seat" ]]; then
+        probe_rec="$(_fleet_seat_record_path "$probe_seat")"
+        probe_host="$(_fleet_record_get "$probe_rec" HOST_MAIN 2>/dev/null || true)"
+        probe_port="$(_fleet_record_get "$probe_rec" MAIN_PORT 2>/dev/null || true)"
+        if [[ -n "$probe_host" ]]; then
+          local code
+          code="$(curl -k -s -o /dev/null -w '%{http_code}' --connect-timeout 3 --max-time 6 --resolve "${probe_host}:443:127.0.0.1" "https://${probe_host}/" 2>/dev/null || true)"
+          if [[ "$code" =~ ^[0-9]{3}$ && "$code" != "000" ]]; then
+            _fd_check pass "Representative public route reachable (${probe_host})"
+          else
+            _fd_check warning "Representative public route reachable (${probe_host})" "no backend running is normal when seat is free"
+          fi
+        fi
+      fi
+    fi
+
+    [[ "$FLEET_CLEAN_SLATE" == "true" ]] && _fd_check pass "Clean-slate mode enabled" || _fd_check warning "Clean-slate mode enabled" "FLEET_CLEAN_SLATE=false: seats may retain browser state"
+
+    # Allocation consistency + orphans (report-only).
+    local incons=0 orphans=0 aid arec astate aseat aport
+    while IFS= read -r aid; do
+      arec="$(_fleet_alloc_path "$aid")"
+      astate="$(_fleet_record_get "$arec" STATE 2>/dev/null || true)"
+      aseat="$(_fleet_record_get "$arec" SEAT_NAME 2>/dev/null || true)"
+      aport="$(_fleet_record_get "$arec" MAIN_PORT 2>/dev/null || true)"
+      if [[ -z "$astate" || -z "$aseat" || -z "$aport" ]]; then incons=$((incons + 1)); continue; fi
+      if [[ "$astate" == "running" && "$(_fleet_alloc_health "$aseat" "$aport")" == "down" ]]; then incons=$((incons + 1)); fi
+    done < <(_fleet_alloc_list)
+    while IFS= read -r seat; do
+      if sudo -n pgrep -u "$seat" -f 'browserbox|bbpro' >/dev/null 2>&1 && ! _fleet_alloc_for_seat "$seat" >/dev/null 2>&1; then
+        orphans=$((orphans + 1))
+      fi
+    done < <(_fleet_seat_list)
+    (( incons == 0 )) && _fd_check pass "Allocation state consistent" || _fd_check warning "Allocation state consistent" "${incons} inconsistencies; run bbx fleet reconcile --fix"
+    (( orphans == 0 )) && _fd_check pass "No orphan seat runtimes" || _fd_check warning "No orphan seat runtimes" "${orphans} orphan runtime(s) need operator review"
+  else
+    _fd_check warning "Fleet initialized" "run bbx fleet init"
+  fi
+
+  load_config >/dev/null 2>&1 || true
+  if [[ -n "${LICENSE_KEY:-}" ]]; then
+    _fd_check pass "Operator license key configured"
+    local vac
+    vac="$(_fleet_vacancy_advisory)"
+    if [[ "$vac" =~ ^[0-9]+$ ]]; then
+      _fd_check pass "License vacancy (advisory): ${vac} free"
+    else
+      _fd_check warning "License vacancy" "unavailable"
+    fi
+  else
+    _fd_check warning "Operator license key configured" "set LICENSE_KEY or run bbx certify"
+  fi
+
+  local i
+  if (( FLEET_JSON )); then
+    local items="" first=1
+    for i in "${!names[@]}"; do
+      (( first )) || items+=","
+      first=0
+      items+="{\"name\":\"$(_fleet_json_escape "${names[$i]}")\",\"status\":\"${states[$i]}\",\"detail\":\"$(_fleet_json_escape "${details[$i]}")\"}"
+    done
+    local ok=true
+    (( fails > 0 )) && ok=false
+    _fleet_emit "{\"ok\":${ok},\"failures\":${fails},\"warnings\":${warns},\"checks\":[${items}]}"
+  else
+    {
+      for i in "${!names[@]}"; do
+        case "${states[$i]}" in
+          pass) printf '%b %s\n' "${GREEN}✓${NC}" "${names[$i]}" ;;
+          warning) printf '%b %s%s\n' "${YELLOW}!${NC}" "${names[$i]}" "${details[$i]:+ — ${details[$i]}}" ;;
+          fail) printf '%b %s%s\n' "${RED}✗${NC}" "${names[$i]}" "${details[$i]:+ — ${details[$i]}}" ;;
+        esac
+      done
+      printf '\n%s failure(s), %s warning(s)\n' "$fails" "$warns"
+    } >&2
+  fi
+  (( fails > 0 )) && exit 1
+  return 0
+}
+
+# ── fleet config ────────────────────────────────────────────────────
+
+fleet_config() {
+  local sub="${1:-show}"
+  [[ "$sub" == "--json" ]] && sub="show"
+  [[ $# -gt 0 ]] && shift
+  _fleet_require_init
+  local f="${FLEET_DIR}/defaults.env"
+  case "$sub" in
+    show)
+      local json_mode=0
+      [[ "${1:-}" == "--json" ]] && json_mode=1
+      if (( FLEET_JSON || json_mode )); then
+        local items="" first=1 line key val
+        if [[ -f "$f" ]]; then
+          while IFS= read -r line; do
+            [[ "$line" == *"="* ]] || continue
+            key="${line%%=*}"; val="${line#*=}"
+            _fleet_valid_envkey "$key" || continue
+            (( first )) || items+=","
+            first=0
+            items+="\"$(_fleet_json_escape "$key")\":\"$(_fleet_json_escape "$val")\""
+          done < "$f"
+        fi
+        _fleet_emit "{\"ok\":true,\"defaults\":{${items}}}"
+      else
+        {
+          printf 'Fleet BrowserBox defaults (%s):\n' "$f"
+          if [[ -s "$f" ]]; then cat "$f"; else printf '(none set)\n'; fi
+        } >&2
+      fi
+      ;;
+    set)
+      local key="${1:-}" val="${2:-}"
+      [[ -n "$key" && $# -ge 2 ]] || _fleet_fail fleet_invalid_config "Usage: bbx fleet config set <KEY> <VALUE>"
+      _fleet_valid_envkey "$key" || _fleet_fail fleet_invalid_config "Invalid environment variable name '${key}'."
+      case "$key" in
+        LICENSE_KEY|GH_TOKEN|GITHUB_TOKEN|PATH|HOME|SUDO|BBX_FOR_USER)
+          _fleet_fail fleet_invalid_config "Refusing to store ${key} in Fleet defaults." ;;
+      esac
+      [[ "$val" == *$'\n'* ]] && _fleet_fail fleet_invalid_config "Values must not contain newlines."
+      local tmp
+      tmp="$(mktemp "${FLEET_DIR}/.def.XXXXXX")"
+      chmod 600 "$tmp"
+      if [[ -f "$f" ]]; then grep -v -E "^${key}=" "$f" >> "$tmp" || true; fi
+      printf '%s=%s\n' "$key" "$val" >> "$tmp"
+      mv -f "$tmp" "$f"
+      if (( FLEET_JSON )); then _fleet_emit "{\"ok\":true,\"set\":\"$(_fleet_json_escape "$key")\"}"; else _fleet_info "Set ${key}."; fi
+      ;;
+    unset)
+      local key="${1:-}"
+      [[ -n "$key" ]] || _fleet_fail fleet_invalid_config "Usage: bbx fleet config unset <KEY>"
+      _fleet_valid_envkey "$key" || _fleet_fail fleet_invalid_config "Invalid environment variable name '${key}'."
+      if [[ -f "$f" ]]; then
+        local tmp
+        tmp="$(mktemp "${FLEET_DIR}/.def.XXXXXX")"
+        chmod 600 "$tmp"
+        grep -v -E "^${key}=" "$f" >> "$tmp" || true
+        mv -f "$tmp" "$f"
+      fi
+      if (( FLEET_JSON )); then _fleet_emit "{\"ok\":true,\"unset\":\"$(_fleet_json_escape "$key")\"}"; else _fleet_info "Unset ${key}."; fi
+      ;;
+    *)
+      _fleet_fail fleet_invalid_config "Usage: bbx fleet config <show|set|unset>" ;;
+  esac
+}
+
+# ── fleet routing ───────────────────────────────────────────────────
+
+fleet_routing() {
+  local sub="${1:-show}"
+  [[ "$sub" == "--json" ]] && sub="show"
+  [[ $# -gt 0 ]] && shift
+  _fleet_require_init
+  case "$sub" in
+    show)
+      local routing_env="${FLEET_DIR}/routing.env"
+      local cert_file dns_valid dns_proxied nginx_applied
+      cert_file="$(_fleet_record_get "$routing_env" CERT_FILE 2>/dev/null || true)"
+      dns_valid="$(_fleet_record_get "$routing_env" DNS_VALID 2>/dev/null || echo false)"
+      dns_proxied="$(_fleet_record_get "$routing_env" DNS_PROXIED 2>/dev/null || echo false)"
+      nginx_applied="$(_fleet_record_get "$routing_env" NGINX_APPLIED 2>/dev/null || echo false)"
+      local cert_state="none"
+      if [[ -n "$cert_file" ]]; then
+        sudo -n openssl x509 -in "$cert_file" -noout -checkend 0 >/dev/null 2>&1 && cert_state="valid" || cert_state="expired"
+      fi
+      local seat rec host port
+      if (( FLEET_JSON )); then
+        local items="" first=1
+        while IFS= read -r seat; do
+          rec="$(_fleet_seat_record_path "$seat")"
+          [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+          host="$(_fleet_record_get "$rec" PUBLIC_HOSTNAME 2>/dev/null || true)"
+          port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || echo 0)"
+          (( first )) || items+=","
+          first=0
+          items+="{\"seat\":\"$(_fleet_json_escape "$seat")\",\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"main_port\":${port}}"
+        done < <(_fleet_seat_list)
+        _fleet_emit "{\"ok\":true,\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"certificate\":{\"path\":\"$(_fleet_json_escape "$cert_file")\",\"state\":\"${cert_state}\"},\"dns_valid\":${dns_valid},\"dns_proxied\":${dns_proxied},\"nginx_applied\":${nginx_applied},\"seats\":[${items}]}"
+      else
+        {
+          printf 'Routing mode:    %s\n' "$FLEET_ROUTING_MODE"
+          printf 'Fleet domain:    %s\n' "${FLEET_DOMAIN:-'(none)'}"
+          printf 'Subdomain mode:  %s\n' "$FLEET_SUBDOMAIN_MODE"
+          printf 'Backend scheme:  %s\n' "$FLEET_BACKEND"
+          printf 'Certificate:     %s (%s)\n' "${cert_file:-none}" "$cert_state"
+          printf 'DNS validated:   %s (proxied: %s)\n' "$dns_valid" "$dns_proxied"
+          printf 'Nginx applied:   %s\n' "$nginx_applied"
+          printf '\nSeat routing map:\n'
+          printf '  %-14s %-40s %s\n' "SEAT" "PUBLIC HOSTNAME" "UPSTREAM"
+          while IFS= read -r seat; do
+            rec="$(_fleet_seat_record_path "$seat")"
+            [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+            host="$(_fleet_record_get "$rec" PUBLIC_HOSTNAME 2>/dev/null || echo '?')"
+            port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || echo '?')"
+            printf '  %-14s %-40s 127.0.0.1:%s\n' "$seat" "$host" "$port"
+          done < <(_fleet_seat_list)
+        } >&2
+      fi
+      ;;
+    apply)
+      local allow_active=0
+      while (( $# )); do
+        case "$1" in
+          --json) shift ;;
+          --allow-active) allow_active=1; shift ;;
+          *) _fleet_fail fleet_invalid_config "Unknown fleet routing apply option: $1" ;;
+        esac
+      done
+      [[ "$FLEET_ROUTING_MODE" == "subdomain" ]] \
+        || _fleet_fail fleet_invalid_config "routing apply is only meaningful in subdomain mode."
+      _fleet_lock 60
+      local active_count
+      active_count="$(_fleet_alloc_list | wc -l | tr -d ' ')"
+      if (( active_count > 0 && ! allow_active )); then
+        _fleet_unlock
+        _fleet_fail fleet_active_allocations "Refusing to rewrite routing with ${active_count} active allocation(s). Pass --allow-active to proceed (already-issued login URLs may become invalid)."
+      fi
+      (( active_count > 0 )) && _fleet_warn "Applying routing with ${active_count} active allocation(s); issued login URLs may become invalid."
+      _fleet_config_validate
+      local routing_env="${FLEET_DIR}/routing.env" cert_file key_file
+      cert_file="$(_fleet_record_get "$routing_env" CERT_FILE 2>/dev/null || true)"
+      key_file="$(_fleet_record_get "$routing_env" KEY_FILE 2>/dev/null || true)"
+      if [[ -z "$cert_file" || -z "$key_file" ]]; then
+        _fleet_unlock
+        _fleet_fail fleet_certificate_invalid "No certificate configured. Run bbx fleet init with --cert-file/--key-file."
+      fi
+      _fleet_cert_validate "$cert_file" "$key_file" "$FLEET_DOMAIN"
+      if ! _fleet_is_local_domain "$FLEET_DOMAIN"; then
+        _fleet_dns_validate "$FLEET_DOMAIN" "true" >/dev/null 2>&1 \
+          || _fleet_warn "Wildcard DNS for *.${FLEET_DOMAIN} did not validate; continuing (routing is local to nginx)."
+      fi
+      _fleet_nginx_apply "$cert_file" "$key_file"
+      _fleet_record_update "$routing_env" "NGINX_APPLIED=true" "CHECKED_AT=$(_fleet_now)"
+      _fleet_unlock
+      if (( FLEET_JSON )); then
+        _fleet_emit "{\"ok\":true,\"nginx_applied\":true,\"affected_allocations\":${active_count}}"
+      else
+        _fleet_info "Fleet routing applied atomically (affected active allocations: ${active_count})."
+      fi
+      ;;
+    *)
+      _fleet_fail fleet_invalid_config "Usage: bbx fleet routing <show|apply>" ;;
+  esac
+}
+
+# ── fleet help ──────────────────────────────────────────────────────
+
+fleet_help() {
+  {
+    printf '%b\n' "${BOLD}bbx fleet${NC} — pool of ephemeral, clean-slate BrowserBox sessions (Linux only)"
+    printf '\n'
+    printf 'A privileged operator (root or passwordless sudo) initializes a fixed pool of\n'
+    printf 'reusable OS-user seats. An external, already-authenticated application then\n'
+    printf 'acquires a session, redirects its user to the returned login URL, and releases\n'
+    printf 'the allocation when the session ends. Every allocation gets a fresh login\n'
+    printf 'token and (by default) a clean browser profile. Login URLs are secret\n'
+    printf 'capabilities — do not log them.\n'
+    printf '\n'
+    printf '%b\n' "${BOLD}Commands${NC}"
+    printf '  fleet init [options]        Initialize/expand the seat pool and routing.\n'
+    printf '  fleet acquire [--json]      Allocate a seat; returns allocation_id + login_url.\n'
+    printf '  fleet release <id> [--force] Return a seat to the pool (clean-slate).\n'
+    printf '  fleet list [--json] [--all] List active allocations.\n'
+    printf '  fleet status [<id>]         Fleet summary or one allocation in depth.\n'
+    printf '  fleet reconcile [--fix]     Report (and optionally repair) state drift.\n'
+    printf '  fleet doctor [--json]       Environment and configuration health checks.\n'
+    printf '  fleet config show|set|unset Fleet-wide BrowserBox env defaults.\n'
+    printf '  fleet routing show|apply    Inspect / atomically re-apply nginx routing.\n'
+    printf '\n'
+    printf '%b\n' "${BOLD}Init options${NC}"
+    printf '  --size <n> --domain <host> --routing <subdomain|direct-port>\n'
+    printf '  --subdomain-mode <port|seat|random> --backend <http|https>\n'
+    printf '  --cert-file <pem> --key-file <pem> --allow-proxied-domain\n'
+    printf '  --user-prefix <p> --user-width <n> --port-start <p> --port-end <p>\n'
+    printf '\n'
+    printf '%b\n' "${BOLD}Routing${NC}"
+    printf '  subdomain (production): every seat is served through port 443 under a\n'
+    printf '  stable per-seat hostname (wildcard DNS *.domain + wildcard TLS cert\n'
+    printf '  required). Nginx is fully configured at init — acquire/release never\n'
+    printf '  touch nginx or DNS.\n'
+    printf '  direct-port: URLs use <host>:<seat-port> directly (testing, internal\n'
+    printf '  deployments, or behind another routing layer).\n'
+    printf '\n'
+    printf '%b\n' "${BOLD}Integration example${NC}"
+    printf '  session_json="$(sudo -n bbx fleet acquire --json)"\n'
+    printf '  allocation_id="$(jq -r .allocation_id <<<"$session_json")"\n'
+    printf '  login_url="$(jq -r .login_url <<<"$session_json")"\n'
+    printf '  # redirect the authenticated user to $login_url ...\n'
+    printf '  sudo -n bbx fleet release "$allocation_id"\n'
+    printf '\n'
+    printf 'Wildcard DNS example:  *.browser.example.com A <machine IPv4>\n'
+    printf 'Fleet is Linux-only and requires root or passwordless sudo.\n'
+  } >&2
+}
+
+# ── fleet dispatcher ────────────────────────────────────────────────
+
+fleet_main() {
+  local sub="${1:-help}"
+  [[ $# -gt 0 ]] && shift
+  BBX_SKIP_POLICY_FOOTER=1
+  # nginx and user-management tools live in sbin on Debian-family
+  # systems; non-root operators do not have sbin on PATH by default.
+  case ":$PATH:" in
+    *:/usr/sbin:*) ;;
+    *) PATH="$PATH:/usr/sbin:/sbin" ;;
+  esac
+
+  # JSON purity: when --json is requested, everything incidental goes
+  # to stderr; only the final JSON document reaches real stdout.
+  local arg
+  for arg in "$sub" "$@"; do
+    if [[ "$arg" == "--json" ]]; then
+      FLEET_JSON=1
+      break
+    fi
+  done
+  if (( FLEET_JSON )); then
+    exec {_FLEET_STDOUT_FD}>&1
+    exec 1>&2
+  fi
+
+  case "$sub" in
+    help|--help|-h)
+      fleet_help
+      return 0
+      ;;
+  esac
+
+  _fleet_require_linux
+  _fleet_require_priv
+
+  case "$sub" in
+    init) fleet_init "$@" ;;
+    acquire) fleet_acquire "$@" ;;
+    release) fleet_release "$@" ;;
+    list) fleet_list "$@" ;;
+    status) fleet_status "$@" ;;
+    reconcile) fleet_reconcile "$@" ;;
+    doctor) fleet_doctor "$@" ;;
+    config) fleet_config "$@" ;;
+    routing) fleet_routing "$@" ;;
+    *)
+      _fleet_fail fleet_invalid_config "Unknown fleet subcommand '${sub}'. See: bbx fleet help"
+      ;;
+  esac
+}
+
+# ═══ end FLEET ══════════════════════════════════════════════════════
+
 
 # run-as subcommand
 run_as() {
@@ -6376,7 +8898,8 @@ usage() {
     printf "  ${GREEN}start${NC}           Start BrowserBox for the current user. ${BOLD}bbx start [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
     printf "  ${GREEN}stop${NC}            Stop the BrowserBox instance for the current user.\n"
     printf "  ${GREEN}start-as${NC}        Run a new instance as a different OS user. ${BOLD}bbx start-as [--temporary] [username] [port]${NC}\n"
-    printf "  ${GREEN}stop-user${NC}       Stop a BrowserBox instance for a specific user. ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n\n"
+    printf "  ${GREEN}stop-user${NC}       Stop a BrowserBox instance for a specific user. ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
+    printf "  ${GREEN}fleet${NC}           Allocate and release clean-slate BrowserBox sessions from a Linux user pool. ${BOLD}bbx fleet help${NC}\n\n"
 
     printf "${BOLD}CROSS-USER EXECUTION${NC}\n"
     printf "  ${CYAN}--for <user>${NC}    Run any supported command on behalf of another user.\n"
@@ -6590,7 +9113,15 @@ activate() {
   return 1
 }
 
-[ "$1" != "uninstall" ] && check_agreement
+# Library mode: expose functions to the test suite without running the
+# agreement check, update check, or command dispatch.
+if [[ -n "${BBX_LIB_MODE:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+
+# fleet handles the agreement itself (interactively at init; JSON-safe
+# machine paths must not block on the interactive prompt).
+[ "$1" != "uninstall" ] && [ "$1" != "fleet" ] && check_agreement
 # Call check_and_prepare_update with the first argument
 [ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
 
@@ -6648,6 +9179,14 @@ case "$1" in
     status) shift 1; status "$@";;
     vacancy) shift 1; vacancy "$@";;
     run-as|start-as) shift 1; run_as "$@";;
+    fleet) shift 1; fleet_main "$@";;
+    help)
+      shift 1
+      case "${1:-}" in
+        fleet) fleet_help;;
+        *) usage;;
+      esac
+      ;;
     tor-run|tor-start) shift 1; banner_color=$PURPLE; tor_run "$@";;
     zt-run|zt-start) shift 1; banner_color=$BLUE; zt_run "$@";;
     cf-run|cf-start) shift 1; banner_color=$CYAN; cf_run "$@";;
@@ -6675,5 +9214,6 @@ case "$1" in
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
 
-# Always show policy status footer
-show_policy_footer
+# Always show policy status footer (except for fleet, whose JSON
+# stdout must stay clean and whose paths are non-interactive)
+[[ -n "${BBX_SKIP_POLICY_FOOTER:-}" ]] || show_policy_footer
