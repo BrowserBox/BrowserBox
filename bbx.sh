@@ -5856,6 +5856,14 @@ _for_status() {
 # pool of reusable OS-user "seats"; an external application acquires
 # and releases allocations. Reuses the --for delegated-user machinery
 # (_tu_*/_for_*) for all per-seat BrowserBox lifecycle work.
+#
+# Override: AR-R4 — The 4000-Line File
+# Reason: Fleet is logically distributed with standalone bbx.sh today and will
+#         later migrate to a compiled Rust/Freelang binary.
+# Risk: Further increases the oversized file's maintenance burden.
+# Mitigation: Keep Fleet changes bounded, retain one release primitive, cover
+#             lifecycle behavior with focused tests, and extract it during the
+#             future compiled implementation.
 # ═══════════════════════════════════════════════════════════════════
 
 # Fleet state layout (operator-owned, mode 0700/0600):
@@ -5888,9 +5896,18 @@ FLEET_BACKEND="https"
 FLEET_SESSION_TIMEOUT=0
 FLEET_CLEAN_SLATE=true
 
-# Stale reserved/starting allocations older than this (seconds) with no
-# runtime are auto-cleaned during acquire-time reconciliation.
+# Stale transitional allocations older than this (seconds) with no
+# runtime are recovered by the monitor/reaper.
 FLEET_STALE_RESERVE_SECS="${FLEET_STALE_RESERVE_SECS:-900}"
+
+# Dead running allocations are confirmed across a bounded grace window
+# before automatic release. Acquire invokes the shorter fallback only
+# after its lightweight reservation path finds no capacity.
+FLEET_REAP_GRACE_SECS="${FLEET_REAP_GRACE_SECS:-15}"
+FLEET_REAP_INTERVAL_SECS="${FLEET_REAP_INTERVAL_SECS:-5}"
+FLEET_ACQUIRE_REAP_GRACE_SECS="${FLEET_ACQUIRE_REAP_GRACE_SECS:-2}"
+FLEET_MONITOR_MAX_BACKOFF_SECS="${FLEET_MONITOR_MAX_BACKOFF_SECS:-300}"
+FLEET_MONITOR_FAILURE_DETAIL_LIMIT="${FLEET_MONITOR_FAILURE_DETAIL_LIMIT:-10}"
 
 # ── Output helpers ──────────────────────────────────────────────────
 
@@ -5972,6 +5989,8 @@ _fleet_valid_alloc_id() { [[ "$1" =~ ^bbxf-[a-f0-9]{32}$ ]]; }
 _fleet_valid_bool() { [[ "$1" == "true" || "$1" == "false" ]]; }
 _fleet_valid_envkey() { [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; }
 _fleet_valid_ts() { [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]; }
+_fleet_valid_reap_seconds() { [[ "$1" =~ ^(0|[1-9][0-9]{0,4})$ ]] && (( $1 <= 86400 )); }
+_fleet_valid_log_detail_limit() { [[ "$1" =~ ^(0|[1-9][0-9]{0,2})$ ]] && (( $1 <= 100 )); }
 
 _fleet_valid_domain() {
   local d="$1"
@@ -6938,8 +6957,40 @@ _fleet_ensure_clean_slate() {
   fi
 }
 
+# Fleet seats are managed runtimes, not interactive operators.  The operator
+# accepts BrowserBox's terms at `fleet init`; carry that validated agreement
+# identity into each seat so an idle self-shutdown can invoke the canonical
+# same-user `bbx stop` path without an impossible interactive prompt.
+_fleet_ensure_managed_agreement() {
+  local operator_agreed="${BB_CONFIG_DIR}/.agreed"
+  local seat_agreed="$(_tu_config_dir)/.agreed"
+  local agreed_email=""
+  [[ -f "$operator_agreed" && ! -L "$operator_agreed" ]] || return 1
+  agreed_email="$(tail -n1 "$operator_agreed" 2>/dev/null | tr -d '\r\n')"
+  [[ "$agreed_email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || return 1
+  printf '%s\n' "$agreed_email" \
+    | sudo -n -u "$BBX_FOR_USER" tee "$seat_agreed" >/dev/null \
+    || return 1
+  sudo -n chmod 600 "$seat_agreed" || return 1
+}
+
 # Stop the seat runtime and wait for BrowserBox/Chrome processes to
 # exit; bounded. Only ever called after _fleet_assert_managed_user.
+# True if the user has LIVE (non-zombie) BrowserBox-pattern processes.
+# Unreaped zombies linger indefinitely in init-less containers (no PID 1
+# reaper) and pgrep -f falls back to comm matching on their empty
+# cmdlines — but a zombie holds no runtime, no ports, no browser state.
+_fleet_user_runtime_alive() {
+  local user="$1" process_rows ps_rc=0
+  process_rows="$(sudo -n ps -u "$user" -o stat=,args= 2>/dev/null)" || ps_rc=$?
+  # procps may return 1 when the selector matches nothing. Higher statuses
+  # indicate that runtime health could not be observed safely.
+  (( ps_rc <= 1 )) || return 2
+  printf '%s\n' "$process_rows" | awk '
+    $1 !~ /^Z/ && /browserbox|bbpro|chrome/ { found=1 }
+    END { exit found ? 0 : 1 }'
+}
+
 _fleet_stop_seat_runtime() {
   local user="$BBX_FOR_USER" waited=0
   sudo -n rm -f "$(_tu_config_dir)/login.link" 2>/dev/null || true
@@ -6947,13 +6998,13 @@ _fleet_stop_seat_runtime() {
     ( _tu_run stop_bbpro ) >/dev/null 2>&1 || true
   fi
   while (( waited < 30 )); do
-    if ! sudo -n pgrep -u "$user" -f 'browserbox|bbpro|chrome' >/dev/null 2>&1; then
+    if ! _fleet_user_runtime_alive "$user"; then
       break
     fi
     sleep 1
     waited=$((waited + 1))
   done
-  if sudo -n pgrep -u "$user" -f 'browserbox|bbpro|chrome' >/dev/null 2>&1; then
+  if _fleet_user_runtime_alive "$user"; then
     sudo -n pkill -u "$user" -f 'browserbox|bbpro|chrome' 2>/dev/null || true
     sleep 2
     sudo -n pkill -9 -u "$user" -f 'browserbox|bbpro|chrome' 2>/dev/null || true
@@ -6978,20 +7029,32 @@ _fleet_wipe_seat_profile() {
 # config in the operator context and without exiting the caller.
 # Returns nonzero on failure.
 _fleet_delegated_run() {
-  local cert_log bbpro_log rc=0
-  cert_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-cert-XXXXXX.log")"
-  bbpro_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-bbpro-XXXXXX.log")"
+  local detail_var="${1:-}"
+  local cert_log cert_status bbpro_log rc=0
+  cert_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-cert-log-XXXXXX")"
+  cert_status="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-cert-status-XXXXXX")"
+  bbpro_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-bbpro-log-XXXXXX")"
+  : > "$cert_status"
 
   _fleet_info "[${BBX_FOR_USER}] Certifying license..."
-  ( _tu_run bbcertify ) > "$cert_log" 2>&1 &
+  # The top-level shell owns save_config. Do not let this short-lived
+  # certification worker inherit and run that EXIT trap concurrently.
+  (
+    trap - EXIT
+    _tu_run bbcertify
+    rc=$?
+    printf '%s\n' "$rc" > "$cert_status"
+    exit 0
+  ) > "$cert_log" 2>&1 &
   local cert_pid=$!
 
   _fleet_info "[${BBX_FOR_USER}] Starting BrowserBox services..."
   if ! ( _tu_run bbpro ) > "$bbpro_log" 2>&1; then
+    [[ -n "$detail_var" ]] && printf -v "$detail_var" '%s' "BrowserBox service launch exited nonzero."
     _fleet_warn "bbpro failed for ${BBX_FOR_USER}. Last output:"
     tail -20 "$bbpro_log" >&2
     kill "$cert_pid" 2>/dev/null || true
-    rm -f "$cert_log" "$bbpro_log"
+    rm -f "$cert_log" "$cert_status" "$bbpro_log"
     return 1
   fi
   rm -f "$bbpro_log"
@@ -6999,16 +7062,23 @@ _fleet_delegated_run() {
   local waited=0
   while kill -0 "$cert_pid" 2>/dev/null; do
     if (( waited >= 120 )); then
+      [[ -n "$detail_var" ]] && printf -v "$detail_var" '%s' "License certification timed out after 120 seconds."
       _fleet_warn "License certification timed out for ${BBX_FOR_USER}."
       kill "$cert_pid" 2>/dev/null || true
-      rm -f "$cert_log"
+      rm -f "$cert_log" "$cert_status"
       return 2
     fi
     sleep 1
     waited=$((waited + 1))
   done
-  if ! wait "$cert_pid"; then
-    _fleet_warn "License certification failed for ${BBX_FOR_USER}:"
+  wait "$cert_pid" 2>/dev/null || true
+  local cert_rc
+  cert_rc="$(head -1 "$cert_status" 2>/dev/null || true)"
+  rm -f "$cert_status"
+  [[ "$cert_rc" =~ ^[0-9]{1,3}$ ]] || cert_rc=1
+  if (( cert_rc != 0 )); then
+    [[ -n "$detail_var" ]] && printf -v "$detail_var" '%s' "License certification exited ${cert_rc}."
+    _fleet_warn "License certification failed for ${BBX_FOR_USER} (exit ${cert_rc}):"
     tail -20 "$cert_log" >&2
     rm -f "$cert_log"
     return 2
@@ -7252,6 +7322,151 @@ fleet_init() {
 
 # ── fleet acquire ───────────────────────────────────────────────────
 
+# Reserve one seat using only Fleet's authoritative records.
+# Runtime/port observation deliberately happens after this short ownership
+# transaction so concurrent acquires serialize for milliseconds, not for
+# process and socket probes.
+#
+# On success, _FLEET_RESERVATION contains:
+#   0 allocation id, 1 seat, 2 seat record, 3 main port,
+#   4 public hostname, 5 created timestamp, 6 runtime marker.
+# Return 10 when no record-level capacity remains.
+_fleet_try_reserve() {
+  local opt_seat="$1"
+  local opt_port="$2"
+  local timeout_secs="$3"
+  local excluded_seats="$4"
+  local -A occupied_seats=() occupied_ports=()
+  local id rec record_id seat record_port state p
+  local inconsistent_record=""
+  _FLEET_RESERVATION=()
+
+  _fleet_lock
+
+  # One allocation pass builds the complete in-memory occupancy view.
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    record_id="$(_fleet_record_get "$rec" ALLOCATION_ID 2>/dev/null || true)"
+    seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
+    record_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+    if [[ "$record_id" != "$id" ]] \
+      || ! _fleet_valid_username "$seat" \
+      || [[ ! -f "$(_fleet_seat_record_path "$seat")" ]] \
+      || ! _fleet_valid_port "$record_port" \
+      || [[ -z "$state" ]]; then
+      inconsistent_record="$id"
+      break
+    fi
+    if [[ -n "${occupied_seats[$seat]+set}" ]]; then
+      inconsistent_record="$id"
+      break
+    fi
+    occupied_seats["$seat"]="$id"
+    for p in $(_fleet_port_set "$record_port"); do
+      if [[ -n "${occupied_ports[$p]+set}" ]]; then
+        inconsistent_record="$id"
+        break 2
+      fi
+      occupied_ports["$p"]="$id"
+    done
+  done < <(_fleet_alloc_list)
+
+  if [[ -n "$inconsistent_record" ]]; then
+    _fleet_unlock
+    _fleet_fail fleet_state_inconsistent \
+      "Allocation ${inconsistent_record} is invalid or conflicts with another record; run 'bbx fleet reconcile --fix'."
+  fi
+
+  local chosen="" chosen_rec="" main_port="" conflict_id=""
+  while IFS= read -r seat; do
+    [[ -n "$opt_seat" && "$seat" != "$opt_seat" ]] && continue
+    case " ${excluded_seats} " in
+      *" ${seat} "*) continue ;;
+    esac
+    [[ -n "${occupied_seats[$seat]+set}" ]] && continue
+
+    rec="$(_fleet_seat_record_path "$seat")"
+    [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
+    main_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    [[ -n "$opt_port" ]] && main_port="$opt_port"
+    _fleet_valid_port "$main_port" || continue
+
+    conflict_id=""
+    for p in $(_fleet_port_set "$main_port"); do
+      if [[ -n "${occupied_ports[$p]+set}" ]]; then
+        conflict_id="${occupied_ports[$p]}"
+        break
+      fi
+    done
+    if [[ -n "$conflict_id" ]]; then
+      _fleet_warn "Seat ${seat}: port set conflicts with allocation ${conflict_id}; skipping."
+      continue
+    fi
+    chosen="$seat"
+    chosen_rec="$rec"
+    break
+  done < <(_fleet_seat_list)
+
+  if [[ -z "$chosen" ]]; then
+    _fleet_unlock
+    return 10
+  fi
+
+  local alloc_id public_host now runtime_marker
+  alloc_id="$(_fleet_alloc_id_gen)"
+  public_host="$(_fleet_record_get "$chosen_rec" PUBLIC_HOSTNAME 2>/dev/null || echo "")"
+  [[ -z "$public_host" ]] && public_host="${FLEET_DOMAIN:-$(get_system_hostname)}"
+  now="$(_fleet_now)"
+  runtime_marker="$(_fleet_epoch)"
+  _fleet_record_write "$(_fleet_alloc_path "$alloc_id")" \
+    "ALLOCATION_ID=${alloc_id}" \
+    "SEAT_NAME=${chosen}" \
+    "LINUX_USER=${chosen}" \
+    "MAIN_PORT=${main_port}" \
+    "PUBLIC_HOSTNAME=${public_host}" \
+    "ROUTING_MODE=${FLEET_ROUTING_MODE}" \
+    "STATE=reserved" \
+    "CREATED_AT=${now}" \
+    "UPDATED_AT=${now}" \
+    "TIMEOUT_SECONDS=${timeout_secs}" \
+    "RUNTIME_MARKER=${runtime_marker}"
+  _fleet_unlock
+
+  _FLEET_RESERVATION=(
+    "$alloc_id"
+    "$chosen"
+    "$chosen_rec"
+    "$main_port"
+    "$public_host"
+    "$now"
+    "$runtime_marker"
+  )
+  return 0
+}
+
+# Remove only the exact private reservation created by this acquire.
+_fleet_rollback_reservation() {
+  local alloc_id="$1" runtime_marker="$2"
+  local rec record_id state marker
+  rec="$(_fleet_alloc_path "$alloc_id")"
+  _fleet_lock
+  if [[ ! -f "$rec" ]]; then
+    _fleet_unlock
+    return 0
+  fi
+  record_id="$(_fleet_record_get "$rec" ALLOCATION_ID 2>/dev/null || true)"
+  state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+  marker="$(_fleet_record_get "$rec" RUNTIME_MARKER 2>/dev/null || true)"
+  if [[ "$record_id" != "$alloc_id" || "$state" != "reserved" || "$marker" != "$runtime_marker" ]]; then
+    _fleet_unlock
+    return 1
+  fi
+  rm -f "$rec"
+  _fleet_unlock
+  return 0
+}
+
 fleet_acquire() {
   local opt_timeout="" opt_seat="" opt_port=""
   while (( $# )); do
@@ -7266,6 +7481,10 @@ fleet_acquire() {
   _fleet_require_init
   _fleet_config_validate
 
+  if ! _fleet_valid_reap_seconds "$FLEET_ACQUIRE_REAP_GRACE_SECS"; then
+    _fleet_fail fleet_invalid_config "FLEET_ACQUIRE_REAP_GRACE_SECS must be an integer from 0 to 86400."
+  fi
+
   local timeout_secs="${FLEET_SESSION_TIMEOUT}"
   if [[ -n "$opt_timeout" ]]; then
     _fleet_valid_int "$opt_timeout" || _fleet_fail fleet_invalid_config "--timeout must be a nonnegative integer."
@@ -7278,92 +7497,51 @@ fleet_acquire() {
     _fleet_fail fleet_setup_failed "Chrome/Chromium is not installed on this machine."
   fi
 
-  # ── Phase 1 (locked): reconcile dead reservations, choose a seat,
-  #    validate its port set, persist the reservation. ──
-  _fleet_lock
-
-  local id rec state upd age user mp now_epoch
-  now_epoch="$(_fleet_epoch)"
-  while IFS= read -r id; do
-    rec="$(_fleet_alloc_path "$id")"
-    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
-    if [[ -z "$state" ]]; then
-      # Corrupt/invalid record: never execute; quarantine it.
-      mv -f "$rec" "${FLEET_DIR}/diagnostics/$(basename "$rec").corrupt" 2>/dev/null || rm -f "$rec"
-      continue
-    fi
-    if [[ "$state" == "reserved" || "$state" == "starting" ]]; then
-      upd="$(_fleet_record_get "$rec" UPDATED_AT 2>/dev/null || true)"
-      age=$(( now_epoch - $(_fleet_ts_to_epoch "${upd:-}") ))
-      user="$(_fleet_record_get "$rec" LINUX_USER 2>/dev/null || true)"
-      mp="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
-      if (( age > FLEET_STALE_RESERVE_SECS )) && [[ -n "$user" && -n "$mp" ]] \
-         && ! _fleet_port_listening "$mp" \
-         && ! sudo -n pgrep -u "$user" -f 'browserbox|bbpro' >/dev/null 2>&1; then
-        _fleet_info "Reclaiming stale ${state} allocation ${id} (age ${age}s)."
-        rm -f "$rec"
-      fi
-    fi
-  done < <(_fleet_alloc_list)
-
-  local chosen="" chosen_rec="" main_port="" seat
+  # ── Phase 1: reserve using records only. Port/process observation is
+  #    outside the lock. Recovery runs once only when capacity appears
+  #    exhausted, keeping the normal acquire path lightweight. ──
   if [[ -n "$opt_seat" ]]; then
     _fleet_valid_username "$opt_seat" || _fleet_fail fleet_invalid_config "Invalid --seat name."
     [[ -f "$(_fleet_seat_record_path "$opt_seat")" ]] || _fleet_fail fleet_invalid_config "Unknown seat '${opt_seat}'."
   fi
-  while IFS= read -r seat; do
-    [[ -n "$opt_seat" && "$seat" != "$opt_seat" ]] && continue
-    rec="$(_fleet_seat_record_path "$seat")"
-    [[ "$(_fleet_record_get "$rec" ELIGIBLE 2>/dev/null)" == "true" ]] || continue
-    _fleet_alloc_for_seat "$seat" >/dev/null 2>&1 && continue
-    main_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
-    [[ -n "$main_port" ]] || continue
-    [[ -n "$opt_port" ]] && main_port="$opt_port"
-    _fleet_valid_port "$main_port" || continue
-    # Complete port set must be free of listeners and not overlap any
-    # other active allocation's set.
-    if ! _fleet_port_set_free "$main_port"; then
-      _fleet_warn "Seat ${seat}: port set around ${main_port} is busy; skipping."
+  local excluded_seats="" recovery_attempted=0 reserve_rc=0
+  local alloc_id chosen chosen_rec main_port public_host now runtime_marker
+  while :; do
+    if _fleet_try_reserve "$opt_seat" "$opt_port" "$timeout_secs" "$excluded_seats"; then
+      alloc_id="${_FLEET_RESERVATION[0]}"
+      chosen="${_FLEET_RESERVATION[1]}"
+      chosen_rec="${_FLEET_RESERVATION[2]}"
+      main_port="${_FLEET_RESERVATION[3]}"
+      public_host="${_FLEET_RESERVATION[4]}"
+      now="${_FLEET_RESERVATION[5]}"
+      runtime_marker="${_FLEET_RESERVATION[6]}"
+      if _fleet_port_set_free "$main_port"; then
+        break
+      fi
+      _fleet_warn "Seat ${chosen}: port set around ${main_port} is busy; skipping."
+      if ! _fleet_rollback_reservation "$alloc_id" "$runtime_marker"; then
+        _fleet_fail fleet_state_inconsistent "Reservation ${alloc_id} changed before busy-port rollback."
+      fi
+      excluded_seats+=" ${chosen}"
+      continue
+    else
+      reserve_rc=$?
+    fi
+
+    (( reserve_rc == 10 )) \
+      || _fleet_fail fleet_state_inconsistent "Fleet reservation failed unexpectedly."
+    if (( ! recovery_attempted )); then
+      recovery_attempted=1
+      if ! _fleet_reap_once "$FLEET_ACQUIRE_REAP_GRACE_SECS" 0 "acquire"; then
+        _fleet_warn "Acquire-time recovery encountered an error; retrying the current Fleet state once."
+      fi
       continue
     fi
-    local other_id other_rec other_port conflict=0
-    while IFS= read -r other_id; do
-      other_rec="$(_fleet_alloc_path "$other_id")"
-      other_port="$(_fleet_record_get "$other_rec" MAIN_PORT 2>/dev/null || true)"
-      [[ -n "$other_port" ]] || continue
-      if _fleet_port_sets_conflict "$main_port" "$other_port"; then conflict=1; break; fi
-    done < <(_fleet_alloc_list)
-    (( conflict )) && { _fleet_warn "Seat ${seat}: port set conflicts with allocation ${other_id}; skipping."; continue; }
-    chosen="$seat"
-    chosen_rec="$rec"
-    break
-  done < <(_fleet_seat_list)
-
-  if [[ -z "$chosen" ]]; then
     if [[ -n "$opt_port" ]]; then
       _fleet_fail fleet_port_exhausted "No eligible free seat with a usable port set is available."
     fi
     _fleet_fail fleet_exhausted "No locally available Fleet seats remain."
-  fi
-
-  local alloc_id public_host now
-  alloc_id="$(_fleet_alloc_id_gen)"
-  public_host="$(_fleet_record_get "$chosen_rec" PUBLIC_HOSTNAME 2>/dev/null || echo "")"
-  [[ -z "$public_host" ]] && public_host="${FLEET_DOMAIN:-$(get_system_hostname)}"
-  now="$(_fleet_now)"
-  _fleet_record_write "$(_fleet_alloc_path "$alloc_id")" \
-    "ALLOCATION_ID=${alloc_id}" \
-    "SEAT_NAME=${chosen}" \
-    "LINUX_USER=${chosen}" \
-    "MAIN_PORT=${main_port}" \
-    "PUBLIC_HOSTNAME=${public_host}" \
-    "ROUTING_MODE=${FLEET_ROUTING_MODE}" \
-    "STATE=reserved" \
-    "CREATED_AT=${now}" \
-    "UPDATED_AT=${now}" \
-    "TIMEOUT_SECONDS=${timeout_secs}" \
-    "RUNTIME_MARKER=$(_fleet_epoch)"
-  _fleet_unlock
+  done
 
   # ── Phase 2 (unlocked): delegated lifecycle on the reserved seat. ──
   local rollback_reason="" rollback_code=""
@@ -7390,6 +7568,10 @@ fleet_acquire() {
   fi
 
   _tu_ensure_config_dir
+  if [[ -z "$rollback_reason" ]] && ! _fleet_ensure_managed_agreement; then
+    rollback_reason="Could not install the managed BrowserBox agreement for seat ${chosen}."
+    rollback_code="fleet_setup_failed"
+  fi
   if [[ -z "$rollback_reason" ]]; then
     _fleet_info "[${chosen}] Running delegated setup (port ${main_port})..."
     if ! BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _tu_run setup_bbpro "${setup_args[@]}" >/dev/null 2>&1; then
@@ -7423,13 +7605,13 @@ fleet_acquire() {
     _fleet_lock
     _fleet_record_update "$alloc_rec_path" "STATE=starting" "UPDATED_AT=$(_fleet_now)"
     _fleet_unlock
-    local run_rc=0
-    BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _fleet_delegated_run || run_rc=$?
+    local run_rc=0 run_detail=""
+    BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _fleet_delegated_run run_detail || run_rc=$?
     if (( run_rc == 2 )); then
-      rollback_reason="License certification failed for seat ${chosen}."
+      rollback_reason="License certification failed for seat ${chosen}. ${run_detail}"
       rollback_code="fleet_license_unavailable"
     elif (( run_rc != 0 )); then
-      rollback_reason="BrowserBox failed to start for seat ${chosen}."
+      rollback_reason="BrowserBox failed to start for seat ${chosen}. ${run_detail}"
       rollback_code="fleet_start_failed"
     fi
   fi
@@ -7503,37 +7685,39 @@ fleet_acquire() {
 
 # ── fleet release ───────────────────────────────────────────────────
 
-fleet_release() {
-  local alloc_id="" force=0
-  while (( $# )); do
-    case "$1" in
-      --json) shift ;;
-      --force) force=1; shift ;;
-      -*) _fleet_fail fleet_invalid_config "Unknown fleet release option: $1" ;;
-      *) [[ -z "$alloc_id" ]] && alloc_id="$1" || _fleet_fail fleet_invalid_config "Unexpected extra argument: $1"; shift ;;
-    esac
-  done
-  [[ -n "$alloc_id" ]] || _fleet_fail fleet_invalid_config "Usage: bbx fleet release <allocation-id> [--json] [--force]"
-  _fleet_valid_alloc_id "$alloc_id" || _fleet_fail fleet_allocation_not_found "Malformed allocation ID '${alloc_id}'."
-  _fleet_require_init
-
-  local rec user main_port
+# Canonical allocation release primitive. Manual release, reconciliation,
+# and automatic reaping all route through this function.
+#
+# Return codes:
+#   0  released
+#   10 already absent
+#   11 release already in progress
+#   12 allocation changed or recovered before automatic release
+_fleet_release_allocation() {
+  local alloc_id="$1"
+  local force="${2:-0}"
+  local expected_marker="${3:-}"
+  local require_down="${4:-false}"
+  local expected_user="${5:-}"
+  local expected_port="${6:-}"
+  local expected_state="${7:-}"
+  local rec user main_port state record_id runtime_marker health
+  FLEET_RELEASED_SEAT=""
+  FLEET_RELEASE_NOTE=""
   rec="$(_fleet_alloc_path "$alloc_id")"
 
   _fleet_lock
   if [[ ! -f "$rec" ]]; then
     _fleet_unlock
-    # Idempotent: a well-formed, already-absent allocation is success.
-    if (( FLEET_JSON )); then
-      _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":false,\"note\":\"already released\"}"
-    else
-      _fleet_info "Allocation ${alloc_id} is already released."
-    fi
-    return 0
+    FLEET_RELEASE_NOTE="already released"
+    return 10
   fi
+  record_id="$(_fleet_record_get "$rec" ALLOCATION_ID 2>/dev/null || true)"
   user="$(_fleet_record_get "$rec" LINUX_USER 2>/dev/null || true)"
   main_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
-  if [[ -z "$user" || -z "$main_port" ]]; then
+  state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+  runtime_marker="$(_fleet_record_get "$rec" RUNTIME_MARKER 2>/dev/null || true)"
+  if [[ "$record_id" != "$alloc_id" || -z "$user" || -z "$main_port" || -z "$state" ]]; then
     if (( force )); then
       mv -f "$rec" "${FLEET_DIR}/diagnostics/$(basename "$rec").corrupt" 2>/dev/null || rm -f "$rec"
       _fleet_unlock
@@ -7541,6 +7725,43 @@ fleet_release() {
     fi
     _fleet_unlock
     _fleet_fail fleet_state_inconsistent "Allocation record for ${alloc_id} is corrupt. Re-run with --force to quarantine it."
+  fi
+  if [[ -n "$expected_marker" && "$runtime_marker" != "$expected_marker" ]]; then
+    _fleet_unlock
+    FLEET_RELEASE_NOTE="allocation changed before release"
+    return 12
+  fi
+  if [[ -n "$expected_user" && "$user" != "$expected_user" ]] \
+     || [[ -n "$expected_port" && "$main_port" != "$expected_port" ]]; then
+    _fleet_unlock
+    FLEET_RELEASE_NOTE="allocation target changed before release"
+    return 12
+  fi
+  if [[ -n "$expected_state" && "$state" != "$expected_state" ]]; then
+    _fleet_unlock
+    FLEET_RELEASE_NOTE="allocation state changed before release"
+    return 12
+  fi
+  if [[ "$state" == "releasing" && "$expected_state" != "releasing" ]] && (( ! force )); then
+    _fleet_unlock
+    FLEET_RELEASE_NOTE="release already in progress"
+    return 11
+  fi
+  if [[ "$require_down" == "true" ]]; then
+    case "$state" in
+      reserved|starting|running|releasing) ;;
+      *)
+        _fleet_unlock
+        FLEET_RELEASE_NOTE="allocation state changed before automatic release"
+        return 12
+        ;;
+    esac
+    health="$(_fleet_alloc_health "$user" "$main_port")"
+    if [[ "$health" != "down" ]]; then
+      _fleet_unlock
+      FLEET_RELEASE_NOTE="runtime recovered before automatic release"
+      return 12
+    fi
   fi
   _fleet_record_update "$rec" "STATE=releasing" "UPDATED_AT=$(_fleet_now)"
   _fleet_unlock
@@ -7560,25 +7781,76 @@ fleet_release() {
 
   if (( ! wiped )) && (( ! force )); then
     _fleet_lock
-    _fleet_record_update "$rec" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
+    [[ -f "$rec" ]] && _fleet_record_update "$rec" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
     _fleet_unlock
     _fleet_fail fleet_release_failed "Could not verify clean-slate profile removal for seat ${user}. Investigate, then re-run with --force."
   fi
   if (( ! ports_free )) && (( ! force )); then
     _fleet_lock
-    _fleet_record_update "$rec" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
+    [[ -f "$rec" ]] && _fleet_record_update "$rec" "STATE=failed" "UPDATED_AT=$(_fleet_now)"
     _fleet_unlock
     _fleet_fail fleet_release_failed "Ports for seat ${user} are still in use after stop. Investigate, then re-run with --force."
   fi
 
   _fleet_lock
+  if [[ -f "$rec" ]]; then
+    record_id="$(_fleet_record_get "$rec" ALLOCATION_ID 2>/dev/null || true)"
+    user="$(_fleet_record_get "$rec" LINUX_USER 2>/dev/null || true)"
+    main_port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    runtime_marker="$(_fleet_record_get "$rec" RUNTIME_MARKER 2>/dev/null || true)"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+    if [[ "$record_id" != "$alloc_id" || "$state" != "releasing" \
+       || ( -n "$expected_marker" && "$runtime_marker" != "$expected_marker" ) \
+       || ( -n "$expected_user" && "$user" != "$expected_user" ) \
+       || ( -n "$expected_port" && "$main_port" != "$expected_port" ) ]]; then
+      _fleet_unlock
+      _fleet_fail fleet_state_inconsistent "Allocation ${alloc_id} changed while release cleanup was running."
+    fi
+  fi
   rm -f "$rec"
   _fleet_unlock
 
-  if (( FLEET_JSON )); then
-    _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":true,\"seat\":\"${user}\"}"
+  FLEET_RELEASED_SEAT="$user"
+  return 0
+}
+
+fleet_release() {
+  local alloc_id="" force=0
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      --force) force=1; shift ;;
+      -*) _fleet_fail fleet_invalid_config "Unknown fleet release option: $1" ;;
+      *) [[ -z "$alloc_id" ]] && alloc_id="$1" || _fleet_fail fleet_invalid_config "Unexpected extra argument: $1"; shift ;;
+    esac
+  done
+  [[ -n "$alloc_id" ]] || _fleet_fail fleet_invalid_config "Usage: bbx fleet release <allocation-id> [--json] [--force]"
+  _fleet_valid_alloc_id "$alloc_id" || _fleet_fail fleet_allocation_not_found "Malformed allocation ID '${alloc_id}'."
+  _fleet_require_init
+
+  local release_rc=0
+  if _fleet_release_allocation "$alloc_id" "$force"; then
+    release_rc=0
   else
-    printf '%b\n' "${GREEN}Released allocation ${alloc_id} (seat ${user} returned to pool).${NC}" >&2
+    release_rc=$?
+  fi
+  case "$release_rc" in
+    10|11)
+      if (( FLEET_JSON )); then
+        _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":false,\"note\":\"$(_fleet_json_escape "$FLEET_RELEASE_NOTE")\"}"
+      else
+        _fleet_info "Allocation ${alloc_id}: ${FLEET_RELEASE_NOTE}."
+      fi
+      return 0
+      ;;
+    0) ;;
+    *) _fleet_fail fleet_release_failed "Could not release allocation ${alloc_id}." ;;
+  esac
+
+  if (( FLEET_JSON )); then
+    _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":true,\"seat\":\"${FLEET_RELEASED_SEAT}\"}"
+  else
+    printf '%b\n' "${GREEN}Released allocation ${alloc_id} (seat ${FLEET_RELEASED_SEAT} returned to pool).${NC}" >&2
   fi
 }
 # ── fleet list ──────────────────────────────────────────────────────
@@ -7587,12 +7859,224 @@ fleet_release() {
 # has BrowserBox processes, else "down"/"partial".
 _fleet_alloc_health() {
   local user="$1" main_port="$2"
-  local listening=0 procs=0
+  local listening=0 procs=0 process_rc=0
   _fleet_port_listening "$main_port" && listening=1
-  sudo -n pgrep -u "$user" -f 'browserbox|bbpro' >/dev/null 2>&1 && procs=1
+  if _fleet_user_runtime_alive "$user"; then
+    procs=1
+  else
+    process_rc=$?
+    if (( process_rc > 1 )); then
+      printf 'unknown'
+      return
+    fi
+  fi
   if (( listening && procs )); then printf 'healthy'
   elif (( listening || procs )); then printf 'partial'
   else printf 'down'; fi
+}
+
+# Snapshot reclaimable allocation identity under the lock, then perform
+# every process/socket observation outside it. The release primitive does
+# the authoritative locked identity/state/health revalidation later.
+_fleet_reap_candidates() {
+  local id rec state seat port marker updated health age now_epoch row
+  local -a snapshots=()
+  _fleet_lock
+  while IFS= read -r id; do
+    rec="$(_fleet_alloc_path "$id")"
+    state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+    case "$state" in
+      reserved|starting|running|releasing) ;;
+      *) continue ;;
+    esac
+    seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
+    port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    marker="$(_fleet_record_get "$rec" RUNTIME_MARKER 2>/dev/null || true)"
+    updated="$(_fleet_record_get "$rec" UPDATED_AT 2>/dev/null || true)"
+    [[ -n "$seat" && -n "$port" && -n "$marker" ]] || continue
+    snapshots+=("$id"$'\t'"$seat"$'\t'"$port"$'\t'"$marker"$'\t'"$state"$'\t'"$updated")
+  done < <(_fleet_alloc_list)
+  _fleet_unlock
+
+  now_epoch="$(_fleet_epoch)"
+  for row in "${snapshots[@]:-}"; do
+    [[ -n "$row" ]] || continue
+    IFS=$'\t' read -r id seat port marker state updated <<< "$row"
+    if [[ "$state" != "running" ]]; then
+      [[ -n "$updated" ]] || continue
+      age=$(( now_epoch - $(_fleet_ts_to_epoch "$updated") ))
+      (( age > FLEET_STALE_RESERVE_SECS )) || continue
+    fi
+    health="$(_fleet_alloc_health "$seat" "$port")"
+    [[ "$health" == "down" ]] || continue
+    printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$seat" "$port" "$marker" "$state"
+  done
+}
+
+# Confirm and release fully-down running or stale transitional allocations.
+# Args: <grace-seconds> <emit-result:0|1> <source>
+_fleet_reap_once() {
+  local grace_secs="$1"
+  local emit_result="${2:-1}"
+  local source="${3:-manual}"
+  _fleet_valid_reap_seconds "$grace_secs" \
+    || _fleet_fail fleet_invalid_config "Reap grace must be an integer from 0 to 86400 seconds."
+  _fleet_valid_log_detail_limit "$FLEET_MONITOR_FAILURE_DETAIL_LIMIT" \
+    || _fleet_fail fleet_invalid_config "FLEET_MONITOR_FAILURE_DETAIL_LIMIT must be an integer from 0 to 100."
+
+  local -a candidate_ids=() candidate_seats=() candidate_ports=() candidate_markers=() candidate_states=()
+  local id seat port marker state
+  while IFS=$'\t' read -r id seat port marker state; do
+    [[ -n "$id" ]] || continue
+    candidate_ids+=("$id")
+    candidate_seats+=("$seat")
+    candidate_ports+=("$port")
+    candidate_markers+=("$marker")
+    candidate_states+=("$state")
+  done < <(_fleet_reap_candidates)
+
+  local candidate_count="${#candidate_ids[@]}"
+  local reaped=0 skipped=0 failed=0
+  local failure_details=0 failure_details_suppressed=0
+  local reaped_json="" first=1 release_rc idx
+
+  if (( candidate_count > 0 && grace_secs > 0 )); then
+    local grace_deadline grace_now grace_remaining
+    grace_deadline=$(( $(_fleet_epoch) + grace_secs ))
+    while :; do
+      if [[ "$source" == "monitor" ]] && (( ! _FLEET_MONITOR_RUNNING )); then
+        _fleet_info "Fleet monitor pass cancelled during confirmation: candidates=${candidate_count}, no allocations released."
+        return 0
+      fi
+      grace_now="$(_fleet_epoch)"
+      (( grace_now >= grace_deadline )) && break
+      grace_remaining=$(( grace_deadline - grace_now ))
+      sleep "$grace_remaining" || true
+    done
+  fi
+
+  for idx in "${!candidate_ids[@]}"; do
+    id="${candidate_ids[$idx]}"
+    seat="${candidate_seats[$idx]}"
+    marker="${candidate_markers[$idx]}"
+    state="${candidate_states[$idx]}"
+    if (
+      FLEET_JSON=0
+      _fleet_release_allocation \
+        "$id" \
+        0 \
+        "$marker" \
+        true \
+        "$seat" \
+        "${candidate_ports[$idx]}" \
+        "$state"
+    ); then
+      release_rc=0
+    else
+      release_rc=$?
+    fi
+    case "$release_rc" in
+      0)
+        reaped=$((reaped + 1))
+        (( first )) || reaped_json+=","
+        first=0
+        reaped_json+="\"${id}\""
+        ;;
+      10|11|12)
+        skipped=$((skipped + 1))
+        ;;
+      *)
+        failed=$((failed + 1))
+        if (( failure_details < FLEET_MONITOR_FAILURE_DETAIL_LIMIT )); then
+          _fleet_warn "Automatic release failed for ${id}; the allocation remains unavailable pending operator review."
+          failure_details=$((failure_details + 1))
+        else
+          failure_details_suppressed=$((failure_details_suppressed + 1))
+        fi
+        ;;
+    esac
+  done
+
+  if (( failure_details_suppressed > 0 )); then
+    _fleet_warn "Suppressed ${failure_details_suppressed} additional automatic-release failure detail(s) in this pass."
+  fi
+
+  if (( emit_result )); then
+    if (( FLEET_JSON )); then
+      local ok=true
+      (( failed > 0 )) && ok=false
+      _fleet_emit "{\"ok\":${ok},\"source\":\"$(_fleet_json_escape "$source")\",\"candidates\":${candidate_count},\"reaped\":${reaped},\"skipped\":${skipped},\"failed\":${failed},\"allocation_ids\":[${reaped_json}]}"
+    else
+      printf 'Fleet reap: %s candidate(s), %s released, %s skipped, %s failed.\n' \
+        "$candidate_count" "$reaped" "$skipped" "$failed" >&2
+    fi
+  elif (( candidate_count > 0 )); then
+    _fleet_info "Fleet reap source=${source}: candidates=${candidate_count}, released=${reaped}, skipped=${skipped}, failed=${failed}."
+  fi
+
+  (( failed == 0 ))
+}
+
+fleet_reap() {
+  local grace_secs="$FLEET_REAP_GRACE_SECS"
+  while (( $# )); do
+    case "$1" in
+      --json) shift ;;
+      --grace) grace_secs="${2:-}"; shift 2 ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet reap option: $1" ;;
+    esac
+  done
+  _fleet_require_init
+  _fleet_reap_once "$grace_secs" 1 "reap"
+}
+
+fleet_monitor() {
+  local interval_secs="$FLEET_REAP_INTERVAL_SECS"
+  local grace_secs="$FLEET_REAP_GRACE_SECS"
+  while (( $# )); do
+    case "$1" in
+      --interval) interval_secs="${2:-}"; shift 2 ;;
+      --grace) grace_secs="${2:-}"; shift 2 ;;
+      --json) _fleet_fail fleet_invalid_config "fleet monitor is a streaming command and does not support --json." ;;
+      *) _fleet_fail fleet_invalid_config "Unknown fleet monitor option: $1" ;;
+    esac
+  done
+  _fleet_require_init
+  _fleet_valid_reap_seconds "$interval_secs" && (( interval_secs > 0 )) \
+    || _fleet_fail fleet_invalid_config "Monitor interval must be an integer from 1 to 86400 seconds."
+  _fleet_valid_reap_seconds "$grace_secs" \
+    || _fleet_fail fleet_invalid_config "Monitor grace must be an integer from 0 to 86400 seconds."
+  _fleet_valid_reap_seconds "$FLEET_MONITOR_MAX_BACKOFF_SECS" \
+    && (( FLEET_MONITOR_MAX_BACKOFF_SECS > 0 )) \
+    || _fleet_fail fleet_invalid_config "FLEET_MONITOR_MAX_BACKOFF_SECS must be an integer from 1 to 86400."
+  _fleet_valid_log_detail_limit "$FLEET_MONITOR_FAILURE_DETAIL_LIMIT" \
+    || _fleet_fail fleet_invalid_config "FLEET_MONITOR_FAILURE_DETAIL_LIMIT must be an integer from 0 to 100."
+
+  _FLEET_MONITOR_RUNNING=1
+  trap '_FLEET_MONITOR_RUNNING=0' INT TERM HUP
+  local max_backoff="$FLEET_MONITOR_MAX_BACKOFF_SECS"
+  (( max_backoff < interval_secs )) && max_backoff="$interval_secs"
+  local retry_delay="$interval_secs" failure_streak=0
+  _fleet_info "Monitoring Fleet allocations (interval ${interval_secs}s, down grace ${grace_secs}s, max error backoff ${max_backoff}s)."
+  while (( _FLEET_MONITOR_RUNNING )); do
+    if _fleet_reap_once "$grace_secs" 0 "monitor"; then
+      if (( failure_streak > 0 )); then
+        _fleet_info "Fleet monitor recovered after ${failure_streak} failed pass(es)."
+      fi
+      failure_streak=0
+      retry_delay="$interval_secs"
+    else
+      failure_streak=$((failure_streak + 1))
+      retry_delay=$((retry_delay * 2))
+      (( retry_delay > max_backoff )) && retry_delay="$max_backoff"
+      _fleet_warn "Fleet monitor pass failed (streak ${failure_streak}); retrying in ${retry_delay}s."
+    fi
+    (( _FLEET_MONITOR_RUNNING )) || break
+    sleep "$retry_delay" || true
+  done
+  trap - INT TERM HUP
+  _FLEET_MONITOR_RUNNING=0
+  _fleet_info "Fleet monitor stopped."
 }
 
 _fleet_age_of() {
@@ -7718,8 +8202,8 @@ fleet_status() {
     return 0
   fi
 
-  local total=0 eligible=0 active=0 running=0 starting=0 failed=0
-  local seat rec id state
+  local total=0 eligible=0 active=0 running=0 starting=0 failed=0 down=0 partial=0 unknown=0
+  local seat rec id state port health
   while IFS= read -r seat; do
     total=$((total + 1))
     rec="$(_fleet_seat_record_path "$seat")"
@@ -7729,7 +8213,18 @@ fleet_status() {
     rec="$(_fleet_alloc_path "$id")"
     state="$(_fleet_record_get "$rec" STATE 2>/dev/null || echo failed)"
     case "$state" in
-      running) running=$((running + 1)); active=$((active + 1)) ;;
+      running)
+        running=$((running + 1))
+        active=$((active + 1))
+        seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
+        port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+        if [[ -n "$seat" && -n "$port" ]]; then
+          health="$(_fleet_alloc_health "$seat" "$port")"
+          [[ "$health" == "down" ]] && down=$((down + 1))
+          [[ "$health" == "partial" ]] && partial=$((partial + 1))
+          [[ "$health" == "unknown" ]] && unknown=$((unknown + 1))
+        fi
+        ;;
       starting|reserved|releasing) starting=$((starting + 1)); active=$((active + 1)) ;;
       failed) failed=$((failed + 1)) ;;
     esac
@@ -7761,12 +8256,13 @@ fleet_status() {
   if (( FLEET_JSON )); then
     local vac_json="null"
     [[ "$vacancy" =~ ^[0-9]+$ ]] && vac_json="$vacancy"
-    _fleet_emit "{\"ok\":true,\"seats\":{\"configured\":${FLEET_SIZE},\"eligible\":${eligible},\"records\":${total}},\"allocations\":{\"active\":${active},\"running\":${running},\"starting\":${starting},\"failed\":${failed},\"locally_free\":${free}},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"nginx\":\"${nginx_state}\",\"dns_valid\":${dns_valid},\"certificate\":\"${cert_state}\"},\"clean_slate\":${FLEET_CLEAN_SLATE},\"ports\":{\"start\":${FLEET_PORT_START},\"end\":${FLEET_PORT_END}},\"license_vacancy_advisory\":${vac_json}}"
+    _fleet_emit "{\"ok\":true,\"seats\":{\"configured\":${FLEET_SIZE},\"eligible\":${eligible},\"records\":${total}},\"allocations\":{\"active\":${active},\"running\":${running},\"down\":${down},\"partial\":${partial},\"unknown\":${unknown},\"starting\":${starting},\"failed\":${failed},\"locally_free\":${free}},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"nginx\":\"${nginx_state}\",\"dns_valid\":${dns_valid},\"certificate\":\"${cert_state}\"},\"clean_slate\":${FLEET_CLEAN_SLATE},\"ports\":{\"start\":${FLEET_PORT_START},\"end\":${FLEET_PORT_END}},\"license_vacancy_advisory\":${vac_json}}"
   else
     {
       printf 'Fleet status\n'
       printf '  Seats:        %s configured, %s eligible\n' "$FLEET_SIZE" "$eligible"
       printf '  Allocations:  %s active (%s running, %s starting/transitional), %s failed/stale\n' "$active" "$running" "$starting" "$failed"
+      printf '  Runtime drift: %s down, %s partial, %s unknown (pending monitor/reconcile)\n' "$down" "$partial" "$unknown"
       printf '  Locally free: %s seats\n' "$free"
       printf '  Routing:      %s' "$FLEET_ROUTING_MODE"
       [[ "$FLEET_ROUTING_MODE" == "subdomain" ]] && printf ' (%s labels, domain %s)' "$FLEET_SUBDOMAIN_MODE" "$FLEET_DOMAIN"
@@ -7797,7 +8293,8 @@ fleet_reconcile() {
   _fleet_lock 60
 
   local -a findings=()
-  local id rec state seat port health user
+  local -a release_ids=() release_markers=() release_forces=() release_seats=() release_ports=() release_states=()
+  local id rec state seat port marker health user
 
   # Allocation state vs runtime.
   while IFS= read -r id; do
@@ -7805,6 +8302,7 @@ fleet_reconcile() {
     state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
     seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
     port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+    marker="$(_fleet_record_get "$rec" RUNTIME_MARKER 2>/dev/null || true)"
     if [[ -z "$state" || -z "$seat" || -z "$port" ]]; then
       findings+=("corrupt-record ${id}")
       (( fix )) && { mv -f "$rec" "${FLEET_DIR}/diagnostics/$(basename "$rec").corrupt" 2>/dev/null || rm -f "$rec"; }
@@ -7821,13 +8319,27 @@ fleet_reconcile() {
       running)
         if [[ "$health" == "down" ]]; then
           findings+=("running-but-dead ${id}")
-          (( fix )) && { rm -f "$rec"; }
+          if (( fix )); then
+            release_ids+=("$id")
+            release_markers+=("$marker")
+            release_forces+=(0)
+            release_seats+=("$seat")
+            release_ports+=("$port")
+            release_states+=("$state")
+          fi
         fi
         ;;
       releasing)
         if [[ "$health" == "down" ]]; then
           findings+=("stale-releasing ${id}")
-          (( fix )) && rm -f "$rec"
+          if (( fix )); then
+            release_ids+=("$id")
+            release_markers+=("$marker")
+            release_forces+=(1)
+            release_seats+=("$seat")
+            release_ports+=("$port")
+            release_states+=("$state")
+          fi
         fi
         ;;
     esac
@@ -7868,6 +8380,33 @@ fleet_reconcile() {
   fi
 
   _fleet_unlock
+
+  # Runtime cleanup is deliberately outside the reconciliation lock.
+  # Route every repair through the same stop/profile-wipe release primitive.
+  local idx release_rc
+  for idx in "${!release_ids[@]}"; do
+    id="${release_ids[$idx]}"
+    if (
+      FLEET_JSON=0
+      _fleet_release_allocation \
+        "$id" \
+        "${release_forces[$idx]}" \
+        "${release_markers[$idx]}" \
+        true \
+        "${release_seats[$idx]}" \
+        "${release_ports[$idx]}" \
+        "${release_states[$idx]}"
+    ); then
+      release_rc=0
+    else
+      release_rc=$?
+    fi
+    case "$release_rc" in
+      0|10|11) ;;
+      12) findings+=("release-skipped-changed-or-recovered ${id}") ;;
+      *) findings+=("release-failed ${id}") ;;
+    esac
+  done
 
   local applied="report-only"
   (( fix )) && applied="fixes-applied"
@@ -8273,6 +8812,8 @@ fleet_help() {
     printf '  fleet list [--json] [--all] List active allocations.\n'
     printf '  fleet status [<id>]         Fleet summary or one allocation in depth.\n'
     printf '  fleet reconcile [--fix]     Report (and optionally repair) state drift.\n'
+    printf '  fleet reap [--grace <s>]    Confirm and release dead running allocations.\n'
+    printf '  fleet monitor [options]     Continuously reap dead allocations (foreground).\n'
     printf '  fleet doctor [--json]       Environment and configuration health checks.\n'
     printf '  fleet config show|set|unset Fleet-wide BrowserBox env defaults.\n'
     printf '  fleet routing show|apply    Inspect / atomically re-apply nginx routing.\n'
@@ -8282,6 +8823,10 @@ fleet_help() {
     printf '  --subdomain-mode <port|seat|random> --backend <http|https>\n'
     printf '  --cert-file <pem> --key-file <pem> --allow-proxied-domain\n'
     printf '  --user-prefix <p> --user-width <n> --port-start <p> --port-end <p>\n'
+    printf '\n'
+    printf '%b\n' "${BOLD}Monitor options${NC}"
+    printf '  --interval <seconds>        Delay between monitor passes (default %s).\n' "$FLEET_REAP_INTERVAL_SECS"
+    printf '  --grace <seconds>           Required continuously-down window (default %s).\n' "$FLEET_REAP_GRACE_SECS"
     printf '\n'
     printf '%b\n' "${BOLD}Routing${NC}"
     printf '  subdomain (production): every seat is served through port 443 under a\n'
@@ -8347,6 +8892,8 @@ fleet_main() {
     list) fleet_list "$@" ;;
     status) fleet_status "$@" ;;
     reconcile) fleet_reconcile "$@" ;;
+    reap) fleet_reap "$@" ;;
+    monitor) fleet_monitor "$@" ;;
     doctor) fleet_doctor "$@" ;;
     config) fleet_config "$@" ;;
     routing) fleet_routing "$@" ;;
