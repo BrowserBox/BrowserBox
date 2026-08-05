@@ -1624,7 +1624,6 @@ is_private_ip() {
 is_local_hostname() {
   local hostname="$1"
   local resolved_ips ip
-  local public_dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
   local has_valid_result=0
 
   # .onion domains are Tor-only; treat as local (use mkcert, not certbot)
@@ -1640,24 +1639,25 @@ is_local_hostname() {
     return 1    # public IP → handled specially in tls script
   fi
 
-  # Try DNS resolution
-  for dns in "${public_dns_servers[@]}"; do
-    if command -v dig >/dev/null 2>&1; then
-      resolved_ips="$(dig +short "$hostname" A @"$dns" 2>/dev/null || true)"
-    else
-      resolved_ips=""
-    fi
-    if [[ -n "$resolved_ips" ]]; then
-      has_valid_result=1
-      while IFS= read -r ip; do
-        ip="${ip%.}"
-        # Public if NOT in known private ranges
-        if [[ ! "$ip" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1$|fe80:) ]]; then
-          return 1 # Public
-        fi
-      done <<< "$resolved_ips"
-    fi
-  done
+  # Use the host's configured resolver so internal and split-horizon names work.
+  if command -v getent >/dev/null 2>&1; then
+    resolved_ips="$(getent ahosts "$hostname" 2>/dev/null | awk '{print $1}' | sort -u || true)"
+  elif command -v dig >/dev/null 2>&1; then
+    resolved_ips="$({ dig +short A "$hostname"; dig +short AAAA "$hostname"; } 2>/dev/null | grep -E '^[0-9a-fA-F:.]+$' | sort -u || true)"
+  elif command -v host >/dev/null 2>&1; then
+    resolved_ips="$(host "$hostname" 2>/dev/null | awk '/has (IPv6 )?address/{print $NF}' | sort -u || true)"
+  else
+    resolved_ips="$(getent_hosts "$hostname" | awk '{print $1}' | sort -u || true)"
+  fi
+  if [[ -n "$resolved_ips" ]]; then
+    has_valid_result=1
+    while IFS= read -r ip; do
+      ip="${ip%.}"
+      if ! is_private_ip "$ip"; then
+        return 1 # At least one public address requires public TLS handling.
+      fi
+    done <<< "$resolved_ips"
+  fi
 
   # If all results were private or none resolved, treat as local
   if [[ "$has_valid_result" -eq 1 ]]; then
@@ -1840,7 +1840,7 @@ test_port_access() {
     # Wait for the port to become available, with a timeout
     local attempts=0
     local max_attempts=10 # 5 seconds max wait (10 * 0.5s)
-    while ! curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; do
+    while ! curl --noproxy '*' -s --max-time 2 "http://localhost:$port" | grep -q "OK"; do
         kill $pid &>/dev/null
         ((attempts++))
         if [ "$attempts" -ge "$max_attempts" ]; then
@@ -1867,7 +1867,7 @@ wait_for_local_ready() {
   local max_wait="${3:-90}"
   local interval=2
   local elapsed=0
-  local curl_args=(-s -o /dev/null --connect-timeout 2 --max-time 3 --head)
+  local curl_args=(--noproxy '*' -s -o /dev/null --connect-timeout 2 --max-time 3 --head)
   [[ "$scheme" == "https" ]] && curl_args+=(-k)
 
   printf "${YELLOW}Waiting for BrowserBox to be ready on port ${port} (${scheme})...${NC}\n"
@@ -2214,6 +2214,36 @@ install_bbx() {
     printf "${GREEN}bbx $final_ver installed successfully! Run 'bbx --help' for usage.${NC}\n"
 }
 
+configure_setup_hostname_transport() {
+  local setup_hostname="$1"
+  local backend_scheme="$2"
+
+  if [[ -n "${BBX_CLOUD_RUN:-}" ]] || [[ "${BBX_FLY:-}" == "true" ]]; then
+    printf "${YELLOW}Cloud/Fly detected; skipping /etc/hosts and TLS setup.${NC}\n"
+    return 0
+  fi
+  if [[ "$backend_scheme" == "http" ]]; then
+    if is_local_hostname "$setup_hostname"; then
+      ensure_hosts_entry "$setup_hostname"
+    fi
+    printf "${YELLOW}HTTP backend selected; external edge owns DNS routing and TLS for %s.${NC}\n" "$setup_hostname"
+    return 0
+  fi
+  if ! is_local_hostname "$setup_hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
+    wait_for_hostname "$setup_hostname" || {
+      printf "${RED}Hostname $setup_hostname not resolving${NC}\n"
+      return 1
+    }
+  else
+    ensure_hosts_entry "$setup_hostname"
+  fi
+  EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || {
+    printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"
+    return 1
+  }
+}
+
 setup() {
   if _bbx_for_active; then
     _for_setup "$@"
@@ -2342,22 +2372,7 @@ setup() {
     fi
     setup_hostname="${new_hostname}"
   fi
-  if [[ -n "${BBX_CLOUD_RUN:-}" ]] || [[ "${BBX_FLY:-}" == "true" ]]; then
-    printf "${YELLOW}Cloud/Fly detected; skipping /etc/hosts and TLS setup.${NC}\n"
-  else
-    if ! is_local_hostname "$setup_hostname"; then
-      printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $setup_hostname to this machine's IP.\n"
-      wait_for_hostname "$setup_hostname" || { printf "${RED}Hostname $setup_hostname not resolving${NC}\n"; exit 1; }
-    else
-      ensure_hosts_entry "$setup_hostname"
-    fi
-    
-    if [[ "$backend_scheme" == "http" ]]; then
-      printf "${YELLOW}HTTP backend selected; skipping TLS certificate setup for %s.${NC}\n" "$setup_hostname"
-    else
-      EMAIL="${EMAIL}" BB_USER_EMAIL="${EMAIL}" tls "$setup_hostname" || { printf "${RED}Hostname $setup_hostname certificate not acquired${NC}\n"; exit 1; }
-    fi
-  fi
+  configure_setup_hostname_transport "$setup_hostname" "$backend_scheme" || exit 1
 
   # Ensure we have a valid product key
   if ! validate_license_key; then
@@ -4313,6 +4328,19 @@ ng_run() {
   run "$@"
 }
 
+ng_config() {
+  load_config
+  if ! command -v setup_nginx >/dev/null 2>&1; then
+    printf "${RED}ng-config unavailable: setup_nginx is not installed. Reinstall BrowserBox commands.${NC}\n" >&2
+    return 1
+  fi
+  if (($# == 0)); then
+    setup_nginx --ng-config print
+  else
+    setup_nginx --ng-config "$@"
+  fi
+}
+
 flipbook_finalize() {
     # Thin launcher — all flipbook logic lives in `browserbox flipbook-finalize`.
     # It handles: frame validation, site generation, cleanup.
@@ -5145,12 +5173,28 @@ status() {
 
     load_config
     printf "${YELLOW}Checking BrowserBox status...${NC}\n"
-    if [ -n "$PORT" ] && curl -s --max-time 2 "https://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
+    local status_scheme="https"
+    [[ "${BBX_HTTP_ONLY:-}" == "true" ]] && status_scheme="http"
+    if [ -n "$PORT" ] && curl --noproxy '*' -s --max-time 2 "${status_scheme}://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
         draw_box "Status: Running (port $PORT)"
     elif pgrep -u "$(whoami)" browserbox; then
         draw_box "Status: Running (current user)"
     else
         draw_box "Status: Not Running"
+    fi
+    local audio_state_file="${BB_CONFIG_DIR}/audio.state"
+    if [[ -f "$audio_state_file" ]]; then
+      local audio_state audio_detail
+      audio_state="$(sed -n 's/^state=//p' "$audio_state_file" | tail -n1)"
+      audio_detail="$(sed -n 's/^detail=//p' "$audio_state_file" | tail -n1)"
+      case "$audio_state" in
+        ready) printf "${GREEN}Audio: Ready${NC}\n" ;;
+        degraded)
+          printf "${YELLOW}Audio: Degraded - %s${NC}\n" "${audio_detail:-sound server unavailable}"
+          printf "${YELLOW}Check the service-user session with: pactl info${NC}\n"
+          ;;
+        disabled) printf "${YELLOW}Audio: Disabled (%s)${NC}\n" "${audio_detail:-configuration}" ;;
+      esac
     fi
 }
 
@@ -6493,7 +6537,8 @@ EOF
 _fleet_machine_ip() {
   local ip url
   for url in "https://api.ipify.org" "https://ipv4.icanhazip.com" "https://checkip.amazonaws.com"; do
-    ip="$(curl -fsS --max-time 3 "$url" 2>/dev/null || true)"
+    ip="$(env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy \
+      curl --noproxy '*' -4fsS --max-time 3 "$url" 2>/dev/null || true)"
     ip="${ip//$'\r'/}"; ip="${ip//$'\n'/}"
     if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then printf '%s' "$ip"; return 0; fi
   done
@@ -6507,8 +6552,9 @@ _fleet_machine_ip() {
 # Resolve A records for a host (dig preferred, host fallback, then getent).
 _fleet_dns_a() {
   local h="$1"
-  if command -v dig >/dev/null 2>&1; then
-    dig +time=2 +tries=1 +short A "$h" @1.1.1.1 2>/dev/null | grep -E '^[0-9]+\.' || \
+  if command -v getent >/dev/null 2>&1; then
+    getent ahostsv4 "$h" 2>/dev/null | awk '{print $1}' | grep -E '^[0-9]+\.' | sort -u || true
+  elif command -v dig >/dev/null 2>&1; then
     dig +time=2 +tries=1 +short A "$h" 2>/dev/null | grep -E '^[0-9]+\.' || true
   elif command -v host >/dev/null 2>&1; then
     host "$h" 2>/dev/null | awk '/has address/{print $NF}' || true
@@ -7094,7 +7140,7 @@ _fleet_delegated_run() {
 # converges and regardless of hairpin-NAT behavior.
 _fleet_probe_public_url() {
   local url="$1" host="$2" mode="$3" port="${4:-443}"
-  local -a curl_args=(-k -s -o /dev/null -w '%{http_code}' --connect-timeout 3 --max-time 6)
+  local -a curl_args=(--noproxy '*' -k -s -o /dev/null -w '%{http_code}' --connect-timeout 3 --max-time 6)
   if [[ "$mode" == "subdomain" ]]; then
     curl_args+=(--resolve "${host}:443:127.0.0.1")
   else
@@ -8552,7 +8598,7 @@ fleet_doctor() {
         probe_port="$(_fleet_record_get "$probe_rec" MAIN_PORT 2>/dev/null || true)"
         if [[ -n "$probe_host" ]]; then
           local code
-          code="$(curl -k -s -o /dev/null -w '%{http_code}' --connect-timeout 3 --max-time 6 --resolve "${probe_host}:443:127.0.0.1" "https://${probe_host}/" 2>/dev/null || true)"
+          code="$(curl --noproxy '*' -k -s -o /dev/null -w '%{http_code}' --connect-timeout 3 --max-time 6 --resolve "${probe_host}:443:127.0.0.1" "https://${probe_host}/" 2>/dev/null || true)"
           if [[ "$code" =~ ^[0-9]{3}$ && "$code" != "000" ]]; then
             _fd_check pass "Representative public route reachable (${probe_host})"
           else
@@ -9459,6 +9505,7 @@ usage() {
     printf "  ${BLUE}zt-start${NC}        Expose BrowserBox on your ZeroTier network.\n"
     printf "  ${PURPLE}tor-start${NC}       Serve BrowserBox as a Tor hidden service. ${BOLD}bbx tor-start [--no-darkweb] [--no-onion]${NC}\n"
     printf "  ${GREEN}ng-start${NC}        Proxy BrowserBox with Nginx.\n"
+    printf "  ${GREEN}ng-config${NC}       Print, validate, or safely apply an external Nginx configuration. ${BOLD}bbx ng-config [print|validate|apply]${NC}\n"
     printf "  ${YELLOW}win9x-start${NC}     Run in Windows 9x compatibility mode.\n\n"
 
     printf "${BOLD}OTHER COMMANDS${NC}\n"
@@ -9738,6 +9785,7 @@ case "$1" in
     zt-run|zt-start) shift 1; banner_color=$BLUE; zt_run "$@";;
     cf-run|cf-start) shift 1; banner_color=$CYAN; cf_run "$@";;
     ng-run|ng-start) shift 1; banner_color=$GREEN; ng_run "$@";;
+    ng-config) shift 1; banner_color=$GREEN; ng_config "$@";;
     # Docker commands intentionally disabled while BrowserBox is distributed
     # as a binary-first product. Keep the implementation above for a future re-enable.
     # docker-run|docker-start) shift 1; docker_run "$@";;

@@ -276,10 +276,13 @@ ensure_browser_dep() {
 }
 
 is_interactive() {
+  if is_truthy "${BBX_NONINTERACTIVE:-}"; then
+    return 1
+  fi
   if [[ -t 0 && -t 1 ]]; then
     return 0
   fi
-  if [[ -c /dev/tty ]]; then
+  if [[ -c /dev/tty ]] && (: </dev/tty) 2>/dev/null; then
     return 0
   fi
   return 1
@@ -291,7 +294,7 @@ prompt_input() {
   
   if [[ -t 0 ]]; then
     read -r -p "$prompt" "${output_var_name?}"
-  elif [[ -c /dev/tty ]]; then
+  elif [[ -c /dev/tty ]] && (: </dev/tty) 2>/dev/null; then
     # Read from /dev/tty if stdin is not a TTY (e.g. pipe)
     read -r -p "$prompt" "${output_var_name?}" < /dev/tty
   else
