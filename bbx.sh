@@ -6155,7 +6155,10 @@ _fleet_lock() {
 _fleet_unlock() {
   [[ -n "$_FLEET_LOCK_FD" ]] || return 0
   flock -u "$_FLEET_LOCK_FD" 2>/dev/null || true
-  exec {_FLEET_LOCK_FD}>&- 2>/dev/null || true
+  # Do not redirect this bare exec: redirections on `exec` without a command
+  # persist in the current shell. In particular, `2>/dev/null` here used to
+  # discard every diagnostic emitted after the first Fleet unlock.
+  exec {_FLEET_LOCK_FD}>&- || true
   _FLEET_LOCK_FD=""
 }
 
@@ -6499,15 +6502,33 @@ _fleet_cert_validate() {
   local cert="$1" key="$2" domain="$3"
   sudo -n test -r "$cert" || _fleet_fail fleet_certificate_invalid "Certificate file not readable: ${cert}"
   sudo -n test -r "$key" || _fleet_fail fleet_certificate_invalid "Key file not readable: ${key}"
-  local mode
+  local mode normalized_mode group_mode world_mode
   mode="$(sudo -n stat -c '%a' "$key" 2>/dev/null || echo 999)"
-  if [[ "$mode" =~ [2-7]$ ]] || [[ "${mode: -2:1}" =~ [2-7] ]]; then
-    _fleet_fail fleet_certificate_invalid "Key file ${key} is group/world accessible (mode ${mode}); tighten to 600/640."
+  normalized_mode="${mode: -3}"
+  if [[ ! "$normalized_mode" =~ ^[0-7]{3}$ ]]; then
+    _fleet_fail fleet_certificate_invalid "Could not determine safe permissions for key file ${key}."
   fi
-  local cpub kpub
-  cpub="$(sudo -n openssl x509 -in "$cert" -noout -pubkey 2>/dev/null | sudo -n openssl sha256 2>/dev/null)"
-  kpub="$(sudo -n openssl pkey -in "$key" -pubout 2>/dev/null | sudo -n openssl sha256 2>/dev/null)"
-  [[ -n "$cpub" && "$cpub" == "$kpub" ]] \
+  group_mode="${normalized_mode:1:1}"
+  world_mode="${normalized_mode:2:1}"
+  if (( (group_mode & 2) != 0 || (world_mode & 6) != 0 )); then
+    _fleet_fail fleet_certificate_invalid "Key file ${key} has unsafe permissions (mode ${mode}); tighten to 600/640."
+  fi
+  local cert_public key_public key_header cpub kpub
+  if ! cert_public="$(sudo -n openssl x509 -in "$cert" -noout -pubkey 2>/dev/null)" \
+      || [[ -z "$cert_public" ]]; then
+    _fleet_fail fleet_certificate_invalid "Certificate file is not a readable PEM X.509 certificate: ${cert}"
+  fi
+  if ! key_public="$(sudo -n openssl pkey -in "$key" -pubout 2>/dev/null)" \
+      || [[ -z "$key_public" ]]; then
+    key_header="$(sudo -n sed -n '1p' "$key" 2>/dev/null || true)"
+    if [[ "$key_header" == "-----BEGIN OPENSSH PRIVATE KEY-----" ]]; then
+      _fleet_fail fleet_certificate_invalid "Key file ${key} is an OpenSSH private key, not a TLS private key. Supply the PEM TLS private key that matches ${cert}."
+    fi
+    _fleet_fail fleet_certificate_invalid "Key file is not a readable PEM TLS private key: ${key}"
+  fi
+  cpub="$(printf '%s\n' "$cert_public" | openssl sha256 2>/dev/null)"
+  kpub="$(printf '%s\n' "$key_public" | openssl sha256 2>/dev/null)"
+  [[ -n "$cpub" && -n "$kpub" && "$cpub" == "$kpub" ]] \
     || _fleet_fail fleet_certificate_invalid "Certificate and key do not match."
   sudo -n openssl x509 -in "$cert" -noout -checkend 0 >/dev/null 2>&1 \
     || _fleet_fail fleet_certificate_invalid "Certificate is expired."
