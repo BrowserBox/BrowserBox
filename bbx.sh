@@ -6100,6 +6100,39 @@ _fleet_require_init() {
   _fleet_config_load
 }
 
+# A Fleet can have its topology and seat records present while a first init is
+# still incomplete (for example, DNS or nginx failed after users were created).
+# Keep that preparatory state repairable, but never allocate from it.
+_fleet_routing_ready() {
+  local routing_env="${FLEET_DIR}/routing.env"
+  local dns_valid nginx_applied cert_file key_file need_tls=0
+  [[ -f "$routing_env" && ! -L "$routing_env" ]] || return 1
+  dns_valid="$(_fleet_record_get "$routing_env" DNS_VALID 2>/dev/null || true)"
+  nginx_applied="$(_fleet_record_get "$routing_env" NGINX_APPLIED 2>/dev/null || true)"
+  cert_file="$(_fleet_record_get "$routing_env" CERT_FILE 2>/dev/null || true)"
+  key_file="$(_fleet_record_get "$routing_env" KEY_FILE 2>/dev/null || true)"
+
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" || "$FLEET_BACKEND" == "https" ]]; then
+    need_tls=1
+  fi
+  if (( need_tls )); then
+    [[ -n "$cert_file" && -n "$key_file" ]] || return 1
+    sudo -n test -r "$cert_file" 2>/dev/null || return 1
+    sudo -n test -r "$key_file" 2>/dev/null || return 1
+  fi
+  if [[ "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
+    [[ "$dns_valid" == "true" && "$nginx_applied" == "true" ]] || return 1
+  fi
+  return 0
+}
+
+_fleet_require_ready() {
+  _fleet_require_init
+  if ! _fleet_routing_ready; then
+    _fleet_fail fleet_not_ready "Fleet initialization did not complete. Re-run 'sudo bbx fleet init' with the original routing and certificate options, then run 'sudo bbx fleet doctor'."
+  fi
+}
+
 # ── Locking ─────────────────────────────────────────────────────────
 # All seat/allocation ownership decisions happen under this exclusive
 # lock. The lock is NEVER held across long-running lifecycle work
@@ -6716,6 +6749,60 @@ _fleet_nginx_reload() {
   return 1
 }
 
+# SELinux confines nginx/httpd network connections separately from ordinary
+# Unix socket permissions. Fleet's nginx is a reverse proxy by design, so make
+# the platform's standard persistent allowance explicit and idempotent.
+_fleet_nginx_ensure_network_access() {
+  command -v getenforce >/dev/null 2>&1 || return 0
+  [[ "$(getenforce 2>/dev/null || true)" == "Enforcing" ]] || return 0
+  command -v getsebool >/dev/null 2>&1 && command -v setsebool >/dev/null 2>&1 \
+    || _fleet_fail fleet_routing_failed "SELinux is enforcing but its boolean tools are unavailable. Install policycoreutils and re-run fleet init."
+  if getsebool httpd_can_network_connect 2>/dev/null | grep -q -- '--> on'; then
+    return 0
+  fi
+  sudo -n setsebool -P httpd_can_network_connect 1 >/dev/null 2>&1 \
+    || _fleet_fail fleet_routing_failed "Could not permit nginx to connect to Fleet backends under SELinux (httpd_can_network_connect)."
+}
+
+# nginx on SELinux-enforcing systems cannot read certificate material from an
+# operator's home directory even when Unix permissions allow root to read it.
+# Install a root-owned copy beside nginx's configuration and let the platform's
+# normal file-context rules label it. The routing record continues to retain the
+# operator-supplied source path so a later `fleet routing apply` refreshes it.
+_fleet_nginx_install_certs() {
+  local source_cert="$1" source_key="$2"
+  local nginx_root cert_dir cert_candidate key_candidate
+  if [[ "$FLEET_NGINX_TARGET" == /etc/nginx/* ]]; then
+    nginx_root="/etc/nginx"
+  else
+    nginx_root="$(dirname "$FLEET_NGINX_TARGET")"
+  fi
+  cert_dir="${nginx_root}/bbx-fleet-certs"
+  cert_candidate="${cert_dir}/fullchain.pem.candidate"
+  key_candidate="${cert_dir}/privkey.pem.candidate"
+
+  sudo -n mkdir -p "$cert_dir" \
+    || _fleet_fail fleet_routing_failed "Could not create managed nginx certificate directory: ${cert_dir}"
+  sudo -n chmod 700 "$cert_dir" \
+    || _fleet_fail fleet_routing_failed "Could not secure managed nginx certificate directory: ${cert_dir}"
+  sudo -n cp -f "$source_cert" "$cert_candidate" \
+    || _fleet_fail fleet_routing_failed "Could not install the Fleet certificate for nginx."
+  sudo -n cp -f "$source_key" "$key_candidate" \
+    || { sudo -n rm -f "$cert_candidate"; _fleet_fail fleet_routing_failed "Could not install the Fleet private key for nginx."; }
+  sudo -n chmod 644 "$cert_candidate"
+  sudo -n chmod 600 "$key_candidate"
+  if command -v restorecon >/dev/null 2>&1; then
+    sudo -n restorecon -RF "$cert_dir" >/dev/null 2>&1 || true
+  fi
+  sudo -n mv -f "$cert_candidate" "${cert_dir}/fullchain.pem"
+  sudo -n mv -f "$key_candidate" "${cert_dir}/privkey.pem"
+  if command -v restorecon >/dev/null 2>&1; then
+    sudo -n restorecon -F "${cert_dir}/fullchain.pem" "${cert_dir}/privkey.pem" >/dev/null 2>&1 || true
+  fi
+  FLEET_NGINX_CERT_FILE="${cert_dir}/fullchain.pem"
+  FLEET_NGINX_KEY_FILE="${cert_dir}/privkey.pem"
+}
+
 # Atomically install the generated Fleet routing config: validate,
 # install, reload; roll back to the previous valid config on failure.
 _fleet_nginx_apply() {
@@ -6726,7 +6813,9 @@ _fleet_nginx_apply() {
     || _fleet_fail fleet_routing_failed "nginx is not installed. Install nginx and re-run 'bbx fleet routing apply'."
   _fleet_nginx_paths \
     || _fleet_fail fleet_routing_failed "Could not locate an nginx include directory (sites-available or conf.d)."
-  _fleet_nginx_generate "$cert" "$key" > "$gen"
+  _fleet_nginx_ensure_network_access
+  _fleet_nginx_install_certs "$cert" "$key"
+  _fleet_nginx_generate "$FLEET_NGINX_CERT_FILE" "$FLEET_NGINX_KEY_FILE" > "$gen"
   chmod 600 "$gen"
 
   local had_prev=0
@@ -6763,7 +6852,7 @@ _fleet_nginx_apply() {
       [[ -n "$FLEET_NGINX_LINK" ]] && sudo -n rm -f "$FLEET_NGINX_LINK"
     fi
     _fleet_nginx_reload || true
-    _fleet_fail fleet_routing_failed "nginx reload failed; previous config restored."
+    _fleet_fail fleet_routing_failed "nginx reload failed; previous config restored. Inspect 'sudo systemctl status nginx' and 'sudo journalctl -u nginx -n 50'."
   fi
 
   cp -f "$gen" "$active_copy"
@@ -6954,6 +7043,23 @@ _fleet_apply_defaults_env() {
     esac
     BBX_FLEET_EXTRA_ENV+=("${key}=${val}")
   done < "$f"
+}
+
+# Persist a bounded, secret-redacted copy of failed delegated setup output.
+# Structured JSON remains clean on stdout; operators get a stable diagnostic
+# path without exposing the allocation token or product key.
+_fleet_write_setup_diagnostic() {
+  local raw_log="$1" seat="$2"
+  local diagnostic="${FLEET_DIR}/diagnostics/${seat}-setup.log"
+  local candidate="${diagnostic}.candidate"
+  tail -80 "$raw_log" \
+    | sed -E \
+        -e 's/[[:xdigit:]]{32,}/[REDACTED]/g' \
+        -e 's/[A-Z0-9]{4}(-[A-Z0-9]{4}){7}/[REDACTED]/g' \
+    > "$candidate"
+  chmod 600 "$candidate"
+  mv -f "$candidate" "$diagnostic"
+  printf '%s' "$diagnostic"
 }
 
 # Write the seat's hosts.env (zeta-mode service-host map) as the seat
@@ -7524,8 +7630,12 @@ fleet_acquire() {
       *) _fleet_fail fleet_invalid_config "Unknown fleet acquire option: $1" ;;
     esac
   done
-  _fleet_require_init
+  _fleet_require_ready
   _fleet_config_validate
+
+  if [[ -z "${LICENSE_KEY:-}" ]]; then
+    _fleet_fail fleet_license_unavailable "Fleet operator license key is not configured. Run 'sudo -H bbx certify' interactively once, or provide LICENSE_KEY to the privileged service environment."
+  fi
 
   if ! _fleet_valid_reap_seconds "$FLEET_ACQUIRE_REAP_GRACE_SECS"; then
     _fleet_fail fleet_invalid_config "FLEET_ACQUIRE_REAP_GRACE_SECS must be an integer from 0 to 86400."
@@ -7620,10 +7730,18 @@ fleet_acquire() {
   fi
   if [[ -z "$rollback_reason" ]]; then
     _fleet_info "[${chosen}] Running delegated setup (port ${main_port})..."
-    if ! BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _tu_run setup_bbpro "${setup_args[@]}" >/dev/null 2>&1; then
-      rollback_reason="Delegated BrowserBox setup failed for seat ${chosen}."
+    local setup_log setup_diagnostic=""
+    setup_log="$(mktemp "${TMPDIR:-/tmp}/bbx-fleet-setup-log-XXXXXX")"
+    chmod 600 "$setup_log"
+    if ! BBX_HOSTNAME="$seat_hostname" BBX_NONINTERACTIVE=true _tu_run setup_bbpro "${setup_args[@]}" >"$setup_log" 2>&1; then
+      setup_diagnostic="$(_fleet_write_setup_diagnostic "$setup_log" "$chosen")"
+      rollback_reason="Delegated BrowserBox setup failed for seat ${chosen}. See ${setup_diagnostic}."
       rollback_code="fleet_setup_failed"
+      _fleet_warn "Delegated setup output saved with secrets redacted: ${setup_diagnostic}"
+    else
+      rm -f "${FLEET_DIR}/diagnostics/${chosen}-setup.log"
     fi
+    rm -f "$setup_log"
   fi
 
   if [[ -z "$rollback_reason" && "$FLEET_ROUTING_MODE" == "subdomain" ]]; then
@@ -8517,6 +8635,11 @@ fleet_doctor() {
     local cfg_ok=1
     ( FLEET_JSON=0 _fleet_config_validate ) >/dev/null 2>&1 || cfg_ok=0
     (( cfg_ok )) && _fd_check pass "Fleet configuration valid" || _fd_check fail "Fleet configuration valid" "run bbx fleet init to repair"
+    if (( cfg_ok )) && _fleet_routing_ready; then
+      _fd_check pass "Fleet deployment ready for acquire"
+    else
+      _fd_check fail "Fleet deployment ready for acquire" "initialization did not complete; re-run fleet init with the original routing and certificate options"
+    fi
     local perms
     perms="$(stat -c '%a' "$FLEET_DIR" 2>/dev/null || echo '?')"
     [[ "$perms" == "700" ]] && _fd_check pass "Fleet state permissions (0700)" || _fd_check warning "Fleet state permissions (0700)" "found ${perms}; run bbx fleet reconcile --fix"
@@ -8556,6 +8679,14 @@ fleet_doctor() {
           sudo -n nginx -t >/dev/null 2>&1 && _fd_check pass "nginx syntax valid" || _fd_check fail "nginx syntax valid" "nginx -t failed"
         else
           _fd_check fail "Fleet nginx configuration installed" "run bbx fleet routing apply"
+        fi
+      fi
+      if command -v getenforce >/dev/null 2>&1 && [[ "$(getenforce 2>/dev/null || true)" == "Enforcing" ]]; then
+        if command -v getsebool >/dev/null 2>&1 \
+           && getsebool httpd_can_network_connect 2>/dev/null | grep -q -- '--> on'; then
+          _fd_check pass "SELinux permits nginx backend connections"
+        else
+          _fd_check fail "SELinux permits nginx backend connections" "re-run fleet init or fleet routing apply"
         fi
       fi
       local routing_env="${FLEET_DIR}/routing.env" cert_file
@@ -8642,7 +8773,7 @@ fleet_doctor() {
       _fd_check warning "License vacancy" "unavailable"
     fi
   else
-    _fd_check warning "Operator license key configured" "set LICENSE_KEY or run bbx certify"
+    _fd_check warning "Operator license key configured" "run sudo -H bbx certify, or set LICENSE_KEY for the privileged Fleet process"
   fi
 
   local i
