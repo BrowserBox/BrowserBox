@@ -6889,6 +6889,10 @@ _fleet_nginx_apply() {
 _fleet_create_seat_user() {
   local user="$1"
   if id "$user" >/dev/null 2>&1; then
+    if command -v loginctl >/dev/null 2>&1; then
+      sudo -n loginctl enable-linger "$user" 2>/dev/null \
+        || _fleet_warn "Could not enable the persistent user session for existing seat ${user}."
+    fi
     return 1  # already existed
   fi
   if [ -f /etc/redhat-release ]; then
@@ -6915,9 +6919,15 @@ _fleet_create_seat_user() {
     sudo -n usermod -aG "$group" "$user" 2>/dev/null || true
   done
   if command -v loginctl >/dev/null 2>&1; then
-    sudo -n loginctl enable-linger "$user" 2>/dev/null || true
+    sudo -n loginctl enable-linger "$user" 2>/dev/null \
+      || _fleet_warn "Could not enable the persistent user session for new seat ${user}."
   fi
   return 0
+}
+
+_fleet_pipewire_audio_configured() {
+  [[ -r /etc/pipewire/pipewire-pulse.conf.d/90-browserbox-audio.conf ]] \
+    && grep -q 'sink_name=rtp' /etc/pipewire/pipewire-pulse.conf.d/90-browserbox-audio.conf
 }
 
 # Assign a stable main port for a new seat: deterministic upward scan
@@ -7330,6 +7340,10 @@ fleet_init() {
   [[ -n "$opt_submode" ]] && FLEET_SUBDOMAIN_MODE="$opt_submode"
   [[ -n "$opt_backend" ]] && FLEET_BACKEND="$opt_backend"
   _fleet_config_validate
+
+  if command -v pipewire-pulse >/dev/null 2>&1 && ! _fleet_pipewire_audio_configured; then
+    _fleet_fail fleet_audio_unavailable "PipeWire Pulse is installed but BrowserBox's system audio configuration is missing. Run 'browserbox --install' (normally performed by bbx update), then run fleet init again."
+  fi
 
   # ── Locked: topology guard, config write, seat records ──
   # (User creation itself is idempotent syscall work; the lock protects
@@ -8674,6 +8688,29 @@ fleet_doctor() {
       _fd_check pass "${present}/${FLEET_SIZE} managed users present"
     else
       _fd_check fail "${present}/${FLEET_SIZE} managed users present" "run bbx fleet init to create missing users"
+    fi
+
+    if command -v pipewire-pulse >/dev/null 2>&1; then
+      if _fleet_pipewire_audio_configured; then
+        _fd_check pass "PipeWire audio capture configuration installed"
+      else
+        _fd_check fail "PipeWire audio capture configuration installed" "run browserbox --install (normally performed by bbx update), then fleet init"
+      fi
+    fi
+
+    if command -v loginctl >/dev/null 2>&1; then
+      local linger_missing=0 linger_value
+      for (( idx=0; idx < FLEET_SIZE; idx++ )); do
+        seat="$(_fleet_seat_name "$idx")"
+        id "$seat" >/dev/null 2>&1 || continue
+        linger_value="$(loginctl show-user "$seat" -p Linger --value 2>/dev/null || true)"
+        [[ "$linger_value" == "yes" ]] || linger_missing=$((linger_missing + 1))
+      done
+      if (( linger_missing == 0 )); then
+        _fd_check pass "Managed seat sessions persist for audio"
+      else
+        _fd_check fail "Managed seat sessions persist for audio" "${linger_missing} seat user(s) need loginctl enable-linger; re-run fleet init"
+      fi
     fi
 
     # Port-set collision audit across seat records.
