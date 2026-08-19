@@ -625,11 +625,11 @@ if _bbx_for_active; then
 
   # Operator and target must be different users
   if [[ "$BBX_FOR_USER" == "$BBX_OPERATOR_USER" ]]; then
-    printf "${YELLOW}Warning: --for target is the same as the operator. Running normally.${NC}\n"
+    printf "${YELLOW}Warning: --for target is the same as the operator. Running normally.${NC}\n" >&2
     BBX_FOR_USER=""
     BBX_OPERATOR_USER=""
   else
-    printf "${CYAN}[--for %s] Operating on behalf of target user (operator: %s)${NC}\n" "$BBX_FOR_USER" "$BBX_OPERATOR_USER"
+    printf "${CYAN}[--for %s] Operating on behalf of target user (operator: %s)${NC}\n" "$BBX_FOR_USER" "$BBX_OPERATOR_USER" >&2
   fi
 fi
 
@@ -5922,6 +5922,7 @@ _for_status() {
 #     diagnostics/     doctor/reconcile reports
 
 FLEET_JSON=0
+FLEET_JSON_SCHEMA=1
 _FLEET_STDOUT_FD=1
 _FLEET_LOCK_FD=""
 FLEET_DIR=""
@@ -5965,6 +5966,67 @@ _fleet_json_escape() {
   printf '%s' "$s"
 }
 
+_fj_string() {
+  printf '"%s":"%s"' "$1" "$(_fleet_json_escape "$2")"
+}
+
+_fj_nullable_string() {
+  if [[ -n "$2" ]]; then
+    _fj_string "$1" "$2"
+  else
+    printf '"%s":null' "$1"
+  fi
+}
+
+_fj_nullable_number() {
+  if [[ "$2" =~ ^[0-9]+$ ]]; then
+    printf '"%s":%s' "$1" "$2"
+  else
+    printf '"%s":null' "$1"
+  fi
+}
+
+_fj_bool() {
+  local value="$2"
+  [[ "$value" == "true" || "$value" == "false" ]] || value=false
+  printf '"%s":%s' "$1" "$value"
+}
+
+_fleet_json_response() {
+  local ok="$1" body="${2:-}" schema=""
+  if [[ "$FLEET_JSON_SCHEMA" == "2" ]]; then
+    schema=',"schemaVersion":2'
+  fi
+  if [[ -n "$body" ]]; then
+    _fleet_emit "{\"ok\":${ok}${schema},${body}}"
+  else
+    _fleet_emit "{\"ok\":${ok}${schema}}"
+  fi
+}
+
+_fleet_json_ok() { _fleet_json_response true "$1"; }
+
+# One canonical schema-v2 allocation serializer for acquire/list/status.
+# Unknown record values are JSON null, never "?", "", or numeric zero.
+_fleet_allocation_json_v2() {
+  local rec="$1" health="${2:-}" diagnostics="${3:-}"
+  local id state seat port host login_url created updated timeout
+  id="$(_fleet_record_get "$rec" ALLOCATION_ID 2>/dev/null || true)"
+  state="$(_fleet_record_get "$rec" STATE 2>/dev/null || true)"
+  seat="$(_fleet_record_get "$rec" SEAT_NAME 2>/dev/null || true)"
+  port="$(_fleet_record_get "$rec" MAIN_PORT 2>/dev/null || true)"
+  host="$(_fleet_record_get "$rec" PUBLIC_HOSTNAME 2>/dev/null || true)"
+  login_url="$(_fleet_record_get "$rec" LOGIN_URL 2>/dev/null || true)"
+  created="$(_fleet_record_get "$rec" CREATED_AT 2>/dev/null || true)"
+  updated="$(_fleet_record_get "$rec" UPDATED_AT 2>/dev/null || true)"
+  timeout="$(_fleet_record_get "$rec" TIMEOUT_SECONDS 2>/dev/null || true)"
+
+  local body
+  body="$(_fj_nullable_string id "$id"),$(_fj_nullable_string state "$state"),$(_fj_nullable_string health "$health"),$(_fj_nullable_string seat "$seat"),$(_fj_nullable_number main_port "$port"),$(_fj_nullable_string public_hostname "$host"),$(_fj_nullable_string login_url "$login_url"),$(_fj_nullable_string created_at "$created"),$(_fj_nullable_string updated_at "$updated"),$(_fj_nullable_number timeout_seconds "$timeout")"
+  [[ -n "$diagnostics" ]] && body+=",\"diagnostics\":{${diagnostics}}"
+  printf '{%s}' "$body"
+}
+
 # Emit final JSON (or text) to the real stdout even when stdout has
 # been redirected to stderr for JSON purity.
 _fleet_emit() {
@@ -5978,7 +6040,7 @@ _fleet_warn() { printf '%b\n' "${YELLOW}[fleet] $1${NC}" >&2; }
 _fleet_fail() {
   local code="$1" msg="$2"
   if (( FLEET_JSON )); then
-    _fleet_emit "{\"ok\":false,\"error\":{\"code\":\"$(_fleet_json_escape "$code")\",\"message\":\"$(_fleet_json_escape "$msg")\"}}"
+    _fleet_json_response false "\"error\":{\"code\":\"$(_fleet_json_escape "$code")\",\"message\":\"$(_fleet_json_escape "$msg")\"}"
   else
     printf '%b\n' "${RED}Error: ${msg}${NC}" >&2
     printf '  (error code: %s)\n' "$code" >&2
@@ -5991,12 +6053,7 @@ _fleet_fail() {
 
 _fleet_require_linux() {
   if [[ "$(uname -s)" != "Linux" ]]; then
-    if (( FLEET_JSON )); then
-      _fleet_emit '{"ok":false,"error":{"code":"fleet_unsupported_platform","message":"bbx fleet is supported only on Linux."}}'
-    else
-      printf 'Error: bbx fleet is supported only on Linux.\n' >&2
-    fi
-    exit 1
+    _fleet_fail fleet_unsupported_platform "bbx fleet is supported only on Linux."
   fi
 }
 
@@ -7489,7 +7546,7 @@ fleet_init() {
   [[ -n "$FLEET_CERT_FILE" ]] && cert_valid=true
 
   if (( FLEET_JSON )); then
-    _fleet_emit "{\"ok\":true,\"fleet_size\":${FLEET_SIZE},\"created_users\":${created},\"existing_users\":${existing},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"nginx_applied\":${nginx_applied},\"dns_valid\":${FLEET_DNS_VALID},\"dns_proxied\":${FLEET_DNS_PROXIED},\"certificate_valid\":${cert_valid}},\"clean_slate\":${FLEET_CLEAN_SLATE},\"fleet_dir\":\"$(_fleet_json_escape "$FLEET_DIR")\"}"
+    _fleet_json_ok "\"fleet_size\":${FLEET_SIZE},\"created_users\":${created},\"existing_users\":${existing},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"nginx_applied\":${nginx_applied},\"dns_valid\":${FLEET_DNS_VALID},\"dns_proxied\":${FLEET_DNS_PROXIED},\"certificate_valid\":${cert_valid}},\"clean_slate\":${FLEET_CLEAN_SLATE},\"fleet_dir\":\"$(_fleet_json_escape "$FLEET_DIR")\""
   else
     printf '%b\n' "${GREEN}Fleet initialized.${NC}" >&2
     {
@@ -7873,7 +7930,14 @@ fleet_acquire() {
   _fleet_unlock
 
   if (( FLEET_JSON )); then
-    _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"state\":\"running\",\"login_url\":\"$(_fleet_json_escape "$login_url")\",\"created_at\":\"${now}\",\"timeout_seconds\":${timeout_secs},\"runtime\":{\"seat\":\"${chosen}\",\"main_port\":${main_port}}}"
+    if [[ "$FLEET_JSON_SCHEMA" == "2" ]]; then
+      local acquire_health allocation_json
+      acquire_health="$(_fleet_alloc_health "$chosen" "$main_port")"
+      allocation_json="$(_fleet_allocation_json_v2 "$alloc_rec_path" "$acquire_health")"
+      _fleet_json_ok "\"allocation\":${allocation_json}"
+    else
+      _fleet_json_ok "\"allocation_id\":\"${alloc_id}\",\"state\":\"running\",\"login_url\":\"$(_fleet_json_escape "$login_url")\",\"created_at\":\"${now}\",\"timeout_seconds\":${timeout_secs},\"runtime\":{\"seat\":\"${chosen}\",\"main_port\":${main_port}}"
+    fi
   else
     printf '%b\n' "${GREEN}Allocation ready.${NC}" >&2
     draw_box "Login Link: ${login_url}" >&2
@@ -8036,7 +8100,7 @@ fleet_release() {
   case "$release_rc" in
     10|11)
       if (( FLEET_JSON )); then
-        _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":false,\"note\":\"$(_fleet_json_escape "$FLEET_RELEASE_NOTE")\"}"
+        _fleet_json_ok "\"allocation_id\":\"${alloc_id}\",\"released\":false,\"note\":\"$(_fleet_json_escape "$FLEET_RELEASE_NOTE")\""
       else
         _fleet_info "Allocation ${alloc_id}: ${FLEET_RELEASE_NOTE}."
       fi
@@ -8047,7 +8111,7 @@ fleet_release() {
   esac
 
   if (( FLEET_JSON )); then
-    _fleet_emit "{\"ok\":true,\"allocation_id\":\"${alloc_id}\",\"released\":true,\"seat\":\"${FLEET_RELEASED_SEAT}\"}"
+    _fleet_json_ok "\"allocation_id\":\"${alloc_id}\",\"released\":true,\"seat\":\"${FLEET_RELEASED_SEAT}\""
   else
     printf '%b\n' "${GREEN}Released allocation ${alloc_id} (seat ${FLEET_RELEASED_SEAT} returned to pool).${NC}" >&2
   fi
@@ -8204,7 +8268,7 @@ _fleet_reap_once() {
     if (( FLEET_JSON )); then
       local ok=true
       (( failed > 0 )) && ok=false
-      _fleet_emit "{\"ok\":${ok},\"source\":\"$(_fleet_json_escape "$source")\",\"candidates\":${candidate_count},\"reaped\":${reaped},\"skipped\":${skipped},\"failed\":${failed},\"allocation_ids\":[${reaped_json}]}"
+      _fleet_json_response "$ok" "\"source\":\"$(_fleet_json_escape "$source")\",\"candidates\":${candidate_count},\"reaped\":${reaped},\"skipped\":${skipped},\"failed\":${failed},\"allocation_ids\":[${reaped_json}]"
     else
       printf 'Fleet reap: %s candidate(s), %s released, %s skipped, %s failed.\n' \
         "$candidate_count" "$reaped" "$skipped" "$failed" >&2
@@ -8320,12 +8384,16 @@ fleet_list() {
       first=0
       # login_url is included in privileged JSON mode only — never in
       # the human table.
-      json_items+="{\"allocation_id\":\"${id}\",\"state\":\"${state}\",\"created_at\":\"${created}\",\"seat\":\"$(_fleet_json_escape "$seat")\",\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"main_port\":${port:-0},\"health\":\"${health}\",\"login_url\":\"$(_fleet_json_escape "$login_url")\"}"
+      if [[ "$FLEET_JSON_SCHEMA" == "2" ]]; then
+        json_items+="$(_fleet_allocation_json_v2 "$rec" "$health")"
+      else
+        json_items+="{\"allocation_id\":\"${id}\",\"state\":\"${state}\",\"created_at\":\"${created}\",\"seat\":\"$(_fleet_json_escape "$seat")\",\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"main_port\":${port:-0},\"health\":\"${health}\",\"login_url\":\"$(_fleet_json_escape "$login_url")\"}"
+      fi
     fi
   done < <(_fleet_alloc_list)
 
   if (( FLEET_JSON )); then
-    _fleet_emit "{\"ok\":true,\"allocations\":[${json_items}]}"
+    _fleet_json_ok "\"allocations\":[${json_items}]"
   else
     {
       printf '%-38s %-10s %-5s %-14s %-30s %-6s %s\n' "ALLOCATION" "STATE" "AGE" "SEAT" "PUBLIC HOSTNAME" "PORT" "HEALTH"
@@ -8385,7 +8453,14 @@ fleet_status() {
       route_ok=true
     fi
     if (( FLEET_JSON )); then
-      _fleet_emit "{\"ok\":true,\"allocation_id\":\"${target_id}\",\"state\":\"${state}\",\"seat\":\"$(_fleet_json_escape "$seat")\",\"main_port\":${port:-0},\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"health\":\"${health}\",\"login_link_present\":${has_link},\"clean_slate\":${clean},\"public_route_ok\":${route_ok}}"
+      if [[ "$FLEET_JSON_SCHEMA" == "2" ]]; then
+        local diagnostics allocation_json
+        diagnostics="$(_fj_bool login_link_present "$has_link"),$(_fj_bool clean_slate "$clean"),$(_fj_bool public_route_ok "$route_ok")"
+        allocation_json="$(_fleet_allocation_json_v2 "$rec" "$health" "$diagnostics")"
+        _fleet_json_ok "\"allocation\":${allocation_json}"
+      else
+        _fleet_json_ok "\"allocation_id\":\"${target_id}\",\"state\":\"${state}\",\"seat\":\"$(_fleet_json_escape "$seat")\",\"main_port\":${port:-0},\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"health\":\"${health}\",\"login_link_present\":${has_link},\"clean_slate\":${clean},\"public_route_ok\":${route_ok}"
+      fi
     else
       {
         printf 'Allocation:      %s\n' "$target_id"
@@ -8455,7 +8530,7 @@ fleet_status() {
   if (( FLEET_JSON )); then
     local vac_json="null"
     [[ "$vacancy" =~ ^[0-9]+$ ]] && vac_json="$vacancy"
-    _fleet_emit "{\"ok\":true,\"seats\":{\"configured\":${FLEET_SIZE},\"eligible\":${eligible},\"records\":${total}},\"allocations\":{\"active\":${active},\"running\":${running},\"down\":${down},\"partial\":${partial},\"unknown\":${unknown},\"starting\":${starting},\"failed\":${failed},\"locally_free\":${free}},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"nginx\":\"${nginx_state}\",\"dns_valid\":${dns_valid},\"certificate\":\"${cert_state}\"},\"clean_slate\":${FLEET_CLEAN_SLATE},\"ports\":{\"start\":${FLEET_PORT_START},\"end\":${FLEET_PORT_END}},\"license_vacancy_advisory\":${vac_json}}"
+    _fleet_json_ok "\"seats\":{\"configured\":${FLEET_SIZE},\"eligible\":${eligible},\"records\":${total}},\"allocations\":{\"active\":${active},\"running\":${running},\"down\":${down},\"partial\":${partial},\"unknown\":${unknown},\"starting\":${starting},\"failed\":${failed},\"locally_free\":${free}},\"routing\":{\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"nginx\":\"${nginx_state}\",\"dns_valid\":${dns_valid},\"certificate\":\"${cert_state}\"},\"clean_slate\":${FLEET_CLEAN_SLATE},\"ports\":{\"start\":${FLEET_PORT_START},\"end\":${FLEET_PORT_END}},\"license_vacancy_advisory\":${vac_json}"
   else
     {
       printf 'Fleet status\n'
@@ -8617,7 +8692,7 @@ fleet_reconcile() {
       first=0
       items+="\"$(_fleet_json_escape "$fnd")\""
     done
-    _fleet_emit "{\"ok\":true,\"mode\":\"${applied}\",\"findings\":[${items}]}"
+    _fleet_json_ok "\"mode\":\"${applied}\",\"findings\":[${items}]"
   else
     {
       printf 'Fleet reconcile (%s): %s finding(s)\n' "$applied" "${#findings[@]}"
@@ -8844,7 +8919,7 @@ fleet_doctor() {
     done
     local ok=true
     (( fails > 0 )) && ok=false
-    _fleet_emit "{\"ok\":${ok},\"failures\":${fails},\"warnings\":${warns},\"checks\":[${items}]}"
+    _fleet_json_response "$ok" "\"failures\":${fails},\"warnings\":${warns},\"checks\":[${items}]"
   else
     {
       for i in "${!names[@]}"; do
@@ -8885,7 +8960,7 @@ fleet_config() {
             items+="\"$(_fleet_json_escape "$key")\":\"$(_fleet_json_escape "$val")\""
           done < "$f"
         fi
-        _fleet_emit "{\"ok\":true,\"defaults\":{${items}}}"
+        _fleet_json_ok "\"defaults\":{${items}}"
       else
         {
           printf 'Fleet BrowserBox defaults (%s):\n' "$f"
@@ -8908,7 +8983,7 @@ fleet_config() {
       if [[ -f "$f" ]]; then grep -v -E "^${key}=" "$f" >> "$tmp" || true; fi
       printf '%s=%s\n' "$key" "$val" >> "$tmp"
       mv -f "$tmp" "$f"
-      if (( FLEET_JSON )); then _fleet_emit "{\"ok\":true,\"set\":\"$(_fleet_json_escape "$key")\"}"; else _fleet_info "Set ${key}."; fi
+      if (( FLEET_JSON )); then _fleet_json_ok "\"set\":\"$(_fleet_json_escape "$key")\""; else _fleet_info "Set ${key}."; fi
       ;;
     unset)
       local key="${1:-}"
@@ -8921,7 +8996,7 @@ fleet_config() {
         grep -v -E "^${key}=" "$f" >> "$tmp" || true
         mv -f "$tmp" "$f"
       fi
-      if (( FLEET_JSON )); then _fleet_emit "{\"ok\":true,\"unset\":\"$(_fleet_json_escape "$key")\"}"; else _fleet_info "Unset ${key}."; fi
+      if (( FLEET_JSON )); then _fleet_json_ok "\"unset\":\"$(_fleet_json_escape "$key")\""; else _fleet_info "Unset ${key}."; fi
       ;;
     *)
       _fleet_fail fleet_invalid_config "Usage: bbx fleet config <show|set|unset>" ;;
@@ -8959,7 +9034,7 @@ fleet_routing() {
           first=0
           items+="{\"seat\":\"$(_fleet_json_escape "$seat")\",\"public_hostname\":\"$(_fleet_json_escape "$host")\",\"main_port\":${port}}"
         done < <(_fleet_seat_list)
-        _fleet_emit "{\"ok\":true,\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"certificate\":{\"path\":\"$(_fleet_json_escape "$cert_file")\",\"state\":\"${cert_state}\"},\"dns_valid\":${dns_valid},\"dns_proxied\":${dns_proxied},\"nginx_applied\":${nginx_applied},\"seats\":[${items}]}"
+        _fleet_json_ok "\"mode\":\"${FLEET_ROUTING_MODE}\",\"domain\":\"$(_fleet_json_escape "$FLEET_DOMAIN")\",\"subdomain_mode\":\"${FLEET_SUBDOMAIN_MODE}\",\"backend\":\"${FLEET_BACKEND}\",\"certificate\":{\"path\":\"$(_fleet_json_escape "$cert_file")\",\"state\":\"${cert_state}\"},\"dns_valid\":${dns_valid},\"dns_proxied\":${dns_proxied},\"nginx_applied\":${nginx_applied},\"seats\":[${items}]"
       else
         {
           printf 'Routing mode:    %s\n' "$FLEET_ROUTING_MODE"
@@ -9017,7 +9092,7 @@ fleet_routing() {
       _fleet_record_update "$routing_env" "NGINX_APPLIED=true" "CHECKED_AT=$(_fleet_now)"
       _fleet_unlock
       if (( FLEET_JSON )); then
-        _fleet_emit "{\"ok\":true,\"nginx_applied\":true,\"affected_allocations\":${active_count}}"
+        _fleet_json_ok "\"nginx_applied\":true,\"affected_allocations\":${active_count}"
       else
         _fleet_info "Fleet routing applied atomically (affected active allocations: ${active_count})."
       fi
@@ -9042,7 +9117,7 @@ fleet_help() {
     printf '\n'
     printf '%b\n' "${BOLD}Commands${NC}"
     printf '  fleet init [options]        Initialize/expand the seat pool and routing.\n'
-    printf '  fleet acquire [--json]      Allocate a seat; returns allocation_id + login_url.\n'
+    printf '  fleet acquire [--json]      Allocate a seat; returns allocation details + login URL.\n'
     printf '  fleet release <id> [--force] Return a seat to the pool (clean-slate).\n'
     printf '  fleet list [--json] [--all] List active allocations.\n'
     printf '  fleet status [<id>]         Fleet summary or one allocation in depth.\n'
@@ -9063,6 +9138,11 @@ fleet_help() {
     printf '  --interval <seconds>        Delay between monitor passes (default %s).\n' "$FLEET_REAP_INTERVAL_SECS"
     printf '  --grace <seconds>           Required continuously-down window (default %s).\n' "$FLEET_REAP_GRACE_SECS"
     printf '\n'
+    printf '%b\n' "${BOLD}JSON options${NC}"
+    printf '  --json-schema <1|2>         Select response schema (default: 1).\n'
+    printf '                              Schema 2 uses one allocation object for acquire,\n'
+    printf '                              list, and status; unavailable values are null.\n'
+    printf '\n'
     printf '%b\n' "${BOLD}Routing${NC}"
     printf '  subdomain (production): every seat is served through port 443 under a\n'
     printf '  stable per-seat hostname (wildcard DNS *.domain + wildcard TLS cert\n'
@@ -9072,9 +9152,9 @@ fleet_help() {
     printf '  deployments, or behind another routing layer).\n'
     printf '\n'
     printf '%b\n' "${BOLD}Integration example${NC}"
-    printf '  session_json="$(sudo -n bbx fleet acquire --json)"\n'
-    printf '  allocation_id="$(jq -r .allocation_id <<<"$session_json")"\n'
-    printf '  login_url="$(jq -r .login_url <<<"$session_json")"\n'
+    printf '  session_json="$(sudo -n bbx fleet acquire --json --json-schema 2)"\n'
+    printf '  allocation_id="$(jq -r .allocation.id <<<"$session_json")"\n'
+    printf '  login_url="$(jq -r .allocation.login_url <<<"$session_json")"\n'
     printf '  # redirect the authenticated user to $login_url ...\n'
     printf '  sudo -n bbx fleet release "$allocation_id"\n'
     printf '\n'
@@ -9108,6 +9188,28 @@ fleet_main() {
   if (( FLEET_JSON )); then
     exec {_FLEET_STDOUT_FD}>&1
     exec 1>&2
+  fi
+
+  FLEET_JSON_SCHEMA="${BBX_FLEET_JSON_SCHEMA:-1}"
+  local -a fleet_args=()
+  while (( $# )); do
+    case "$1" in
+      --json-schema)
+        [[ -n "${2:-}" ]] || _fleet_fail fleet_invalid_config "--json-schema requires 1 or 2."
+        FLEET_JSON_SCHEMA="$2"
+        shift 2
+        ;;
+      --json-schema=*)
+        FLEET_JSON_SCHEMA="${1#--json-schema=}"
+        shift
+        ;;
+      *) fleet_args+=("$1"); shift ;;
+    esac
+  done
+  set -- "${fleet_args[@]}"
+  if [[ "$FLEET_JSON_SCHEMA" != "1" && "$FLEET_JSON_SCHEMA" != "2" ]]; then
+    FLEET_JSON_SCHEMA=1
+    _fleet_fail fleet_invalid_config "Fleet JSON schema must be 1 or 2."
   fi
 
   case "$sub" in
@@ -9713,9 +9815,19 @@ show_policy_footer() {
     local desc=""
     
     # Check if browserbox supports policy command
-    if command -v browserbox >/dev/null 2>&1; then
+    if command -v bbpolicy >/dev/null 2>&1 || command -v browserbox >/dev/null 2>&1; then
       local policy_output
-      policy_output=$(browserbox policy get 2>&1)
+      if _bbx_for_active; then
+        if command -v bbpolicy >/dev/null 2>&1; then
+          policy_output=$(_tu_run bbpolicy show 2>&1)
+        else
+          policy_output=$(_tu_run browserbox policy show 2>&1)
+        fi
+      elif command -v bbpolicy >/dev/null 2>&1; then
+        policy_output=$(bbpolicy show 2>&1)
+      else
+        policy_output=$(browserbox policy show 2>&1)
+      fi
       
       if echo "$policy_output" | grep -q "Unknown command\|not found\|unavailable"; then
         # Policy not supported in this version
@@ -9758,8 +9870,94 @@ show_policy_footer() {
     fi
     
     printf "\n"
-    printf "  ${color}■${NC} Policy: ${color}${label}${NC} — ${desc}\n"
+    local policy_principal="${BBX_FOR_USER:-$(id -un)}"
+    printf "  ${color}■${NC} Policy for ${BOLD}%s${NC}: ${color}${label}${NC} — ${desc}\n" "$policy_principal"
     printf "    Run ${BOLD}bbx policy${NC} to view or change what's allowed.\n\n"
+}
+
+# Override: AR-R4 — The 4000-Line File
+# Reason: bbx.sh is the shipped standalone Unix CLI and already owns sudo and
+#         --for principal switching; scoped policy dispatch must cross that
+#         boundary without adding a parallel launcher.
+# Risk: Adds policy-specific routing to an already oversized shell file.
+# Mitigation: Keep only argument/principal routing here; policy storage,
+#             resolution, validation, and enforcement remain in focused JS
+#             modules with direct tests.
+_policy_scope_arg() {
+  local previous="" arg
+  for arg in "$@"; do
+    if [[ "$previous" == "--scope" ]]; then
+      printf '%s' "$arg"
+      return 0
+    fi
+    case "$arg" in
+      --scope=*) printf '%s' "${arg#--scope=}"; return 0 ;;
+    esac
+    previous="$arg"
+  done
+  printf 'user'
+}
+
+_run_policy_cli() {
+  local -a policy_command=()
+  if command -v bbpolicy >/dev/null 2>&1; then
+    policy_command=("$(command -v bbpolicy)")
+  elif command -v browserbox >/dev/null 2>&1; then
+    policy_command=("$(command -v browserbox)" policy)
+  else
+    printf "${RED}Policy command unavailable: install BrowserBox first.${NC}\n"
+    return 1
+  fi
+
+  local scope subcommand
+  scope="$(_policy_scope_arg "$@")"
+  subcommand="${1:-help}"
+
+  if _bbx_for_active; then
+    if [[ "$scope" == "global" ]]; then
+      printf "${RED}Error: --for cannot be combined with --scope global; global policy is not user-owned.${NC}\n"
+      return 1
+    fi
+
+    # A policy file commonly lives in the operator's private home. Stream it
+    # to the target CLI so user-scoped set/validate does not depend on the
+    # target account being able to read the operator's path.
+    if [[ "$subcommand" == "set" || "$subcommand" == "validate" ]]; then
+      local -a delegated_args=("$@")
+      local source_file="" index
+      for (( index=0; index < ${#delegated_args[@]}; index++ )); do
+        if [[ "${delegated_args[$index]}" == "--file" || "${delegated_args[$index]}" == "-f" ]]; then
+          source_file="${delegated_args[$((index + 1))]:-}"
+          if [[ -n "$source_file" && "$source_file" != "-" ]]; then
+            [[ -r "$source_file" ]] || {
+              printf "${RED}Error: policy source is not readable: %s${NC}\n" "$source_file"
+              return 1
+            }
+            delegated_args[$((index + 1))]="-"
+            _tu_run "${policy_command[@]}" "${delegated_args[@]}" < "$source_file"
+            return $?
+          fi
+          break
+        fi
+      done
+    fi
+    _tu_run "${policy_command[@]}" "$@"
+    return $?
+  fi
+
+  case "$subcommand:$scope" in
+    init:global|reset:global|set:global)
+      if (( EUID == 0 )); then
+        "${policy_command[@]}" "$@"
+      elif [[ -n "$SUDO" ]]; then
+        $SUDO env "PATH=${BBX_DELEGATE_PATH_PREFIX:-/usr/local/bin:/usr/bin:/bin}" \
+          "${policy_command[@]}" "$@"
+      else
+        "${policy_command[@]}" "$@"
+      fi
+      ;;
+    *) "${policy_command[@]}" "$@" ;;
+  esac
 }
 
 faq() {
@@ -9941,6 +10139,17 @@ if _needs_chrome "${1:-}"; then
   fi
 fi
 
+if _bbx_for_active; then
+  case "${1:-}" in
+    setup|run|start|stop|status|ng-run|ng-start|policy) ;;
+    *)
+      printf "${RED}Error: --for is not supported by command '%s'.${NC}\n" "${1:-}"
+      printf "  Supported: setup, start, stop, status, ng-start, policy.\n"
+      exit 1
+      ;;
+  esac
+fi
+
 case "$1" in
     install)
       printf "${YELLOW}Installation now uses the standalone installer:${NC}\n"
@@ -9982,14 +10191,8 @@ case "$1" in
     win9x-run|win9x-start) shift 1; banner_color=$YELLOW; win9x_run "$@";;
     policy)
       shift 1
-      if command -v bbpolicy >/dev/null 2>&1; then
-        bbpolicy "$@"
-      elif command -v browserbox >/dev/null 2>&1; then
-        browserbox policy "$@"
-      else
-        printf "${RED}Policy command unavailable: install BrowserBox first.${NC}\n"
-        exit 1
-      fi
+      BBX_SKIP_POLICY_FOOTER=1
+      _run_policy_cli "$@" || exit $?
       ;;
     --version|-v) shift 1; version "$@";;
     --help|-h) shift 1; usage "$@";;
