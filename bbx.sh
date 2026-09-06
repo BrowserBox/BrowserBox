@@ -5198,6 +5198,30 @@ status() {
     fi
 }
 
+_bbx_license_request() {
+    local request_path="$1" request_method="$2" request_body="${3:-null}"
+    local request_json="" command_rc=1 restore_xtrace=0
+
+    if ! command -v browserbox >/dev/null 2>&1; then
+        printf '%b\n' "${RED}BrowserBox binary is required for licensing requests.${NC}" >&2
+        return 127
+    fi
+
+    case "$-" in
+      *x*) restore_xtrace=1; set +x ;;
+    esac
+    request_json="$(printf '%s' "$request_body" | LICENSE_KEY="$LICENSE_KEY" jq -c \
+        --arg path "$request_path" --arg method "$request_method" \
+        '{path:$path, method:$method, body:., licenseKey:env.LICENSE_KEY}')" || {
+        (( restore_xtrace )) && set -x
+        return 1
+    }
+    printf '%s' "$request_json" | browserbox license-request
+    command_rc=${PIPESTATUS[1]}
+    (( restore_xtrace )) && set -x
+    return "$command_rc"
+}
+
 vacancy() {
     load_config
 
@@ -5213,11 +5237,8 @@ vacancy() {
     fi
 
     local api_server="${BBX_LICENSE_SERVER_URL:-https://master.dosaygo.com}"
-    local occupancy_url="${api_server}/v1/occupancy"
-    local snapshot_url="${api_server}/v1/vacant-seat?reserve=0"
     local response=""
-    local status=""
-    local curl_rc=0
+    local request_rc=0
     local reservation_code=""
     local reserved_seat_id=""
     local ticket_id=""
@@ -5240,16 +5261,8 @@ vacancy() {
         ticket_slot="${BBX_TICKET_SLOT:-}"
     fi
 
-    response=$(curl -sS --connect-timeout 7 --max-time 15 \
-        -H "Authorization: Bearer ${LICENSE_KEY}" \
-        -w $'\n%{http_code}' \
-        "$occupancy_url") || curl_rc=$?
-
-    if [[ "$curl_rc" -eq 0 ]]; then
-        status="${response##*$'\n'}"
-        response="${response%$'\n'*}"
-
-        if [[ "$status" == "200" ]] && printf '%s' "$response" | jq empty >/dev/null 2>&1; then
+    if response="$(_bbx_license_request '/v1/occupancy' GET)"; then
+        if printf '%s' "$response" | jq empty >/dev/null 2>&1; then
             source_mode="occupancy-summary"
             detail_level=$(printf '%s' "$response" | jq -r '.detailLevel // "summary"')
             seats_total=$(printf '%s' "$response" | jq -r '.occupancy.totals.seatsTotal // 0')
@@ -5295,13 +5308,11 @@ vacancy() {
         fi
     fi
 
-    response=$(curl -sS --connect-timeout 7 --max-time 15 \
-        -H "Authorization: Bearer ${LICENSE_KEY}" \
-        "$snapshot_url") || curl_rc=$?
+    response="$(_bbx_license_request '/v1/vacant-seat?reserve=0' GET)" || request_rc=$?
 
-    if [[ "$curl_rc" -ne 0 ]]; then
+    if [[ "$request_rc" -ne 0 ]]; then
         printf '%b\n' "${RED}Failed to query license server occupancy or vacancy snapshot.${NC}"
-        exit "$curl_rc"
+        exit "$request_rc"
     fi
 
     if ! printf '%s' "$response" | jq empty >/dev/null 2>&1; then
@@ -8412,11 +8423,10 @@ fleet_list() {
 
 _fleet_vacancy_advisory() {
   # Advisory license-vacancy snapshot; never authoritative, never fatal.
-  local api="${BBX_LICENSE_SERVER_URL:-https://master.dosaygo.com}"
   [[ -n "${LICENSE_KEY:-}" ]] || { printf 'unavailable'; return; }
   command -v jq >/dev/null 2>&1 || { printf 'unavailable'; return; }
   local resp free
-  resp="$(curl -sS --connect-timeout 4 --max-time 8 -H "Authorization: Bearer ${LICENSE_KEY}" "${api}/v1/occupancy" 2>/dev/null || true)"
+  resp="$(_bbx_license_request '/v1/occupancy' GET 2>/dev/null || true)"
   free="$(printf '%s' "$resp" | jq -r '.occupancy.totals.freeNow // empty' 2>/dev/null || true)"
   if [[ "$free" =~ ^[0-9]+$ ]]; then printf '%s' "$free"; else printf 'unavailable'; fi
 }
@@ -10201,6 +10211,6 @@ case "$1" in
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
 
-# Always show policy status footer (except for fleet, whose JSON
-# stdout must stay clean and whose paths are non-interactive)
-[[ -n "${BBX_SKIP_POLICY_FOOTER:-}" ]] || show_policy_footer
+# Always show policy status footer (except for fleet, whose paths are
+# non-interactive). Policy status is advisory, so keep command stdout clean.
+[[ -n "${BBX_SKIP_POLICY_FOOTER:-}" ]] || show_policy_footer >&2
