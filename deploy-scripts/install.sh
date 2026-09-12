@@ -565,6 +565,7 @@ require_tool_or_python() {
 # Ensure base tools are present or installed
 require_cmd curl
 require_cmd openssl
+require_cmd unzip
 
 # jq: Try to install 'jq'. If fail, ensure 'python3' is available.
 require_tool_or_python jq jq

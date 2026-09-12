@@ -8,9 +8,9 @@ $global:LASTEXITCODE = 0
 
 if ($env:BBX_DEBUG_CLI -and $env:BBX_DEBUG_CLI -ne "0" -and $env:BBX_DEBUG_CLI.ToLowerInvariant() -ne "false") {
     try {
-        Write-Host "[bbx] PSVersion: $($PSVersionTable.PSVersion)" -ForegroundColor DarkGray
+        [Console]::Error.WriteLine("[bbx] PSVersion: $($PSVersionTable.PSVersion)")
     } catch { }
-    Write-Host "[bbx] Script: $($MyInvocation.MyCommand.Path)" -ForegroundColor DarkGray
+    [Console]::Error.WriteLine("[bbx] Script: $($MyInvocation.MyCommand.Path)")
 }
 
 # Configuration
@@ -283,14 +283,9 @@ function Get-SemverFromText {
 # Function to get binary version
 function Get-BinaryVersion {
     if (Test-BinaryExists) {
-        try {
-            $output = & $script:ResolvedBinaryPath "--version" 2>$null | Out-String
-            $semver = Get-SemverFromText -Text $output
-            if ($semver) { return $semver } else { return "unknown" }
-        }
-        catch {
-            return "unknown"
-        }
+        $version = Get-LocalBinaryVersion
+        if ($version) { return $version }
+        return "unknown"
     }
     return "not_installed"
 }
@@ -435,7 +430,7 @@ function Start-BrowserBoxMainDetached {
     if ($cfg.ContainsKey("LICENSE_KEY") -and -not $env:LICENSE_KEY) { $env:LICENSE_KEY = $cfg["LICENSE_KEY"] }
     if ($cfg.ContainsKey("DOMAIN")) { $env:BBX_HOSTNAME = $cfg["DOMAIN"] }
 
-    Write-Verbose "Starting BrowserBox main detached (port=$appPort token=$loginToken)..."
+    Write-Verbose "Starting BrowserBox main detached (port=$appPort)..."
     $proc = Start-Process -FilePath $script:ResolvedBinaryPath -ArgumentList @("main") -NoNewWindow -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
     $proc.Id | Out-File $pidFile -Encoding ascii -Force
 
@@ -453,10 +448,10 @@ function Stop-BrowserBoxMain {
 
     if ($appPort -and $loginToken -and (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
         try {
-            $null = & curl.exe -k -sS -o NUL -X POST "https://localhost:${appPort}/api/v15/stop_app?session_token=${loginToken}"
+            $null = & curl.exe -k -sS --max-time 5 -o NUL -X POST "https://localhost:${appPort}/stop_app?session_token=${loginToken}"
         } catch { }
         try {
-            $null = & curl.exe -sS -o NUL -X POST "http://localhost:${appPort}/api/v15/stop_app?session_token=${loginToken}"
+            $null = & curl.exe -sS --max-time 5 -o NUL -X POST "http://localhost:${appPort}/stop_app?session_token=${loginToken}"
         } catch { }
     }
 
@@ -477,6 +472,110 @@ function Stop-BrowserBoxMain {
     }
 
     if (Test-Path $pidFile) { Remove-Item $pidFile -Force -ErrorAction SilentlyContinue }
+}
+
+# The GUI consumes these three contracts on every platform. Keep this wrapper
+# authoritative for Windows lifecycle facts instead of making the GUI inspect
+# processes, config files, or PowerShell scripts itself.
+function Get-BbxHelpCatalogue {
+    $flag = { param($name, $flag) [ordered]@{ name=$name; flag=$flag; type="flag"; required=$false; choices=@(); description="" } }
+    $text = { param($name, $flag, $required=$false, $choices=@()) [ordered]@{ name=$name; flag=$flag; type="text"; required=[bool]$required; choices=@($choices); description="" } }
+    $command = {
+        param($path, $name, $group, $description, $fields=@(), $confirm=$false, $note="")
+        [ordered]@{ path=@($path); name=$name; group=$group; description=$description;
+            fields=@($fields); aliases=@(); confirm=[bool]$confirm; platform="windows"; note=$note }
+    }
+
+    $commands = @(
+        & $command @("status") "status" "Instance" "Read current service and endpoint status." @(& $flag "json" "--json")
+        & $command @("setup") "setup" "Instance" "Configure BrowserBox for this Windows user." @(& $text "hostname" "--hostname"; & $text "port" "--port")
+        & $command @("start") "start" "Instance" "Start BrowserBox services." @(& $text "hostname" "--hostname"; & $text "port" "--port")
+        & $command @("stop") "stop" "Instance" "Stop BrowserBox services." @() $true
+        & $command @("install") "install" "Lifecycle" "Install BrowserBox." @() $true
+        & $command @("update") "update" "Lifecycle" "Update BrowserBox." @() $true
+        & $command @("certify") "certify" "License" "Validate the BrowserBox license." @()
+        & $command @("revalidate") "revalidate" "License" "Clear the local ticket and validate again." @() $true
+        & $command @("uninstall") "uninstall" "Lifecycle" "Remove BrowserBox from this machine." @() $true
+        & $command @("policy","where") "policy where" "Policy" "Locate the policy bundle." @(& $text "scope" "--scope" $false @("user","global"); & $flag "json" "--json")
+        & $command @("policy","baselines") "policy baselines" "Policy" "List available policy baselines." @()
+        & $command @("policy","controls") "policy controls" "Policy" "List policy controls." @(& $flag "json" "--json")
+        & $command @("policy","show") "policy show" "Policy" "Show the policy bundle." @(& $text "scope" "--scope" $false @("user","global"))
+        & $command @("policy","resolve") "policy resolve" "Policy" "Resolve the effective policy." @()
+        & $command @("policy","check") "policy check" "Policy" "Evaluate an action against policy." @(& $text "action" "--action" $true; & $text "url" "--url"; & $text "source" "--source")
+        & $command @("policy","trace") "policy trace" "Policy" "Show recent policy decisions." @(& $text "last" "--last")
+        & $command @("policy","validate") "policy validate" "Policy" "Validate a policy file or the current policy." @(& $text "scope" "--scope" $false @("user","global"); & $text "file" "--file")
+        & $command @("policy","set") "policy set" "Policy" "Install a policy bundle from JSON." @(& $text "scope" "--scope" $false @("user","global"); & $text "file" "--file" $true) $true
+        & $command @("policy","reset") "policy reset" "Policy" "Reset the policy bundle." @(& $text "scope" "--scope" $false @("user","global"); & $text "baseline" "--baseline" $false @("regulated","compat")) $true
+        & $command @("--help-json") "--help-json" "Help" "Show the machine-readable command catalogue." @(& $text "out" "--out")
+    )
+    return [ordered]@{ schema="bbx.help/1"; commands=$commands }
+}
+
+function Write-BbxHelpCatalogue {
+    param([string[]]$ArgList)
+    $json = Get-BbxHelpCatalogue | ConvertTo-Json -Depth 8 -Compress
+    if (-not $ArgList -or $ArgList.Count -eq 0) { [Console]::Out.WriteLine($json); return 0 }
+    if ($ArgList.Count -ne 2 -or $ArgList[0] -ne "--out" -or -not [IO.Path]::IsPathRooted($ArgList[1])) {
+        [Console]::Error.WriteLine("usage: bbx --help-json [--out C:\absolute\new\file]")
+        return 2
+    }
+    try {
+        $stream = [IO.File]::Open($ArgList[1], [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        $writer = New-Object IO.StreamWriter($stream, (New-Object Text.UTF8Encoding($false)))
+        $writer.WriteLine($json); $writer.Dispose()
+        return 0
+    } catch {
+        [Console]::Error.WriteLine("bbx: cannot create help output: $($_.Exception.Message)")
+        return 2
+    }
+}
+
+function Test-BbxLocalEndpoint {
+    param([string]$Scheme, [int]$Port)
+    $request = New-Object -ComObject WinHttp.WinHttpRequest.5.1
+    try {
+        $request.SetTimeouts(2000, 2000, 2000, 2000)
+        $request.Open('GET', "${Scheme}://localhost:$Port/", $false)
+        # Only the loopback probe accepts the locally generated certificate.
+        $request.Option(4) = 13056
+        $request.Option(6) = $false
+        $request.Send()
+        return $request.Status -ge 100
+    } catch [System.Runtime.InteropServices.COMException] {
+        # Connection refusal, TLS mismatch and deadline expiry mean no endpoint.
+        return $false
+    } finally {
+        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($request)
+    }
+}
+
+function Get-BbxStatus {
+    $userRoot = if ($env:USERPROFILE) { $env:USERPROFILE } else { [Environment]::GetFolderPath("UserProfile") }
+    $cfgDir = Join-Path $userRoot ".config\dosaygo\bbpro"
+    $cfg = Read-TestEnv -Path (Join-Path $cfgDir "test.env")
+    $hostname = if ($cfg.ContainsKey("DOMAIN")) { [string]$cfg["DOMAIN"] } else { "localhost" }
+    $port = if ($cfg.ContainsKey("APP_PORT")) { [int]$cfg["APP_PORT"] } else { $null }
+    $running = $false
+    $detection = "none"
+    $pidFile = Join-Path $cfgDir "browserbox-main.pid"
+    if (Test-Path $pidFile) {
+        $pidValue = 0
+        $rawPid = (Get-Content $pidFile -ErrorAction SilentlyContinue | Out-String).Trim()
+        if ([int]::TryParse($rawPid, [ref]$pidValue) -and (Get-Process -Id $pidValue -ErrorAction SilentlyContinue)) {
+            $running = $true; $detection = "process"
+        }
+    }
+    $scheme = "https"
+    if ($port) {
+        if (Test-BbxLocalEndpoint -Scheme https -Port $port) {
+            $running = $true; $detection = "endpoint"
+        } elseif (Test-BbxLocalEndpoint -Scheme http -Port $port) {
+            $running = $true; $detection = "endpoint"; $scheme = "http"
+        }
+    }
+    $version = Get-LocalBinaryVersion
+    return [ordered]@{ ok=$true; running=$running; detection=$detection; hostname=$hostname;
+        scheme=$scheme; main_port=$port; version=$version; audio=[ordered]@{ state=$null; detail=$null } }
 }
 
 # Function to check for updates
@@ -598,15 +697,18 @@ function Show-Help {
     Write-Host "  install         Install BrowserBox binary and CLI" -ForegroundColor White
     Write-Host "  update          Update BrowserBox to the latest version" -ForegroundColor White
     Write-Host "  setup           Create/update test.env + login.link" -ForegroundColor White
-    Write-Host "  run             Start BrowserBox services (pm2-managed)" -ForegroundColor White
+    Write-Host "  start, run      Start BrowserBox services (pm2-managed)" -ForegroundColor White
     Write-Host "  stop            Stop BrowserBox services (best-effort)" -ForegroundColor White
+    Write-Host "  status          Read process/endpoint state (--json supported)" -ForegroundColor White
+    Write-Host "  policy          Dispatch policy read, check and mutation commands" -ForegroundColor White
     Write-Host "  certify         Validate license and obtain ticket" -ForegroundColor White
     Write-Host "  uninstall       Remove BrowserBox from this machine" -ForegroundColor White
     Write-Host "  revalidate      Clear ticket and revalidate license" -ForegroundColor White
     Write-Host "  --version, -v   Show version information" -ForegroundColor White
     Write-Host "  --help, -h      Show this help message" -ForegroundColor White
+    Write-Host "  --help-json     Show the GUI command catalogue" -ForegroundColor White
     Write-Host ""
-    Write-Host "All other commands are passed through to the browserbox binary." -ForegroundColor Gray
+    Write-Host "Recognized binary commands are passed through; unknown or unsupported commands exit 2." -ForegroundColor Gray
     Write-Host "Run 'browserbox --help' after installation for full command list." -ForegroundColor Gray
     Write-Host "Run 'bbx <command> -help' for command-specific options." -ForegroundColor Gray
 }
@@ -773,12 +875,27 @@ function Invoke-CommandScript {
 function Get-LocalBinaryVersion {
     $path = Resolve-BrowserBoxBinary
     if (-not $path) { return $null }
+    # SEA PE metadata identifies Node, not BrowserBox. Read the app's version
+    # contract without letting native stderr terminate PowerShell 5.1 callers.
+    $process = New-Object System.Diagnostics.Process
     try {
-        $info = (Get-Item $path -ErrorAction Stop).VersionInfo
-        if ($info -and $info.ProductVersion) { return $info.ProductVersion }
-        if ($info -and $info.FileVersion) { return $info.FileVersion }
-    } catch { }
-    return $null
+        $process.StartInfo.FileName = $path
+        $process.StartInfo.Arguments = '--version'
+        $process.StartInfo.UseShellExecute = $false
+        $process.StartInfo.CreateNoWindow = $true
+        $process.StartInfo.RedirectStandardOutput = $true
+        $process.StartInfo.RedirectStandardError = $true
+        [void]$process.Start()
+        $stdout = $process.StandardOutput.ReadToEndAsync()
+        $stderr = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(5000)) {
+            $process.Kill()
+            return $null
+        }
+        if ($process.ExitCode -ne 0) { return $null }
+        return Get-SemverFromText -Text $stdout.GetAwaiter().GetResult()
+    } catch { return $null }
+    finally { $process.Dispose() }
 }
 
 # Main execution logic (argv-driven; do not let PowerShell bind subcommand options to this wrapper)
@@ -795,14 +912,73 @@ if ($argv.Count -gt 1) { $CommandArgs = @($argv[1..($argv.Count - 1)]) }
 $CommandArgs = Normalize-CommandArgs -ArgList $CommandArgs
 $normalizedCommand = $Command.ToLowerInvariant()
 
+# Reject typos and unsupported platform commands before update/install checks.
+# Keep explicit binary entrypoints available for diagnostics and service helpers.
+$binaryCommands = @(
+    'main', 'audio', 'docs', 'devtools', 'pm2', 'pm2-guard', 'policy',
+    'flipbook-finalize', 'flipbook-generate', 'chrome-cleanup',
+    'uuid', 'device-id', 'sign-ed25519', 'verify-rsa-sha256', 'license-request',
+    '--install', '--full-install', '--uninstall', '--version', '--help'
+)
+$wrapperCommands = @(
+    'status', 'revalidate', '--help-json', '--output-log',
+    '--help', '-help', 'help', '-h', '--version', '-v', 'version'
+)
+if (-not $ScriptMap.ContainsKey($normalizedCommand) -and
+    $normalizedCommand -notin $wrapperCommands -and
+    $normalizedCommand -notin $binaryCommands) {
+    [Console]::Error.WriteLine("bbx: unknown or unsupported command '$Command' on Windows. Run 'bbx --help' for supported commands.")
+    exit 2
+}
+
 if ($env:BBX_DEBUG_CLI -and $env:BBX_DEBUG_CLI -ne "0" -and $env:BBX_DEBUG_CLI.ToLowerInvariant() -ne "false") {
-    Write-Host "[bbx] Command: $Command" -ForegroundColor DarkGray
-    Write-Host "[bbx] Args: $($CommandArgs -join ' | ')" -ForegroundColor DarkGray
-    Write-Host "[bbx] Normalized: $normalizedCommand" -ForegroundColor DarkGray
+    [Console]::Error.WriteLine("[bbx] Command: $Command")
+    [Console]::Error.WriteLine("[bbx] Argument count: $($CommandArgs.Count)")
+    [Console]::Error.WriteLine("[bbx] Normalized: $normalizedCommand")
 }
 
 if (-not $Command -or $normalizedCommand -in @("--help","-help","help","-h")) {
     Show-Help
+    exit 0
+}
+
+if ($normalizedCommand -eq "--output-log") {
+    if ($CommandArgs.Count -lt 3 -or -not [IO.Path]::IsPathRooted($CommandArgs[0]) -or $CommandArgs[1] -ne "--") {
+        [Console]::Error.WriteLine("usage: bbx --output-log C:\absolute\new\log -- command [args...]")
+        exit 2
+    }
+    $logPath = $CommandArgs[0]
+    try {
+        $created = [IO.File]::Open($logPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+    } catch {
+        [Console]::Error.WriteLine("bbx: cannot create output log: $($_.Exception.Message)")
+        exit 2
+    }
+    $inner = @($CommandArgs[2..($CommandArgs.Count - 1)])
+    # One encoding on both PS5 and PS7; PS5 redirection otherwise writes UTF-16.
+    # Retain the create-new handle and flush each observation for the GUI tail.
+    $writer = New-Object IO.StreamWriter($created, (New-Object Text.UTF8Encoding($false)))
+    try {
+        & $PSCommandPath @inner *>&1 | ForEach-Object { $writer.WriteLine($_.ToString()); $writer.Flush() }
+        $commandExit = $LASTEXITCODE
+    } finally { $writer.Dispose() }
+    exit $commandExit
+}
+
+if ($normalizedCommand -eq "--help-json") {
+    $rc = Write-BbxHelpCatalogue -ArgList $CommandArgs
+    exit $rc
+}
+
+if ($normalizedCommand -eq "status") {
+    $status = Get-BbxStatus
+    if ($CommandArgs -contains "--json") {
+        $status | ConvertTo-Json -Depth 4 -Compress
+    } else {
+        $word = if ($status.running) { "running" } else { "not running" }
+        Write-Host "BrowserBox is $word ($($status.detection))."
+        if ($status.main_port) { Write-Host "$($status.scheme)://$($status.hostname):$($status.main_port)" }
+    }
     exit 0
 }
 

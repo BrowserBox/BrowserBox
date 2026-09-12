@@ -9,6 +9,101 @@
 # 
 ##########################################################
 
+# Machine discovery runs before agreement, update, config, and service probes.
+# Keep the catalogue in this standalone script so installed bbx has the same API.
+_bbx_help_json() {
+  cat <<'BBX_HELP_JSON'
+{"schema":"bbx.help/1","name":"bbx","commands":[
+{"path":["status"],"name":"status","group":"Instance","description":"Read current service, endpoint, and audio status.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"out","flag":"--out","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["start"],"name":"start","group":"Instance","description":"Start BrowserBox for the current or selected user.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["run"],"confirm":false,"platform":"all","note":""},
+{"path":["stop"],"name":"stop","group":"Instance","description":"Stop the current or selected BrowserBox instance.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["restart"],"name":"restart","group":"Instance","description":"Restart BrowserBox using the current configuration type.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["logs"],"name":"logs","group":"Instance","description":"Show service process information and log instructions.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["setup"],"name":"setup","group":"Setup","description":"Configure ports, hostname, transport, token and recording.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"token","flag":"--token","type":"secret","required":false,"choices":[],"description":""},{"name":"backend","flag":"--backend","type":"text","required":false,"choices":["http","https"],"description":""},{"name":"zeta","flag":"--zeta","type":"flag","required":false,"choices":[],"description":""},{"name":"http-only","flag":"--http-only","type":"flag","required":false,"choices":[],"description":""},{"name":"flipbook-record","flag":"--flipbook-record","type":"text","required":false,"choices":[],"description":""},{"name":"flipbook-description","flag":"--flipbook-description","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["activate"],"name":"activate","group":"Setup","description":"Activate a license for the requested number of users.","fields":[{"name":"number_of_users","flag":"","type":"integer","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":"May ask questions in the launching terminal."},
+{"path":["certify"],"name":"certify","group":"Setup","description":"Validate the current license.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["vacancy"],"name":"vacancy","group":"Setup","description":"Read the current license vacancy snapshot.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["use-chrome"],"name":"use-chrome","group":"Setup","description":"Install and select a Chrome-family browser.","fields":[{"name":"version_or_url","flag":"","type":"text","required":true,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["update"],"name":"update","group":"Maintenance","description":"Install a BrowserBox version or latest release candidate.","fields":[{"name":"version","flag":"","type":"text","required":false,"choices":[],"description":""},{"name":"latest-rc","flag":"--latest-rc","type":"flag","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":"BBX_NO_UPDATE also disables explicit updates. Clear it deliberately outside the development session to enable updates."},
+{"path":["update-background"],"name":"update-background","group":"Maintenance","description":"Check for an update in the background.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":"Disabled when BBX_NO_UPDATE is set."},
+{"path":["uninstall"],"name":"uninstall","group":"Maintenance","description":"Remove all BrowserBox components.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":"May require terminal input and administrator privileges."},
+{"path":["install"],"name":"install","group":"Maintenance","description":"Display the standalone installation instructions.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["start-as"],"name":"start-as","group":"Users","description":"Start an instance owned by another OS user.","fields":[{"name":"username","flag":"","type":"text","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"temporary","flag":"--temporary","type":"flag","required":false,"choices":[],"description":""}],"aliases":["run-as"],"confirm":false,"platform":"linux","note":""},
+{"path":["stop-user"],"name":"stop-user","group":"Users","description":"Stop an instance for a specific OS user.","fields":[{"name":"username","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"delay_seconds","flag":"","type":"integer","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["cf-start"],"name":"cf-start","group":"Tunnels","description":"Run through a Cloudflare tunnel.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"background","flag":"--background","type":"flag","required":false,"choices":[],"description":""}],"aliases":["cf-run"],"confirm":false,"platform":"all","note":""},
+{"path":["zt-start"],"name":"zt-start","group":"Tunnels","description":"Run on a ZeroTier network.","fields":[{"name":"network-id","flag":"--network-id","type":"text","required":true,"choices":[],"description":"The 16-character ZeroTier network ID."}],"aliases":["zt-run"],"confirm":false,"platform":"all","note":""},
+{"path":["tor-start"],"name":"tor-start","group":"Tunnels","description":"Run with Tor routing or an onion service.","fields":[{"name":"anonymize","flag":"--anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"clearnet-only","flag":"--clearnet-only","type":"flag","required":false,"choices":[],"description":""},{"name":"no-darkweb","flag":"--no-darkweb","type":"flag","required":false,"choices":[],"description":""},{"name":"no-anonymize","flag":"--no-anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"onion","flag":"--onion","type":"flag","required":false,"choices":[],"description":""},{"name":"no-onion","flag":"--no-onion","type":"flag","required":false,"choices":[],"description":""}],"aliases":["tor-run"],"confirm":false,"platform":"all","note":""},
+{"path":["ng-start"],"name":"ng-start","group":"Tunnels","description":"Proxy BrowserBox through Nginx.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["ng-run"],"confirm":false,"platform":"all","note":""},
+{"path":["ng-config","print"],"name":"ng-config print","group":"Tunnels","description":"Print external Nginx configuration.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["ng-config","validate"],"name":"ng-config validate","group":"Tunnels","description":"Validate external Nginx configuration.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["ng-config","apply"],"name":"ng-config apply","group":"Tunnels","description":"Apply external Nginx configuration.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["win9x-start"],"name":"win9x-start","group":"Tunnels","description":"Start Windows 9x compatibility mode.","fields":[],"aliases":["win9x-run"],"confirm":false,"platform":"all","note":""},
+{"path":["fleet","init"],"name":"fleet init","group":"Fleet","description":"Initialize the seat pool and routing.","fields":[{"name":"size","flag":"--size","type":"integer","required":false,"choices":[],"description":""},{"name":"user-width","flag":"--user-width","type":"integer","required":false,"choices":[],"description":""},{"name":"port-start","flag":"--port-start","type":"integer","required":false,"choices":[],"description":""},{"name":"port-end","flag":"--port-end","type":"integer","required":false,"choices":[],"description":""},{"name":"user-prefix","flag":"--user-prefix","type":"text","required":false,"choices":[],"description":""},{"name":"domain","flag":"--domain","type":"text","required":false,"choices":[],"description":""},{"name":"routing","flag":"--routing","type":"text","required":false,"choices":["subdomain","direct-port"],"description":""},{"name":"subdomain-mode","flag":"--subdomain-mode","type":"text","required":false,"choices":["port","seat","random"],"description":""},{"name":"backend","flag":"--backend","type":"text","required":false,"choices":["http","https"],"description":""},{"name":"cert-file","flag":"--cert-file","type":"text","required":false,"choices":[],"description":""},{"name":"key-file","flag":"--key-file","type":"text","required":false,"choices":[],"description":""},{"name":"allow-proxied-domain","flag":"--allow-proxied-domain","type":"flag","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","acquire"],"name":"fleet acquire","group":"Fleet","description":"Allocate a clean-slate BrowserBox session.","fields":[{"name":"timeout","flag":"--timeout","type":"integer","required":false,"choices":[],"description":""},{"name":"seat","flag":"--seat","type":"text","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":false,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","release"],"name":"fleet release","group":"Fleet","description":"Release a session and clean its browser profile.","fields":[{"name":"allocation_id","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"force","flag":"--force","type":"flag","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","list"],"name":"fleet list","group":"Fleet","description":"List active or all allocations.","fields":[{"name":"all","flag":"--all","type":"flag","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":false,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","status"],"name":"fleet status","group":"Fleet","description":"Show a fleet summary or one allocation.","fields":[{"name":"allocation_id","flag":"","type":"text","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":false,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","reconcile"],"name":"fleet reconcile","group":"Fleet","description":"Inspect or repair state drift.","fields":[{"name":"fix","flag":"--fix","type":"flag","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","reap"],"name":"fleet reap","group":"Fleet","description":"Release confirmed dead allocations.","fields":[{"name":"grace","flag":"--grace","type":"integer","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","monitor"],"name":"fleet monitor","group":"Fleet","description":"Continuously reap dead allocations.","fields":[{"name":"interval","flag":"--interval","type":"integer","required":false,"choices":[],"description":""},{"name":"grace","flag":"--grace","type":"integer","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","doctor"],"name":"fleet doctor","group":"Fleet","description":"Check fleet environment and configuration.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":false,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","config","show"],"name":"fleet config show","group":"Fleet","description":"Show fleet-wide environment defaults.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":false,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","config","set"],"name":"fleet config set","group":"Fleet","description":"Set one fleet environment default.","fields":[{"name":"key","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"value","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","config","unset"],"name":"fleet config unset","group":"Fleet","description":"Remove a fleet environment default.","fields":[{"name":"key","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","routing","show"],"name":"fleet routing show","group":"Fleet","description":"Show fleet routing configuration.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":false,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","routing","apply"],"name":"fleet routing apply","group":"Fleet","description":"Apply fleet Nginx routing.","fields":[{"name":"allow-active","flag":"--allow-active","type":"flag","required":false,"choices":[],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"json-schema","flag":"--json-schema","type":"text","required":false,"choices":["1","2"],"description":""}],"aliases":[],"confirm":true,"platform":"linux","note":"Requires Linux and root or passwordless sudo. Allocation output may contain secret login links."},
+{"path":["fleet","help"],"name":"fleet help","group":"Fleet","description":"Explain fleet commands and routing.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","where"],"name":"policy where","group":"Policy","description":"Locate the policy bundle.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","baselines"],"name":"policy baselines","group":"Policy","description":"List available baselines.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","controls"],"name":"policy controls","group":"Policy","description":"List policy controls.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","show"],"name":"policy show","group":"Policy","description":"Show the policy bundle.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","get"],"name":"policy get","group":"Policy","description":"Read the policy bundle.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","resolve"],"name":"policy resolve","group":"Policy","description":"Resolve the effective policy.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","check"],"name":"policy check","group":"Policy","description":"Evaluate an action against policy.","fields":[{"name":"action","flag":"--action","type":"text","required":true,"choices":[],"description":""},{"name":"url","flag":"--url","type":"text","required":false,"choices":[],"description":""},{"name":"source","flag":"--source","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","trace"],"name":"policy trace","group":"Policy","description":"Show recent policy decisions.","fields":[{"name":"last","flag":"--last","type":"integer","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","init"],"name":"policy init","group":"Policy","description":"Init the policy bundle.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"baseline","flag":"--baseline","type":"text","required":false,"choices":["regulated","compat"],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["policy","reset"],"name":"policy reset","group":"Policy","description":"Reset the policy bundle.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"baseline","flag":"--baseline","type":"text","required":false,"choices":["regulated","compat"],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["policy","set"],"name":"policy set","group":"Policy","description":"Install a policy bundle from a JSON file.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"file","flag":"--file","type":"text","required":true,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["policy","validate"],"name":"policy validate","group":"Policy","description":"Validate a policy file or current policy.","fields":[{"name":"scope","flag":"--scope","type":"text","required":false,"choices":["user","global"],"description":""},{"name":"file","flag":"--file","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","managed-profile","status"],"name":"policy managed-profile status","group":"Policy","description":"Status the managed browser profile.","fields":[{"name":"user","flag":"--user","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","managed-profile","install"],"name":"policy managed-profile install","group":"Policy","description":"Install the managed browser profile.","fields":[{"name":"user","flag":"--user","type":"text","required":false,"choices":[],"description":""},{"name":"file","flag":"--file","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["policy","managed-profile","remove"],"name":"policy managed-profile remove","group":"Policy","description":"Remove the managed browser profile.","fields":[{"name":"user","flag":"--user","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
+{"path":["policy","managed-profile","show"],"name":"policy managed-profile show","group":"Policy","description":"Show the managed browser profile.","fields":[{"name":"user","flag":"--user","type":"text","required":false,"choices":[],"description":""},{"name":"file","flag":"--file","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["policy","help"],"name":"policy help","group":"Policy","description":"Show full policy command help.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["--help"],"name":"--help","group":"Help","description":"Show bbx human-readable help.","fields":[],"aliases":["help","-h"],"confirm":false,"platform":"all","note":""},
+{"path":["--help-json"],"name":"--help-json","group":"Help","description":"Show the machine-readable command catalogue.","fields":[{"name":"out","flag":"--out","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["--version"],"name":"--version","group":"Help","description":"Show bbx version.","fields":[],"aliases":["-v"],"confirm":false,"platform":"all","note":""},
+{"path":["--faq"],"name":"--faq","group":"Help","description":"Show frequently asked questions.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""}
+]}
+BBX_HELP_JSON
+}
+
+# Capture the existing CLI dispatch without parsing a command string or adding
+# another execution engine. A fresh private log is opened once, then inherited.
+if [[ "${1:-}" == "--output-log" ]]; then
+  if [[ $# -lt 4 || "$2" != /* || "$3" != "--" ]]; then
+    printf '%s\n' 'usage: bbx --output-log /absolute/new/log -- command [args...]' >&2
+    exit 2
+  fi
+  umask 077
+  set -C
+  exec 7> "$2" || exit 2
+  set +C
+  exec 1>&7 2>&7 7>&-
+  shift 3
+fi
+
+if [[ "${1:-}" == "--help-json" ]]; then
+  shift
+  if (( $# == 0 )); then _bbx_help_json; exit $?; fi
+  if [[ $# == 2 && "$1" == "--out" && "$2" == /* ]]; then
+    (umask 077; set -C; _bbx_help_json > "$2")
+    exit $?
+  fi
+  printf '%s\n' 'usage: bbx --help-json [--out /absolute/new/file]' >&2
+  exit 2
+fi
+
 is_debug_enabled() {
   case "$(printf '%s' "${BBX_DEBUG:-}" | tr '[:upper:]' '[:lower:]')" in
     1|true|yes|y|on|debug) return 0 ;;
@@ -2412,6 +2507,11 @@ setup() {
     printf "${GREEN}Flipbook recording enabled → %s${NC}\n" "$flipbook_record_dir"
   fi
 
+  # This configuration belongs to whoever asked for it: an explicit `bbx setup`
+  # owns the system configuration, while a run command that calls setup for its
+  # own transport owns that transport's profile instead.
+  _bbx_own_config "${BBX_CONFIG_OWNER_OVERRIDE:-setup}"
+
   # After setup_bbpro succeeds, reload config to get the new runtime values
   load_config
 
@@ -2423,8 +2523,24 @@ setup() {
 }
 
 restart() {
-  stop;
-  run;
+  # Resolve the typed configuration before stop retires the current session.
+  local owner launcher
+  owner="$(_bbx_config_owner)"
+  case "$owner" in
+    setup) launcher=run ;;
+    cf) launcher=cf_run ;;
+    tor) launcher=tor_run ;;
+    ng) launcher=ng_run ;;
+    zt) launcher=zt_run ;;
+    win9x) launcher=win9x_run ;;
+    *)
+      printf "Unknown configuration type '%s'; BrowserBox was not stopped. Run 'bbx setup' to select the system configuration.\n" "$owner" >&2
+      return 1
+      ;;
+  esac
+  printf "Restarting BrowserBox using the %s configuration.\n" "$owner"
+  stop || return $?
+  "$launcher" "$@"
 }
 
 run() {
@@ -2435,6 +2551,9 @@ run() {
     return $?
   fi
 
+  # A plain start uses the system configuration, whatever a transport left
+  # behind last time. A composing launcher (ng_run) retains its own type.
+  _bbx_adopt_config "${BBX_CONFIG_OWNER_OVERRIDE:-setup}"
   load_config
   ensure_installation_id
 
@@ -2617,13 +2736,13 @@ run() {
       exit 1
     fi
     login_link="${login_scheme}://${zeta_host}/login?token=${TOKEN}"
-    echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+    _bbx_publish_login_link "$login_link" || return 1
   else
     # Always construct the local link from the current hostname/port.
     # Do NOT read login.link here — it may contain a stale CF/tor URL
     # from a previous cf-run or tor-run which would show a broken link.
     login_link="${login_scheme}://${hostname}:${port}/login?token=${TOKEN}"
-    echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+    _bbx_publish_login_link "$login_link" || return 1
   fi
 
   draw_box "Login Link: ${login_link}"
@@ -2635,8 +2754,88 @@ run() {
   fi
 }
 
+# Configuration memory: each run type remembers its own, and none of them
+# pollute another.
+#
+# test.env is the system's configuration. `bbx setup` writes it, and the run
+# commands are conveniences that configure-and-start, so each of them writes it
+# too: cf needs an http backend, ng needs zeta, tor appends a proxy, zt points
+# the hostname at the tunnel. But only setup writes test.env, and run() calls
+# setup only when test.env is ABSENT - so without this a transport's
+# configuration simply stayed. A tunnel run left every later direct start
+# serving plain HTTP for real (src/common.js GO_SECURE), an nginx run left the
+# install in zeta mode, a ZeroTier run left a rotated token.
+#
+# The rule: memory persists within a run type and does not cross between them.
+# Every run type has a profile. At launch the live test.env is filed under
+# whichever run type last wrote it, and the launching type's own profile is
+# loaded. Nothing is rolled back and nothing is thrown away.
+#
+# That last part is the point. A rollback has to happen on stop, and stop is a
+# path that may never run - a crash, a reboot, a tunnel that outlives the GUI
+# that started it - and a rollback that does run is blind: it reverts changes it
+# never knew about, including a deliberate `bbx setup` made mid-session. Filing
+# by owner happens on launch, which is the path that always runs, and destroys
+# nothing.
+#
+# `run`/`start` shares the `setup` profile: that is the system configuration and
+# a plain start is the run type that uses it unmodified. user.env is the
+# operator's own overrides and is never touched by any of this.
+
+_bbx_config_profile() { printf '%s/test.env.profile.%s' "${BB_CONFIG_DIR}" "$1"; }
+
+# Which run type wrote the live test.env.
+#
+# The marker is a COMMENT, not an `export`. test.env is sourced - by
+# load_config, and by the run commands before they launch - so an exported
+# marker would end up in the environment of every child process, bbpro and
+# Chrome included. A bookkeeping note about which run type owns a file has no
+# business in the browser's environment.
+#
+# An unmarked file predates this mechanism, or came from a fleet/target-user
+# path, and counts as the system configuration - which is what it is.
+_bbx_config_owner() {
+  local live="${BB_CONFIG_DIR}/test.env" owner=""
+  if [[ -f "$live" ]]; then
+    owner="$(sed -n 's/^# bbx-config-owner: //p' "$live" | tail -n1)"
+  fi
+  printf '%s' "${owner:-setup}"
+}
+
+# Record that the live test.env belongs to <tag>, and remember it as that run
+# type's profile. Idempotent: calling it twice in one launch is harmless.
+_bbx_own_config() {
+  local tag="$1" live="${BB_CONFIG_DIR}/test.env"
+  [[ -f "$live" ]] || return 0
+  local tmp="${live}.owner.$$"
+  grep -v '^# bbx-config-owner:' "$live" > "$tmp" 2>/dev/null || : > "$tmp"
+  printf '\n# bbx-config-owner: %s\n' "$tag" >> "$tmp"
+  mv -- "$tmp" "$live" || { rm -f -- "$tmp"; return 1; }
+  cp -- "$live" "$(_bbx_config_profile "$tag")" 2>/dev/null || true
+}
+
+# At the head of a run command: file the live configuration under its owner,
+# then load this run type's own. Call it before load_config.
+_bbx_adopt_config() {
+  local tag="$1" live="${BB_CONFIG_DIR}/test.env"
+  # Retire anything left by the earlier rollback-on-stop mechanism. Nothing is
+  # restored from it; the profiles are the record now, and a blind restore is
+  # exactly what this replaces.
+  rm -f -- "${live}".pre-* 2>/dev/null
+  [[ -f "$live" ]] || return 0
+  local owner; owner="$(_bbx_config_owner)"
+  cp -- "$live" "$(_bbx_config_profile "$owner")" 2>/dev/null || true
+  [[ "$owner" == "$tag" ]] && return 0
+  local mine; mine="$(_bbx_config_profile "$tag")"
+  if [[ -f "$mine" ]]; then
+    cp -- "$mine" "$live" 2>/dev/null || return 0
+    printf "${YELLOW}Loaded the %s configuration; %s had it last.${NC}\n" "$tag" "$owner"
+  fi
+}
+
 tor_run() {
   banner
+  _bbx_adopt_config tor
   load_config
   ensure_deps
 
@@ -2707,13 +2906,6 @@ tor_run() {
       printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
   fi
 
-  # Backup test.env before any tor-related setup so 'bbx stop' can restore it.
-  # Use -n (no-clobber) so a second tor-run doesn't overwrite a valid backup.
-  local _pretor_backup="${BB_CONFIG_DIR}/test.env.pre-tor"
-  if [[ -f "${BB_CONFIG_DIR}/test.env" && ! -f "$_pretor_backup" ]]; then
-    cp "${BB_CONFIG_DIR}/test.env" "$_pretor_backup"
-    printf "${YELLOW}Backed up test.env → test.env.pre-tor${NC}\n"
-  fi
 
   # For --no-onion mode: use a plain setup so existing TLS certs and DOMAIN are
   # preserved. TOR_PROXY is injected into test.env after setup.
@@ -2729,6 +2921,7 @@ tor_run() {
       ensure_hosts_entry "$BBX_HOSTNAME"
   fi
   BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  _bbx_own_config tor
 
   # Inject TOR_PROXY for --no-onion+anonymize (regular setup leaves it empty).
   if $anonymize && ! $onion; then
@@ -2741,6 +2934,7 @@ tor_run() {
     fi
     export TOR_PROXY="$_tor_proxy_url"
     printf "${GREEN}TOR_PROXY → ${_tor_proxy_url}${NC}\n"
+    _bbx_own_config tor
   fi
 
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
@@ -2810,7 +3004,7 @@ tor_run() {
       test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
       bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
       login_link="https://${BBX_HOSTNAME}:${PORT}/login?token=${TOKEN}"
-      echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+      _bbx_publish_login_link "$login_link" || return 1
   fi
 
   # Gate: ensure BrowserBox is listening before continuing (both onion and clearnet paths)
@@ -2968,9 +3162,25 @@ tor_run() {
 
 zt_run() {
     banner
+    _bbx_adopt_config zt
     load_config
     ensure_deps
     printf "${BLUE}Starting BrowserBox with ZeroTier SSH tunnel...${NC}\n"
+
+    local zt_network_id=""
+    local zt_args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --network-id)
+                [[ $# -ge 2 ]] || { printf "${RED}--network-id requires a value.${NC}\n" >&2; return 2; }
+                zt_network_id="$2"; shift 2 ;;
+            --network-id=*)
+                zt_network_id="${1#*=}"; shift ;;
+            *)
+                zt_args+=("$1"); shift ;;
+        esac
+    done
+    set -- "${zt_args[@]}"
 
     # 1. Ensure BBX is set up; run `setup` if needed.
     if [[ -z "$PORT" || -z "$BBX_HOSTNAME" || ! -f "${BB_CONFIG_DIR}/test.env" ]]; then
@@ -2985,8 +3195,14 @@ zt_run() {
     fi
 
     # 2. Get ZeroTier Network ID from user
-    local zt_network_id
-    read -r -p "Enter your ZeroTier Network ID: " zt_network_id
+    if [[ -z "$zt_network_id" ]]; then
+        if [[ -t 0 ]]; then
+            read -r -p "Enter your ZeroTier Network ID: " zt_network_id
+        else
+            printf "${RED}ZeroTier Network ID is required. Pass --network-id <16 hex characters>.${NC}\n" >&2
+            return 2
+        fi
+    fi
     if [[ ! "$zt_network_id" =~ ^[a-fA-F0-9]{16}$ ]]; then
         printf "${RED}Invalid ZeroTier Network ID format.${NC}\n"
         exit 1
@@ -3050,7 +3266,7 @@ zt_run() {
     local tunnel_hostname="bbx.zerotier.test"
     local p_main="${PORT:-8080}" # Use configured port or default
 
-    bbx setup --port $p_main --hostname "$tunnel_hostname"
+    BBX_CONFIG_OWNER_OVERRIDE=zt bbx setup --port $p_main --hostname "$tunnel_hostname"
 
     # Validate LICENSE_KEY via bbcertify
     export LICENSE_KEY
@@ -3227,8 +3443,27 @@ EOF
     wait $!
 }
 
+# Publish one complete connection capability. Readers never see a partial URL.
+_bbx_publish_login_link() {
+  local link="$1" tmp
+  tmp="$(umask 077; mktemp "${BB_CONFIG_DIR}/.login.link.XXXXXX")" || return 1
+  if printf '%s\n' "$link" > "$tmp" && mv -f "$tmp" "${BB_CONFIG_DIR}/login.link"; then
+    return 0
+  fi
+  rm -f "$tmp"
+  return 1
+}
+
+_bbx_retire_login_link() {
+  local link="$1"
+  if [[ -n "$link" && "$(cat "${BB_CONFIG_DIR}/login.link" 2>/dev/null)" == "$link" ]]; then
+    rm -f "${BB_CONFIG_DIR}/login.link"
+  fi
+}
+
 cf_run() {
   banner
+  _bbx_adopt_config cf
   load_config
   ensure_deps
   ensure_cloudflared || { printf "${RED}Failed to install cloudflared${NC}\n"; exit 1; }
@@ -3285,12 +3520,15 @@ cf_run() {
     exit 1
   }
 
-  # Run minimal setup using setup_bbpro with HTTP backend
+  # Run minimal setup using setup_bbpro with HTTP backend. Cloudflare terminates
+  # TLS at the edge and speaks plain HTTP to the origin, so this is correct while
+  # the tunnel is up - and must not outlive it.
   printf "${YELLOW}Setting up BrowserBox on port ${port} with HTTP backend...${NC}\n"
   BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || {
     printf "${RED}Setup failed${NC}\n"
     exit 1
   }
+  _bbx_own_config cf
 
   # Reload config to get PORT and TOKEN from test.env
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || {
@@ -3439,13 +3677,13 @@ cf_run() {
         fi
         # Check for fatal errors (rate limit, auth failure) — stop waiting early
         if grep -qE '(429 Too Many Requests|failed to unmarshal quick Tunnel)' "$cf_log_file" 2>/dev/null; then
-          printf "${RED}Cloudflare API error (likely rate-limited)${NC}\n"
+          printf "${RED}Cloudflare API error (likely rate-limited)${NC}\n" >&2
           return 1
         fi
       fi
       # If cloudflared process has exited, stop waiting
       if [ -n "$cf_pid" ] && ! kill -0 "$cf_pid" 2>/dev/null; then
-        printf "${RED}cloudflared exited before producing a tunnel URL${NC}\n"
+        printf "${RED}cloudflared exited before producing a tunnel URL${NC}\n" >&2
         return 1
       fi
       sleep 0.5
@@ -3607,6 +3845,31 @@ cf_run() {
   local max_restarts=3
   local restart_count=0
   local cf_run_stopping="false"
+  local login_link=""
+
+  # Own cleanup before verification, so cancellation also retires candidates.
+  cleanup_cf_run() {
+    if [[ "$cf_run_stopping" == "true" ]]; then
+      return
+    fi
+    cf_run_stopping="true"
+    _bbx_retire_login_link "$login_link"
+    trap - EXIT INT TERM
+    printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
+    kill "$cf_pid" 2>/dev/null || true
+    rm -f "$CF_PID_FILE"
+    run_quietly stop_bbpro || true
+    printf "${GREEN}Cleanup complete.${NC}\n"
+  }
+
+  handle_cf_run_signal() {
+    cleanup_cf_run
+    exit 130
+  }
+
+  trap cleanup_cf_run EXIT
+  trap handle_cf_run_signal INT TERM
+
 
   while [ $restart_count -lt $max_restarts ]; do
     cf_pid=$(start_cloudflared)
@@ -3616,6 +3879,10 @@ cf_run() {
     tunnel_url=$(extract_tunnel_url 90)
 
     if [ -n "$tunnel_url" ]; then
+      # Publish the actual public address as soon as it is issued. Readiness is
+      # a separate observation; never present the temporary localhost backend.
+      login_link="${tunnel_url}/login?token=${TOKEN}"
+      _bbx_publish_login_link "$login_link" || return 1
       # Tunnel URL extracted — verify it actually serves the app
       if verify_cf_tunnel "$tunnel_url" 60; then
         break
@@ -3624,6 +3891,8 @@ cf_run() {
       printf "${YELLOW}Tunnel URL obtained but readiness check failed${NC}\n"
     fi
 
+    # Retire only this attempt's link, never another command's replacement.
+    _bbx_retire_login_link "${tunnel_url}/login?token=${TOKEN}"
     # Kill the failed/stalled cloudflared before retrying
     kill "$cf_pid" 2>/dev/null || true
     wait "$cf_pid" 2>/dev/null || true
@@ -3650,8 +3919,8 @@ cf_run() {
   printf "${GREEN}Cloudflare tunnel established and verified!${NC}\n"
 
   # Build login link and save to login.link
-  local login_link="${tunnel_url}/login?token=${TOKEN}"
-  echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+  login_link="${tunnel_url}/login?token=${TOKEN}"
+  _bbx_publish_login_link "$login_link" || return 1
 
   draw_box "Login Link: ${login_link}"
 
@@ -3669,8 +3938,15 @@ cf_run() {
           # cloudflared died, check if we should restart
           if [[ -f "$CF_PID_FILE" ]]; then
             # PID file exists, meaning user hasn't called stop - restart
+            _bbx_retire_login_link "$login_link"
             cf_pid=$(start_cloudflared)
             echo "$cf_pid" > "$CF_PID_FILE"
+            local next_url
+            next_url=$(extract_tunnel_url 60)
+            if [[ -n "$next_url" ]]; then
+              login_link="${next_url}/login?token=${TOKEN}"
+              _bbx_publish_login_link "$login_link" || exit 1
+            fi
           else
             # PID file removed by stop command - exit monitor
             break
@@ -3679,31 +3955,9 @@ cf_run() {
       done
     ) &
     disown
+    trap - EXIT INT TERM
     exit 0
   fi
-
-  # Foreground mode: set up cleanup trap and wait
-  # Cleanup function for cf_run
-  cleanup_cf_run() {
-    if [[ "$cf_run_stopping" == "true" ]]; then
-      return
-    fi
-    cf_run_stopping="true"
-    trap - EXIT INT TERM
-    printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
-    kill "$cf_pid" 2>/dev/null || true
-    rm -f "$CF_PID_FILE"
-    run_quietly stop_bbpro || true
-    printf "${GREEN}Cleanup complete.${NC}\n"
-  }
-
-  handle_cf_run_signal() {
-    cleanup_cf_run
-    exit 130
-  }
-
-  trap cleanup_cf_run EXIT
-  trap handle_cf_run_signal INT TERM
 
   printf "\n${CYAN}Tunnel is active. Press Ctrl+C to stop.${NC}\n\n"
 
@@ -3714,16 +3968,17 @@ cf_run() {
         break
       fi
       printf "${YELLOW}Cloudflare tunnel died, restarting...${NC}\n"
+      _bbx_retire_login_link "$login_link"
       cf_pid=$(start_cloudflared)
       echo "$cf_pid" > "$CF_PID_FILE"
 
       # Wait for new URL
       local new_url
       new_url=$(extract_tunnel_url 60)
-      if [ -n "$new_url" ] && [ "$new_url" != "$tunnel_url" ]; then
+      if [ -n "$new_url" ]; then
         tunnel_url="$new_url"
         login_link="${tunnel_url}/login?token=${TOKEN}"
-        echo "$login_link" > "${BB_CONFIG_DIR}/login.link"
+        _bbx_publish_login_link "$login_link" || return 1
         printf "${GREEN}New tunnel URL: ${login_link}${NC}\n"
       fi
     fi
@@ -4300,13 +4555,14 @@ ng_run() {
   fi
 
   banner
+  _bbx_adopt_config ng
   load_config
   ensure_deps
 
   # Trigger setup if not fully configured
   if [ -z "$HOST_PER_SERVICE" ] || [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
-    setup -z "$@" # Pass any arguments like --port to setup
+    BBX_CONFIG_OWNER_OVERRIDE=ng setup -z "$@" # Pass any arguments like --port to setup
     load_config
   fi
 
@@ -4325,7 +4581,7 @@ ng_run() {
 
   # Now, call the main run command, passing all original arguments.
   # The run command will handle calling setup if it's the very first run.
-  run "$@"
+  BBX_CONFIG_OWNER_OVERRIDE=ng run "$@"
 }
 
 ng_config() {
@@ -4598,7 +4854,7 @@ check_and_prepare_update() {
     fi
   fi
 
-  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n" >&2
   # Proceed with the update check and record the time
   echo "$current_time" > "$last_update_check_file"
 
@@ -4606,7 +4862,7 @@ check_and_prepare_update() {
   local repo_tag
   repo_tag="$(get_latest_repo_version stable)"
   if [[ "$repo_tag" == unknown* ]]; then
-    printf "${YELLOW}Skipping update: could not determine latest release.${NC}\n"
+    printf "${YELLOW}Skipping update: could not determine latest release.${NC}\n" >&2
     return 0
   fi
 
@@ -4618,13 +4874,13 @@ check_and_prepare_update() {
     prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
     
     if [[ -n "$prepared_binary" ]] && [[ -f "$prepared_binary" ]] && [[ "$prepared_tag" == "$repo_tag" ]]; then
-      printf "${YELLOW}Prepared update (${prepared_tag}) matches latest. Installing...${NC}\n"
+      printf "${YELLOW}Prepared update (${prepared_tag}) matches latest. Installing...${NC}\n" >&2
       is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
       if check_prepare_and_install "$repo_tag"; then
         return 0
       fi
     else
-      printf "${YELLOW}Prepared update (${prepared_tag}) is stale vs latest (${repo_tag}); removing it.${NC}\n"
+      printf "${YELLOW}Prepared update (${prepared_tag}) is stale vs latest (${repo_tag}); removing it.${NC}\n" >&2
       rm -rf "$BBX_NEW_DIR" 2>/dev/null
       $SUDO rm -f "$PREPARED_FILE" "$PREPARING_FILE" 2>/dev/null
     fi
@@ -4639,22 +4895,22 @@ check_and_prepare_update() {
     current_tag="v$current_tag"
   fi
   
-  printf "${BLUE}Current: $current_tag${NC}\n"
-  printf "${BLUE}Latest: $repo_tag${NC}\n"
+  printf "${BLUE}Current: $current_tag${NC}\n" >&2
+  printf "${BLUE}Latest: $repo_tag${NC}\n" >&2
 
   if [[ "$current_tag" == "$repo_tag" ]]; then
-    printf "${GREEN}Already on the latest version (${repo_tag}).${NC}\n"
+    printf "${GREEN}Already on the latest version (${repo_tag}).${NC}\n" >&2
     [ -d "$BBX_NEW_DIR" ] && rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
     return 0
   fi
 
   # Prepare target version in background; installation will run after prep
   if [[ -n "$BBX_DEBUG" ]]; then
-    printf "${GREEN}Background update starting to ${repo_tag}...${NC}\n"
+    printf "${GREEN}Background update starting to ${repo_tag}...${NC}\n" >&2
     update_background "$repo_tag"
   else
     update_background "$repo_tag" &
-    printf "${GREEN}Background update started to ${repo_tag}. Check $LOG_FILE for progress.${NC}\n"
+    printf "${GREEN}Background update started to ${repo_tag}. Check $LOG_FILE for progress.${NC}\n" >&2
   fi
   return 0
 }
@@ -5165,37 +5421,106 @@ license() {
     printf "Run 'bbx certify' to enter your product key.\n"
 }
 
+# JSON-escape one scalar for the hand-built status envelope. bbx fleet has
+# _fleet_json_escape for the same job, but it lives inside the fleet section
+# and is only defined once the fleet dispatcher has been entered.
+_status_json_escape() {
+  local s="${1:-}"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+_status_json_string() {
+  if [[ -z "${2:-}" ]]; then printf '"%s":null' "$1"; return; fi
+  printf '"%s":"%s"' "$1" "$(_status_json_escape "$2")"
+}
+
 status() {
     if _bbx_for_active; then
       _for_status "$@"
       return $?
     fi
 
+    # Machine-readable mode, matching the envelope bbx fleet already uses:
+    # {"ok":true,...} on stdout and nothing else, so a caller can pipe it
+    # straight into jq. --out writes the same document to a file instead,
+    # which is what a GUI or a supervisor wants when it cannot capture stdout.
+    local json_mode=0 out_file=""
+    local -a rest=()
+    while (( $# )); do
+      case "$1" in
+        --json) json_mode=1; shift ;;
+        --out)
+          [[ -n "${2:-}" ]] || { printf '%b\n' "${RED}Error: --out requires a path.${NC}" >&2; exit 1; }
+          out_file="$2"; json_mode=1; shift 2 ;;
+        --out=*) out_file="${1#--out=}"; json_mode=1; shift ;;
+        *) rest+=("$1"); shift ;;
+      esac
+    done
+    set -- ${rest[@]+"${rest[@]}"}
+
     load_config
-    printf "${YELLOW}Checking BrowserBox status...${NC}\n"
     local status_scheme="https"
     [[ "${BBX_HTTP_ONLY:-}" == "true" ]] && status_scheme="http"
+
+    # One probe, one answer, shared by both output modes so the human line and
+    # the JSON can never disagree about whether BrowserBox is up.
+    local running=false detection="none"
     if [ -n "$PORT" ] && curl --noproxy '*' -s --max-time 2 "${status_scheme}://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
+        running=true; detection="endpoint"
+    elif pgrep -u "$(whoami)" browserbox >/dev/null 2>&1; then
+        running=true; detection="process"
+    fi
+
+    local audio_state="" audio_detail=""
+    local audio_state_file="${BB_CONFIG_DIR}/audio.state"
+    if [[ -f "$audio_state_file" ]]; then
+      audio_state="$(sed -n 's/^state=//p' "$audio_state_file" | tail -n1)"
+      audio_detail="$(sed -n 's/^detail=//p' "$audio_state_file" | tail -n1)"
+    fi
+
+    if (( json_mode )); then
+      local port_json="${PORT:-0}"
+      [[ "$port_json" =~ ^[0-9]+$ ]] || port_json=0
+      local doc
+      doc="{\"ok\":true,\"running\":${running},$(_status_json_string detection "$detection"),"
+      doc+="$(_status_json_string hostname "${BBX_HOSTNAME:-}"),$(_status_json_string scheme "$status_scheme"),"
+      doc+="\"main_port\":${port_json},$(_status_json_string version "${VERSION:-}"),"
+      doc+="\"audio\":{$(_status_json_string state "$audio_state"),$(_status_json_string detail "$audio_detail")}}"
+      if [[ -n "$out_file" ]]; then
+        # Write through a temp file in the same directory so a reader never
+        # observes a half-written document.
+        local tmp
+        tmp="$(mktemp "${out_file}.XXXXXX")" || { printf '%b\n' "${RED}Error: cannot write ${out_file}${NC}" >&2; exit 1; }
+        printf '%s\n' "$doc" > "$tmp" && mv -f "$tmp" "$out_file" || {
+          rm -f "$tmp"; printf '%b\n' "${RED}Error: cannot write ${out_file}${NC}" >&2; exit 1; }
+      else
+        printf '%s\n' "$doc"
+      fi
+      return 0
+    fi
+
+    printf "${YELLOW}Checking BrowserBox status...${NC}\n"
+    if [[ "$running" == true && "$detection" == "endpoint" ]]; then
         draw_box "Status: Running (port $PORT)"
-    elif pgrep -u "$(whoami)" browserbox; then
+    elif [[ "$running" == true ]]; then
+        pgrep -u "$(whoami)" browserbox
         draw_box "Status: Running (current user)"
     else
         draw_box "Status: Not Running"
     fi
-    local audio_state_file="${BB_CONFIG_DIR}/audio.state"
-    if [[ -f "$audio_state_file" ]]; then
-      local audio_state audio_detail
-      audio_state="$(sed -n 's/^state=//p' "$audio_state_file" | tail -n1)"
-      audio_detail="$(sed -n 's/^detail=//p' "$audio_state_file" | tail -n1)"
-      case "$audio_state" in
-        ready) printf "${GREEN}Audio: Ready${NC}\n" ;;
-        degraded)
-          printf "${YELLOW}Audio: Degraded - %s${NC}\n" "${audio_detail:-sound server unavailable}"
-          printf "${YELLOW}Check the service-user session with: pactl info${NC}\n"
-          ;;
-        disabled) printf "${YELLOW}Audio: Disabled (%s)${NC}\n" "${audio_detail:-configuration}" ;;
-      esac
-    fi
+    case "$audio_state" in
+      ready) printf "${GREEN}Audio: Ready${NC}\n" ;;
+      degraded)
+        printf "${YELLOW}Audio: Degraded - %s${NC}\n" "${audio_detail:-sound server unavailable}"
+        printf "${YELLOW}Check the service-user session with: pactl info${NC}\n"
+        ;;
+      disabled) printf "${YELLOW}Audio: Disabled (%s)${NC}\n" "${audio_detail:-configuration}" ;;
+    esac
 }
 
 _bbx_license_request() {
@@ -9476,6 +9801,7 @@ EOF
 win9x_run() {
   banner
   show_win9x_flag
+  _bbx_adopt_config win9x
   load_config
   ensure_deps
 
@@ -9493,9 +9819,12 @@ win9x_run() {
   export WIN9X_COMPATIBILITY_MODE="true"
   export BBX_DONT_KILL_CHROME_ON_STOP="true"
 
-  # Setup with explicit token
+  # Setup with explicit token. This runs unconditionally, so it regenerates an
+  # existing test.env - preserving port and token, but dropping anything appended
+  # to it (TOR_PROXY, BBX_FLIPBOOK_DIR) and resetting the backend.
   local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
   BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" $setup_cmd &>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  _bbx_own_config win9x
   
   # Reload config to get updated values
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
@@ -9552,6 +9881,7 @@ win9x_run() {
   local win9x_link="http://${best_ip}:${PORT}${rest}"
 
   echo "$best_ip" > "${BB_CONFIG_DIR}/win9x.best.ip"
+  _bbx_publish_login_link "$win9x_link" || return 1
 
   printf "${GREEN}BrowserBox Win9x Compatibility Mode is running!${NC}\n"
   draw_box "Win9x Login Link: $win9x_link"
@@ -9810,6 +10140,7 @@ usage() {
     printf "  ${YELLOW}win9x-start${NC}     Run in Windows 9x compatibility mode.\n\n"
 
     printf "${BOLD}OTHER COMMANDS${NC}\n"
+    printf "  --help-json    Machine-readable command catalogue.\n"
     printf "  ${BLUE}${BOLD}automate${NC}       Drive BrowserBox with scripts (coming soon).\n"
     printf "  ${GREEN}policy${NC}         Manage canonical policy bundle. ${BOLD}bbx policy <subcommand>${NC}\n"
     printf "  ${GREEN}--faq${NC}           Display frequently asked questions.\n"
