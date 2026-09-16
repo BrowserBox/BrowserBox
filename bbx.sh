@@ -104,6 +104,19 @@ if [[ "${1:-}" == "--help-json" ]]; then
   exit 2
 fi
 
+# Structured progress for supervising front ends such as bbx-gui. Opt-in with
+# BBX_PROGRESS_EVENTS=1. Each event is one line on the same stream as the
+# sentence it accompanies, so a person reading the log sees them side by side.
+# Step and failure identifiers are a contract with bbx-gui/bbx-progress.flx.
+_bbx_progress() {
+  [[ "${BBX_PROGRESS_EVENTS:-}" == 1 ]] || return 0
+  printf '@bbx-progress %s\n' "$1"
+}
+_bbx_failure() {
+  [[ "${BBX_PROGRESS_EVENTS:-}" == 1 ]] || return 0
+  printf '@bbx-failure %s\n' "$1"
+}
+
 is_debug_enabled() {
   case "$(printf '%s' "${BBX_DEBUG:-}" | tr '[:upper:]' '[:lower:]')" in
     1|true|yes|y|on|debug) return 0 ;;
@@ -736,6 +749,7 @@ export BBX_REQUIRE_RELEASE=1
 if [[ -n "${BBX_SSLCERTS_DIR:-}" ]]; then
   export SSLCERTS_DIR="${BBX_SSLCERTS_DIR}"
 fi
+BBX_CALLER_HOSTNAME="${BBX_HOSTNAME:-}"
 BBX_CALLER_DOMAIN="${DOMAIN:-}"
 export BBX_CALLER_DOMAIN
 
@@ -1431,7 +1445,7 @@ load_config() {
     # Respect caller-provided values: do not let persisted config clobber explicit env.
     local env_license_key="${LICENSE_KEY:-}"
     local env_email="${EMAIL:-}"
-    local env_hostname="${BBX_HOSTNAME:-}"
+    local env_hostname="${BBX_CALLER_HOSTNAME:-}"
     local env_domain="${BBX_CALLER_DOMAIN:-}"
 
     # Load persistent config first
@@ -1457,9 +1471,6 @@ load_config() {
 
     # Then load runtime config, which can override for the session
     if [ -f "${BB_CONFIG_DIR}/test.env" ]; then
-        # Preserve ambient context to detect "downgrade to localhost" attempts
-        local ambient_hn="${BBX_HOSTNAME:-}"
-
         source "$BB_CONFIG_DIR/test.env"
         # user.env overrides survive bbx setup regeneration of test.env
         [ -f "${BB_CONFIG_DIR}/user.env" ] && source "${BB_CONFIG_DIR}/user.env" || true
@@ -1468,12 +1479,10 @@ load_config() {
         PORT="${APP_PORT:-$PORT}"
         TOKEN="${LOGIN_TOKEN:-$TOKEN}"
 
-        # PRECEDENCE RULES:
-        # 1. Explicit DOMAIN/BBX_CALLER_DOMAIN wins (handled after source)
-        # 2. Saved DOMAIN wins over ambient localhost
-        if [[ -n "${DOMAIN:-}" ]] && [[ "$ambient_hn" == "localhost" ]]; then
-            BBX_HOSTNAME="$DOMAIN"
-        elif [[ -z "${BBX_HOSTNAME:-}" && -n "${DOMAIN:-}" ]]; then
+        # Runtime DOMAIN is what the service reads. Persisted install identity
+        # must not override a newer setup (including an explicit localhost).
+        # Caller overrides are restored below.
+        if [[ -n "${DOMAIN:-}" ]]; then
             BBX_HOSTNAME="$DOMAIN"
         fi
     fi
@@ -1966,10 +1975,12 @@ wait_for_local_ready() {
   [[ "$scheme" == "https" ]] && curl_args+=(-k)
 
   printf "${YELLOW}Waiting for BrowserBox to be ready on port ${port} (${scheme})...${NC}\n"
+  _bbx_progress ready-wait
 
   while [ $elapsed -lt $max_wait ]; do
     if curl "${curl_args[@]}" "${scheme}://127.0.0.1:${port}/" 2>/dev/null; then
       printf "${GREEN}BrowserBox is ready on port ${port} (${elapsed}s)${NC}\n"
+      _bbx_progress ready
       return 0
     fi
     sleep "$interval"
@@ -1977,6 +1988,7 @@ wait_for_local_ready() {
   done
 
   printf "${RED}BrowserBox did not become ready on port ${port} within ${max_wait}s${NC}\n"
+  _bbx_failure ready-timeout
   return 1
 }
 
@@ -2002,6 +2014,7 @@ ensure_cloudflared() {
     fi
 
     printf "${YELLOW}cloudflared not found. Installing...${NC}\n" >&2
+    _bbx_progress cloudflared-install >&2
 
     # Map uname -m to cloudflared asset arch names
     local um; um="$(uname -m)"
@@ -2104,6 +2117,7 @@ ensure_cloudflared() {
     fi
 
     printf "${GREEN}cloudflared installed successfully (%s)${NC}\n" "$(cloudflared --version 2>&1 | head -1)" >&2
+    _bbx_progress cloudflared-installed >&2
     return 0
 }
 
@@ -2455,6 +2469,7 @@ setup() {
   fi
 
   printf "${YELLOW}Setting up BrowserBox on $setup_hostname:$setup_port...${NC}\n"
+  _bbx_progress setup-begin
   if [[ -n "$zeta_mode" ]] && [[ "$setup_hostname" == "localhost" ]]; then
     printf "${YELLOW}localhost is incompatible with zeta mode due to widespread conventions against *.localhost subdomains. Changing hostname to bbx.test\n"
     setup_hostname="bbx.test"
@@ -2516,6 +2531,7 @@ setup() {
   load_config
 
   printf "${GREEN}Setup complete.${NC}\n"
+  _bbx_progress setup-complete
   draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$setup_hostname:$setup_port/login?token=$setup_token")"
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE]${NC}${BOLD} Your login link above WILL change. Await the run command for your correct login link.\n"
@@ -2541,6 +2557,26 @@ restart() {
   printf "Restarting BrowserBox using the %s configuration.\n" "$owner"
   stop || return $?
   "$launcher" "$@"
+}
+
+# An explicit start address must configure the actual listener, not only the
+# printed login link. Reuse setup as the sole writer of test.env and tls owner.
+_bbx_prepare_run_address() {
+  local hostname="$1" port="$2"
+  [[ "$hostname" == "${DOMAIN:-${BBX_HOSTNAME:-}}" && "$port" == "${APP_PORT:-${PORT:-}}" ]] && return 0
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || (( port < 1024 || port > 65535 )); then
+    printf 'Invalid start port: %s. Must be between 1024 and 65535.\n' "$port" >&2
+    return 1
+  fi
+  local -a args=(--hostname "$hostname" --port "$port" --token "$TOKEN")
+  [[ -n "${HOST_PER_SERVICE:-}" ]] && args+=(--zeta)
+  if [[ "${BBX_HTTP_ONLY:-}" == true ]]; then args+=(--backend http); else args+=(--backend https); fi
+  if [[ -n "${BBX_FLIPBOOK_DIR:-}" ]]; then
+    args+=(--flipbook-record "$BBX_FLIPBOOK_DIR" --flipbook-description "${BBX_FLIPBOOK_DESCRIPTION:-}")
+  fi
+  printf 'Applying the requested start address: %s:%s\n' "$hostname" "$port"
+  stop || return $?
+  setup "${args[@]}" || return $?
 }
 
 run() {
@@ -2584,9 +2620,10 @@ run() {
   # Default values from loaded config
   local port="${PORT}"
   local hostname="${BBX_HOSTNAME}"
+  local address_requested=false
   local run_args=() # Store args to pass to bbpro
 
-  # Parse arguments to override config for this run only
+  # Explicit address changes update this launch type through setup.
   local temp_args=("$@")
   local clean_args=()
   for arg in "${temp_args[@]}"; do
@@ -2607,6 +2644,7 @@ run() {
           exit 1
         fi
         port="$2"
+        address_requested=true
         shift 2
         ;;
       --hostname|-h)
@@ -2616,6 +2654,7 @@ run() {
           exit 1
         fi
         hostname="$2"
+        address_requested=true
         shift 2
         ;;
       *)
@@ -2627,6 +2666,12 @@ run() {
   done
 
   hostname="$(normalize_hostname_for_local_use "$hostname")"
+
+  if $address_requested; then
+    _bbx_prepare_run_address "$hostname" "$port" || return $?
+    hostname="${DOMAIN:-$hostname}"
+    port="${APP_PORT:-$port}"
+  fi
 
   # Use the determined port and hostname for this run
   PORT="$port"
@@ -2642,12 +2687,15 @@ run() {
     printf "${PURPLE}[ZETA MODE] BrowserBox is running with a tunnel or reverse-proxy.${NC}\n"
   fi
   printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
+  _bbx_progress start-begin
 
-  if ! is_local_hostname "$hostname"; then
-    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-    wait_for_hostname "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
-  else
-    ensure_hosts_entry "$hostname"
+  # A restored run-type profile may need a different certificate even when
+  # no form field changed. tls admits the existing pair for this hostname.
+  local backend_scheme=https
+  [[ -n "$http_only" ]] && backend_scheme=http
+  # ng-run owns admission for its generated service hostnames and wildcard.
+  if [[ -z "$zeta_mode" ]]; then
+    configure_setup_hostname_transport "$hostname" "$backend_scheme" || return $?
   fi
 
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
@@ -2661,11 +2709,13 @@ run() {
   export LICENSE_KEY;
   local cert_log; cert_log="$(rm -f /tmp/bbx-certify-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-certify-XXXXXX.log)"
   printf "${YELLOW}[startup] Certifying license...${NC}\n"
+  _bbx_progress certify-begin
   bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_NONINTERACTIVE=true; bbcertify" > "$cert_log" 2>&1 &
   local CERT_PID=$!
 
   # Start bbpro — keep stderr visible so failures aren't silent
   printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
+  _bbx_progress services-begin
   local bbpro_log; bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
   local bbpro_rc
   if [[ -n ${BBX_DEBUG:-} ]]; then
@@ -2677,6 +2727,7 @@ run() {
   fi
   if [[ "$bbpro_rc" -ne 0 ]]; then
     printf "${RED}Failed to start BrowserBox (exit %d). Last output:${NC}\n" "$bbpro_rc"
+    _bbx_failure services-failed
     tail -20 "$bbpro_log"
     rm -f "$bbpro_log"
     kill "$CERT_PID" 2>/dev/null; rm -f "$cert_log"
@@ -2687,11 +2738,13 @@ run() {
 
   # Wait for background certification to complete (bounded: 120s)
   printf "${YELLOW}[startup] Waiting for license certification...${NC}\n"
+  _bbx_progress certify-wait
   local _cert_t0; _cert_t0=$SECONDS
   local _cert_timeout=120
   while kill -0 "$CERT_PID" 2>/dev/null; do
     if (( SECONDS - _cert_t0 >= _cert_timeout )); then
       printf "${RED}License certification timed out after %ds.${NC}\n" "$_cert_timeout"
+      _bbx_failure certify-timeout
       printf "${YELLOW}Cert log:${NC}\n"
       tail -20 "$cert_log"
       kill "$CERT_PID" 2>/dev/null
@@ -2704,6 +2757,7 @@ run() {
   # Collect exit status
   if ! wait "$CERT_PID"; then
     printf "${RED}License check failed. Run 'bbx activate' or go to dosaygo.com. Stopping BrowserBox...${NC}\n"
+    _bbx_failure license-refused
     printf "${YELLOW}Cert log:${NC}\n"
     tail -20 "$cert_log"
     rm -f "$cert_log"
@@ -2712,6 +2766,7 @@ run() {
   fi
   rm -f "$cert_log"
   printf "${GREEN}[startup] License certified.${NC}\n"
+  _bbx_progress certified
   if [[ -f "$CERT_META_FILE" ]]; then
     # shellcheck disable=SC1090
     source "$CERT_META_FILE"
@@ -2720,6 +2775,7 @@ run() {
 
   # Reload config to get the final token from the newly created test.env
   load_config
+  BBX_HOSTNAME="$hostname"
 
   local login_link=""
   local login_scheme="https"
@@ -2865,6 +2921,7 @@ tor_run() {
 
   [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
   printf "${YELLOW}Starting BrowserBox with ${NC}${PURPLE}Tor${NC}${YELLOW}...${NC}\n"
+  _bbx_progress tor-begin
   ensure_setup_tor "$(whoami)"
 
   # Find Tor cookie file dynamically across platforms
@@ -2922,6 +2979,10 @@ tor_run() {
   fi
   BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
   _bbx_own_config tor
+  _bbx_remember_launch tor anonymize "$anonymize"
+  _bbx_remember_launch tor no-anonymize "$([[ "$anonymize" == false ]] && printf true || printf false)"
+  _bbx_remember_launch tor onion "$onion"
+  _bbx_remember_launch tor no-onion "$([[ "$onion" == false ]] && printf true || printf false)"
 
   # Inject TOR_PROXY for --no-onion+anonymize (regular setup leaves it empty).
   if $anonymize && ! $onion; then
@@ -2947,6 +3008,7 @@ tor_run() {
     exit 1
   else
     printf "${GREEN}Certification complete.${NC}\n"
+    _bbx_progress certified
     if [[ -f "$CERT_META_FILE" ]]; then
       # shellcheck disable=SC1090
       source "$CERT_META_FILE"
@@ -2971,6 +3033,7 @@ tor_run() {
       fi
 
       printf "${YELLOW}Running as onion site...${NC}\n"
+      _bbx_progress onion-publish
       login_link=""
       if $in_tor_group; then
           login_link="$(torbb)" || true
@@ -2994,6 +3057,7 @@ tor_run() {
 
     if ! $_tor_success; then
       printf "${RED}Failed to start Tor onion service after ${_tor_max_retries} attempts${NC}\n"
+      _bbx_failure onion-failed
       exit 1
     fi
   else
@@ -3010,6 +3074,7 @@ tor_run() {
   # Gate: ensure BrowserBox is listening before continuing (both onion and clearnet paths)
   wait_for_local_ready "$PORT" https 90 || {
     printf "${RED}BrowserBox never became ready on port ${PORT}${NC}\n"
+    _bbx_failure ready-timeout
     run_quietly stop_bbpro || true
     exit 1
   }
@@ -3089,6 +3154,7 @@ tor_run() {
               if [ "$percent" -eq 100 ]; then
                   draw_progress_bar 100
                   printf "\n${GREEN}Tor is fully connected and ready.${NC}\n" >&2
+                  _bbx_progress tor-connected >&2
                   return 0
               fi
           fi
@@ -3114,6 +3180,7 @@ tor_run() {
   # Step 4: Verify onion service is reachable via Tor SOCKS proxy
   if $onion && [ -n "$login_link" ]; then
     printf "${YELLOW}Verifying onion service reachability...${NC}\n"
+    _bbx_progress onion-verify
     local _tor_verify_ok=false
     local _tor_verify_elapsed=0
     local _tor_verify_max=180
@@ -3149,6 +3216,7 @@ tor_run() {
         for ((i = 0; i < _bar_w; i++)); do printf "█"; done
         printf "${NC}] 100%%                              \n"
         printf "${GREEN}Onion service reachable (HTTP %s)${NC}\n" "$_tor_http_code"
+        _bbx_progress onion-verified
         _tor_verify_ok=true
         break
       fi
@@ -3166,6 +3234,7 @@ zt_run() {
     load_config
     ensure_deps
     printf "${BLUE}Starting BrowserBox with ZeroTier SSH tunnel...${NC}\n"
+    _bbx_progress zt-begin
 
     local zt_network_id=""
     local zt_args=()
@@ -3229,6 +3298,7 @@ zt_run() {
 
     local zt_ip=""
     printf "${YELLOW}Waiting for IP address on ZeroTier network... (You may need to authorize this machine in ZeroTier Central)${NC}\n"
+    _bbx_progress zt-address-wait
     for i in {1..60}; do
         zt_ip=$($SUDO zerotier-cli -j listnetworks | jq -r --arg netid "$zt_network_id" '.[] | select(.nwid==$netid) | .assignedAddresses[]?' | grep -E '^[0-9.]+' | cut -d'/' -f1 | head -n1)
         if [[ -n "$zt_ip" ]]; then
@@ -3249,6 +3319,7 @@ zt_run() {
     chmod 700 "$ssh_key_dir"
 
     printf "${YELLOW}Generating SSH key pair for secure connection...${NC}\n"
+    _bbx_progress zt-keys
     rm -f "$ssh_key_file" "$ssh_key_file.pub"
     ssh-keygen -t ed25519 -f "$ssh_key_file" -N "" -q -C "browserbox-zerotier-tunnel"
 
@@ -3266,7 +3337,8 @@ zt_run() {
     local tunnel_hostname="bbx.zerotier.test"
     local p_main="${PORT:-8080}" # Use configured port or default
 
-    BBX_CONFIG_OWNER_OVERRIDE=zt bbx setup --port $p_main --hostname "$tunnel_hostname"
+    BBX_CONFIG_OWNER_OVERRIDE=zt bbx setup --port $p_main --hostname "$tunnel_hostname" || return $?
+    _bbx_remember_launch zt network-id "$zt_network_id"
 
     # Validate LICENSE_KEY via bbcertify
     export LICENSE_KEY
@@ -3277,6 +3349,7 @@ zt_run() {
       exit 1
     else
       printf "${GREEN}Certification complete.${NC}\n"
+      _bbx_progress certified
     fi
 
     # 9. Construct and save the "single shot" script for the user
@@ -3439,6 +3512,7 @@ EOF
 
     # Keep the script running so the server stays up
     printf "\n${CYAN}Server is waiting for connection. Press Ctrl+C here to shut down the server process and the tunnel.${NC}\n"
+    _bbx_progress zt-ready
     tail -f /dev/null &
     wait $!
 }
@@ -3469,6 +3543,7 @@ cf_run() {
   ensure_cloudflared || { printf "${RED}Failed to install cloudflared${NC}\n"; exit 1; }
 
   printf "${CYAN}Starting BrowserBox with Cloudflare Quick Tunnel...${NC}\n"
+  _bbx_progress cf-begin
 
   # Parse arguments
   local port=""
@@ -3529,6 +3604,7 @@ cf_run() {
     exit 1
   }
   _bbx_own_config cf
+  _bbx_remember_launch cf background "${background_mode:-false}"
 
   # Reload config to get PORT and TOKEN from test.env
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || {
@@ -3544,6 +3620,7 @@ cf_run() {
     exit 1
   else
     printf "${GREEN}Certification complete.${NC}\n"
+    _bbx_progress certified
     if [[ -f "$CERT_META_FILE" ]]; then
       # shellcheck disable=SC1090
       source "$CERT_META_FILE"
@@ -3553,6 +3630,7 @@ cf_run() {
 
   # Start BrowserBox — keep stderr visible so failures aren't silent
   printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
+  _bbx_progress start-begin
   local _cf_start_max_attempts=3
   local _cf_start_attempt=1
   local _cf_start_wait=30
@@ -3568,6 +3646,7 @@ cf_run() {
     local _cf_attempt_log="${BB_CONFIG_DIR}/cf-run-startup-attempt-${_cf_start_attempt}.log"
 
     printf "${YELLOW}Launching BrowserBox startup attempt %d/%d...${NC}\n" "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
+    _bbx_progress services-begin >&2
 
     if [[ -n ${BBX_DEBUG:-} ]]; then
       BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
@@ -3620,6 +3699,7 @@ cf_run() {
 
   if [[ "$_cf_ready" != "true" ]]; then
     printf "${RED}BrowserBox never became ready on port ${PORT}. Aborting tunnel.${NC}\n"
+    _bbx_failure ready-timeout
     run_quietly stop_bbpro || true
     exit 1
   fi
@@ -3651,6 +3731,7 @@ cf_run() {
   if [[ -n "$cf_edge_ip_version" ]]; then
     cf_edge_args+=(--edge-ip-version "${cf_edge_ip_version}")
     printf "${YELLOW}Using edge IP version: ${cf_edge_ip_version}${NC}\n"
+    _bbx_progress cf-tunnel-open
   fi
 
   # Function to start cloudflared and return its PID
@@ -3960,6 +4041,7 @@ cf_run() {
   fi
 
   printf "\n${CYAN}Tunnel is active. Press Ctrl+C to stop.${NC}\n\n"
+  _bbx_progress cf-tunnel-active
 
   # Monitor cloudflared and auto-restart if it crashes (foreground mode)
   while [[ "$cf_run_stopping" != "true" ]]; do
@@ -5439,7 +5521,82 @@ _status_json_string() {
   printf '"%s":"%s"' "$1" "$(_status_json_escape "$2")"
 }
 
+# Read generated scalar assignments as data, never execute an inactive profile.
+_bbx_profile_value() {
+  local file="$1" key="$2" line value=""
+  [[ -f "$file" ]] || return 0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    case "$line" in
+      "export $key="*|"$key="*) value="${line#*=}" ;;
+      *) continue ;;
+    esac
+    case "$value" in
+      \"*\") value="${value:1:${#value}-2}" ;;
+      \'*\') value="${value:1:${#value}-2}" ;;
+    esac
+  done < "$file"
+  printf '%s' "$value"
+}
+
+# Launch-only choices live beside the existing owner comment, not in a GUI file
+# or in the exported environment of browser services.
+_bbx_remember_launch() {
+  local tag="$1" key="$2" value="$3" live="${BB_CONFIG_DIR}/test.env" tmp
+  [[ -f "$live" ]] || return 0
+  (
+    umask 077
+    tmp="$(mktemp "${live}.launch.XXXXXX")" || return 1
+    local filtered=0
+    grep -v "^# bbx-launch-${key}=" "$live" > "$tmp" || filtered=$?
+    if (( filtered > 1 )); then rm -f -- "$tmp"; return "$filtered"; fi
+    printf '# bbx-launch-%s=%s\n' "$key" "$value" >> "$tmp"
+    mv -- "$tmp" "$live" || { rm -f -- "$tmp"; return 1; }
+    _bbx_own_config "$tag"
+  )
+}
+
+_bbx_connection_values_json() {
+  local tag="$1" file="$2" key envkey value override sep=""
+  printf '{'
+  for key in hostname port background network-id anonymize no-anonymize onion no-onion; do
+    case "$key" in
+      hostname) envkey=DOMAIN ;;
+      port) envkey=APP_PORT ;;
+      *) envkey="# bbx-launch-$key" ;;
+    esac
+    value="$(_bbx_profile_value "$file" "$envkey")"
+    if [[ "$key" == hostname || "$key" == port ]]; then
+      override="$(_bbx_profile_value "${BB_CONFIG_DIR}/user.env" "$envkey")"
+      [[ -n "$override" ]] && value="$override"
+    fi
+    [[ -n "$value" ]] || continue
+    printf '%s%s' "$sep" "$(_status_json_string "$key" "$value")"
+    sep=,
+  done
+  printf '}'
+}
+
+_bbx_connections_json() {
+  local owner tag command file sep="" active=start
+  owner="$(_bbx_config_owner)"
+  case "$owner" in cf|zt|tor|ng|win9x) active="${owner}-start" ;; esac
+  printf '{%s,"profiles":[' "$(_status_json_string active "$active")"
+  for tag in setup cf zt tor ng win9x; do
+    command="${tag}-start"; [[ "$tag" == setup ]] && command=start
+    file="$(_bbx_config_profile "$tag")"
+    [[ "$tag" == "$owner" ]] && file="${BB_CONFIG_DIR}/test.env"
+    printf '%s{%s,"values":' "$sep" "$(_status_json_string name "$command")"
+    _bbx_connection_values_json "$tag" "$file"
+    printf '}'
+    sep=,
+  done
+  printf ']}'
+}
+
 status() {
+    # Observation must never save a stale snapshot over a concurrent setup.
+    trap - EXIT
     if _bbx_for_active; then
       _for_status "$@"
       return $?
@@ -5490,7 +5647,7 @@ status() {
       doc="{\"ok\":true,\"running\":${running},$(_status_json_string detection "$detection"),"
       doc+="$(_status_json_string hostname "${BBX_HOSTNAME:-}"),$(_status_json_string scheme "$status_scheme"),"
       doc+="\"main_port\":${port_json},$(_status_json_string version "${VERSION:-}"),"
-      doc+="\"audio\":{$(_status_json_string state "$audio_state"),$(_status_json_string detail "$audio_detail")}}"
+      doc+="\"audio\":{$(_status_json_string state "$audio_state"),$(_status_json_string detail "$audio_detail")},\"connections\":$(_bbx_connections_json)}"
       if [[ -n "$out_file" ]]; then
         # Write through a temp file in the same directory so a reader never
         # observes a half-written document.

@@ -575,7 +575,10 @@ function Get-BbxStatus {
     }
     $version = Get-LocalBinaryVersion
     return [ordered]@{ ok=$true; running=$running; detection=$detection; hostname=$hostname;
-        scheme=$scheme; main_port=$port; version=$version; audio=[ordered]@{ state=$null; detail=$null } }
+        scheme=$scheme; main_port=$port; version=$version; audio=[ordered]@{ state=$null; detail=$null };
+        connections=[ordered]@{ active="start"; profiles=@(
+            [ordered]@{ name="start"; values=[ordered]@{ hostname=[string]$cfg["DOMAIN"]; port=[string]$cfg["APP_PORT"] } }
+        ) } }
 }
 
 # Function to check for updates
@@ -958,10 +961,14 @@ if ($normalizedCommand -eq "--output-log") {
     # One encoding on both PS5 and PS7; PS5 redirection otherwise writes UTF-16.
     # Retain the create-new handle and flush each observation for the GUI tail.
     $writer = New-Object IO.StreamWriter($created, (New-Object Text.UTF8Encoding($false)))
+    $writer.AutoFlush = $true
+    $savedError = [Console]::Error
     try {
+        # This wrapper also uses Console.Error directly; it bypasses PS streams.
+        [Console]::SetError($writer)
         & $PSCommandPath @inner *>&1 | ForEach-Object { $writer.WriteLine($_.ToString()); $writer.Flush() }
         $commandExit = $LASTEXITCODE
-    } finally { $writer.Dispose() }
+    } finally { [Console]::SetError($savedError); $writer.Dispose() }
     exit $commandExit
 }
 
