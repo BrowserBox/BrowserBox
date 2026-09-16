@@ -172,6 +172,7 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 ## 6. What's New
 
+- **Much broader Windows support (v18.9.0)** — `bbx` on Windows now has the connection and management commands that used to be Linux- and macOS-only: Cloudflare tunnels, Tor onion services, ZeroTier networks, an nginx front door and legacy Windows 9x clients, plus `restart`, `logs`, `use-chrome`, `activate` and `vacancy`. Each tunnel installs what it needs the first time you use it. See [what runs on Windows](#what-runs-on-windows).
 - **Passkey authentication on macOS (v18.0.1)** — sign in to sites with passkeys from inside your remote browser. The [BrowserBox Passkeys helper](https://github.com/BrowserBox/BrowserBox/releases/latest/download/browserbox-passkeys-macos.dmg) (signed & notarized) stores keys in the Secure Enclave and unlocks them with Touch ID; BrowserBox offers the download automatically when a site requests a passkey.
 - **KRNL — BrowserBox over SSH** — a text-mode browser in any terminal: `ssh krnl.duetbrowser.com` to try it free, or [get the KRNL bundle](https://win9-5.com/krnl).
 - **Cloud API** — purchase minute packs at [win9-5.com/pricing](https://win9-5.com/pricing/) and create ephemeral browser sessions via REST. No server to manage.
@@ -290,6 +291,26 @@ irm https://browserbox.io/install.ps1 | iex
 ```
 
 For non-interactive full installs, set `BBX_INSTALL_HOSTNAME` and `BBX_INSTALL_EMAIL`. Legacy install aliases `BBX_HOSTNAME`, `BBX_EMAIL`, and `EMAIL` remain supported for compatibility.
+
+#### What runs on Windows
+
+A Windows install runs one BrowserBox instance per machine. Alongside setup, start, stop, status, licensing and policy, `bbx` on Windows offers:
+
+| Command | What it does |
+| :--- | :--- |
+| `bbx cf-start` | A public HTTPS link through a Cloudflare quick tunnel, with no Cloudflare account |
+| `bbx tor-start` | A Tor onion service, and browsing routed through Tor |
+| `bbx zt-start --network-id <id>` | BrowserBox served on your private ZeroTier network |
+| `bbx ng-start` | nginx in front of BrowserBox on port 443 |
+| `bbx win9x-start` | A plain HTTP link for Windows 9x-era clients |
+| `bbx restart` | Restart the same way it was last started |
+| `bbx logs` | Service state, and the logs of each service and tunnel |
+| `bbx use-chrome <version>` | Pin a Chrome for Testing build, or install stable Chrome |
+| `bbx activate`, `bbx vacancy` | Buy seats, and check seat availability |
+
+cloudflared, Tor, ZeroTier and nginx are installed the first time the command that needs them runs, not by the BrowserBox installer, so a basic install stays lean. Installing ZeroTier needs an elevated PowerShell.
+
+Two things are not available on Windows: audio, and the multi-user commands (`bbx fleet`, `start-as`, `stop-user`). Both need per-seat Remote Desktop Services licensing on Windows Server.
 
 ### Via npm
 
