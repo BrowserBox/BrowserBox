@@ -42,15 +42,38 @@ $script:ResolvedBinaryPath = $null
 $script:RestartArgs = @()
 
 $ScriptMap = @{
-    "install"   = "install.ps1"
-    "update"    = "update.ps1"
-    "setup"     = "setup.ps1"
-    "run"       = "start.ps1"
-    "start"     = "start.ps1"
-    "stop"      = "stop.ps1"
-    "certify"   = "certify.ps1"
-    "prepare"   = "prepare.ps1"
-    "uninstall" = "uninstall.ps1"
+    "install"     = "install.ps1"
+    "update"      = "update.ps1"
+    "setup"       = "setup.ps1"
+    "run"         = "start.ps1"
+    "start"       = "start.ps1"
+    "stop"        = "stop.ps1"
+    "certify"     = "certify.ps1"
+    "prepare"     = "prepare.ps1"
+    "uninstall"   = "uninstall.ps1"
+    "restart"     = "restart.ps1"
+    "logs"        = "logs.ps1"
+    "vacancy"     = "vacancy.ps1"
+    "activate"    = "activate.ps1"
+    "use-chrome"  = "use-chrome.ps1"
+    "cf-start"    = "cf-start.ps1"
+    "cf-run"      = "cf-start.ps1"
+    "tor-start"   = "tor-start.ps1"
+    "tor-run"     = "tor-start.ps1"
+    "zt-start"    = "zt-start.ps1"
+    "zt-run"      = "zt-start.ps1"
+    "ng-start"    = "ng-start.ps1"
+    "ng-run"      = "ng-start.ps1"
+    "ng-config"   = "ng-config.ps1"
+    "win9x-start" = "win9x-start.ps1"
+    "win9x-run"   = "win9x-start.ps1"
+}
+
+# Commands whose first argument is a value, not a named option.
+$PositionalCommands = @{
+    "activate"   = "Seats"
+    "use-chrome" = "Target"
+    "ng-config"  = "Action"
 }
 
 function Resolve-BrowserBoxBinary {
@@ -506,6 +529,22 @@ function Get-BbxHelpCatalogue {
         & $command @("policy","validate") "policy validate" "Policy" "Validate a policy file or the current policy." @(& $text "scope" "--scope" $false @("user","global"); & $text "file" "--file")
         & $command @("policy","set") "policy set" "Policy" "Install a policy bundle from JSON." @(& $text "scope" "--scope" $false @("user","global"); & $text "file" "--file" $true) $true
         & $command @("policy","reset") "policy reset" "Policy" "Reset the policy bundle." @(& $text "scope" "--scope" $false @("user","global"); & $text "baseline" "--baseline" $false @("regulated","compat")) $true
+        # Names and groups match the Unix catalogue entry for entry, so the GUI
+        # reads one command surface rather than a Windows dialect of it.
+        & $command @("restart") "restart" "Instance" "Restart BrowserBox using the current configuration." @() $true
+        & $command @("logs") "logs" "Instance" "View the logs for the BrowserBox services." @(& $text "service" "--service" $false @("main","devtools","cloudflared","tor","nginx"); & $text "lines" "--lines")
+        & $command @("activate") "activate" "Setup" "Activate a license for more users." @(& $text "seats" "--seats")
+        & $command @("vacancy") "vacancy" "Setup" "Show the current license vacancy snapshot." @()
+        & $command @("use-chrome") "use-chrome" "Setup" "Install a specific browser and use it." @(& $text "target" "--target" $true) $true
+        & $command @("cf-start") "cf-start" "Tunnels" "Run BrowserBox through a Cloudflare quick tunnel." @(& $text "port" "--port"; & $flag "background" "--background")
+        & $command @("zt-start") "zt-start" "Tunnels" "Expose BrowserBox on your ZeroTier network." @(& $text "network-id" "--network-id" $true; & $text "port" "--port")
+        & $command @("tor-start") "tor-start" "Tunnels" "Serve BrowserBox as a Tor onion service." @(& $flag "no-onion" "--no-onion"; & $flag "no-anonymize" "--no-anonymize"; & $text "port" "--port")
+        & $command @("ng-start") "ng-start" "Tunnels" "Proxy BrowserBox with Nginx." @(& $text "listen-port" "--listen-port"; & $text "port" "--port"; & $text "hostname" "--hostname")
+        & $command @("ng-config","print") "ng-config print" "Tunnels" "Print external Nginx configuration." @()
+        & $command @("ng-config","validate") "ng-config validate" "Tunnels" "Validate external Nginx configuration." @()
+        & $command @("ng-config","apply") "ng-config apply" "Tunnels" "Apply external Nginx configuration." @() $true
+        & $command @("win9x-start") "win9x-start" "Tunnels" "Run in Windows 9x compatibility mode." @(& $text "port" "--port")
+        & $command @("--faq") "--faq" "Help" "Show frequently asked questions." @()
         & $command @("--help-json") "--help-json" "Help" "Show the machine-readable command catalogue." @(& $text "out" "--out")
     )
     return [ordered]@{ schema="bbx.help/1"; commands=$commands }
@@ -575,10 +614,92 @@ function Get-BbxStatus {
     }
     $version = Get-LocalBinaryVersion
     return [ordered]@{ ok=$true; running=$running; detection=$detection; hostname=$hostname;
-        scheme=$scheme; main_port=$port; version=$version; audio=[ordered]@{ state=$null; detail=$null };
-        connections=[ordered]@{ active="start"; profiles=@(
-            [ordered]@{ name="start"; values=[ordered]@{ hostname=[string]$cfg["DOMAIN"]; port=[string]$cfg["APP_PORT"] } }
-        ) } }
+        scheme=$scheme; main_port=$port; version=$version; audio=(Get-BbxAudioStatus -ConfigDir $cfgDir);
+        connections=(Get-BbxConnectionsStatus -ConfigDir $cfgDir) }
+}
+
+# Audio is a real, permanent gap on Windows rather than an unknown: multi-user
+# RDP audio on Windows Server needs per-seat RDS licensing BrowserBox does not
+# ship. Say so, so the GUI can explain it instead of showing nothing.
+function Get-BbxAudioStatus {
+    param([string]$ConfigDir)
+    $state = "disabled"
+    $detail = "not supported on Windows: multi-user RDP audio requires per-seat RDS licensing"
+    $path = Join-Path $ConfigDir "audio.state"
+    if (Test-Path $path) {
+        foreach ($line in (Get-Content $path -ErrorAction SilentlyContinue)) {
+            if ($line -match '^state=(.*)$') { $state = $matches[1].Trim() }
+            elseif ($line -match '^detail=(.*)$') { $detail = $matches[1].Trim() }
+        }
+    }
+    return [ordered]@{ state=$state; detail=$detail }
+}
+
+# The same six connection profiles the Unix status reports, in the same order
+# and with the same names, so one GUI reader serves both platforms.
+function Get-BbxConnectionsStatus {
+    param([string]$ConfigDir)
+
+    $owner = "setup"
+    $launch = @{}
+    $statePath = Join-Path $ConfigDir "connection.json"
+    if (Test-Path $statePath) {
+        try {
+            $parsed = (Get-Content $statePath -Raw -ErrorAction Stop) | ConvertFrom-Json -ErrorAction Stop
+            if ($parsed.PSObject.Properties.Name -contains "owner" -and $parsed.owner) { $owner = [string]$parsed.owner }
+            if ($parsed.PSObject.Properties.Name -contains "launch" -and $parsed.launch) {
+                foreach ($tag in $parsed.launch.PSObject.Properties) {
+                    $values = @{}
+                    foreach ($kv in $tag.Value.PSObject.Properties) { $values[$kv.Name] = [string]$kv.Value }
+                    $launch[$tag.Name] = $values
+                }
+            }
+        } catch { }
+    }
+
+    $userEnv = Read-TestEnv -Path (Join-Path $ConfigDir "user.env")
+    $order = @("setup", "cf", "zt", "tor", "ng", "win9x")
+    $launchKeys = @{
+        "cf"    = @("background")
+        "zt"    = @("network-id")
+        "tor"   = @("anonymize", "no-anonymize", "onion", "no-onion")
+        "ng"    = @("listen-port")
+        "setup" = @()
+        "win9x" = @()
+    }
+
+    $profiles = @()
+    foreach ($tag in $order) {
+        # The owning tag's configuration is the live file; the others were
+        # filed under their own name when they last had it.
+        if ($tag -eq $owner) {
+            $source = Join-Path $ConfigDir "test.env"
+        } else {
+            $source = Join-Path $ConfigDir "test.env.profile.$tag"
+        }
+        $values = [ordered]@{}
+        if (Test-Path $source) {
+            $profileCfg = Read-TestEnv -Path $source
+            $hostValue = $profileCfg["DOMAIN"]
+            if ($userEnv.ContainsKey("DOMAIN") -and $userEnv["DOMAIN"]) { $hostValue = $userEnv["DOMAIN"] }
+            $portValue = $profileCfg["APP_PORT"]
+            if ($userEnv.ContainsKey("APP_PORT") -and $userEnv["APP_PORT"]) { $portValue = $userEnv["APP_PORT"] }
+            if ($hostValue) { $values["hostname"] = [string]$hostValue }
+            if ($portValue) { $values["port"] = [string]$portValue }
+        }
+        if ($launch.ContainsKey($tag)) {
+            foreach ($key in $launchKeys[$tag]) {
+                if ($launch[$tag].ContainsKey($key) -and $launch[$tag][$key]) {
+                    $values[$key] = [string]$launch[$tag][$key]
+                }
+            }
+        }
+        $name = if ($tag -eq "setup") { "start" } else { "$tag-start" }
+        $profiles += [ordered]@{ name=$name; values=$values }
+    }
+
+    $active = if ($order -contains $owner -and $owner -ne "setup") { "$owner-start" } else { "start" }
+    return [ordered]@{ active=$active; profiles=$profiles }
 }
 
 # Function to check for updates
@@ -696,24 +817,69 @@ function Show-Help {
     Write-Host "bbx CLI (Windows Binary Distribution)" -ForegroundColor Green
     Write-Host "Usage: bbx <command> [options]" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "Core Commands:" -ForegroundColor Cyan
+    Write-Host "SETUP & MANAGEMENT" -ForegroundColor Cyan
     Write-Host "  install         Install BrowserBox binary and CLI" -ForegroundColor White
     Write-Host "  update          Update BrowserBox to the latest version" -ForegroundColor White
-    Write-Host "  setup           Create/update test.env + login.link" -ForegroundColor White
-    Write-Host "  start, run      Start BrowserBox services (pm2-managed)" -ForegroundColor White
-    Write-Host "  stop            Stop BrowserBox services (best-effort)" -ForegroundColor White
-    Write-Host "  status          Read process/endpoint state (--json supported)" -ForegroundColor White
-    Write-Host "  policy          Dispatch policy read, check and mutation commands" -ForegroundColor White
-    Write-Host "  certify         Validate license and obtain ticket" -ForegroundColor White
     Write-Host "  uninstall       Remove BrowserBox from this machine" -ForegroundColor White
-    Write-Host "  revalidate      Clear ticket and revalidate license" -ForegroundColor White
+    Write-Host "  setup           Configure core options. bbx setup [-Hostname <h>] [-Port <p>] [-Token <t>]" -ForegroundColor White
+    Write-Host "  activate        Activate a license for more users. bbx activate [number_of_users]" -ForegroundColor White
+    Write-Host "  certify         Validate your current license status" -ForegroundColor White
+    Write-Host "  revalidate      Clear the local ticket and validate again" -ForegroundColor White
+    Write-Host "  vacancy         Show the current license vacancy snapshot" -ForegroundColor White
+    Write-Host "  use-chrome      Install a specific browser and use it. bbx use-chrome <version|url|stable>" -ForegroundColor White
+    Write-Host "  status          Read process/endpoint state (--json supported)" -ForegroundColor White
+    Write-Host "  logs            Show service state and logs" -ForegroundColor White
+    Write-Host ""
+    Write-Host "CORE ACTIONS" -ForegroundColor Cyan
+    Write-Host "  start, run      Start BrowserBox for this Windows user" -ForegroundColor White
+    Write-Host "  stop            Stop BrowserBox and any transport bbx started" -ForegroundColor White
+    Write-Host "  restart         Restart using the configuration in use" -ForegroundColor White
+    Write-Host ""
+    Write-Host "ADVANCED RUNNERS & TUNNELS" -ForegroundColor Cyan
+    Write-Host "  cf-start        Run through a Cloudflare quick tunnel. bbx cf-start [-Port <p>] [-Background]" -ForegroundColor White
+    Write-Host "  zt-start        Serve on your ZeroTier network. bbx zt-start -NetworkId <id>" -ForegroundColor White
+    Write-Host "  tor-start       Serve as a Tor onion service. bbx tor-start [-NoOnion] [-NoAnonymize]" -ForegroundColor White
+    Write-Host "  ng-start        Proxy with nginx. bbx ng-start [-ListenPort <p>]" -ForegroundColor White
+    Write-Host "  ng-config       Print, validate or apply the nginx configuration" -ForegroundColor White
+    Write-Host "  win9x-start     Run in Windows 9x compatibility mode" -ForegroundColor White
+    Write-Host ""
+    Write-Host "OTHER COMMANDS" -ForegroundColor Cyan
+    Write-Host "  policy          Dispatch policy read, check and mutation commands" -ForegroundColor White
+    Write-Host "  --faq           Display frequently asked questions" -ForegroundColor White
     Write-Host "  --version, -v   Show version information" -ForegroundColor White
     Write-Host "  --help, -h      Show this help message" -ForegroundColor White
     Write-Host "  --help-json     Show the GUI command catalogue" -ForegroundColor White
     Write-Host ""
+    Write-Host "Not available on Windows: audio (Windows Server multi-user RDP audio needs" -ForegroundColor Gray
+    Write-Host "per-seat licensing), fleet, start-as and stop-user (Linux user pools)." -ForegroundColor Gray
     Write-Host "Recognized binary commands are passed through; unknown or unsupported commands exit 2." -ForegroundColor Gray
-    Write-Host "Run 'browserbox --help' after installation for full command list." -ForegroundColor Gray
     Write-Host "Run 'bbx <command> -help' for command-specific options." -ForegroundColor Gray
+}
+
+function Show-Faq {
+    Write-Host "BrowserBox FAQ (Windows)" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Where is my login link?" -ForegroundColor Cyan
+    Write-Host "  %USERPROFILE%\.config\dosaygo\bbpro\login.link, rewritten on every start." -ForegroundColor White
+    Write-Host ""
+    Write-Host "Why is there no sound?" -ForegroundColor Cyan
+    Write-Host "  Audio is not supported on Windows. Multi-user RDP audio on Windows Server" -ForegroundColor White
+    Write-Host "  requires per-seat RDS licensing that BrowserBox does not ship." -ForegroundColor White
+    Write-Host ""
+    Write-Host "How do I expose this machine to someone else?" -ForegroundColor Cyan
+    Write-Host "  bbx cf-start for a public URL, bbx zt-start for a private network," -ForegroundColor White
+    Write-Host "  bbx tor-start for an onion address, bbx ng-start to serve on 443." -ForegroundColor White
+    Write-Host ""
+    Write-Host "The browser will not start." -ForegroundColor Cyan
+    Write-Host "  BrowserBox needs a Chrome-family browser. Install one with" -ForegroundColor White
+    Write-Host "  bbx use-chrome stable, then bbx restart." -ForegroundColor White
+    Write-Host ""
+    Write-Host "My certificate is not trusted on another machine." -ForegroundColor Cyan
+    Write-Host "  Local hostnames and private addresses get a machine-local mkcert" -ForegroundColor White
+    Write-Host "  certificate. Use a public hostname, or import this machine's root CA." -ForegroundColor White
+    Write-Host ""
+    Write-Host "Where do I get a license?" -ForegroundColor Cyan
+    Write-Host "  bbx activate, or https://browserbox.io" -ForegroundColor White
 }
 
 function Normalize-CommandArgs {
@@ -744,6 +910,22 @@ function Show-CommandHelp {
         "uninstall" { & (Join-Path $PSScriptRoot "uninstall.ps1") -Help; return }
         "prepare" { Write-Host "bbx prepare (no help available)" -ForegroundColor Yellow; return }
         "revalidate" { Write-Host "bbx revalidate (no options)" -ForegroundColor Yellow; return }
+        "restart" { & (Join-Path $PSScriptRoot "restart.ps1") -Help; return }
+        "logs" { & (Join-Path $PSScriptRoot "logs.ps1") -Help; return }
+        "vacancy" { & (Join-Path $PSScriptRoot "vacancy.ps1") -Help; return }
+        "activate" { & (Join-Path $PSScriptRoot "activate.ps1") -Help; return }
+        "use-chrome" { & (Join-Path $PSScriptRoot "use-chrome.ps1") -Help; return }
+        "cf-start" { & (Join-Path $PSScriptRoot "cf-start.ps1") -Help; return }
+        "cf-run" { & (Join-Path $PSScriptRoot "cf-start.ps1") -Help; return }
+        "tor-start" { & (Join-Path $PSScriptRoot "tor-start.ps1") -Help; return }
+        "tor-run" { & (Join-Path $PSScriptRoot "tor-start.ps1") -Help; return }
+        "zt-start" { & (Join-Path $PSScriptRoot "zt-start.ps1") -Help; return }
+        "zt-run" { & (Join-Path $PSScriptRoot "zt-start.ps1") -Help; return }
+        "ng-start" { & (Join-Path $PSScriptRoot "ng-start.ps1") -Help; return }
+        "ng-run" { & (Join-Path $PSScriptRoot "ng-start.ps1") -Help; return }
+        "ng-config" { & (Join-Path $PSScriptRoot "ng-config.ps1") -Help; return }
+        "win9x-start" { & (Join-Path $PSScriptRoot "win9x-start.ps1") -Help; return }
+        "win9x-run" { & (Join-Path $PSScriptRoot "win9x-start.ps1") -Help; return }
         default { Show-Help; return }
     }
 }
@@ -755,12 +937,34 @@ function Convert-ArgListToSplat {
     )
 
     $map = @{}
-    switch ($Command) {
+    switch -Wildcard ($Command) {
         "setup" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
         "run" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
         "start" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
+        "cf-*" { $map = @{ "port" = "Port"; "p" = "Port"; "background" = "Background"; "d" = "Background";
+                           "tunnel-timeout" = "TunnelTimeout" } }
+        "tor-*" { $map = @{ "port" = "Port"; "p" = "Port"; "no-onion" = "NoOnion"; "onion" = "Onion";
+                            "no-darkweb" = "NoAnonymize"; "no-anonymize" = "NoAnonymize";
+                            "anonymize" = "Anonymize"; "bootstrap-timeout" = "BootstrapTimeout" } }
+        "zt-*" { $map = @{ "port" = "Port"; "p" = "Port"; "network-id" = "NetworkId";
+                           "address-timeout" = "AddressTimeout" } }
+        "ng-start" { $map = @{ "port" = "Port"; "p" = "Port"; "listen-port" = "ListenPort";
+                               "host" = "Hostname"; "hostname" = "Hostname" } }
+        "ng-run" { $map = @{ "port" = "Port"; "p" = "Port"; "listen-port" = "ListenPort";
+                             "host" = "Hostname"; "hostname" = "Hostname" } }
+        "win9x-*" { $map = @{ "port" = "Port"; "p" = "Port" } }
+        "logs" { $map = @{ "service" = "Service"; "s" = "Service"; "lines" = "Lines"; "n" = "Lines" } }
+        "use-chrome" { $map = @{} }
+        "activate" { $map = @{ "seats" = "Seats" } }
         default { $map = @{} }
     }
+
+    # Unix spells these as bare negations; Windows scripts take switches, so a
+    # positive form has to clear the corresponding switch rather than set one.
+    $inverse = @{ "Onion" = "NoOnion"; "Anonymize" = "NoAnonymize" }
+
+    $positionalName = $null
+    if ($PositionalCommands.ContainsKey($Command)) { $positionalName = $PositionalCommands[$Command] }
 
     $splat = @{}
 
@@ -796,7 +1000,20 @@ function Convert-ArgListToSplat {
             continue
         }
 
+        if ($positionalName -and -not $splat.ContainsKey($positionalName)) {
+            $splat[$positionalName] = $a
+            continue
+        }
+
         throw "Positional argument '$a' is not supported; use named options (e.g. -Hostname localhost -Port 9955)."
+    }
+
+    foreach ($key in @($splat.Keys)) {
+        if ($inverse.ContainsKey($key)) {
+            # '-onion' means 'not -NoOnion'; drop both so the default applies.
+            $splat.Remove($inverse[$key]) | Out-Null
+            $splat.Remove($key) | Out-Null
+        }
     }
 
     return $splat
@@ -837,21 +1054,24 @@ function Invoke-Revalidate {
     }
 }
 
+# Called as a statement, never as the condition of an if: a command that writes
+# to stdout (bbx ng-config print, bbx vacancy) would otherwise have its output
+# collected as this function's return value and thrown away.
 function Invoke-CommandScript {
     param (
         [string]$Command,
         [string[]]$Arguments
     )
 
-    if (-not $ScriptMap.ContainsKey($Command)) { return $false }
-
     $scriptPath = Join-Path $PSScriptRoot $ScriptMap[$Command]
     if (-not (Test-Path $scriptPath)) {
-        Write-Error "Script for '$Command' not found at $scriptPath"
-        return $true
+        [Console]::Error.WriteLine("bbx: the script for '$Command' is missing at $scriptPath")
+        exit 1
     }
 
-    Write-Host "Running bbx $Command..." -ForegroundColor Cyan
+    # Progress chatter belongs on stderr so stdout carries only the command's
+    # own output, which callers redirect and parse.
+    [Console]::Error.WriteLine("Running bbx $Command...")
 
     $global:LASTEXITCODE = 0
 
@@ -903,6 +1123,13 @@ function Get-LocalBinaryVersion {
 
 # Main execution logic (argv-driven; do not let PowerShell bind subcommand options to this wrapper)
 $argv = @($args | Where-Object { $_ -ne $null -and $_ -ne "" })
+
+# Library mode: let the regression suite dot-source this file and call the
+# parsing helpers without an update check or a dispatched command.
+if ($env:BBX_LIB_MODE -or ($argv -contains '-BbxLibraryMode')) {
+    return
+}
+
 if (-not $argv -or $argv.Count -eq 0) {
     Show-Help
     exit 0
@@ -924,7 +1151,7 @@ $binaryCommands = @(
     '--install', '--full-install', '--uninstall', '--version', '--help'
 )
 $wrapperCommands = @(
-    'status', 'revalidate', '--help-json', '--output-log',
+    'status', 'revalidate', '--help-json', '--output-log', '--faq',
     '--help', '-help', 'help', '-h', '--version', '-v', 'version'
 )
 if (-not $ScriptMap.ContainsKey($normalizedCommand) -and
@@ -972,6 +1199,11 @@ if ($normalizedCommand -eq "--output-log") {
     exit $commandExit
 }
 
+if ($normalizedCommand -eq "--faq") {
+    Show-Faq
+    exit 0
+}
+
 if ($normalizedCommand -eq "--help-json") {
     $rc = Write-BbxHelpCatalogue -ArgList $CommandArgs
     exit $rc
@@ -1010,7 +1242,11 @@ elseif ($CommandArgs -and ($CommandArgs -contains "-Help")) {
 Invoke-UpdateCheck -Command $normalizedCommand -CommandArgs $CommandArgs
 
 # Chrome guard: commands that launch BrowserBox require a browser
-$chromeNeededCommands = @("run", "start", "restart")
+$chromeNeededCommands = @(
+    "run", "start", "restart",
+    "cf-start", "cf-run", "tor-start", "tor-run", "zt-start", "zt-run",
+    "ng-start", "ng-run", "win9x-start", "win9x-run"
+)
 if ($normalizedCommand -in $chromeNeededCommands) {
     $chromeFound = $false
     if ($env:CHROME_PATH -and (Test-Path $env:CHROME_PATH)) {
@@ -1104,7 +1340,8 @@ if ($normalizedCommand -in @("run", "start")) {
     Write-Host "[startup] License certified." -ForegroundColor Green
     exit 0
 }
-elseif (Invoke-CommandScript -Command $normalizedCommand -Arguments $CommandArgs) {
+elseif ($ScriptMap.ContainsKey($normalizedCommand)) {
+    Invoke-CommandScript -Command $normalizedCommand -Arguments $CommandArgs
     exit $LASTEXITCODE
 }
 else {
