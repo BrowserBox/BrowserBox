@@ -211,19 +211,19 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 <div align="center">
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox displays the web, like a normal browser, but enterprise secure." src="https://github.com/user-attachments/assets/22150497-a6c9-4e05-9770-e9f5e7196c61" />
+    <img width="600" alt="BrowserBox displays the web, like a normal browser, but enterprise secure." src="readme-files/bbx-secure-web-browsing.webp" />
     <figcaption>Secure Web Browsing</figcaption>
   </figure>
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox displays PDFs like a normal browser." src="https://github.com/user-attachments/assets/45240ca9-3f1d-458f-9d92-d05cfb14f991" />
+    <img width="600" alt="BrowserBox displays PDFs like a normal browser." src="readme-files/bbx-pdf-viewing.webp" />
     <figcaption>Seamless PDF Viewing</figcaption>
   </figure>
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox has DevTools like a normal browser" src="https://github.com/user-attachments/assets/a6457338-117a-44ee-8ab8-87dafa471f11" />
+    <img width="600" alt="BrowserBox has DevTools like a normal browser" src="readme-files/bbx-devtools.webp" />
     <figcaption>Powerful DevTools</figcaption>
   </figure>
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox uploads files, and does many other things, just like a normal browser." src="https://github.com/user-attachments/assets/a70608cd-30d7-48ad-a707-4bacfc6d9a73" />
+    <img width="600" alt="BrowserBox uploads files, and does many other things, just like a normal browser." src="readme-files/bbx-file-uploads.webp" />
     <figcaption>Full Browser Features (File Uploads, etc.)</figcaption>
   </figure>
 </div>
