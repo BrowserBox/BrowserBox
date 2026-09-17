@@ -16,6 +16,29 @@
   <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Options-pink" alt="DLP Options"></a>
 </p>
 
+<h2 align="center">🖥️ NEW in v18.10.0 — the BrowserBox desktop app <sup>BETA</sup></h2>
+
+<p align="center">
+  <img src="readme-files/bbx-gui-desktop-app.png" alt="The BrowserBox desktop app: the Session view showing your devices, a Cloudflare tunnel and this host, all connected" width="960">
+</p>
+
+<p align="center">
+  BrowserBox now ships with a desktop app for running your BrowserBox without the command line.<br>
+  Start and stop sessions, pick how people reach it (Cloudflare, ngrok, Tor, ZeroTier or direct), copy the login link,<br>
+  manage browser policy, and run any <code>bbx</code> command from a form, with live progress and the full output a click away.<br>
+  On Linux hosts, the <strong>Fleet</strong> dashboard shows your whole seat pool at a glance: capacity, routes, health checks, and one-click actions per seat.
+</p>
+
+<p align="center">
+  <strong>Open it with <code>bbx gui</code></strong>. The app comes inside the BrowserBox binary you already installed, so there is nothing extra to download.<br>
+  It installs for your user on first run and prints where it lives, so you can pin it to your Dock, Start menu or desktop.<br>
+  Signed and notarized on macOS, signed on Windows, and available on Linux desktops (X11).
+</p>
+
+<p align="center">
+  <sub><strong>Beta:</strong> the desktop app is new and still evolving. The <code>bbx</code> command line remains the complete, supported interface. Please <a href="mailto:api@browserbox.io">tell us</a> what works and what doesn't.</sub>
+</p>
+
 <p align="center">
   <strong>🔐 NEW in v18.0.1 — Passkey authentication on macOS:</strong> sign in to websites with real passkeys inside your remote browser.<br>
   Passkeys are created and stored on your Mac's Secure Enclave and unlocked with Touch ID via the
