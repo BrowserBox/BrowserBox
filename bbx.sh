@@ -4836,6 +4836,66 @@ stop() {
     trap - TERM
 }
 
+# Install this build's desktop GUI for the current user (the browserbox binary
+# carries it and verifies it) and open it. The install path is printed to stderr
+# so it can be pinned, added to a dock or given a desktop shortcut.
+gui() {
+  local reinstall=""
+  case "${1:-}" in
+    --reinstall) reinstall="--force" ;;
+    "") ;;
+    *) printf 'Usage: bbx gui [--reinstall]\n' >&2; return 2 ;;
+  esac
+  local binary
+  binary="$(command -v browserbox 2>/dev/null || true)"
+  if [[ -z "$binary" ]]; then
+    printf '%b\n' "${RED}bbx gui: the browserbox binary is not installed. Run the BrowserBox installer first.${NC}" >&2
+    return 1
+  fi
+  # A binary from before the GUI would treat --install-gui as "start".
+  if ! "$binary" --help 2>/dev/null | grep -q -- '--install-gui'; then
+    printf '%b\n' "${YELLOW}This BrowserBox build does not include the desktop GUI. Run bbx update to get a release that does.${NC}" >&2
+    return 3
+  fi
+  local result status=0
+  result="$("$binary" --install-gui ${reinstall:+"$reinstall"})" || status=$?
+  if (( status != 0 )); then
+    if (( status == 3 )); then
+      printf '%b\n' "${YELLOW}This BrowserBox build does not include the desktop GUI. Run bbx update to get a release that does.${NC}" >&2
+    fi
+    return "$status"
+  fi
+  local app executable
+  app="$(printf '%s' "$result" | sed -n 's/.*"path":"\([^"]*\)".*/\1/p' | sed 's/\\\\/\\/g')"
+  executable="$(printf '%s' "$result" | sed -n 's/.*"executable":"\([^"]*\)".*/\1/p' | sed 's/\\\\/\\/g')"
+  if [[ -z "$app" || -z "$executable" ]]; then
+    printf 'bbx gui: the GUI installer returned no path: %s\n' "$result" >&2
+    return 1
+  fi
+  printf 'BrowserBox GUI: %s\n' "$app" >&2
+
+  # The GUI drives this bbx. Resolve it once so the window does not depend on
+  # the desktop session's PATH.
+  local self="$0"
+  [[ "$self" == */* ]] || self="$(command -v "$self" 2>/dev/null || printf '%s' "$self")"
+  self="$(cd "$(dirname "$self")" && pwd)/$(basename "$self")"
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    open -n "$app" --args "$self"
+    return $?
+  fi
+  if [[ -z "${DISPLAY:-}" ]]; then
+    printf '%b\n' "${YELLOW}No X11 display is available (DISPLAY is not set). Open the GUI from a desktop session: ${executable}${NC}" >&2
+    return 1
+  fi
+  if command -v setsid >/dev/null 2>&1; then
+    setsid "$executable" "$self" </dev/null >/dev/null 2>&1 &
+  else
+    nohup "$executable" "$self" </dev/null >/dev/null 2>&1 &
+  fi
+  return 0
+}
+
 logs() {
     printf "${YELLOW}Displaying BrowserBox logs...${NC}\n"
     browserbox pm2 list || printf "${YELLOW}browserbox pm2 list failed (services may not be running).${NC}\n"
@@ -10273,7 +10333,8 @@ usage() {
     printf "  ${GREEN}use-chrome${NC}     Install a specific browser and use it. ${BOLD}bbx use-chrome <version|url|stable>${NC}\n"
     printf "  ${GREEN}status${NC}         Check the running status of BrowserBox.\n"
     printf '%b\n' "  ${GREEN}vacancy${NC}        Show the current license vacancy snapshot."
-    printf "  ${GREEN}logs${NC}           View the logs for the BrowserBox service.\n\n"
+    printf "  ${GREEN}logs${NC}           View the logs for the BrowserBox service.\n"
+    printf "  ${GREEN}gui${NC}            Install and open the desktop app; prints where it lives. ${BOLD}bbx gui [--reinstall]${NC}\n\n"
 
     printf "${BOLD}CORE ACTIONS${NC}\n"
     printf "  ${GREEN}start${NC}           Start BrowserBox for the current user. ${BOLD}bbx start [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
@@ -10670,6 +10731,7 @@ case "$1" in
     vacancy) shift 1; vacancy "$@";;
     run-as|start-as) shift 1; run_as "$@";;
     fleet) shift 1; fleet_main "$@";;
+    gui) shift 1; gui "$@" || exit $?;;
     help)
       shift 1
       case "${1:-}" in

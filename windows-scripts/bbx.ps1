@@ -53,6 +53,7 @@ $ScriptMap = @{
     "uninstall"   = "uninstall.ps1"
     "restart"     = "restart.ps1"
     "logs"        = "logs.ps1"
+    "gui"         = "gui.ps1"
     "vacancy"     = "vacancy.ps1"
     "activate"    = "activate.ps1"
     "use-chrome"  = "use-chrome.ps1"
@@ -829,6 +830,7 @@ function Show-Help {
     Write-Host "  use-chrome      Install a specific browser and use it. bbx use-chrome <version|url|stable>" -ForegroundColor White
     Write-Host "  status          Read process/endpoint state (--json supported)" -ForegroundColor White
     Write-Host "  logs            Show service state and logs" -ForegroundColor White
+    Write-Host "  gui             Install and open the desktop app; prints where it lives. bbx gui [-Reinstall]" -ForegroundColor White
     Write-Host ""
     Write-Host "CORE ACTIONS" -ForegroundColor Cyan
     Write-Host "  start, run      Start BrowserBox for this Windows user" -ForegroundColor White
@@ -955,6 +957,7 @@ function Convert-ArgListToSplat {
         "win9x-*" { $map = @{ "port" = "Port"; "p" = "Port" } }
         "logs" { $map = @{ "service" = "Service"; "s" = "Service"; "lines" = "Lines"; "n" = "Lines" } }
         "use-chrome" { $map = @{} }
+        "gui" { $map = @{ "reinstall" = "Reinstall" } }
         "activate" { $map = @{ "seats" = "Seats" } }
         default { $map = @{} }
     }
