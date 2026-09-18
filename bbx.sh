@@ -260,6 +260,93 @@ protecc_win_sysadmins() {
 # Configuration
 PUBLIC_REPO="${BBX_RELEASE_REPO:-BrowserBox/BrowserBox}"
 BINARY_NAME="browserbox"
+
+# ---- Release asset distribution: CDN first, GitHub as fallback ----
+# GitHub serves release assets from an origin that is a cold trans-Pacific
+# fetch for much of the world (measured from APAC: ~80 KB/s, i.e. ~30 minutes
+# for the Linux binary). We mirror every release asset to a CDN and read from
+# there first, falling back to GitHub on any failure.
+#
+# The CDN is untrusted by construction: nothing downloaded here is installed
+# until verify_release_bundle() checks it against the release manifest, which
+# is RSA-signed with a key baked into this script. A hostile or broken mirror
+# can cause a fallback, never a bad install.
+#
+# Assets live under a per-tag prefix, e.g.
+#   https://dl.getbrowserbox.com/v18.10.0/browserbox-linux-x64
+BBX_ASSET_BASE="${BBX_ASSET_BASE:-https://dl.getbrowserbox.com}"
+# Set BBX_NO_CDN=1 to skip the mirror entirely and use GitHub only.
+BBX_NO_CDN="${BBX_NO_CDN:-}"
+# Internal: set when a CDN artifact fails verification so the retry uses GitHub.
+BBX_ASSET_FORCE_GITHUB=""
+# Internal: which origin served the most recent asset ("cdn" | "github").
+BBX_LAST_ASSET_SOURCE=""
+
+# True when the mirror may be used for this release. Private and internal
+# releases are fetched through the authenticated GitHub asset API instead --
+# they are not mirrored.
+cdn_eligible() {
+  [[ -z "$BBX_ASSET_FORCE_GITHUB" ]] || return 1
+  [[ -z "$BBX_NO_CDN" ]] || return 1
+  [[ -n "$BBX_ASSET_BASE" ]] || return 1
+  [[ -z "${GH_TOKEN:-}" ]] || return 1
+  [[ "$PUBLIC_REPO" == "BrowserBox/BrowserBox" ]] || return 1
+  return 0
+}
+
+cdn_asset_url() {  # <tag> <asset_name>
+  printf '%s/%s/%s' "${BBX_ASSET_BASE%/}" "$1" "$2"
+}
+
+github_asset_url() {  # <tag> <asset_name>
+  printf 'https://github.com/%s/releases/download/%s/%s' "$PUBLIC_REPO" "$1" "$2"
+}
+
+# Fetch one release asset to a destination path, CDN first then GitHub.
+# Sets BBX_LAST_ASSET_SOURCE. Extra curl args may be passed after the dest.
+# The CDN attempt fails fast (short connect timeout, low-speed abort) so a
+# dead or degraded mirror costs seconds, not minutes, before we fall back.
+fetch_release_asset() {  # <tag> <asset_name> <dest> [extra curl args...]
+  local tag="$1" asset="$2" dest="$3"; shift 3
+  local curl_auth=()
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    curl_auth=(-H "Authorization: Bearer ${GH_TOKEN}")
+  fi
+
+  if cdn_eligible; then
+    local cdn_url
+    cdn_url="$(cdn_asset_url "$tag" "$asset")"
+    if curl -L --fail --connect-timeout 5 --speed-time 20 --speed-limit 51200 \
+         "$@" -o "$dest" "$cdn_url" 2>/dev/null; then
+      if [[ -s "$dest" ]]; then
+        BBX_LAST_ASSET_SOURCE="cdn"
+        return 0
+      fi
+    fi
+    rm -f "$dest" 2>/dev/null
+  fi
+
+  local gh_url
+  gh_url="$(github_asset_url "$tag" "$asset")"
+  if curl -L --fail --connect-timeout 60 "${curl_auth[@]}" "$@" -o "$dest" "$gh_url"; then
+    [[ -s "$dest" ]] || { rm -f "$dest" 2>/dev/null; return 1; }
+    BBX_LAST_ASSET_SOURCE="github"
+    return 0
+  fi
+  rm -f "$dest" 2>/dev/null
+  return 1
+}
+
+# After a verification failure, arrange for the next attempt to bypass the
+# mirror. Returns 0 if a GitHub retry is worth making (i.e. the artifact that
+# just failed came from the CDN), 1 if we already used GitHub.
+asset_retry_on_github() {
+  if [[ "$BBX_LAST_ASSET_SOURCE" == "cdn" && -z "$BBX_ASSET_FORCE_GITHUB" ]]; then
+    BBX_ASSET_FORCE_GITHUB=1
+    return 0
+  fi
+  return 1
+}
 GLOBAL_BIN_DIR="/usr/local/bin"
 SUDO_BIN="$(command -v sudo || true)"
 
@@ -437,16 +524,17 @@ download_binary() {
     fi
 
   else
-    # 2. HANDLE PUBLIC RELEASES
-    local download_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/${asset_name}"
-    
+    # 2. HANDLE PUBLIC RELEASES -- mirror first, GitHub as fallback.
     # DOWNLOAD PUBLIC BINARY
-    # Do NOT use 2>&1.
-    if ! curl -L --fail --progress-bar --connect-timeout 60 "${curl_auth[@]}" -o "$temp_file" "$download_url"; then
-      echo -e "${RED}Failed to download binary from ${download_url}${NC}" >&2
-      echo -e "${YELLOW}Possible causes: No release asset, network issue, or bad tag.${NC}" >&2
+    # Do NOT use 2>&1: --progress-bar writes to stderr and would be captured.
+    if ! fetch_release_asset "$tag" "$asset_name" "$temp_file" --progress-bar; then
+      echo -e "${RED}Failed to download ${asset_name} for ${tag}${NC}" >&2
+      echo -e "${YELLOW}Tried the release mirror and GitHub. Possible causes: no release asset, network issue, or bad tag.${NC}" >&2
       rm -f "$temp_file"
       exit 1
+    fi
+    if [[ "$BBX_LAST_ASSET_SOURCE" == "github" ]] && cdn_eligible; then
+      echo -e "${YELLOW}Release mirror unavailable; downloaded from GitHub (slower).${NC}" >&2
     fi
   fi
   
@@ -2237,10 +2325,25 @@ install_bbx() {
             *) printf "${RED}Unsupported install platform: %s${NC}\n" "$platform"; rm -rf "$temp_manifest_dir"; rm -f "$exe_to_run"; return 1 ;;
           esac
           if ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$exe_to_run" "$artifact_key"; then
-            printf "${RED}Downloaded BrowserBox failed integrity verification; refusing to install.${NC}\n"
-            rm -rf "$temp_manifest_dir"
-            rm -f "$exe_to_run"
-            return 1
+            # A checksum/signature failure on a mirrored artifact is treated as
+            # a mirror problem, not a release problem: retry once from GitHub
+            # before refusing. A genuine bad release fails both times.
+            if asset_retry_on_github; then
+              printf "${YELLOW}Mirror artifact failed verification; retrying from GitHub...${NC}\n" >&2
+              rm -rf "$temp_manifest_dir"
+              rm -f "$exe_to_run"
+              temp_manifest_dir="$(mktemp -d)"
+              exe_to_run=$(download_binary "$platform" "$tag")
+              exe_to_run=$(echo "$exe_to_run" | tail -n1 | tr -d '[:space:]')
+            fi
+            if [[ -z "$exe_to_run" ]] || [[ ! -f "$exe_to_run" ]] \
+               || ! download_release_manifest "$tag" "$temp_manifest_dir" \
+               || ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$exe_to_run" "$artifact_key"; then
+              printf "${RED}Downloaded BrowserBox failed integrity verification; refusing to install.${NC}\n"
+              rm -rf "$temp_manifest_dir"
+              rm -f "$exe_to_run"
+              return 1
+            fi
           fi
           if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
             printf "${RED}Failed to install the verified release manifest.${NC}\n"
@@ -5060,15 +5163,11 @@ check_and_prepare_update() {
 download_release_manifest() {
   local tag="$1"
   local dest_dir="$2"
-  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/release.manifest.json"
-  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${tag}/release.manifest.json.sig"
-  local curl_auth=()
-  if [[ -n "${GH_TOKEN:-}" ]]; then
-    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
-  fi
   mkdir -p "$dest_dir" || return 1
-  curl -L --fail --retry 3 --retry-all-errors --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json" "$manifest_url" || return 1
-  curl -L --fail --retry 3 --retry-all-errors --connect-timeout 30 "${curl_auth[@]}" -o "${dest_dir}/release.manifest.json.sig" "$sig_url" || return 1
+  # Mirror first, GitHub as fallback. The manifest is signed, so a mirror that
+  # serves a stale or altered manifest fails signature verification downstream.
+  fetch_release_asset "$tag" "release.manifest.json" "${dest_dir}/release.manifest.json" --retry 3 --retry-all-errors || return 1
+  fetch_release_asset "$tag" "release.manifest.json.sig" "${dest_dir}/release.manifest.json.sig" --retry 3 --retry-all-errors || return 1
   chmod 644 "${dest_dir}/release.manifest.json" "${dest_dir}/release.manifest.json.sig" 2>/dev/null || true
   return 0
 }
@@ -5396,10 +5495,24 @@ update() {
     *) printf "${RED}Unsupported update platform: %s${NC}\n" "$platform"; rm -rf "$temp_manifest_dir"; rm -f "$temp_exe"; return 1 ;;
   esac
   if ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$temp_exe" "$artifact_key"; then
-    printf "${RED}Downloaded update failed integrity verification; refusing to install.${NC}\n"
-    rm -rf "$temp_manifest_dir"
-    rm -f "$temp_exe"
-    return 1
+    # Mirror artifact failed verification -- retry once from GitHub before
+    # giving up, so a bad cache entry cannot block updates.
+    if asset_retry_on_github; then
+      printf "${YELLOW}Mirror artifact failed verification; retrying from GitHub...${NC}\n" >&2
+      rm -rf "$temp_manifest_dir"
+      rm -f "$temp_exe"
+      temp_manifest_dir="$(mktemp -d)"
+      temp_exe=$(download_binary "$platform" "$repo_tag")
+      temp_exe=$(echo "$temp_exe" | tail -n1 | tr -d '[:space:]')
+    fi
+    if [[ -z "$temp_exe" ]] || [[ ! -f "$temp_exe" ]] \
+       || ! download_release_manifest "$repo_tag" "$temp_manifest_dir" \
+       || ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$temp_exe" "$artifact_key"; then
+      printf "${RED}Downloaded update failed integrity verification; refusing to install.${NC}\n"
+      rm -rf "$temp_manifest_dir"
+      rm -f "$temp_exe"
+      return 1
+    fi
   fi
 
   if ! install_release_manifest_from_dir "$temp_manifest_dir"; then
@@ -5479,24 +5592,20 @@ update_background() {
       ;;
   esac
   
-  local download_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/${asset_name}"
   local temp_binary="$BBX_NEW_DIR/browserbox"
-  
-  printf "${YELLOW}Downloading binary from $download_url...${NC}\n" >> "$LOG_FILE"
 
-  local curl_auth=()
-  if [[ -n "${GH_TOKEN:-}" ]]; then
-    curl_auth=(-H "Authorization: token ${GH_TOKEN}")
-  fi
-  
-  # Use curl directly (no INSTALL_CMD/sudo) to avoid background sudo prompts
-  curl -L --fail --progress-bar --connect-timeout 30 "${curl_auth[@]}" -o "$temp_binary" "$download_url" >> "$LOG_FILE" 2>&1 || {
-    printf "${YELLOW}Skipping update due to timeout or failure in connecting to BrowserBox repo${NC}\n" >> "$LOG_FILE"
+  printf "${YELLOW}Downloading ${asset_name} for ${repo_tag}...${NC}\n" >> "$LOG_FILE"
+
+  # Mirror first, GitHub as fallback. curl runs directly (no INSTALL_CMD/sudo)
+  # to avoid background sudo prompts.
+  fetch_release_asset "$repo_tag" "$asset_name" "$temp_binary" --progress-bar >> "$LOG_FILE" 2>&1 || {
+    printf "${YELLOW}Skipping update due to timeout or failure reaching both the release mirror and GitHub${NC}\n" >> "$LOG_FILE"
     $SUDO rm -f "$PREPARING_FILE"
     rm -f "$temp_binary" 2>/dev/null
     rm -rf "$BBX_NEW_DIR" 2>/dev/null
     return 1
   }
+  printf "${YELLOW}Downloaded from ${BBX_LAST_ASSET_SOURCE}.${NC}\n" >> "$LOG_FILE"
   
   # Verify binary was downloaded and is not empty
   if [[ ! -s "$temp_binary" ]]; then
@@ -5517,8 +5626,6 @@ update_background() {
   }
 
   # Download manifest and signature for integrity verification
-  local manifest_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json"
-  local sig_url="https://github.com/${PUBLIC_REPO}/releases/download/${repo_tag}/release.manifest.json.sig"
   local temp_manifest="$BBX_NEW_DIR/release.manifest.json"
   local temp_manifest_sig="$BBX_NEW_DIR/release.manifest.json.sig"
 

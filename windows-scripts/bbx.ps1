@@ -37,6 +37,19 @@ $BinaryName = "browserbox.exe"
 # Remote Name (on GitHub Release)
 $RemoteAssetName = "browserbox-win-x64.exe"
 
+# ---- Release asset distribution: CDN first, GitHub as fallback ----
+# GitHub's release-asset origin is a cold cross-ocean fetch for much of the
+# world, so release assets are mirrored to a CDN and read from there first.
+# GitHub remains the fallback. The mirror is untrusted by construction: the
+# signed release manifest is verified before anything is installed, so a bad
+# mirror causes a fallback, never a bad install.
+# Assets live under a per-tag prefix: <base>/<tag>/<asset>
+$BbxAssetBase = if ($env:BBX_ASSET_BASE) { $env:BBX_ASSET_BASE } else { "https://dl.getbrowserbox.com" }
+# Set BBX_NO_CDN=1 to bypass the mirror entirely.
+$BbxNoCdn = [bool]$env:BBX_NO_CDN
+# Which origin served the most recent asset ("cdn" | "github").
+$script:BbxLastAssetSource = ""
+
 $BinaryPath = Join-Path $BinaryDir $BinaryName
 $script:ResolvedBinaryPath = $null
 $script:RestartArgs = @()
@@ -241,20 +254,42 @@ function Download-Binary {
             Invoke-WebRequest -Uri $assetUrl -Headers $headers -OutFile $tempFile -MaximumRedirection 5 -ErrorAction Stop | Out-Null
         }
         else {
-            # Public download path (fallback)
-            $downloadUrl = "https://github.com/$ReleaseRepo/releases/download/$Tag/$RemoteAssetName"
-            $webClient = New-Object System.Net.WebClient
-            if ($Token) {
-                $webClient.Headers.Add("Authorization", "Bearer $Token") | Out-Null
+            # Public download path: mirror first, then GitHub.
+            # Only public, untokenised releases are mirrored.
+            $cdnEligible = (-not $BbxNoCdn) -and $BbxAssetBase -and (-not $Token) -and ($ReleaseRepo -eq $PublicRepo)
+            $downloaded = $false
+
+            if ($cdnEligible) {
+                $cdnUrl = "$($BbxAssetBase.TrimEnd('/'))/$Tag/$RemoteAssetName"
+                try {
+                    # Fail fast so a dead or degraded mirror costs seconds, not minutes.
+                    Invoke-WebRequest -Uri $cdnUrl -OutFile $tempFile -TimeoutSec 20 -MaximumRedirection 5 -ErrorAction Stop | Out-Null
+                    if ((Test-Path $tempFile) -and ((Get-Item $tempFile).Length -gt 0)) {
+                        $script:BbxLastAssetSource = "cdn"
+                        $downloaded = $true
+                    }
+                } catch {
+                    Write-Host "Release mirror unavailable; falling back to GitHub (slower)." -ForegroundColor Yellow
+                }
+                if (-not $downloaded -and (Test-Path $tempFile)) { Remove-Item $tempFile -Force -ErrorAction SilentlyContinue }
             }
-            try {
-                $webClient.DownloadFile($downloadUrl, $tempFile)
-            } catch {
-                # Try fallback name
-                $downloadUrl = "https://github.com/$ReleaseRepo/releases/download/$Tag/$BinaryName"
-                $webClient.DownloadFile($downloadUrl, $tempFile)
+
+            if (-not $downloaded) {
+                $downloadUrl = "https://github.com/$ReleaseRepo/releases/download/$Tag/$RemoteAssetName"
+                $webClient = New-Object System.Net.WebClient
+                if ($Token) {
+                    $webClient.Headers.Add("Authorization", "Bearer $Token") | Out-Null
+                }
+                try {
+                    $webClient.DownloadFile($downloadUrl, $tempFile)
+                } catch {
+                    # Try fallback name
+                    $downloadUrl = "https://github.com/$ReleaseRepo/releases/download/$Tag/$BinaryName"
+                    $webClient.DownloadFile($downloadUrl, $tempFile)
+                }
+                $webClient.Dispose()
+                $script:BbxLastAssetSource = "github"
             }
-            $webClient.Dispose()
         }
         
         if (Test-Path $BinaryPath) {
