@@ -80,7 +80,7 @@ BrowserBox is a remote browser isolation (RBI) platform. It streams a full, mode
 **At a glance:**
 - Clientless RBI — no plugins, no downloads for end users
 - 60 FPS streaming with real responsiveness
-- Embeds anywhere via `<hyper-frame>` ([Hyper-Frame](https://www.hyper-frame.art)) or `<browserbox-webview>`
+- Embeds anywhere via `<hyper-frame>` ([Hyper-Frame](https://www.hyper-frame.art))
 - Cloud API for ephemeral sessions, no self-hosting needed
 - Works on Windows, macOS, Linux, and containers like Podman, and LXC
 - Policy controls, DLP, and audit-friendly workflows
@@ -185,11 +185,13 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 - **Clientless RBI** — access from any modern browser, no install required for end users
 - **Cross-platform** — Windows, macOS, Debian, Ubuntu, RHEL, Rocky Linux, CentOS, NixOS, and containers like LXC
 - **`bbx` CLI** — manage install, licenses, users, run modes, and tunnels from the command line
-- **`<browserbox-webview>` embedding API** — drop a live browser session into any web product
+- **`<hyper-frame>` embedding API** — drop a live browser session into any web product
 - **Cloud API** — purchase minute packs and spin up ephemeral sessions via REST, no self-hosting
+- **Multi-seat on Linux** — `bbx fleet` runs a pool of isolated seats on one host, with a dashboard in the desktop app
+- **Session recording** — capture any session as a self-contained [flipbook site](#17-flipbook-recording)
 - **Automation-ready** — a real browser; Puppeteer and Playwright integrations coming
 - **DLP, Tor support, access controls** — policy enforcement built in, not bolted on
-- **1-click cloud deployment** — coming soon
+- **Cloud templates** — deploy on AWS, Azure, Linode or Vultr from a provided template
 
 ---
 
@@ -413,27 +415,39 @@ Full API documentation: [win9-5.com/api](https://win9-5.com/api/)
 ## 15. Embed BrowserBox
 
 ```html
-<script src="https://win9-5.com/browserbox-webview.js" type="module"></script>
-<browserbox-webview
+<script src="https://win9-5.com/hyper-frame.js" type="module"></script>
+<hyper-frame
   login-link="https://your-instance.com/login/abc123"
   width="1024"
   height="768">
-</browserbox-webview>
+</hyper-frame>
 ```
 
-The `<browserbox-webview>` element provides a session-host API with namespaced surfaces for tabs, pages, capture, augmentation, selection, and policy-gated capability control.
+The `<hyper-frame>` element provides a session-host API with namespaced surfaces for tabs, pages, capture, augmentation, selection, and policy-gated capability control.
+
+```js
+const bbx = document.querySelector('hyper-frame');
+await bbx.whenReady();
+await bbx.page.navigate('https://example.com');
+```
 
 ### Install via npm
 
-The embedding element is also published as [`@browserbox/webview-element`](https://www.npmjs.com/package/@browserbox/webview-element) for use in bundled apps:
+The embedding element is also published as [`@browserbox/hyper-frame`](https://www.npmjs.com/package/@browserbox/hyper-frame) for use in bundled apps:
 
 ```bash
-npm i @browserbox/webview-element
+npm i @browserbox/hyper-frame
 ```
 
 ```js
-import '@browserbox/webview-element';
+import '@browserbox/hyper-frame';
 ```
+
+> **Renamed from `<browserbox-webview>`.** The element, the script and the npm
+> package were all renamed to Hyper-Frame. The old
+> [`@browserbox/webview-element`](https://www.npmjs.com/package/@browserbox/webview-element)
+> package still exists on npm but is no longer updated, and the old
+> `browserbox-webview.js` script URL is gone. Point new work at `<hyper-frame>`.
 
 ---
 
@@ -538,11 +552,26 @@ BrowserBox is commercial software. A valid license is required for **all** use, 
 - **Evaluation:** 7-day paid evaluation license (one-time fee per seat with ID verification via Stripe; fee credited toward full license on upgrade). All sales final. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate)
 - **Enterprise / Source Access:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 
+### Seats
+
+A licence covers a number of seats — one per concurrent user. On Linux, `bbx fleet`
+runs several seats on a single host; elsewhere it's one session per machine.
+
+```bash
+bbx vacancy                  # how many seats are in use, and by whom
+bbx stop-user <username>     # release a seat someone left open
+```
+
+When every seat is occupied, the next `bbx certify` says so and stops rather than
+starting an unlicensed session. To add seats, email
+[sales@dosaygo.com](mailto:sales@dosaygo.com) — extra seats are added to your
+existing licence and **your product key does not change**.
+
 ---
 
 ## 21. Support
 
-- **API & Technical:** [api@browserbox.io](mailto:api@dosaygo.com)
+- **API & Technical:** [api@dosaygo.com](mailto:api@dosaygo.com)
 - **General:** [support@dosaygo.com](mailto:support@dosaygo.com)
 - **Sales & Licensing:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 
