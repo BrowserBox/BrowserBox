@@ -315,6 +315,12 @@ irm https://browserbox.io/install.ps1 | iex
 
 For non-interactive full installs, set `BBX_INSTALL_HOSTNAME` and `BBX_INSTALL_EMAIL`. Legacy install aliases `BBX_HOSTNAME`, `BBX_EMAIL`, and `EMAIL` remain supported for compatibility.
 
+> **Downloads are served from a CDN.** To ensure fast download speeds, installs and updates now flow through **`dl.getbrowserbox.com`**, backed by Cloudflare R2. GitHub Releases remain the fallback origin and every published asset is still available there.
+>
+> Nothing is less trustworthy for going through the CDN: `bbx` verifies every download against the RSA-signed release manifest before installing it, using a public key compiled into the installer. A mirror that serves a stale, corrupt, or tampered artifact causes an automatic retry from GitHub — never a bad install.
+>
+> If you need to bypass the CDN (air-gapped mirrors, strict egress allowlists, or debugging), set `BBX_NO_CDN=1` to use GitHub only, or point `BBX_ASSET_BASE` at your own mirror laid out as `<base>/<tag>/<asset>`.
+
 #### What runs on Windows
 
 A Windows install runs one BrowserBox instance per machine. Alongside setup, start, stop, status, licensing and policy, `bbx` on Windows offers:
