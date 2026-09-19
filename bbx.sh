@@ -353,12 +353,10 @@ SUDO_BIN="$(command -v sudo || true)"
 # Prefer global install; require writable /usr/local/bin (or sudo)
 if [[ -w "$GLOBAL_BIN_DIR" ]]; then
   BINARY_DIR="$GLOBAL_BIN_DIR"
-  INSTALL_CMD="install -m 755"
   mkdir -p "$BINARY_DIR"
 else
   if [[ -n "$SUDO_BIN" ]]; then
     BINARY_DIR="$GLOBAL_BIN_DIR"
-    INSTALL_CMD="$SUDO_BIN install -m 755"
     "$SUDO_BIN" mkdir -p "$BINARY_DIR"
   else
     echo -e "${RED}Cannot install to $GLOBAL_BIN_DIR (not writable and sudo unavailable).${NC}" >&2
@@ -765,6 +763,11 @@ BBX_OPERATOR_USER=""
 
 _bbx_for_active() { [[ -n "$BBX_FOR_USER" ]]; }
 
+# The argv this invocation started with, before --for extraction. An in-band
+# update re-execs the new wrapper with exactly this, so flags consumed during
+# normalisation are not lost.
+BBX_ORIGINAL_ARGV=("$@")
+
 # Extract --for <user> from positional args before command dispatch.
 _bbx_new_args=()
 while (( $# )); do
@@ -914,12 +917,6 @@ PREPARED_FILE="${BBX_SHARE}/prepared"
 # here. As part of the migration away from source-based installs, that logic now
 # lives solely inside the binary `browserbox --install/--full-install` flow.
 
-# Clean up any leftover temp installer scripts
-clean_temp_installers() {
-  local TMPDIR="$HOME/.cache/myscript-installer"
-  find "$TMPDIR" -type f -name 'installer-*' -exec rm -f {} \; 2>/dev/null
-}
-
 # Ensure installation_id exists with a UUID
 ensure_installation_id() {
   local INSTALL_ID_DIR="${HOME}/.config/dosaygo/bbpro"
@@ -969,43 +966,12 @@ ensure_installation_id() {
   fi
 }
 
-# Returns 0 if currently running from official location (not temp copy)
-is_running_in_official() {
-  local TMPDIR="$HOME/.cache/myscript-installer"
-  [[ "$0" != "$TMPDIR/"* ]]
-}
-
 run_quietly() {
   if [[ -n ${BBX_DEBUG:-} ]]; then
     BBX_DEBUG="$BBX_DEBUG" "$@"
   else
     { BBX_DEBUG="$BBX_DEBUG" "$@"; } &>/dev/null
   fi
-}
-
-# Elevate to a temp copy (if not already in temp); will not return if elevation happens
-self_elevate_to_temp() {
-  local TMPDIR="$HOME/.cache/myscript-installer"
-  mkdir -p "$TMPDIR"
-
-  # Are we already running from temp? Then just return
-  if ! is_running_in_official; then
-    return
-  fi
-
-  clean_temp_installers
-
-  local TEMP_SCRIPT
-  TEMP_SCRIPT="$(mktemp "$TMPDIR/installer-XXXXXX")" || {
-    echo "Failed to create temp script in $TMPDIR"
-    exit 1
-  }
-
-  cp "$0" "$TEMP_SCRIPT"
-  chmod +x "$TEMP_SCRIPT"
-
-  echo "Elevating to temp execution at: $TEMP_SCRIPT"
-  exec "$TEMP_SCRIPT" "$@"
 }
 
 # -------------------------
@@ -2191,7 +2157,7 @@ ensure_cloudflared() {
             printf "${RED}Failed to download cloudflared binary${NC}\n" >&2
             rm -f "$tmp_bin"; return 1
         }
-        $SUDO install -m 755 "$tmp_bin" /usr/local/bin/cloudflared || {
+        publish_executable "$tmp_bin" /usr/local/bin/cloudflared || {
             printf "${RED}Failed to install cloudflared to /usr/local/bin${NC}\n" >&2
             rm -f "$tmp_bin"; return 1
         }
@@ -5060,8 +5026,27 @@ is_lock_file_recent() {
 }
 
 # Prefer releases; roll back or forward to whatever /releases/latest says.
+# Hand the requested command to the wrapper that was just installed.
+#
+# Phase two runs before the dispatcher, so nothing the user asked for has
+# happened yet and a re-exec is free. Without it the rest of this run is the
+# pre-update bbx.sh driving the post-update browserbox binary — one command's
+# worth of version skew. BBX_REEXEC_AFTER_UPDATE makes it strictly once per
+# command; the re-exec'd process skips the update check entirely.
+_bbx_reexec_after_install() {
+  [[ -n "${BBX_REEXEC_AFTER_UPDATE:-}" ]] && return 0
+  [[ -x "$BBX_BIN" ]] || return 0
+  printf "${GREEN}Update installed. Running your command on the new version...${NC}\n" >&2
+  export BBX_REEXEC_AFTER_UPDATE=1
+  exec "$BBX_BIN" "${BBX_ORIGINAL_ARGV[@]}"
+}
+
 check_and_prepare_update() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
+    return 0
+  fi
+  # At most one update attempt per command: we are already the re-exec.
+  if [[ -n "${BBX_REEXEC_AFTER_UPDATE:-}" ]]; then
     return 0
   fi
   # Skip update checks for these commands
@@ -5078,6 +5063,7 @@ check_and_prepare_update() {
     prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
     if [[ -n "$prepared_tag" ]]; then
       if check_prepare_and_install "$prepared_tag"; then
+        _bbx_reexec_after_install
         return 0
       fi
     fi
@@ -5120,8 +5106,8 @@ check_and_prepare_update() {
     
     if [[ -n "$prepared_binary" ]] && [[ -f "$prepared_binary" ]] && [[ "$prepared_tag" == "$repo_tag" ]]; then
       printf "${YELLOW}Prepared update (${prepared_tag}) matches latest. Installing...${NC}\n" >&2
-      is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
       if check_prepare_and_install "$repo_tag"; then
+        _bbx_reexec_after_install
         return 0
       fi
     else
@@ -5284,6 +5270,47 @@ install_release_manifest_from_dir() {
   return 1
 }
 
+# Publish an executable to a path that may be executing right now.
+#
+# install(1) and cp write in place: they truncate the live inode. On Linux that
+# is ETXTBSY for a running binary, and a process with pages already mapped from
+# it can fault. Unlinking first (rm then mv) has the opposite problem: it leaves
+# a window where the path does not exist, so a concurrent `bbx <subcommand>`
+# that execs it in that window gets "command not found".
+#
+# rename(2) has neither failure mode. It swaps the directory entry in one step,
+# the old inode stays alive for anything still running from it, and a concurrent
+# exec sees either the whole old file or the whole new one. Every replacement of
+# an installed BrowserBox executable goes through here.
+#
+# Elevation mirrors the BINARY_DIR setup above: none if the target directory is
+# writable, $SUDO_BIN otherwise.
+publish_executable() {
+  local src="$1" dest="$2"
+  local dir="${dest%/*}"
+  local tmp="${dir}/.${dest##*/}.tmp.$$"
+  local elevate=""
+  [[ -w "$dir" ]] || elevate="$SUDO_BIN"
+
+  if ! $elevate cp "$src" "$tmp" >> "$LOG_FILE" 2>&1 \
+     || ! $elevate chmod 755 "$tmp" >> "$LOG_FILE" 2>&1 \
+     || ! $elevate mv -f "$tmp" "$dest" >> "$LOG_FILE" 2>&1; then
+    $elevate rm -f "$tmp" >> "$LOG_FILE" 2>&1 || true
+    return 1
+  fi
+  return 0
+}
+
+# True when a prepared update for exactly this tag is sitting on disk ready for
+# phase two.
+_bbx_prepared_matches() {
+  local want="$1" prepared_binary prepared_tag
+  [[ -f "$PREPARED_FILE" ]] || return 1
+  prepared_binary="$(sed -n '2p' "$PREPARED_FILE" 2>/dev/null)"
+  prepared_tag="$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)"
+  [[ -n "$prepared_binary" ]] && [[ -x "$prepared_binary" ]] && [[ "$prepared_tag" == "$want" ]]
+}
+
 check_prepare_and_install() {
   if [[ -n "$BBX_NO_UPDATE" ]]; then
     return 0
@@ -5304,9 +5331,6 @@ check_prepare_and_install() {
       if [ "$new_tag" = "$repo_tag" ]; then
         printf "${YELLOW}Latest version prepared at $prepared_binary. Installing...${NC}\n"
         printf "${YELLOW}Latest version prepared at $prepared_binary. Installing...${NC}\n" >> "$LOG_FILE"
-
-        # Avoid self-overwrite while swapping binary
-        is_running_in_official && self_elevate_to_temp "${OGARGS[@]}"
 
         # Install release manifest before binary (required for integrity verification)
         # Manifests go to data dirs only — never the binary location
@@ -5342,64 +5366,35 @@ check_prepare_and_install() {
           return 1
         fi
 
-        # Replace global binary with prepared binary (using INSTALL_CMD for sudo)
-        $INSTALL_CMD "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || { 
-          printf "${RED}Failed to install prepared binary to $BINARY_PATH (install)${NC}\n" >> "$LOG_FILE"
-        }
-        # Verify and repair if needed
-        if [[ ! -x "$BINARY_PATH" ]] || [[ ! -s "$BINARY_PATH" ]]; then
-          printf "${YELLOW}Binary missing or not executable after install; copying directly...${NC}\n" >> "$LOG_FILE"
-          $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1
-        fi
-        if [[ ! -x "$BINARY_PATH" ]] || [[ ! -s "$BINARY_PATH" ]]; then
-          printf "${RED}Failed to place binary at $BINARY_PATH (post-copy)${NC}\n" >> "$LOG_FILE"
+        # Replace the global binary. Atomic, so a concurrent bbx never sees a
+        # missing or half-written browserbox.
+        if ! publish_executable "$prepared_binary" "$BINARY_PATH"; then
+          printf "${RED}Failed to install prepared binary to %s${NC}\n" "$BINARY_PATH" >> "$LOG_FILE"
+          printf "${RED}Failed to install prepared binary to %s${NC}\n" "$BINARY_PATH"
           return 1
         fi
         ls -l "$BINARY_PATH" >> "$LOG_FILE" 2>&1
-        "$BINARY_PATH" --version >> "$LOG_FILE" 2>&1 || true
 
         # Run internal updates/migrations after swapping binary
         printf "${YELLOW}Running post-update installation tasks...${NC}\n" >> "$LOG_FILE"
-        BBX_BINARY_SOURCE_PATH="$prepared_binary" "$BINARY_PATH" --install >> "$LOG_FILE" 2>&1 || { 
+        BBX_BINARY_SOURCE_PATH="$prepared_binary" "$BINARY_PATH" --install >> "$LOG_FILE" 2>&1 || {
           printf "${RED}Failed to run post-update installation${NC}\n" >> "$LOG_FILE"
           return 1
         }
 
-        # Post-install sanity: ensure the installed binary matches the prepared build.
-        # The install phase may briefly replace the binary in-place; tolerate short gaps.
-        local expected_version
+        # Post-install sanity: the prepared build is the one now installed.
+        # Both writers -- publish_executable above, and cp_commands_only.sh
+        # during --install -- replace by rename, so there is no replacement gap
+        # to poll through and nothing to recopy. The few retries only absorb
+        # first-exec warm-up of a freshly written SEA binary.
+        local expected_version installed_version tries
         expected_version="${repo_tag#v}"
-        local installed_version
         installed_version=""
-        local tries=0
-        while (( tries < 150 )); do
-          tries=$((tries + 1))
-
-          # The install step may briefly remove/replace the binary; if missing, restore from prepared.
-          if [[ ! -s "$BINARY_PATH" ]] || [[ ! -x "$BINARY_PATH" ]]; then
-            $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || true
-          fi
-
+        for (( tries = 0; tries < 5; tries++ )); do
           installed_version="$("$BINARY_PATH" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+')"
-          if [[ "$installed_version" == "$expected_version" ]]; then
-            break
-          fi
+          [[ "$installed_version" == "$expected_version" ]] && break
           sleep 0.2
         done
-        if [[ "$installed_version" != "$expected_version" ]]; then
-          printf "${YELLOW}Installed binary version (%s) does not match prepared (%s); recopying prepared binary...${NC}\n" "$installed_version" "$expected_version" >> "$LOG_FILE"
-          $SUDO cp "$prepared_binary" "$BINARY_PATH" >> "$LOG_FILE" 2>&1 && $SUDO chmod 755 "$BINARY_PATH" >> "$LOG_FILE" 2>&1 || true
-          installed_version=""
-          tries=0
-          while (( tries < 150 )); do
-            tries=$((tries + 1))
-            installed_version="$("$BINARY_PATH" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)+')"
-            if [[ "$installed_version" == "$expected_version" ]]; then
-              break
-            fi
-            sleep 0.2
-          done
-        fi
         if [[ "$installed_version" != "$expected_version" ]]; then
           printf "${RED}Post-install version mismatch: got '%s', expected '%s'${NC}\n" "$installed_version" "$expected_version" >> "$LOG_FILE"
           return 1
@@ -5559,7 +5554,13 @@ update_background() {
     return 0
   fi
 
-  if check_prepare_and_install "$repo_tag"; then
+  # Phase one only. Installing from here would run phase two inside the fork
+  # started by check_and_prepare_update, concurrent with the command the user
+  # actually typed. Phase two belongs at the top of the next invocation, in the
+  # foreground, ahead of the dispatcher — the one exception being an explicit
+  # `bbx update`, which downloads and installs in one go by design.
+  if _bbx_prepared_matches "$repo_tag"; then
+    printf "${GREEN}Update to %s is already prepared; it installs on the next run.${NC}\n" "$repo_tag" >> "$LOG_FILE"
     return 0
   fi
 
@@ -5596,7 +5597,7 @@ update_background() {
 
   printf "${YELLOW}Downloading ${asset_name} for ${repo_tag}...${NC}\n" >> "$LOG_FILE"
 
-  # Mirror first, GitHub as fallback. curl runs directly (no INSTALL_CMD/sudo)
+  # Mirror first, GitHub as fallback. curl runs directly (no sudo)
   # to avoid background sudo prompts.
   fetch_release_asset "$repo_tag" "$asset_name" "$temp_binary" --progress-bar >> "$LOG_FILE" 2>&1 || {
     printf "${YELLOW}Skipping update due to timeout or failure reaching both the release mirror and GitHub${NC}\n" >> "$LOG_FILE"
@@ -10474,7 +10475,22 @@ usage() {
     printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2026${NC}\n"
 }
 
+# Dispatcher arms that can rewrite /usr/local/bin/bbx finish here instead of
+# returning to the file. The install is atomic (see cp_commands_only.sh), so
+# the running shell keeps a consistent inode — this is belt and braces against
+# any installer that still replaces the script in place.
+_bbx_finish_after_self_replace() {
+  local rc=$?
+  show_policy_footer >&2
+  exit $rc
+}
+
 show_policy_footer() {
+    # Single place that decides whether the advisory footer prints. Callers
+    # just call it; they do not re-test the flag.
+    if [[ -n "${BBX_SKIP_POLICY_FOOTER:-}" ]]; then
+      return 0
+    fi
     local baseline=""
     local color=""
     local label=""
@@ -10769,7 +10785,19 @@ fi
 # fleet handles the agreement itself (interactively at init; JSON-safe
 # machine paths must not block on the interactive prompt).
 [ "$1" != "uninstall" ] && [ "$1" != "fleet" ] && check_agreement
-# Call check_and_prepare_update with the first argument
+# Call check_and_prepare_update with the first argument.
+#
+# Updating is two-phase by design. Phase one (download and prepare) runs in a
+# background fork and installs nothing. Phase two (install the prepared build)
+# runs here — foreground, ahead of the dispatcher, so it is never concurrent
+# with the command the user typed. `bbx update` is the one path that does both
+# in one go, by explicit request.
+#
+# On a successful phase two this re-execs the freshly installed wrapper with
+# the original argv, so the requested command runs wholly on the new version
+# rather than old-script-drives-new-binary. If the re-exec cannot happen the
+# call simply returns and the command runs on this script, which stays coherent
+# because every executable is replaced by rename, never written in place.
 [ -n "$BBX_NO_UPDATE" ] || check_and_prepare_update "$1"
 
 # Chrome guard: commands that launch BrowserBox require a browser
@@ -10830,7 +10858,7 @@ case "$1" in
     stop) shift 1; stop "$@";;
     stop-user) shift 1; stop_user "$@";;
     logs) shift 1; logs "$@";;
-    update) shift 1; update "$@";;
+    update) shift 1; update "$@"; _bbx_finish_after_self_replace;;
     update-background) shift 1; update_background "$@";;
     use-chrome) shift 1; use_chrome "$@";;
     activate) shift 1; activate "$@";;
@@ -10870,4 +10898,4 @@ esac
 
 # Always show policy status footer (except for fleet, whose paths are
 # non-interactive). Policy status is advisory, so keep command stdout clean.
-[[ -n "${BBX_SKIP_POLICY_FOOTER:-}" ]] || show_policy_footer >&2
+show_policy_footer >&2
