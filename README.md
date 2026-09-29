@@ -24,7 +24,7 @@
 
 <p align="center">
   BrowserBox now ships with a desktop app for running your BrowserBox without the command line.<br>
-  Start and stop sessions, pick how people reach it (Cloudflare, ngrok, Tor, ZeroTier or direct), copy the login link,<br>
+  Start and stop sessions, pick how people reach it (direct, Cloudflare, Tor, ZeroTier or nginx), copy the login link,<br>
   manage browser policy, and run any <code>bbx</code> command from a form, with live progress and the full output a click away.<br>
   On Linux hosts, the <strong>Fleet</strong> dashboard shows your whole seat pool at a glance: capacity, routes, health checks, and one-click actions per seat.
 </p>
@@ -197,6 +197,11 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 ## 6. What's New
 
+- **Updated Customer Guide (v19.3.1)** — the [Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) now covers everything below, including the desktop app, Windows commands, update mirroring, and the licensing fallback endpoints.
+- **Licensing fallback endpoints (v18.8.0)** — licence validation now fails over to independent services, so a licence keeps working through a primary outage. If your egress is allowlisted, permit all four hosts on TCP 443: `license.dosaygo.com`, `license2.dosaygo.com`, `master.dosaygo.com` and `master2.dosaygo.com`.
+- **Faster, safer updates (v19.0.1)** — `bbx update` downloads from the `dl.getbrowserbox.com` mirror with GitHub as fallback, prepares the new release in the background, and swaps executables atomically on your next command.
+- **Scriptable `bbx` (v18.8.2)** — `bbx status --json`, `bbx --help-json` for the full command catalogue, and results on stdout with progress on stderr. `bbx restart` relaunches the way BrowserBox was last started, and each connection type (direct, Cloudflare, Tor, ZeroTier, nginx) keeps its own configuration.
+- **Better remote input (v19.1.1–v19.2.0)** — double and triple clicks reach the remote page, and single-choice dropdowns open as your device's native picker.
 - **Much broader Windows support (v18.9.0)** — `bbx` on Windows now has the connection and management commands that used to be Linux- and macOS-only: Cloudflare tunnels, Tor onion services, ZeroTier networks, an nginx front door and legacy Windows 9x clients, plus `restart`, `logs`, `use-chrome`, `activate` and `vacancy`. Each tunnel installs what it needs the first time you use it. See [what runs on Windows](#what-runs-on-windows).
 - **Passkey authentication on macOS (v18.0.1)** — sign in to sites with passkeys from inside your remote browser. The [BrowserBox Passkeys helper](https://github.com/BrowserBox/BrowserBox/releases/latest/download/browserbox-passkeys-macos.dmg) (signed & notarized) stores keys in the Secure Enclave and unlocks them with Touch ID; BrowserBox offers the download automatically when a site requests a passkey.
 - **KRNL — BrowserBox over SSH** — a text-mode browser in any terminal: `ssh krnl.duetbrowser.com` to try it free, or [get the KRNL bundle](https://win9-5.com/krnl).
@@ -250,14 +255,14 @@ The table below covers the supported topologies — pick what matches your situa
 | **SSH Port Forward, HTTPS** | SSH forwarding with HTTPS for encrypted tunnels. | No (private) | Combines SSH reliability with TLS; flexible port options. Native enhancements incoming. | ✅ / ✅ / ✅ | Enterprise-grade secure remote sessions. |
 | **Custom Ports** | User-defined ports (e.g., 8080, 9999, 11111) across any protocol. | Varies | Total control; avoids conflicts; integrates with all topologies. | ✅ / ✅ / ✅ | Tailored setups for specialized apps or multi-service hosts. |
 | **Standard Ports** | Default ports (e.g., 80 for HTTP, 443 for HTTPS) for seamless compatibility. | Varies | Plug-and-play; reduces config overhead in standard environments. | ✅ / ✅ / ✅ | Quick deployments matching common infrastructure. |
-| **Cloudflare Tunnel** | HTTPS DNS facade with port relay via Cloudflare's edge network. | Yes (*.trycloudflare.com) | Auto-install; high reliability; great perf. Native `bbx cf-run` support soon. | ✅ / ✅ / ✅ | Quick public demos with origin privacy. |
+| **Cloudflare Tunnel** | HTTPS DNS facade with port relay via Cloudflare's edge network. | Yes (*.trycloudflare.com) | Auto-install; high reliability; great perf. Built in: `bbx cf-run`. | ✅ / ✅ / ✅ | Quick public demos with origin privacy. |
 | **localhost.run** | SSH reverse tunnel with HTTPS facade. | Yes (http(s)://…lhr.life) | Zero-config; medium reliability; occasional interstitials. | ✅ / ✅ / ✅ | Free, easy links for casual sharing. |
 | **ngrok** | Port relay with HTTPS and auth token for secure exposure. | Yes (*.ngrok-free.app) | High perf; webhooks ready; free tier limits (1 tunnel). Token required. | ✅ / ✅ / ✅ | Shareable demos and webhook testing. |
 | **Pinggy** | Port relay with HTTPS; may have interstitials. | Yes (*.pinggy.io) | Fair reliability; okay perf. | ✅ / ✅ / ℹ️ (Limited on Windows) | Budget-friendly webhooks and demos. |
 | **Tailscale** | Overlay network for private, LAN-like access. | No (private tailnet) | Very high reliability; low latency. SSH forwarding; token required. Less stable on Windows/VPN. | ✅ / ✅ / ℹ️ (SSH not upstream-supported on Windows) | Private team debugging and access. |
 | **Tor** | Onion routing for pseudonymous, reliable access. | Yes (.onion) | Extremely reliable (but slow); privacy-first. We already have `bbx tor-run`. | ✅ / ✅ / ✅ | Censorship-resistant, anonymous deployments. |
 | **Tunnelmole** | OSS ngrok-style relay with HTTPS. | Yes (https://…tunnelmole.net/.com) | High reliability; good perf; auto-install. | ✅ / ✅ / ✅ | Open-source demos with easy URLs. |
-| **ZeroTier** | Overlay network for peer-to-peer private access. | No (private network) | LAN-like; very high reliability. Native `bbx zt-run` support soon. Tokens required; client on access device. | ✅ / ✅ / ✅ | Secure P2P demos in overlays. |
+| **ZeroTier** | Overlay network for peer-to-peer private access. | No (private network) | LAN-like; very high reliability. Built in: `bbx zt-run --network-id <id>`. Client on access device. | ✅ / ✅ / ✅ | Secure P2P demos in overlays. |
 
 **Notes on Flexibility & Power:**
 - KRNL terminal access is distinct from SSH port forwarding: KRNL provides an interactive TUI over SSH, while port forwarding carries BrowserBox's HTTP(S) access path through a private tunnel.
@@ -286,7 +291,7 @@ BrowserBox runs where real work happens — here's the current support matrix.
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.svg" alt="Windows 9x" width="64" title="Windows 9x"> |
 
 >[!NOTE]
->Run `bbx` (or `bbx install` on Windows) to ensure you have the latest version (v13+) with all fixes and features.
+>Run `bbx update` to ensure you have the latest release with all fixes and features.
 
 \*Tails is not supported because Chrome cannot be installed.
 
@@ -317,7 +322,7 @@ irm https://browserbox.io/install.ps1 | iex
 
 For non-interactive full installs, set `BBX_INSTALL_HOSTNAME` and `BBX_INSTALL_EMAIL`. Legacy install aliases `BBX_HOSTNAME`, `BBX_EMAIL`, and `EMAIL` remain supported for compatibility.
 
-> **Downloads are served from a CDN.** To ensure fast download speeds, installs and updates now flow through **`dl.getbrowserbox.com`**, backed by Cloudflare R2. GitHub Releases remain the fallback origin and every published asset is still available there.
+> **Updates are served from a CDN.** To ensure fast download speeds, `bbx update`, background updates, and the downloads `bbx` performs flow through **`dl.getbrowserbox.com`**, backed by Cloudflare R2. GitHub Releases remain the fallback origin and every published asset is still available there. The first-time installers above download from GitHub Releases.
 >
 > Nothing is less trustworthy for going through the CDN: `bbx` verifies every download against the RSA-signed release manifest before installing it, using a public key compiled into the installer. A mirror that serves a stale, corrupt, or tampered artifact causes an automatic retry from GitHub — never a bad install.
 >
@@ -366,7 +371,7 @@ bbx run
 
 ## 12. Documentation
 
-- [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf)
+- [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf): installation, setup, customization, policy, embedding, reverse proxies, Fleet, licensing, and environment variables in one printable manual. Earlier editions are kept in [`docs/`](./docs) as `BrowserBox_Customer_Guide_<version>.pdf`.
 
 ---
 
