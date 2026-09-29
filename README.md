@@ -55,7 +55,7 @@
 <p align="center">
   <strong>🇺🇸 NEWS — USA Edition (v17.7.6), coming July 4, 2026:</strong> our most stable BrowserBox yet.<br>
   Enhanced streaming stability under co-located and heavy-workload deployments, full suppression of invisible browser prompts that could capture input,
-  per-user managed browser policy, cross-origin iframe instrumentation (preview) for containers and strict-isolation sites — and 60&nbsp;FPS streaming re-validated end to end.
+  per-user managed browser policy, cross-origin iframe instrumentation (preview) for strict-isolation sites — and 60&nbsp;FPS streaming re-validated end to end.
 </p>
 
 <p align="center">
@@ -75,14 +75,14 @@
 
 ---
 
-BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, macOS, Linux, and containers. **BrowserBox is commercial software. A valid license is required for all use, including development and evaluation. BrowserBox is not open source.**
+BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, macOS, Linux, and LXC containers. **BrowserBox is commercial software. A valid license is required for all use, including development and evaluation. BrowserBox is not open source.**
 
 **At a glance:**
 - Clientless RBI — no plugins, no downloads for end users
 - 60 FPS streaming with real responsiveness
 - Embeds anywhere via `<hyper-frame>` ([Hyper-Frame](https://www.hyper-frame.art))
 - Cloud API for ephemeral sessions, no self-hosting needed
-- Works on Windows, macOS, Linux, and containers like Podman, and LXC
+- Works on Windows, macOS, Linux, and LXC containers
 - Policy controls, DLP, and audit-friendly workflows
 
 [ASCIInema Recordings](https://asciinema.org/~dosaygo) | [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) | [Support](mailto:api@browserbox.io)
@@ -287,7 +287,6 @@ BrowserBox runs where real work happens — here's the current support matrix.
 | Rocky Linux              | ✅        | <img src="readme-files/rockylinux.svg" alt="Rocky Linux" width="100" title="Rocky Linux"> |
 | NixOS                    | ✅        | <img src="readme-files/nixos.svg" alt="NixOS" width="100" title="NixOS"> |
 | LXC                      | ✅        | <img src="readme-files/LXC.svg" alt="LXC" width="64" title="LXC"> |
-| Podman                   | ✅        | <img src="readme-files/podman.svg" alt="Podman" width="64" title="Podman"> |
 | Windows 9x†              | ✅        | <img src="readme-files/windows-9x.svg" alt="Windows 9x" width="64" title="Windows 9x"> |
 
 >[!NOTE]
