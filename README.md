@@ -16,6 +16,10 @@
   <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Options-pink" alt="DLP Options"></a>
 </p>
 
+<p align="center">
+  <a href="https://docs.browserbox.io/"><strong>Read the BrowserBox docs →</strong></a>
+</p>
+
 <h2 align="center">🖥️ NEW in v18.10.0 — the BrowserBox desktop app <sup>BETA</sup></h2>
 
 <p align="center">
