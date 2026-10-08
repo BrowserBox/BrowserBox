@@ -364,7 +364,7 @@ function Read-TestEnv {
     if (-not (Test-Path $Path)) { return $cfg }
     Get-Content $Path | ForEach-Object {
         if ($_ -match "^([^=]+)=(.*)$") {
-            $cfg[$Matches[1].Trim()] = $Matches[2].Trim().Trim('"')
+            $cfg[$Matches[1].Trim()] = $Matches[2].Trim().Trim('"').Trim("'")
         }
     }
     return $cfg
@@ -610,7 +610,9 @@ function Test-BbxLocalEndpoint {
     $request = New-Object -ComObject WinHttp.WinHttpRequest.5.1
     try {
         $request.SetTimeouts(2000, 2000, 2000, 2000)
-        $request.Open('GET', "${Scheme}://localhost:$Port/", $false)
+        # Native and OG both own an IPv4 loopback listener. Avoid WinHTTP's
+        # host-dependent localhost family choice when observing that endpoint.
+        $request.Open('GET', "${Scheme}://127.0.0.1:$Port/", $false)
         # Only the loopback probe accepts the locally generated certificate.
         $request.Option(4) = 13056
         $request.Option(6) = $false
@@ -640,11 +642,15 @@ function Get-BbxStatus {
             $running = $true; $detection = "process"
         }
     }
-    $scheme = "https"
+    $httpOnly = $cfg.ContainsKey("BBX_HTTP_ONLY") -and
+        -not [string]::IsNullOrWhiteSpace([string]$cfg["BBX_HTTP_ONLY"])
+    $scheme = if ($httpOnly) { "http" } else { "https" }
     if ($port) {
-        if (Test-BbxLocalEndpoint -Scheme https -Port $port) {
+        if ($httpOnly -and (Test-BbxLocalEndpoint -Scheme http -Port $port)) {
             $running = $true; $detection = "endpoint"
-        } elseif (Test-BbxLocalEndpoint -Scheme http -Port $port) {
+        } elseif (-not $httpOnly -and (Test-BbxLocalEndpoint -Scheme https -Port $port)) {
+            $running = $true; $detection = "endpoint"
+        } elseif (-not $httpOnly -and (Test-BbxLocalEndpoint -Scheme http -Port $port)) {
             $running = $true; $detection = "endpoint"; $scheme = "http"
         }
     }
@@ -1324,9 +1330,10 @@ if ($normalizedCommand -in @("run", "start")) {
     $lk = $env:LICENSE_KEY
     if (-not $lk -and (Test-Path $TestEnvFile)) {
         Get-Content $TestEnvFile | ForEach-Object {
-            if ($_ -match "^LICENSE_KEY=(.+)$") { $lk = $Matches[1] }
+            if ($_ -match "^LICENSE_KEY=(.+)$") { $lk = $Matches[1].Trim().Trim('"').Trim("'") }
         }
     }
+    if ($lk) { $lk = ([string]$lk).Trim().Trim('"').Trim("'") }
     if (-not $lk) {
         Write-Error "No LICENSE_KEY available. Run 'bbx certify' or set LICENSE_KEY env var."
         exit 1

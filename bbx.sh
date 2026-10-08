@@ -5795,7 +5795,17 @@ status() {
     # One probe, one answer, shared by both output modes so the human line and
     # the JSON can never disagree about whether BrowserBox is up.
     local running=false detection="none"
-    if [ -n "$PORT" ] && curl --noproxy '*' -s --max-time 2 "${status_scheme}://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
+    local -a status_curl_args=(--noproxy '*' -s --max-time 2)
+    # Tor's local listener serves an onion certificate, which cannot match
+    # localhost. As in wait_for_local_ready, this is a local liveness probe;
+    # certificate verification still applies to every non-loopback endpoint.
+    if [[ "$status_scheme" == https && "$(_bbx_config_owner)" == tor &&
+          "$(_bbx_profile_value "${BB_CONFIG_DIR}/test.env" '# bbx-launch-onion')" == true ]]; then
+      case "$BBX_HOSTNAME" in
+        localhost|127.0.0.1|'[::1]') status_curl_args+=(-k) ;;
+      esac
+    fi
+    if [ -n "$PORT" ] && curl "${status_curl_args[@]}" "${status_scheme}://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
         running=true; detection="endpoint"
     elif pgrep -u "$(whoami)" browserbox >/dev/null 2>&1; then
         running=true; detection="process"
