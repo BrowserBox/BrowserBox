@@ -20,6 +20,26 @@
   <a href="https://docs.browserbox.io/"><strong>Read the BrowserBox docs →</strong></a>
 </p>
 
+<h2 align="center">⚡ NEW in v20.0.0 — BrowserBox, rewritten in Freelang</h2>
+
+<p align="center"><strong>Eight years. Twenty versions. One mission.</strong></p>
+
+<p align="center">
+  BrowserBox's production runtime has been rewritten in <strong>Freelang</strong> and compiled to a self-contained native executable.<br>
+  The familiar <code>bbx</code> commands, configuration, policies, login links and deployment modes stay the same.
+</p>
+
+<p align="center">
+  The new runtime is roughly one quarter the size of the previous packaged release on macOS and Linux, and one third the size on Windows.<br>
+  It brings a leaner, explicitly bounded memory footprint; faster, steadier high-FPS streaming; stronger security guarantees through deterministic resource ownership and failure recovery;<br>
+  and no third-party application-runtime or package-manager dependency chain at deployment time.
+</p>
+
+<p align="center">
+  Native v20 supports macOS, Windows and Linux—including Rocky Linux, Debian and CentOS Stream—plus BrowserBox Fleet,<br>
+  remote audio on macOS and Linux, managed browser policy, WebRTC with WebSocket fallback, and the existing direct, nginx, Tor, Cloudflare and ZeroTier connection modes.
+</p>
+
 <h2 align="center">🖥️ NEW in v18.10.0 — the BrowserBox desktop app <sup>BETA</sup></h2>
 
 <p align="center">
@@ -201,7 +221,8 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 ## 6. What's New
 
-- **Updated Customer Guide (v19.3.1)** — the [Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) now covers everything below, including the desktop app, Windows commands, update mirroring, and the licensing fallback endpoints.
+- **Native BrowserBox, rewritten in Freelang (v20.0.0)** — the production runtime is now a self-contained native executable while preserving the established `bbx` command and configuration contract. Downloads are roughly 67–79% smaller than v19.3.1, streaming is faster and steadier, memory use is explicitly bounded, deterministic resource ownership strengthens security and recovery guarantees, and the Node.js/npm runtime dependency tree is gone. Native v20 retains remote audio on macOS and Linux, policy controls, Fleet, WebRTC/WebSocket fallback and the existing network topologies.
+- **Updated Customer Guide (v20.0.0)** — the [Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) now covers native BrowserBox, the desktop app, Windows commands, Fleet, managed policy, audio, update mirroring, and licensing fallback endpoints.
 - **Licensing fallback endpoints (v18.8.0)** — licence validation now fails over to independent services, so a licence keeps working through a primary outage. If your egress is allowlisted, permit all four hosts on TCP 443: `license.dosaygo.com`, `license2.dosaygo.com`, `master.dosaygo.com` and `master2.dosaygo.com`.
 - **Faster, safer updates (v19.0.1)** — `bbx update` downloads from the `dl.getbrowserbox.com` mirror with GitHub as fallback, prepares the new release in the background, and swaps executables atomically on your next command.
 - **Scriptable `bbx` (v18.8.2)** — `bbx status --json`, `bbx --help-json` for the full command catalogue, and results on stdout with progress on stderr. `bbx restart` relaunches the way BrowserBox was last started, and each connection type (direct, Cloudflare, Tor, ZeroTier, nginx) keeps its own configuration.
