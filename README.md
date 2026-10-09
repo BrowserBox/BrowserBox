@@ -1,133 +1,32 @@
 <p align="center">
-  <img src="browserbox_logo_pixel.jpg" alt="BrowserBox Logo" width="200" height="200">
+  <img src="browserbox_logo_pixel.jpg" alt="BrowserBox remote browser isolation by DOSAYGO" width="200" height="200">
 </p>
 
-<h1 align="center">BrowserBox by DOSAYGO</h1>
+<h1 align="center">BrowserBox — Remote Browser Isolation</h1>
 
 <p align="center">
-  <strong>Secure, modern Remote Browser Isolation (RBI) with a clientless experience</strong>
-</p>
-
-<p align="center">
-  <a href="https://dosaygo.com#license"><img src="https://img.shields.io/badge/License-Required-red" alt="License Required"></a>
-  <a href="https://dosaygo.com"><img src="https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue" alt="BrowserBox Secure RBI"></a>
-  <a href="https://dosaygo.com/nist800-53.html"><img src="https://img.shields.io/badge/NIST%20800--53-Alignment-green" alt="NIST 800-53 Alignment"></a>
-  <a href="https://dosaygo.com/hipaa.html"><img src="https://img.shields.io/badge/HIPAA-Ready-purple" alt="HIPAA Ready"></a>
-  <a href="https://dosaygo.com/dlp.html"><img src="https://img.shields.io/badge/DLP-Options-pink" alt="DLP Options"></a>
+  <strong>A full remote browser. Clientless access. Native performance.</strong><br>
+  Self-host on Windows, macOS or Linux, or create cloud browser sessions through the API.
 </p>
 
 <p align="center">
-  <a href="https://docs.browserbox.io/"><strong>Read the BrowserBox docs →</strong></a>
-</p>
-
-<h2 align="center">⚡ NEW in v20.0.0 — BrowserBox, rewritten in Freelang</h2>
-
-<p align="center"><strong>Eight years. Twenty versions. One mission.</strong></p>
-
-<p align="center">
-  BrowserBox's production runtime has been rewritten in <strong>Freelang</strong> and compiled to a self-contained native executable.<br>
-  The familiar <code>bbx</code> commands, configuration, policies, login links and deployment modes stay the same.
+  <a href="https://browserbox.io/evaluate"><strong>Start a 7-Day Paid Evaluation</strong></a> ·
+  <a href="https://dosaygo.com/commerce"><strong>Buy a Commercial License</strong></a> ·
+  <a href="mailto:sales@dosaygo.com?subject=BrowserBox%20Enterprise%20Demo">Talk to Sales</a>
 </p>
 
 <p align="center">
-  The new runtime is roughly one quarter the size of the previous packaged release on macOS and Linux, and one third the size on Windows.<br>
-  It brings a leaner, explicitly bounded memory footprint; faster, steadier high-FPS streaming; stronger security guarantees through deterministic resource ownership and failure recovery;<br>
-  and no third-party application-runtime or package-manager dependency chain at deployment time.
+  <a href="https://browserbox.io">Website</a> ·
+  <a href="https://win9-5.com/demo">Live Demo</a> ·
+  <a href="https://docs.browserbox.io/">Documentation</a> ·
+  <a href="https://github.com/BrowserBox/BrowserBox/releases/latest">Latest Release</a>
 </p>
 
-<p align="center">
-  Native v20 supports macOS, Windows and Linux—including Rocky Linux, Debian and CentOS Stream—plus BrowserBox Fleet,<br>
-  remote audio on macOS and Linux, managed browser policy, WebRTC with WebSocket fallback, and the existing direct, nginx, Tor, Cloudflare and ZeroTier connection modes.
-</p>
+**BrowserBox is a remote browser isolation (RBI) platform for secure web access, browser automation, and embedded browsing.** It runs a full browser on a remote host and streams the rendered view to your users, with support for 60 FPS streaming. Give employees and contractors access to web applications, investigate untrusted sites, or add a live browser to your product. End users connect from a modern web browser without installing an agent or plugin.
 
-<h2 align="center">🖥️ NEW in v18.10.0 — the BrowserBox desktop app <sup>BETA</sup></h2>
+**As of v20, BrowserBox's production runtime is written entirely in [freelang](https://freelang.dev/) and compiled to a self-contained native executable.** The familiar `bbx` commands, configuration, policies, and login links carry forward. [Read about the freelang architecture](#built-with-freelang).
 
-<p align="center">
-  <img src="readme-files/bbx-gui-desktop-app.png" alt="The BrowserBox desktop app: the Session view showing your devices, a Cloudflare tunnel and this host, all connected" width="960">
-</p>
-
-<p align="center">
-  BrowserBox now ships with a desktop app for running your BrowserBox without the command line.<br>
-  Start and stop sessions, pick how people reach it (direct, Cloudflare, Tor, ZeroTier or nginx), copy the login link,<br>
-  manage browser policy, and run any <code>bbx</code> command from a form, with live progress and the full output a click away.<br>
-  On Linux hosts, the <strong>Fleet</strong> dashboard shows your whole seat pool at a glance: capacity, routes, health checks, and one-click actions per seat.
-</p>
-
-<p align="center">
-  <strong>Open it with <code>bbx gui</code></strong>. The app comes inside the BrowserBox binary you already installed, so there is nothing extra to download.<br>
-  It installs for your user on first run and prints where it lives, so you can pin it to your Dock, Start menu or desktop.<br>
-  Signed and notarized on macOS, signed on Windows, and available on Linux desktops (X11).
-</p>
-
-<p align="center">
-  <sub><strong>Beta:</strong> the desktop app is new and still evolving. The <code>bbx</code> command line remains the complete, supported interface. Please <a href="mailto:api@browserbox.io">tell us</a> what works and what doesn't.</sub>
-</p>
-
-<p align="center">
-  <strong>🔐 NEW in v18.0.1 — Passkey authentication on macOS:</strong> sign in to websites with real passkeys inside your remote browser.<br>
-  Passkeys are created and stored on your Mac's Secure Enclave and unlocked with Touch ID via the
-  <a href="https://github.com/BrowserBox/BrowserBox/releases/latest/download/browserbox-passkeys-macos.dmg"><strong>BrowserBox Passkeys helper</strong></a> —
-  a small signed &amp; notarized app that BrowserBox prompts you to download when a site requests a passkey. Your keys never leave your device.
-</p>
-
-<p align="center">
-  <strong>💻 Try it in your terminal — access BrowserBox over SSH via KRNL:</strong><br>
-  <code>ssh krnl.duetbrowser.com</code><br>
-  A full text-mode browser demo, no install and no signup. <a href="https://win9-5.com/krnl">Learn more about KRNL →</a>
-</p>
-
-<p align="center">
-  <strong>🇺🇸 NEWS — USA Edition (v17.7.6), coming July 4, 2026:</strong> our most stable BrowserBox yet.<br>
-  Enhanced streaming stability under co-located and heavy-workload deployments, full suppression of invisible browser prompts that could capture input,
-  per-user managed browser policy, cross-origin iframe instrumentation (preview) for strict-isolation sites — and 60&nbsp;FPS streaming re-validated end to end.
-</p>
-
-<p align="center">
-  <strong>🆕 APRIL 2026:</strong> <a href="https://www.hyper-frame.art"><strong>Hyper-Frame</strong></a> — the unlimited iframe — is live!<br>
-  Embed any website, automate remote browsers, and build web-in-web apps. <a href="https://www.hyper-frame.art/console">Try the live console →</a>
-</p>
-
-<p align="center">
-  <strong>Windows 98½ Demo:</strong> Try BrowserBox with our nostalgic <a href="https://win9-5.com/demo">Windows 98½ demo</a> — free 17-minute cloud browser sessions, no signup required.<br>
-  <strong>Cloud API:</strong> Purchase minutes and create on-demand cloud browser sessions via REST API.<br>
-  <a href="https://win9-5.com/api/">API Docs</a> · <a href="https://win9-5.com/pricing/">Pricing</a> · <a href="https://win9-5.com/demo">Live Demo</a> · <a href="https://www.hyper-frame.art">Hyper-Frame</a>
-</p>
-
-<p align="center">
-  <sub>Happy Birthday, America the Beautiful 🎉🗽</sub>
-</p>
-
----
-
-BrowserBox is a remote browser isolation (RBI) platform. It streams a full, modern browser to any client — 60 FPS, low latency — and runs on Windows, macOS, Linux, and LXC containers. **BrowserBox is commercial software. A valid license is required for all use, including development and evaluation. BrowserBox is not open source.**
-
-**At a glance:**
-- Clientless RBI — no plugins, no downloads for end users
-- 60 FPS streaming with real responsiveness
-- Embeds anywhere via `<hyper-frame>` ([Hyper-Frame](https://www.hyper-frame.art))
-- Cloud API for ephemeral sessions, no self-hosting needed
-- Works on Windows, macOS, Linux, and LXC containers
-- Policy controls, DLP, and audit-friendly workflows
-
-[ASCIInema Recordings](https://asciinema.org/~dosaygo) | [Live Demo](https://win9-5.com/demo) | [Cloud API](https://win9-5.com/api/) | [Pricing](https://win9-5.com/pricing/) | [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) | [Support](mailto:api@browserbox.io)
-
-Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.com), [Hyper-Frame](https://www.hyper-frame.art), [CloudTabs](https://browse.cloudtabs.net)
-
-
-
----
-
-> **Notice: Legacy source code removed (March 2026)**
->
-> When BrowserBox transitioned to a binary distribution model in late 2025, we retained legacy source code in this repository for a six-month period to give existing customers time to migrate. That period is now over and all legacy source has been removed.
->
-> Current BrowserBox source is private and proprietary. It diverges significantly from the legacy code that was previously housed here -- by over 1,000 commits -- with extensive bug fixes, security hardening, and performance enhancements that are absent from the legacy codebase and any forks thereof.
->
-> Legacy source code may still be visible in third-party forks as a historical curiosity. That code is **not open source**. Permission is **not** granted to use that source in your products, to train AI models, or to re-implement BrowserBox functionality from it. These acts violate BrowserBox terms. See [LICENSE.md](LICENSE.md) and [TRADEMARK.md](TRADEMARK.md).
->
-> Current source is available to customers above a threshold ACV as part of due diligence, on request. Contact [sales@dosaygo.com](mailto:sales@dosaygo.com).
-
----
+BrowserBox is commercial software. A valid license is required for all use, including development and evaluation. [Compare licensing options](#20-licensing) or [try the hosted demo](https://win9-5.com/demo) before planning a deployment.
 
 ## Table of Contents
 
@@ -136,7 +35,7 @@ Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.c
 3. [Who Uses It](#3-who-uses-it)
 4. [Real-World Use Cases](#4-real-world-use-cases)
 5. [Core Features](#5-core-features)
-6. [What's New](#6-whats-new)
+6. [What's New in v20 & Freelang](#6-whats-new)
 7. [See It In Action](#7-see-it-in-action)
 8. [Supported Network Topologies](#8-supported-network-topologies)
 9. [Platform Compatibility](#9-platform-compatibility)
@@ -147,95 +46,93 @@ Official sites: [BrowserBox](https://browserbox.io), [DOSAYGO](https://dosaygo.c
 14. [Cloud API](#14-cloud-api)
 15. [Embed BrowserBox](#15-embed-browserbox)
 16. [Advanced Usage](#16-advanced-usage)
-17. [License Compliance & Privacy](#17-license-compliance--privacy)
-18. [FAQ](#18-faq)
-19. [Licensing](#19-licensing)
-20. [Support](#20-support)
-21. [About DOSAYGO](#21-about-dosaygo)
+17. [Flipbook Recording](#17-flipbook-recording)
+18. [License Compliance & Privacy](#18-license-compliance--privacy)
+19. [FAQ](#19-faq)
+20. [Licensing](#20-licensing)
+21. [Support](#21-support)
+22. [About DOSAYGO](#22-about-dosaygo)
 
 ---
 
 ## 1. Why BrowserBox?
 
-The web is genuinely dangerous, and standard browsing pushes that risk directly onto your network and your endpoints. BrowserBox flips the model: the browser runs on a server you control, and clients receive a rendered stream — so malware, exploits, and sketchy sites never touch user devices. Security teams get isolation without fighting users over endpoint agents. SaaS builders can embed a full browsing experience into their products without headless brittleness. Regulated organizations get audit trails and DLP controls baked in.
+Move web browsing into infrastructure you control. With BrowserBox, remote websites execute on the host while users interact with a streamed view. This separates website execution from the endpoint and gives your team a central place to manage browsing policy, access, and sessions.
 
-- Threat containment: browser exploits hit the server, not the endpoint
-- True clientless access: any modern browser, zero installs for end users
-- Embeddable: build web products that include real, live browsing
-- Automation-ready: a real browser, not a headless approximation
+Deploy a **self-hosted remote browser** inside your network for access to internal applications, run isolated sessions for security work, or use the **Cloud API** when you want on-demand capacity without managing servers. The same browsing experience can also be embedded in your own application with [Hyper-Frame](https://www.hyper-frame.art).
 
----
+[Evaluate BrowserBox on your infrastructure](https://browserbox.io/evaluate) or [discuss an enterprise deployment](mailto:sales@dosaygo.com?subject=BrowserBox%20Enterprise%20Deployment).
 
 ## 2. Key Benefits
 
-- **Threat isolation:** malware, exploits, and bad sites hit the server — not client devices
-- **Clientless:** works in any browser, zero install for end users
-- **Cross-platform:** Windows, macOS, Linux (Debian, Ubuntu, RHEL, CentOS, NixOS), and containers like LXC
-- **Smooth UX:** low-latency rendering, 60 FPS
-- **Solid CLI and embedding API** for builders and integrators
-
----
+- **Reduce endpoint exposure.** Run untrusted web content on a remote host, with browser policy enforced in the session.
+- **Simplify access.** Users open a login link in their existing browser; no endpoint agent or browser extension is required.
+- **Keep browsing responsive.** Support for 60 FPS streaming, WebRTC transport, and WebSocket fallback. Actual performance depends on the host, workload, and network.
+- **Choose where sessions run.** Deploy on your own Windows, macOS, or Linux systems, or purchase hosted browser minutes.
+- **Build browser features into your product.** Embed a live session and control navigation, tabs, and capture through the Hyper-Frame API.
+- **Manage concurrent users.** Linux Fleet pools let you run multiple isolated seats on one host, with capacity and health visible in the desktop app.
 
 ## 3. Who Uses It
 
-- **Security teams** — isolate browsing risk from corporate endpoints
-- **SaaS builders and integrators** — embed live browser sessions in products
-- **IT and ops** — access internal web UIs from anywhere, without broad network exposure
-- **Automation and QA** — run real browser workflows without headless fragility
-- **Regulated orgs** — healthcare, finance, government — where audit trails and DLP policies aren't optional
-
----
+| Team | What BrowserBox helps you do |
+| :--- | :--- |
+| Security and IT | Isolate browsing activity, investigate suspicious sites, and enforce session policy. |
+| Enterprise operations | Give employees, contractors, and vendors browser access to internal web applications. |
+| SaaS builders and integrators | Add interactive remote browsers to customer portals, workflows, and support tools. |
+| Automation and QA | Automate browser workflows and let a person take over the same session when needed. |
+| Healthcare, finance, and government | Apply browsing restrictions, data loss prevention controls, and policy logging within your deployment. |
 
 ## 4. Real-World Use Cases
 
-### Home Lab: The Always-On Jump Browser
-
-If you run a Synology NAS or any always-on home server, BrowserBox fits in naturally as a private jump browser for your local network. Install it once via CLI, and you've got a streamed Chrome session you can reach from any device — phone, laptop, whatever's in your hand — that can immediately access your router admin panel, IP cameras, smart home hubs, printers, and any other internal web UI that normally requires being on the same LAN.
-
-No port forwarding maze. No VPN just to check one device. You expose a single protected BrowserBox session, secured by token, and everything behind it stays private. Trigger large downloads and they land directly on NAS drives — no extra hops, no cloud middleman. When a site throws a captcha or anti-bot wall, just handle it visually in the remote browser. It's your network. This is how you reach it cleanly.
-
 ### Enterprise: Secure Remote Browser Gateway
 
-In corporate, government, healthcare, and financial environments, BrowserBox acts as a secure browser gateway deployed inside a protected network. Teams, contractors, and vendors reach internal web applications, intranets, admin panels, and legacy systems — without installing software on their devices or opening broad network access to your infrastructure.
+Place BrowserBox inside a protected network and give authorized users access to intranets, admin consoles, and business applications through a remote browser. Users can work from their existing devices while administrators control which sites and browser capabilities the session permits.
 
-Admins control copy-paste, file uploads and downloads, printing, and keyboard inputs per user or session. DLP policies keep sensitive information contained inside the isolated browser. Every action is auditable. Malware and exploits are contained server-side. Whether you're managing compliance with HIPAA, financial regulations, or government security requirements, the controls are there — and they're not bolted on as an afterthought.
+Manage clipboard access, uploads, downloads, printing, and developer tools through policy. Navigation allowlists and private-network restrictions let you tailor access to each workflow, while policy decision logs support review. [Talk to sales](mailto:sales@dosaygo.com?subject=BrowserBox%20Enterprise%20Demo) about seat capacity, deployment requirements, and support.
 
-Same core idea, two very different worlds: keep the browser where you can watch it, and stream the view to wherever people actually are.
+### SaaS: An Embedded Browser for Your Product
 
----
+Use `<hyper-frame>` to put a live browser inside your application. Build guided onboarding, interactive demos, support sessions, or automation with human handoff. Use your own BrowserBox deployment or create paid cloud sessions through REST, then pass the session's login URL to the embedding component. [Explore the embedding API](https://www.hyper-frame.art).
+
+### Home Lab: An Always-On Jump Browser
+
+Run BrowserBox on a supported home server or virtual machine to reach router consoles, cameras, printers, and other internal web interfaces from one remote session. Choose a private overlay network or an authenticated HTTPS entry point, then use browsing policy to limit what the session can reach. Downloads stay on the host unless you enable a transfer to the client.
 
 ## 5. Core Features
 
-- **Clientless RBI** — access from any modern browser, no install required for end users
-- **Cross-platform** — Windows, macOS, Debian, Ubuntu, RHEL, Rocky Linux, CentOS, NixOS, and containers like LXC
-- **`bbx` CLI** — manage install, licenses, users, run modes, and tunnels from the command line
-- **`<hyper-frame>` embedding API** — drop a live browser session into any web product
-- **Cloud API** — purchase minute packs and spin up ephemeral sessions via REST, no self-hosting
-- **Multi-seat on Linux** — `bbx fleet` runs a pool of isolated seats on one host, with a dashboard in the desktop app
-- **Session recording** — capture any session as a self-contained [flipbook site](#17-flipbook-recording)
-- **Automation-ready** — a real browser; Puppeteer and Playwright integrations coming
-- **DLP, Tor support, access controls** — policy enforcement built in, not bolted on
-- **Cloud templates** — deploy on AWS, Azure, Linode or Vultr from a provided template
-
----
+- **Clientless remote browser isolation:** a full browser streamed to desktop and mobile browsers.
+- **Native freelang runtime:** compiled executables for Windows, macOS, and Linux.
+- **`bbx` CLI and desktop app:** manage sessions, policies, licenses, and connection modes.
+- **Data loss prevention (DLP) controls:** manage clipboard, file transfer, printing, navigation, and other browser capabilities.
+- **Linux Fleet:** run a pool of isolated browser seats on one host.
+- **Hyper-Frame embedding:** control tabs, pages, capture, and policy-gated capabilities from your application.
+- **Cloud browser API:** create and end ephemeral sessions using purchased minutes.
+- **Session recording:** save browsing sessions as self-contained [flipbook sites](#17-flipbook-recording).
+- **Remote audio:** supported on macOS and Linux.
+- **Flexible networking:** direct HTTPS, Cloudflare Tunnel, Tor, ZeroTier, and nginx.
+- **Remote DevTools and document viewing:** inspect pages and view supported documents within the remote environment.
 
 ## 6. What's New
 
-- **Native BrowserBox, rewritten in Freelang (v20.0.0)** — the production runtime is now a self-contained native executable while preserving the established `bbx` command and configuration contract. Downloads are roughly 67–79% smaller than v19.3.1, streaming is faster and steadier, memory use is explicitly bounded, deterministic resource ownership strengthens security and recovery guarantees, and the Node.js/npm runtime dependency tree is gone. Native v20 retains remote audio on macOS and Linux, policy controls, Fleet, WebRTC/WebSocket fallback and the existing network topologies.
-- **Updated Customer Guide (v20.0.0)** — the [Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf) now covers native BrowserBox, the desktop app, Windows commands, Fleet, managed policy, audio, update mirroring, and licensing fallback endpoints.
-- **Licensing fallback endpoints (v18.8.0)** — licence validation now fails over to independent services, so a licence keeps working through a primary outage. If your egress is allowlisted, permit all four hosts on TCP 443: `license.dosaygo.com`, `license2.dosaygo.com`, `master.dosaygo.com` and `master2.dosaygo.com`.
-- **Faster, safer updates (v19.0.1)** — `bbx update` downloads from the `dl.getbrowserbox.com` mirror with GitHub as fallback, prepares the new release in the background, and swaps executables atomically on your next command.
-- **Scriptable `bbx` (v18.8.2)** — `bbx status --json`, `bbx --help-json` for the full command catalogue, and results on stdout with progress on stderr. `bbx restart` relaunches the way BrowserBox was last started, and each connection type (direct, Cloudflare, Tor, ZeroTier, nginx) keeps its own configuration.
-- **Better remote input (v19.1.1–v19.2.0)** — double and triple clicks reach the remote page, and single-choice dropdowns open as your device's native picker.
-- **Much broader Windows support (v18.9.0)** — `bbx` on Windows now has the connection and management commands that used to be Linux- and macOS-only: Cloudflare tunnels, Tor onion services, ZeroTier networks, an nginx front door and legacy Windows 9x clients, plus `restart`, `logs`, `use-chrome`, `activate` and `vacancy`. Each tunnel installs what it needs the first time you use it. See [what runs on Windows](#what-runs-on-windows).
-- **Passkey authentication on macOS (v18.0.1)** — sign in to sites with passkeys from inside your remote browser. The [BrowserBox Passkeys helper](https://github.com/BrowserBox/BrowserBox/releases/latest/download/browserbox-passkeys-macos.dmg) (signed & notarized) stores keys in the Secure Enclave and unlocks them with Touch ID; BrowserBox offers the download automatically when a site requests a passkey.
-- **KRNL — BrowserBox over SSH** — a text-mode browser in any terminal: `ssh krnl.duetbrowser.com` to try it free, or [get the KRNL bundle](https://win9-5.com/krnl).
-- **Cloud API** — purchase minute packs at [win9-5.com/pricing](https://win9-5.com/pricing/) and create ephemeral browser sessions via REST. No server to manage.
-- **Windows 98½ Demo** — free 17-minute cloud sessions at [win9-5.com/demo](https://win9-5.com/demo), no signup.
-- **Flipbook Recording** — record any browsing session as a self-contained static flipbook site. Deploy to Cloudflare Pages with one command.
-- **Binary release system** — BrowserBox now ships as a signed binary. Install with one command, update the same way.
-- **60 FPS streaming** — real-time, low-latency rendering for a browsing experience that actually feels like a browser.
-- **Unified install endpoints** — `browserbox.io/install.sh` (Linux/macOS) and `browserbox.io/install.ps1` (Windows).
+### Built with freelang
+
+**BrowserBox v20 completes the rewrite of its production runtime in freelang**, formally named FreedomLang: DOSAYGO's systems language for compiling programs ahead of time directly to native machine code. BrowserBox's server services, streaming pipeline, browser policy, licensing, and process control now run as native code. You install the released executable without a separate application runtime or package manager to maintain. Earlier BrowserBox releases used Node.js; v20 replaced that runtime with native freelang.
+
+Freelang is designed around explicit state, bounded resources, and clear ownership. Timeouts, disconnected peers, and unavailable resources are outcomes the program handles directly. BrowserBox applies that model to connection admission, frame delivery, and service shutdown, with explicit limits and cleanup paths. External components such as TLS and WebRTC adapters run in separate, version-locked processes called **sidecars**, communicating through validated protocols instead of sharing the application's memory. This keeps failures in those components outside the freelang heap and makes their interfaces independently testable.
+
+For deployment teams, the result is native packaging across supported platforms, fewer application-runtime dependencies to manage, and a design that makes resource limits and failure handling explicit. Existing `bbx` commands, configuration, login links, Fleet deployments, and connection modes remain familiar. Chrome and the system tools required by your chosen features are installed or configured through the normal BrowserBox setup. [Learn more about freelang](https://freelang.dev/).
+
+### Desktop App and Operational Improvements
+
+Open **`bbx gui`** to manage BrowserBox from the included desktop app. Start and stop sessions, select a connection mode, copy login links, and manage browser policy. On Linux, the Fleet dashboard shows seat capacity, routes, and health. The desktop app is in beta; the CLI provides the complete command interface.
+
+<p align="center">
+  <img src="readme-files/bbx-gui-desktop-app.png" alt="BrowserBox desktop app showing connected devices, a Cloudflare tunnel, and session management" width="960">
+</p>
+
+Recent releases also include structured CLI output (`bbx status --json` and `bbx --help-json`), atomic executable updates with a download mirror and GitHub fallback, and additional license-validation endpoints. See the [release notes](https://github.com/BrowserBox/BrowserBox/releases) and [current Customer Guide](./docs/CUSTOMER-GUIDE.pdf) for deployment details.
+
+On macOS, the signed and notarized BrowserBox Passkeys helper enables website passkey authentication from a remote session using the local Mac's Secure Enclave and Touch ID. [Contact support for helper setup](mailto:api@browserbox.io?subject=BrowserBox%20Passkeys%20Setup).
 
 ---
 
@@ -243,94 +140,71 @@ Same core idea, two very different worlds: keep the browser where you can watch 
 
 <div align="center">
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox displays the web, like a normal browser, but enterprise secure." src="readme-files/bbx-secure-web-browsing.webp" />
+    <img width="600" alt="BrowserBox remote browser session displaying a web page" src="readme-files/bbx-secure-web-browsing.webp" />
     <figcaption>Secure Web Browsing</figcaption>
   </figure>
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox displays PDFs like a normal browser." src="readme-files/bbx-pdf-viewing.webp" />
-    <figcaption>Seamless PDF Viewing</figcaption>
+    <img width="600" alt="PDF document open in a BrowserBox remote browser session" src="readme-files/bbx-pdf-viewing.webp" />
+    <figcaption>Remote PDF Viewing</figcaption>
   </figure>
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox has DevTools like a normal browser" src="readme-files/bbx-devtools.webp" />
-    <figcaption>Powerful DevTools</figcaption>
+    <img width="600" alt="Chrome DevTools inspecting a page in BrowserBox" src="readme-files/bbx-devtools.webp" />
+    <figcaption>Remote Chrome DevTools</figcaption>
   </figure>
   <figure style="display: inline-block; margin: 10px;">
-    <img width="600" alt="BrowserBox uploads files, and does many other things, just like a normal browser." src="readme-files/bbx-file-uploads.webp" />
-    <figcaption>Full Browser Features (File Uploads, etc.)</figcaption>
+    <img width="600" alt="File upload workflow in a BrowserBox remote browser" src="readme-files/bbx-file-uploads.webp" />
+    <figcaption>File Uploads</figcaption>
   </figure>
 </div>
+
+
+Try the [live browser demo](https://win9-5.com/demo), explore the [Hyper-Frame console](https://www.hyper-frame.art/console), or use the optional [KRNL terminal browser](https://win9-5.com/krnl) over SSH:
+
+```bash
+ssh krnl.duetbrowser.com
+```
 
 ---
 
 ## 8. Supported Network Topologies
 
-BrowserBox isn't fussy about how your network is wired. Whether you're behind a corporate NAT, routing through Tor, or running a Cloudflare tunnel for a quick demo, it fits in without requiring you to restructure anything. Access can be browser-based over HTTPS/WSS/WebRTC or terminal-native over SSH. The SSH access topology is provided by the optional **KRNL BrowserBox add-on**, which presents the remote browser as an interactive terminal user interface (TUI) in an SSH session with PTY allocation. KRNL is available with BrowserBox as a [BrowserBox + KRNL bundle](https://win9-5.com/krnl).
+Choose the connection mode that fits your deployment. BrowserBox includes commands for direct access and common tunnel configurations; each mode retains its own settings.
 
-The table below covers the supported topologies — pick what matches your situation.
+| Connection | How it works | Typical use |
+| :--- | :--- | :--- |
+| Direct HTTPS / WSS / WebRTC | Serve BrowserBox on your hostname with encrypted browser access. | Self-hosted production deployments. |
+| Cloudflare Tunnel | `bbx cf-run` creates an HTTPS entry point through a Cloudflare tunnel. | Evaluations and access behind NAT. |
+| Tor | `bbx tor-run` provides an onion service and routes browsing through Tor. | Workflows that require Tor connectivity. |
+| ZeroTier | `bbx zt-run --network-id <id>` serves BrowserBox on a private overlay network. | Private team and home-lab access. |
+| nginx | `bbx ng-start` places an nginx front end on port 443. | A standard HTTPS entry point in front of BrowserBox. |
+| SSH port forwarding | Forward BrowserBox's service ports through an SSH connection. | Private administration and bastion access. |
+| [KRNL add-on](https://win9-5.com/krnl) | Interact with BrowserBox through an SSH terminal interface. | Browsing from a terminal without a graphical client. |
+| Legacy HTTP | `bbx win9x-run` provides a compatible endpoint for older browsers. | Windows 9x-era clients on trusted networks. |
 
-| Topology | Description | Public Access? | Key Features & Benefits | OS Support (Ubuntu/macOS/Windows) | Best For |
-|----------|-------------|----------------|--------------------------|------------------------------------|----------|
-| **HTTP Only** | Basic unencrypted HTTP connections for quick, lightweight access. | Yes (if exposed) | Simple setup; ideal for internal testing or low-security demos. Supports custom ports (e.g., 8080, 9999, 11111) or standard (80). | ✅ / ✅ / ✅ | Rapid prototyping in trusted networks. |
-| **HTTP/WS** | HTTP with WebSocket support for real-time bidirectional communication. | Yes (if exposed) | Enables interactive apps; pairs with custom/standard ports for flexibility. | ✅ / ✅ / ✅ | Chat apps, live updates, or collaborative tools. |
-| **HTTPS/WSS/WebRTC** | Secure HTTPS with WebSocket Secure and WebRTC for encrypted, peer-to-peer media streaming. | Yes (if exposed) | End-to-end encryption; auto-cert handling; custom/standard ports (443 default). | ✅ / ✅ / ✅ | Video calls, secure file sharing, or real-time collaboration in production. |
-| **Tor/HTTP** | Tor onion service over HTTP for pseudonymous access. | Yes (via .onion) | High privacy; bypasses censorship; slow but reliable. Requires Tor Browser. | ✅ / ✅ / ✅ | Privacy-focused demos or restricted environments. |
-| **Tor/HTTPS** | Secure Tor onion service with HTTPS encryption. | Yes (via .onion) | Adds TLS to Tor for extra security; reliable NAT traversal. | ✅ / ✅ / ✅ | Anonymous secure access in high-threat scenarios. |
-| **SSH / Interactive Terminal ([KRNL add-on](https://win9-5.com/krnl))** | Terminal-native BrowserBox access through an interactive SSH session with a PTY-backed TUI; no graphical browser is required on the client. | Public or private (standard SSH) | Remote browsing from an SSH client; try the hosted demo with `ssh krnl.duetbrowser.com`, or purchase the BrowserBox + KRNL bundle. | ✅ / ✅ / ✅ | Bastion hosts, jump boxes, terminal-first operations, and constrained client environments. |
-| **SSH Port Forward, HTTP** | SSH-based port forwarding tunneling HTTP traffic. | No (private) | Secure, low-latency; forwards to custom/standard ports. Upcoming auto-cert orchestration. | ✅ / ✅ / ✅ | Private homelab access or secure internal routing. |
-| **SSH Port Forward, HTTPS** | SSH forwarding with HTTPS for encrypted tunnels. | No (private) | Combines SSH reliability with TLS; flexible port options. Native enhancements incoming. | ✅ / ✅ / ✅ | Enterprise-grade secure remote sessions. |
-| **Custom Ports** | User-defined ports (e.g., 8080, 9999, 11111) across any protocol. | Varies | Total control; avoids conflicts; integrates with all topologies. | ✅ / ✅ / ✅ | Tailored setups for specialized apps or multi-service hosts. |
-| **Standard Ports** | Default ports (e.g., 80 for HTTP, 443 for HTTPS) for seamless compatibility. | Varies | Plug-and-play; reduces config overhead in standard environments. | ✅ / ✅ / ✅ | Quick deployments matching common infrastructure. |
-| **Cloudflare Tunnel** | HTTPS DNS facade with port relay via Cloudflare's edge network. | Yes (*.trycloudflare.com) | Auto-install; high reliability; great perf. Built in: `bbx cf-run`. | ✅ / ✅ / ✅ | Quick public demos with origin privacy. |
-| **localhost.run** | SSH reverse tunnel with HTTPS facade. | Yes (http(s)://…lhr.life) | Zero-config; medium reliability; occasional interstitials. | ✅ / ✅ / ✅ | Free, easy links for casual sharing. |
-| **ngrok** | Port relay with HTTPS and auth token for secure exposure. | Yes (*.ngrok-free.app) | High perf; webhooks ready; free tier limits (1 tunnel). Token required. | ✅ / ✅ / ✅ | Shareable demos and webhook testing. |
-| **Pinggy** | Port relay with HTTPS; may have interstitials. | Yes (*.pinggy.io) | Fair reliability; okay perf. | ✅ / ✅ / ℹ️ (Limited on Windows) | Budget-friendly webhooks and demos. |
-| **Tailscale** | Overlay network for private, LAN-like access. | No (private tailnet) | Very high reliability; low latency. SSH forwarding; token required. Less stable on Windows/VPN. | ✅ / ✅ / ℹ️ (SSH not upstream-supported on Windows) | Private team debugging and access. |
-| **Tor** | Onion routing for pseudonymous, reliable access. | Yes (.onion) | Extremely reliable (but slow); privacy-first. We already have `bbx tor-run`. | ✅ / ✅ / ✅ | Censorship-resistant, anonymous deployments. |
-| **Tunnelmole** | OSS ngrok-style relay with HTTPS. | Yes (https://…tunnelmole.net/.com) | High reliability; good perf; auto-install. | ✅ / ✅ / ✅ | Open-source demos with easy URLs. |
-| **ZeroTier** | Overlay network for peer-to-peer private access. | No (private network) | LAN-like; very high reliability. Built in: `bbx zt-run --network-id <id>`. Client on access device. | ✅ / ✅ / ✅ | Secure P2P demos in overlays. |
-
-**Notes on Flexibility & Power:**
-- KRNL terminal access is distinct from SSH port forwarding: KRNL provides an interactive TUI over SSH, while port forwarding carries BrowserBox's HTTP(S) access path through a private tunnel.
-- BrowserBox supports mixing and matching topologies — you can run HTTPS with a Cloudflare tunnel on custom ports, or Tor over SSH forwarding. The topology is yours to compose.
-- The `bbx` CLI handles tunnel setup, cert orchestration, and run modes in one place, so you're not stitching together a dozen separate tools to get a working deployment.
-
----
+ZeroTier requires its client on the accessing device. KRNL terminal access is a separate add-on; SSH port forwarding carries the regular browser connection. Legacy HTTP traffic is unencrypted, so use a trusted network or an encrypted tunnel. For ports, certificates, and reverse proxies, see the [Customer Guide](./docs/CUSTOMER-GUIDE.pdf).
 
 ## 9. Platform Compatibility
 
-BrowserBox runs where real work happens — here's the current support matrix.
+| Host platform | BrowserBox support |
+| :--- | :--- |
+| Windows and Windows Server | One BrowserBox instance per machine; CLI, desktop app, policy, and connection modes. |
+| macOS | Native builds for Apple silicon and Intel; desktop app and remote audio. |
+| Linux | Debian, Ubuntu, RHEL, Rocky Linux, CentOS Stream, and NixOS; Fleet and remote audio. |
+| LXC | Linux container deployments on compatible hosts. |
 
-| Platform                 | Supported | Icon |
-| :----------------------- | :-------- | :--- |
-| Tails\*                  | ❌        | <img src="readme-files/tails.svg" alt="Tails" width="100" title="Tails OS"> |
-| Windows & Windows Server | ✅        | <img src="readme-files/windows.svg" alt="Windows" width="100" title="Windows and Windows Server"> |
-| macOS                    | ✅        | <img src="readme-files/apple.svg" alt="macOS" width="64" title="macOS"> |
-| Debian                   | ✅        | <img src="readme-files/debian.svg" alt="Debian" width="64" title="Debian"> |
-| Ubuntu                   | ✅        | <img src="readme-files/ubuntu.svg" alt="Ubuntu" width="100" title="Ubuntu"> |
-| CentOS Stream            | ✅        | <img src="readme-files/centos.svg" alt="CentOS Stream" width="100" title="CentOS Stream"> |
-| RHEL                     | ✅        | <img src="readme-files/rhel.svg" alt="Red Hat Enterprise Linux" width="100" title="RHEL"> |
-| Rocky Linux              | ✅        | <img src="readme-files/rockylinux.svg" alt="Rocky Linux" width="100" title="Rocky Linux"> |
-| NixOS                    | ✅        | <img src="readme-files/nixos.svg" alt="NixOS" width="100" title="NixOS"> |
-| LXC                      | ✅        | <img src="readme-files/LXC.svg" alt="LXC" width="64" title="LXC"> |
-| Windows 9x†              | ✅        | <img src="readme-files/windows-9x.svg" alt="Windows 9x" width="64" title="Windows 9x"> |
+End users connect from modern desktop or mobile browsers. Legacy clients on Windows 95, 98, 2000, and NT can use `bbx win9x-run`; the server still runs on a supported modern host. Tails is not supported because Chrome cannot be installed.
 
->[!NOTE]
->Run `bbx update` to ensure you have the latest release with all fixes and features.
-
-\*Tails is not supported because Chrome cannot be installed.
-
-
-†Windows 9x clients are supported via the `bbx win9x-run` command which outputs the login link for legacy clients (IE 5, IE 6, Netscape). Supported client OSes: Windows 95, 98, 2000, NT. The server still needs to run on a modern system. Modern clients can use the legacy endpoint too, but the experience is understandably retro.
-
-<p align=center>
-  <img src="readme-files/browserbox-running-in-windows-98-ie-5.jpg" alt="BrowserBox Legacy Client Running in IE 5 in Windows 98" title="BrowserBox Legacy Client Running in IE 5 in Windows 98" width="800">
+<p align="center">
+  <img src="readme-files/browserbox-running-in-windows-98-ie-5.jpg" alt="BrowserBox remote browser running in Internet Explorer 5 on a Windows 98 client" width="800">
 </p>
+
+[Download the latest release](https://github.com/BrowserBox/BrowserBox/releases/latest) or run `bbx update` to update an existing installation.
 
 ---
 
 ## 10. Install
 
-BrowserBox is commercial software. A valid license is required for **all** use, including development and evaluation. BrowserBox is not open source. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate) or [purchase a license](https://dosaygo.com/commerce).
+Use the native installer for your platform. To activate BrowserBox, [start a paid evaluation](https://browserbox.io/evaluate) or [purchase a commercial license](https://dosaygo.com/commerce).
 
 ### Linux & macOS
 
@@ -346,11 +220,11 @@ irm https://browserbox.io/install.ps1 | iex
 
 For non-interactive full installs, set `BBX_INSTALL_HOSTNAME` and `BBX_INSTALL_EMAIL`. Legacy install aliases `BBX_HOSTNAME`, `BBX_EMAIL`, and `EMAIL` remain supported for compatibility.
 
-> **Updates are served from a CDN.** To ensure fast download speeds, `bbx update`, background updates, and the downloads `bbx` performs flow through **`dl.getbrowserbox.com`**, backed by Cloudflare R2. GitHub Releases remain the fallback origin and every published asset is still available there. The first-time installers above download from GitHub Releases.
->
-> Nothing is less trustworthy for going through the CDN: `bbx` verifies every download against the RSA-signed release manifest before installing it, using a public key compiled into the installer. A mirror that serves a stale, corrupt, or tampered artifact causes an automatic retry from GitHub — never a bad install.
->
-> If you need to bypass the CDN (air-gapped mirrors, strict egress allowlists, or debugging), set `BBX_NO_CDN=1` to use GitHub only, or point `BBX_ASSET_BASE` at your own mirror laid out as `<base>/<tag>/<asset>`.
+### Updates and Mirrors
+
+`bbx update` and background downloads use **`dl.getbrowserbox.com`**, with GitHub Releases as the fallback. Downloads are verified against the signed release manifest before installation. The first-time installers above download from GitHub Releases.
+
+Set `BBX_NO_CDN=1` to download directly from GitHub, or set `BBX_ASSET_BASE` to your own mirror using the layout `<base>/<tag>/<asset>`.
 
 #### What runs on Windows
 
@@ -368,21 +242,13 @@ A Windows install runs one BrowserBox instance per machine. Alongside setup, sta
 | `bbx use-chrome <version>` | Pin a Chrome for Testing build, or install stable Chrome |
 | `bbx activate`, `bbx vacancy` | Buy seats, and check seat availability |
 
-cloudflared, Tor, ZeroTier and nginx are installed the first time the command that needs them runs, not by the BrowserBox installer, so a basic install stays lean. Installing ZeroTier needs an elevated PowerShell.
+Connection commands install cloudflared, Tor, ZeroTier, or nginx when needed. Installing ZeroTier requires an elevated PowerShell session.
 
-Two things are not available on Windows: audio, and the multi-user commands (`bbx fleet`, `start-as`, `stop-user`). Both need per-seat Remote Desktop Services licensing on Windows Server.
-
-### Via npm
-
-```bash
-npm i -g @browserbox/browserbox
-```
-
----
+Remote audio and the multi-user commands (`bbx fleet`, `start-as`, `stop-user`) are not available on Windows. Use Linux for Fleet deployments.
 
 ## 11. Quick Start
 
-A product key is required. Obtain one via [paid evaluation](https://browserbox.io/evaluate) or [commercial / non-commercial purchase](https://dosaygo.com/pricing.html).
+After installing the CLI, activate with the product key from your license email and start your first session:
 
 ```bash
 bbx install
@@ -391,11 +257,15 @@ bbx setup
 bbx run
 ```
 
----
+Open the login link printed by `bbx`. Use `bbx gui` for the desktop app, `bbx status` to check a running session, and `bbx stop` to stop it. For a guided setup, see the [BrowserBox documentation](https://docs.browserbox.io/).
 
 ## 12. Documentation
 
-- [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf): installation, setup, customization, policy, embedding, reverse proxies, Fleet, licensing, and environment variables in one printable manual. Earlier editions are kept in [`docs/`](./docs) as `BrowserBox_Customer_Guide_<version>.pdf`.
+- [Online documentation](https://docs.browserbox.io/): installation, first session, policy, embedding, and deployment guides.
+- [Current Customer Guide PDF](./docs/CUSTOMER-GUIDE.pdf): a printable reference covering configuration, reverse proxies, Fleet, licensing, and environment variables. Earlier editions are kept in [`docs/`](./docs).
+- [Release notes and downloads](https://github.com/BrowserBox/BrowserBox/releases): published binaries and version history.
+- [Hyper-Frame](https://www.hyper-frame.art): embedding API and live console.
+- [Cloud API reference](https://win9-5.com/api/): session creation, routing, lifecycle, and minute balances.
 
 ---
 
@@ -424,35 +294,33 @@ jobs:
         run: echo "${{ steps.browserbox.outputs.login-link }}"
 ```
 
----
-
 ## 14. Cloud API
 
-Create on-demand ephemeral browser sessions without self-hosting. Purchase minute packs and manage sessions via REST.
+Create on-demand cloud browser sessions without managing a server. [Purchase browser minutes](https://win9-5.com/pricing/), then create a session with your API key and a routing region:
 
 ```bash
 curl -X POST https://win9-5.com/api/v1/sessions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"minutes": 15}'
+  -d '{"minutes": 15, "region": "na-east"}'
 ```
 
-Full API documentation: [win9-5.com/api](https://win9-5.com/api/)
-
----
+The response includes a `login_url` for opening or embedding the session. To embed it on your own site, include your site's origin in `allowedEmbeddingOrigins` when creating the paid session. See the [Cloud API reference](https://win9-5.com/api/) for routing choices, access rules, and session management.
 
 ## 15. Embed BrowserBox
 
+Add a live remote browser to your site with [Hyper-Frame](https://www.hyper-frame.art). Load the component, then set `login-link` to the complete URL returned by your BrowserBox deployment or the Cloud API:
+
 ```html
-<script src="https://win9-5.com/hyper-frame.js" type="module"></script>
+<script src="https://www.hyper-frame.art/hyper-frame.js" type="module"></script>
 <hyper-frame
-  login-link="https://your-instance.com/login/abc123"
+  login-link="https://your-instance.com/login?token=YOUR_SESSION_TOKEN"
   width="1024"
   height="768">
 </hyper-frame>
 ```
 
-The `<hyper-frame>` element provides a session-host API with namespaced surfaces for tabs, pages, capture, augmentation, selection, and policy-gated capability control.
+Control navigation through the component's JavaScript API:
 
 ```js
 const bbx = document.querySelector('hyper-frame');
@@ -460,37 +328,20 @@ await bbx.whenReady();
 await bbx.page.navigate('https://example.com');
 ```
 
-### Install via npm
-
-The embedding element is also published as [`@browserbox/hyper-frame`](https://www.npmjs.com/package/@browserbox/hyper-frame) for use in bundled apps:
-
-```bash
-npm i @browserbox/hyper-frame
-```
-
-```js
-import '@browserbox/hyper-frame';
-```
-
-> **Renamed from `<browserbox-webview>`.** The element, the script and the npm
-> package were all renamed to Hyper-Frame. The old
-> [`@browserbox/webview-element`](https://www.npmjs.com/package/@browserbox/webview-element)
-> package still exists on npm but is no longer updated, and the old
-> `browserbox-webview.js` script URL is gone. Point new work at `<hyper-frame>`.
-
----
+The API also exposes tabs, capture, augmentation, selection, and policy-gated capabilities. Allow your embedding origin in the session configuration before connecting. [Try the live console](https://www.hyper-frame.art/console) to explore the API.
 
 ## 16. Advanced Usage
 
-- **Secure document viewing** — open PDFs and sensitive files in the remote browser without ever downloading them to the client device (Linux only)
-- **Remote DevTools** — right-click in any BrowserBox session to access full Chrome DevTools running in the isolated environment
-- **Tor and SSH tunneling** — `bbx tor-run` for anonymous onion-routed access; SSH port forwarding for private, low-latency internal routing
+- **Secure document viewing:** view supported documents in the remote environment without transferring the original file to the client (Linux only).
+- **Remote DevTools:** inspect the remote page with Chrome DevTools, subject to your browsing policy.
+- **Tor and SSH tunneling:** use `bbx tor-run` for Tor connectivity or SSH forwarding for a private route to BrowserBox.
+- **Managed browsing policy:** configure allowed sites and browser capabilities for your workflow; consult the Customer Guide for policy profiles and enforcement details.
 
 ---
 
 ## 17. Flipbook Recording
 
-BrowserBox can record a browsing session as a **flipbook** — a self-contained static site of sequential JPEG frames with an interactive JavaScript viewer. Recordings are produced directly from the internal screencast pipeline with negligible overhead.
+BrowserBox can record a browsing session as a **flipbook**: a self-contained static site with an interactive viewer. Use recordings for support handoffs, walkthroughs, and session review. Frames come from the existing screencast pipeline.
 
 ### Quick Start
 
@@ -508,8 +359,8 @@ bbx stop
 ### How It Works
 
 1. `bbx setup --flipbook-record <dir>` enables recording by writing `BBX_FLIPBOOK_DIR` to the BrowserBox config.
-2. At runtime, each screencast frame is captured as a JPEG + JSON metadata pair — zero overhead when recording is off (single boolean check per frame).
-3. On `bbx stop`, the built-in `browserbox flipbook-generate` command compiles the raw frames into a complete flipbook static site.
+2. During recording, screencast frames are saved as JPEG images with JSON metadata.
+3. On `bbx stop`, BrowserBox finalizes the recording and generates the flipbook site.
 4. If [Cloudflare Wrangler](https://developers.cloudflare.com/workers/wrangler/) is available, the site is deployed to Cloudflare Pages automatically.
 
 ### Output
@@ -536,87 +387,93 @@ Multiple runs to the same directory produce separate timestamped subdirectories 
 | `--flipbook-record <dir>` | Enable recording. Compiled flipbook sites are written here. |
 | `--flipbook-description <text>` | Optional description embedded in the manifest and provenance metadata. |
 
----
-
 ## 18. License Compliance & Privacy
 
-BrowserBox requires a valid license for all deployments — commercial, non-commercial, and evaluation. Usage data is collected solely for license compliance and operational purposes; it is never sold, never shared with third parties for marketing, and never used to profile users.
+BrowserBox requires a valid license for commercial, non-commercial, development, and evaluation use. See [LICENSE.md](LICENSE.md) for the license terms, and the [Privacy Policy](https://dosaygo.com/privacy.txt.html) for information about data handling.
 
->[!IMPORTANT]
->A valid license unlocks all features, ensures ongoing support, and guarantees a secure, compliant solution.
+### Source Availability
 
----
+This repository distributes BrowserBox releases and public documentation. Current product source is private and proprietary; BrowserBox is not open source. Legacy source was removed from this repository in March 2026 after the migration to binary distribution. Historical forks do not include the current product's fixes and features, and their availability does not grant permission to use or redistribute them. See [LICENSE.md](LICENSE.md) and [TRADEMARK.md](TRADEMARK.md) for the applicable terms.
+
+Qualifying enterprise customers can request source access for due diligence. [Contact sales](mailto:sales@dosaygo.com?subject=BrowserBox%20Source%20Access) to discuss eligibility and terms.
 
 ## 19. FAQ
 
-**Q: Can I get an evaluation license?**
-Yes. Lock in your 7-day BrowserBox evaluation. Pay a one-time fee based on seats ($20 per seat with work email / $40 per seat with free or anonymous email providers), verify your ID via Stripe, and receive your license key by email. No subscriptions. Trial ends in 7 days, upgrade anytime. Your evaluation fee is deducted from your full license should you proceed to purchase. All sales final — no refunds under any circumstances. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate).
+**What is remote browser isolation?**
 
-**Q: Why is a license required?**
-BrowserBox is commercial software. A license funds continued development, security research, and support. It also gives you a legitimate, supportable deployment — not a fork of old code that diverged 1,000+ commits ago.
+Remote browser isolation runs websites in a browser on a separate host and sends a rendered view to the user. BrowserBox uses this approach to separate website execution from endpoint devices while providing interactive browsing and centralized policy controls.
 
-**Q: Do you offer perpetual licenses?**
-Current licensing is subscription-based. Enterprise arrangements, including perpetual options, are available — contact [sales@dosaygo.com](mailto:sales@dosaygo.com).
+**Can I self-host BrowserBox?**
 
-**Q: How does BrowserBox compare to other RBI solutions?**
-Most RBI products are cloud-only, expensive at scale, or require proprietary endpoint agents. BrowserBox runs on your own infrastructure (or ours via Cloud API), works with any client browser, and gives you genuine control over the deployment. It's also the only RBI platform with a Windows 98½ demo, for what that's worth.
+Yes. Install it on a supported Windows, macOS, or Linux host. Linux Fleet supports multiple isolated seats on one machine. The Cloud API is available when you prefer hosted sessions.
 
-**Q: What do I receive when I purchase?**
-A product key that activates `bbx`, access to all current platform binaries, documentation, and support channels. Enterprise customers above a threshold ACV can request source access for due diligence.
+**What is BrowserBox written in?**
 
-**Q: How can I get volume discounts?**
-Contact [sales@dosaygo.com](mailto:sales@dosaygo.com) for volume pricing, multi-year agreements, and enterprise terms.
+As of v20, BrowserBox's production runtime is written entirely in freelang and compiled to native executables. See [Built with freelang](#built-with-freelang) for the architecture and deployment benefits.
 
-**Q: I may have used BrowserBox without a license. How do I become compliant?**
-Reach out to [sales@dosaygo.com](mailto:sales@dosaygo.com). We handle compliance situations directly and without unnecessary drama — the goal is to get you licensed and supported, not to make things difficult.
+**Do users need to install anything?**
 
----
+For standard web access, users open a login link in a modern browser. Optional workflows such as ZeroTier access, KRNL terminal browsing, and macOS passkeys use their respective clients or helpers.
+
+**Can I evaluate it before purchasing an annual license?**
+
+Yes. The [7-day paid evaluation](https://browserbox.io/evaluate) supports up to 10 seats, with a one-time fee of $20 per seat using a work email or $40 per seat using a free or anonymous email provider. ID verification is through Stripe, and the evaluation fee is credited toward a full license on upgrade. All sales are final. You can also explore the [hosted demo](https://win9-5.com/demo).
+
+**What do I receive when I purchase?**
+
+A product key, access to platform binaries, updates, documentation, and support under your license terms. Contact sales for volume pricing, enterprise support, or source-access requirements.
+
+**How should I evaluate BrowserBox against other RBI products?**
+
+Compare where sessions can run, whether users need endpoint software, which policies you can enforce, and how the browser integrates with your applications. Test your real sites, network conditions, and concurrent-seat requirements during the evaluation.
+
+**How do I add seats or discuss enterprise terms?**
+
+Email [sales@dosaygo.com](mailto:sales@dosaygo.com). The team can help with additional seats, multi-year agreements, source access, and licensing questions.
 
 ## 20. Licensing
 
-BrowserBox is commercial software. A valid license is required for **all** use, including development and evaluation. BrowserBox is not open source.
+Choose an evaluation for a deployment test, a commercial license for production, or a sales conversation for a larger rollout. Seats are concurrent users.
 
-- **Commercial:** Starts at $119/user/year. [Purchase](https://dosaygo.com/commerce)
-- **Non-Commercial:** $49/user/year (non-profits, government). [Purchase](https://dosaygo.com/noncommercial)
-- **Evaluation:** 7-day paid evaluation license (one-time fee per seat with ID verification via Stripe; fee credited toward full license on upgrade). All sales final. [Start 7-Day Paid Evaluation](https://browserbox.io/evaluate)
-- **Enterprise / Source Access:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
+| Option | Best for | Next step |
+| :--- | :--- | :--- |
+| **7-day paid evaluation** | Testing your applications and infrastructure with up to 10 seats. Evaluation fee credited toward a full license on upgrade. | [Start an evaluation](https://browserbox.io/evaluate) |
+| **Commercial license** | Production deployments with updates and support. Annual licensing and volume options are available. | [View current pricing and buy](https://dosaygo.com/commerce) |
+| **Non-commercial license** | Eligible non-commercial deployments. | [View eligibility and pricing](https://dosaygo.com/noncommercial) |
+| **Enterprise** | Larger seat pools, tailored terms, and qualifying source-access requests. | [Talk to sales](mailto:sales@dosaygo.com?subject=BrowserBox%20Enterprise%20Licensing) |
+| **Hosted browser minutes** | On-demand Cloud API sessions without self-hosting. | [Buy minutes](https://win9-5.com/pricing/) |
+
+A valid license is required for all use, including development and evaluation. BrowserBox is commercial, proprietary software.
 
 ### Seats
 
-A licence covers a number of seats — one per concurrent user. On Linux, `bbx fleet`
-runs several seats on a single host; elsewhere it's one session per machine.
+On Linux, `bbx fleet` runs multiple isolated seats on one host. Windows and macOS run one BrowserBox instance per machine. Check occupancy with:
 
 ```bash
-bbx vacancy                  # how many seats are in use, and by whom
-bbx stop-user <username>     # release a seat someone left open
+bbx vacancy
 ```
 
-When every seat is occupied, the next `bbx certify` says so and stops rather than
-starting an unlicensed session. To add seats, email
-[sales@dosaygo.com](mailto:sales@dosaygo.com) — extra seats are added to your
-existing licence and **your product key does not change**.
-
----
+On Linux, `bbx stop-user <username>` stops a user's session and releases the seat. To expand an existing deployment, [contact sales](mailto:sales@dosaygo.com) to add seats to your existing license without changing your product key.
 
 ## 21. Support
 
-- **API & Technical:** [api@dosaygo.com](mailto:api@dosaygo.com)
-- **General:** [support@dosaygo.com](mailto:support@dosaygo.com)
-- **Sales & Licensing:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
-
----
+- **Technical support:** [api@browserbox.io](mailto:api@browserbox.io)
+- **General questions:** [hello@browserbox.io](mailto:hello@browserbox.io)
+- **Sales and licensing:** [sales@dosaygo.com](mailto:sales@dosaygo.com)
 
 ## 22. About DOSAYGO
 
-DOSAYGO — do, say, go — those are three of the most universal human verbs, after "to be" (which no company has any business telling you what to do with). We're a small team building software that respects the people using it. Our products are BrowserBox (remote browser isolation) and DiskerNet (offline web archives). We don't do buzzwords. We ship things that work. Find us at [dosaygo.com](https://dosaygo.com).
+[DOSAYGO](https://dosaygo.com) builds BrowserBox, [freelang](https://freelang.dev/), and DiskerNet. We develop the language, runtime, and browser infrastructure behind BrowserBox, and work directly with customers on deployment and support.
 
 ---
 
 <p align="center">
-  <strong>Ready to get started?</strong><br>
-  <a href="https://browserbox.io/evaluate">Start 7-Day Paid Evaluation</a> · <a href="https://dosaygo.com/commerce">Commercial License</a> · <a href="https://dosaygo.com/noncommercial">Non-Commercial License</a> · <a href="mailto:sales@dosaygo.com?subject=Demo">Request a Demo</a>
+  <strong>Put BrowserBox to work on your own applications.</strong><br>
+  <a href="https://browserbox.io/evaluate">Start a 7-Day Paid Evaluation</a> ·
+  <a href="https://dosaygo.com/commerce">Buy a Commercial License</a> ·
+  <a href="mailto:sales@dosaygo.com?subject=BrowserBox%20Enterprise%20Demo">Talk to Sales</a>
 </p>
 
-BrowserBox&trade; is &copy; 2018-2026 DOSAYGO Corporation USA. All rights reserved.
+BrowserBox&trade; is &copy; 2018–2026 DOSAYGO Corporation USA. All rights reserved.
 
-[dosaygo.com](https://dosaygo.com) | [browserbox.io](https://browserbox.io) | [CloudTabs](https://browse.cloudtabs.net)
+[BrowserBox](https://browserbox.io) · [DOSAYGO](https://dosaygo.com) · [Documentation](https://docs.browserbox.io/)
