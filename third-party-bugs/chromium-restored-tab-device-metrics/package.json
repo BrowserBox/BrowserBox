@@ -1,0 +1,13 @@
+{
+  "name": "chromium-restored-tab-device-metrics-crash",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "reproduce": "node repro.mjs negative",
+    "control": "node repro.mjs guarded"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.25.0",
+    "ws": "^8.18.3"
+  }
+}
