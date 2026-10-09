@@ -36,6 +36,8 @@ the experiment.
 
 ## Chromium source
 
+Tracked as [Chromium issue 571624238](https://issues.chromium.org/issues/571624238).
+
 The crashing Chrome release dereferences `rwhv` without checking the result of
 `GetPrimaryMainFrame()->GetView()` in
 [`WebContentsImpl::SetDeviceEmulationSize`](https://github.com/chromium/chromium/blob/154.0.8037.98/content/browser/web_contents/web_contents_impl.cc#L11164-L11175).
