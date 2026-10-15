@@ -3141,7 +3141,7 @@ tor_run() {
   fi
 
   # Gate: ensure BrowserBox is listening before continuing (both onion and clearnet paths)
-  wait_for_local_ready "$PORT" https 90 || {
+  wait_for_local_ready "$PORT" https 300 || {
     printf "${RED}BrowserBox never became ready on port ${PORT}${NC}\n"
     _bbx_failure ready-timeout
     run_quietly stop_bbpro || true
