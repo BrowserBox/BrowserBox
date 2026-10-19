@@ -14,6 +14,18 @@
 _bbx_help_json() {
   cat <<'BBX_HELP_JSON'
 {"schema":"bbx.help/1","name":"bbx","commands":[
+{"path":["docker","setup"],"name":"docker setup","group":"Docker","description":"Configure a local Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":"Defaults to the installed BrowserBox hostname"},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"Main service port"}],"aliases":[],"confirm":false,"platform":"unix","note":"Reuses the installed licence, terms agreement and TLS conventions. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","run"],"name":"docker run","group":"Docker","description":"Create and start a local deployment. For saved deployments, choose docker start.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":"Defaults to the installed BrowserBox hostname"},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"Main service port"}],"aliases":[],"confirm":false,"platform":"unix","note":"Reuses the installed licence, terms agreement and TLS conventions. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","start"],"name":"docker start","group":"Docker","description":"Start a saved Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","stop"],"name":"docker stop","group":"Docker","description":"Gracefully stop a Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","restart"],"name":"docker restart","group":"Docker","description":"Restart a Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","status"],"name":"docker status","group":"Docker","description":"Inspect Docker deployment health.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","logs"],"name":"docker logs","group":"Docker","description":"Read Docker runtime logs.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"follow","flag":"--follow","type":"flag","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","link"],"name":"docker link","group":"Docker","description":"Read the ready Docker login link.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","update"],"name":"docker update","group":"Docker","description":"Update a deployment to a verified image.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"version","flag":"--version","type":"text","required":false,"choices":[],"description":""},{"name":"image","flag":"--image","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","remove"],"name":"docker remove","group":"Docker","description":"Remove a Docker deployment; retain data by default.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"purge","flag":"--purge","type":"flag","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","config"],"name":"docker config","group":"Docker","description":"Print a saved Compose project.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","exec"],"name":"docker exec","group":"Docker","description":"Invoke existing commands inside a deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"command","flag":"","type":"text","required":true,"choices":[],"description":"Executable inside the container; add arguments separately."}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["status"],"name":"status","group":"Instance","description":"Read current service, endpoint, and audio status.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"out","flag":"--out","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
 {"path":["start"],"name":"start","group":"Instance","description":"Start BrowserBox for the current or selected user.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["run"],"confirm":false,"platform":"all","note":""},
 {"path":["stop"],"name":"stop","group":"Instance","description":"Stop the current or selected BrowserBox instance.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
@@ -91,6 +103,17 @@ if [[ "${1:-}" == "--output-log" ]]; then
   set +C
   exec 1>&7 2>&7 7>&-
   shift 3
+fi
+
+# Container operations own their agreement and dependency setup. They must not
+# read, certify, update, or configure the host BrowserBox instance.
+if [[ -z "${BBX_LIB_MODE:-}" && "${1:-}" == docker ]]; then
+  shift
+  _bbx_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  _bbx_docker_cli="${_bbx_bin_dir}/bbx-docker.d/cli.sh"
+  [[ -f "$_bbx_docker_cli" ]] || _bbx_docker_cli="${_bbx_bin_dir}/deploy-scripts/docker/cli.sh"
+  [[ -f "$_bbx_docker_cli" ]] || { printf 'Docker commands are missing; reinstall BrowserBox commands.\n' >&2; exit 1; }
+  exec bash "$_bbx_docker_cli" "$@"
 fi
 
 if [[ "${1:-}" == "--help-json" ]]; then
@@ -381,6 +404,14 @@ detect_platform() {
   esac
 }
 
+# The release names Linux binaries by CPU; macOS ships arm64 only.
+linux_release_arch() {
+  case "$(uname -m)" in
+    aarch64|arm64) echo "arm64" ;;
+    *) echo "x64" ;;
+  esac
+}
+
 # Function to get the latest release tag from GitHub
 get_latest_release() {
   # Skip API call if BBX_NO_UPDATE is set; if caller passed BBX_RELEASE_TAG, use it.
@@ -452,7 +483,7 @@ download_binary() {
   local asset_name
   case "$platform" in
     macos) asset_name="browserbox-macos-arm64" ;;
-    linux) asset_name="browserbox-linux-x64" ;;
+    linux) asset_name="browserbox-linux-$(linux_release_arch)" ;;
     *) echo -e "${RED}Unsupported platform: $platform${NC}" >&2; exit 1 ;;
   esac
   
@@ -1863,98 +1894,13 @@ ensure_hosts_entry() {
   fi
 }
 
-# Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
-parse_dep() {
-    local dep="$1"
-    local os_type=""
-    local pkg_name=""
-    local tool_name=""
-
-    # OS detection
-    if [ -f /etc/debian_version ]; then
-        os_type="debian"
-    elif [ -f /etc/redhat-release ]; then
-        os_type="redhat"
-    elif [ "$(uname -s)" = "Darwin" ]; then
-        os_type="darwin"
-    fi
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep '$dep'${NC}\n" >&2
-
-    # Split by comma
-    IFS=',' read -r -a parts <<< "$dep"
-    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: '$dep'${NC}\n" >&2; exit 1; }
-
-    # Last part is <pkg>[/<tool>] - portable method
-    local last_part="${parts[$((${#parts[@]} - 1))]}"
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: last_part is '$last_part'${NC}\n" >&2
-
-    # Split last part into pkg and tool (handle optional /)
-    IFS='/' read -r default_pkg tool_name <<< "$last_part"
-    [ -z "$tool_name" ] && tool_name="$default_pkg"  # If no /, tool_name = pkg_name
-    # If last_part has a colon (e.g., darwin:netcat/nc), use only the pkg part after colon as default
-    case "$default_pkg" in
-        *:*)
-            IFS=':' read -r _ pkg_name <<< "$default_pkg"
-            ;;
-        *)
-            pkg_name="$default_pkg"
-            ;;
-    esac
-    [ -z "$pkg_name" ] && { printf "${RED}No package specified in '$dep'${NC}\n" >&2; exit 1; }
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Default pkg_name='$pkg_name', tool_name='$tool_name'${NC}\n" >&2
-
-    # Look for OS-specific package
-    for part in "${parts[@]::${#parts[@]}-1}"; do
-        IFS=':' read -r label pkg <<< "$part"
-        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: '$part'${NC}\n" >&2; exit 1; }
-        if [ "$label" = "$os_type" ]; then
-            pkg_name="$pkg"
-            break
-        fi
-    done
-
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed '$dep' -> '$pkg_name:$tool_name'${NC}\n" >&2
-    echo "$pkg_name:$tool_name"
-}
-
-# Dependency check
+# Load the shared dependency boundary only when a command needs it.
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "debian:ncat,redhat:nmap/ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
-    for dep in "${deps[@]}"; do
-        # Parse the dependency
-        IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
-
-        # Check if the tool exists
-        if ! command -v "$tool_name" >/dev/null 2>&1; then
-
-            # Install based on OS
-            if [ -f /etc/debian_version ]; then
-                $SUDO apt-get update && $SUDO apt-get install -y "$pkg_name"
-            elif [ -f /etc/redhat-release ]; then
-                $SUDO yum install -y "$pkg_name" || $SUDO dnf install -y "$pkg_name"
-            elif [ "$(uname -s)" = "Darwin" ]; then
-                if ! command -v brew >/dev/null; then
-                    printf "${RED}Homebrew not found. Install it first: https://brew.sh${NC}\n"
-                    exit 1
-                fi
-                if [[ "$pkg_name" == "util-linux" ]]; then
-                  continue
-                fi
-                brew install "$pkg_name"
-            else
-                printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
-                exit 1
-            fi
-
-            # Verify installation
-            if ! command -v "$tool_name" >/dev/null 2>&1; then
-                printf "${RED}Failed to install $pkg_name (for $tool_name). Please install it manually.${NC}\n"
-                exit 1
-            fi
-
-            printf "${YELLOW}Installed $pkg_name (for $tool_name)${NC}\n"
-        fi
-    done
+    local bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local helper="$bin_dir/bbx-dependencies"
+    [[ -f "$helper" ]] || helper="$bin_dir/deploy-scripts/_dependencies.sh"
+    source "$helper"
+    ensure_named_deps "curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "debian:ncat,redhat:nmap/ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout"
 }
 
 find_free_port_block() {
@@ -2287,7 +2233,7 @@ install_bbx() {
           local artifact_key
           case "$platform" in
             macos) artifact_key="darwin-arm64" ;;
-            linux) artifact_key="linux-x64" ;;
+            linux) artifact_key="linux-$(linux_release_arch)" ;;
             *) printf "${RED}Unsupported install platform: %s${NC}\n" "$platform"; rm -rf "$temp_manifest_dir"; rm -f "$exe_to_run"; return 1 ;;
           esac
           if ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$exe_to_run" "$artifact_key"; then
@@ -4950,7 +4896,13 @@ gui() {
   self="$(cd "$(dirname "$self")" && pwd)/$(basename "$self")"
 
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    open -n "$app" --args "$self"
+    local open_args=(-n "$app") var
+    for var in PATH BBX_NO_UPDATE BBX_BROWSER_PATH CHROME_PATH BBX_MINIMAL_MODE \
+      BBX_DOCKER_IMAGE BBX_DOCKER_CONTEXT BBX_DOCKER_REPOSITORY BBX_DOCKER_HOME \
+      BBX_SSLCERTS_DIR SSLCERTS_DIR XDG_CONFIG_HOME LICENSE_KEY; do
+      if [[ -n "${!var:-}" ]]; then open_args+=(--env "${var}=${!var}"); fi
+    done
+    open "${open_args[@]}" --args "$self"
     return $?
   fi
   if [[ -z "${DISPLAY:-}" ]]; then
@@ -5351,7 +5303,7 @@ check_prepare_and_install() {
         prepared_platform="$(detect_platform)"
         case "$prepared_platform" in
           macos) prepared_artifact_key="darwin-arm64" ;;
-          linux) prepared_artifact_key="linux-x64" ;;
+          linux) prepared_artifact_key="linux-$(linux_release_arch)" ;;
           *) printf "${RED}Unsupported update platform: %s${NC}\n" "$prepared_platform"; return 1 ;;
         esac
         if ! verify_release_bundle "$prepared_manifest" "$prepared_manifest_sig" "$prepared_binary" "$prepared_artifact_key" >> "$LOG_FILE" 2>&1; then
@@ -5486,7 +5438,7 @@ update() {
   local artifact_key
   case "$platform" in
     macos) artifact_key="darwin-arm64" ;;
-    linux) artifact_key="linux-x64" ;;
+    linux) artifact_key="linux-$(linux_release_arch)" ;;
     *) printf "${RED}Unsupported update platform: %s${NC}\n" "$platform"; rm -rf "$temp_manifest_dir"; rm -f "$temp_exe"; return 1 ;;
   esac
   if ! verify_release_bundle "${temp_manifest_dir}/release.manifest.json" "${temp_manifest_dir}/release.manifest.json.sig" "$temp_exe" "$artifact_key"; then
@@ -5585,7 +5537,7 @@ update_background() {
   local asset_name
   case "$platform" in
     macos) asset_name="browserbox-macos-arm64" ;;
-    linux) asset_name="browserbox-linux-x64" ;;
+    linux) asset_name="browserbox-linux-$(linux_release_arch)" ;;
     *) 
       printf "${RED}Unsupported platform: $platform${NC}\n" >> "$LOG_FILE"
       $SUDO rm -f "$PREPARING_FILE"
@@ -5642,7 +5594,7 @@ update_background() {
   local artifact_key
   case "$platform" in
     macos) artifact_key="darwin-arm64" ;;
-    linux) artifact_key="linux-x64" ;;
+    linux) artifact_key="linux-$(linux_release_arch)" ;;
   esac
   if ! verify_release_bundle "$temp_manifest" "$temp_manifest_sig" "$temp_binary" "$artifact_key" >> "$LOG_FILE" 2>&1; then
     printf "${RED}Downloaded update failed integrity verification; refusing to prepare it.${NC}\n" >> "$LOG_FILE"
@@ -10468,6 +10420,7 @@ usage() {
     printf "                  Supported: setup, start, stop, status, ng-start\n\n"
 
     printf "${BOLD}ADVANCED RUNNERS & TUNNELS${NC}\n"
+    printf "  ${GREEN}docker${NC}          Manage a named Docker deployment. ${BOLD}bbx docker help${NC}\n"
     printf "  ${CYAN}cf-start${NC}        Run BrowserBox securely through a Cloudflare tunnel. ${BOLD}bbx cf-start [--port|-p <port>]${NC}\n"
     printf "  ${BLUE}zt-start${NC}        Expose BrowserBox on your ZeroTier network.\n"
     printf "  ${PURPLE}tor-start${NC}       Serve BrowserBox as a Tor hidden service. ${BOLD}bbx tor-start [--no-darkweb] [--no-onion]${NC}\n"
@@ -10791,6 +10744,7 @@ activate() {
 if [[ -n "${BBX_LIB_MODE:-}" ]]; then
   return 0 2>/dev/null || exit 0
 fi
+
 
 # fleet handles the agreement itself (interactively at init; JSON-safe
 # machine paths must not block on the interactive prompt).
