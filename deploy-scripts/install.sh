@@ -72,7 +72,9 @@ usage() {
 BrowserBox installer (non-Windows)
 
 Usage:
-  install.sh [--yes|-y] [--help]
+  install.sh [--yes|-y] [--cli-only] [--help]
+
+  --cli-only installs bbx Docker commands without the host browser/backend.
 
 Environment overrides:
   BBX_RELEASE_REPO   GitHub repo for releases (default: BrowserBox/BrowserBox)
@@ -440,10 +442,15 @@ release_json=""
 
 # NOTE: The --yes flag is intentionally not used to bypass the binary's prompt.
 # We set BBX_TEST_AGREEMENT=true if the user agrees in this script.
-if [[ "${1:-}" == "--yes" || "${1:-}" == "-y" ]]; then
-  export BBX_TEST_AGREEMENT=true
+BBX_CLI_ONLY=false
+while (($#)); do
+  case "$1" in
+    --yes|-y) export BBX_TEST_AGREEMENT=true ;;
+    --cli-only) BBX_CLI_ONLY=true ;;
+    *) echo "Unknown installer option: $1" >&2; exit 2 ;;
+  esac
   shift
-fi
+done
 
 # ----------------------------------------------------------------------
 # Dependency Management & Installation Helpers
@@ -987,12 +994,14 @@ platform="$(resolve_platform)"
 arch="$(resolve_arch)"
 artifact_key="${platform}-${arch}"
 
-if [[ "$artifact_key" == "darwin-x64" ]]; then
+if [[ "$BBX_CLI_ONLY" == true ]]; then
+  artifact_key=docker-cli
+elif [[ "$artifact_key" == "darwin-x64" ]]; then
   echo "macOS x64 is not supported by current releases." >&2
   exit 1
 fi
 
-if [[ "$artifact_key" != "linux-x64" && "$artifact_key" != "darwin-arm64" ]]; then
+if [[ "$artifact_key" != "docker-cli" && "$artifact_key" != "linux-x64" && "$artifact_key" != "linux-arm64" && "$artifact_key" != "darwin-arm64" ]]; then
   echo "Unsupported platform: ${artifact_key}" >&2
   exit 1
 fi
@@ -1039,6 +1048,19 @@ if [[ -z "$asset_name" || "$asset_name" == "null" ]]; then
 fi
 
 temp_binary="$work_dir/${asset_name}"
+
+if [[ "$BBX_CLI_ONLY" == true ]]; then
+  if [[ -n "${BBX_LOCAL_ARTIFACTS:-}" ]]; then
+    cp "${BBX_LOCAL_ARTIFACTS}/${asset_name}" "$temp_binary"
+  else
+    download_release_asset "$release_tag" "$asset_name" "$temp_binary"
+  fi
+  [[ "$(hash_file "$temp_binary")" == "$asset_sha" ]] || { echo 'CLI bundle SHA-256 mismatch.' >&2; exit 1; }
+  mkdir "$work_dir/cli"
+  tar -xzf "$temp_binary" -C "$work_dir/cli"
+  bash "$work_dir/cli/bbx-docker.d/install-cli.sh" "$temp_binary"
+  exit 0
+fi
 
 # --- NEW LOCATION: Full Install Logic & Validation ---
 full_install=false
