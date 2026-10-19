@@ -547,7 +547,7 @@ function Get-BbxHelpCatalogue {
 
     $commands = @(
         & $command @("status") "status" "Instance" "Read current service and endpoint status." @(& $flag "json" "--json")
-        & $command @("setup") "setup" "Instance" "Configure BrowserBox for this Windows user." @(& $text "hostname" "--hostname"; & $text "port" "--port")
+        & $command @("setup") "setup" "Instance" "Configure BrowserBox for this Windows user." @(& $text "hostname" "--hostname"; & $text "port" "--port"; & $flag "free-port" "--free-port")
         & $command @("start") "start" "Instance" "Start BrowserBox services." @(& $text "hostname" "--hostname"; & $text "port" "--port")
         & $command @("stop") "stop" "Instance" "Stop BrowserBox services." @() $true
         & $command @("install") "install" "Lifecycle" "Install BrowserBox." @() $true
@@ -863,7 +863,7 @@ function Show-Help {
     Write-Host "  install         Install BrowserBox binary and CLI" -ForegroundColor White
     Write-Host "  update          Update BrowserBox to the latest version" -ForegroundColor White
     Write-Host "  uninstall       Remove BrowserBox from this machine" -ForegroundColor White
-    Write-Host "  setup           Configure core options. bbx setup [-Hostname <h>] [-Port <p>] [-Token <t>]" -ForegroundColor White
+    Write-Host "  setup           Configure core options. bbx setup [-Hostname <h>] [-Port <p> | -FreePort] [-Token <t>]" -ForegroundColor White
     Write-Host "  activate        Activate a license for more users. bbx activate [number_of_users]" -ForegroundColor White
     Write-Host "  certify         Validate your current license status" -ForegroundColor White
     Write-Host "  revalidate      Clear the local ticket and validate again" -ForegroundColor White
@@ -981,7 +981,7 @@ function Convert-ArgListToSplat {
 
     $map = @{}
     switch -Wildcard ($Command) {
-        "setup" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
+        "setup" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname"; "free-port" = "FreePort" } }
         "run" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
         "start" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
         "cf-*" { $map = @{ "port" = "Port"; "p" = "Port"; "background" = "Background"; "d" = "Background";

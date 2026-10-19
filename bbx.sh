@@ -31,7 +31,7 @@ _bbx_help_json() {
 {"path":["stop"],"name":"stop","group":"Instance","description":"Stop the current or selected BrowserBox instance.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
 {"path":["restart"],"name":"restart","group":"Instance","description":"Restart BrowserBox using the current configuration type.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":""},
 {"path":["logs"],"name":"logs","group":"Instance","description":"Show service process information and log instructions.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
-{"path":["setup"],"name":"setup","group":"Setup","description":"Configure ports, hostname, transport, token and recording.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"token","flag":"--token","type":"secret","required":false,"choices":[],"description":""},{"name":"backend","flag":"--backend","type":"text","required":false,"choices":["http","https"],"description":""},{"name":"zeta","flag":"--zeta","type":"flag","required":false,"choices":[],"description":""},{"name":"http-only","flag":"--http-only","type":"flag","required":false,"choices":[],"description":""},{"name":"flipbook-record","flag":"--flipbook-record","type":"text","required":false,"choices":[],"description":""},{"name":"flipbook-description","flag":"--flipbook-description","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
+{"path":["setup"],"name":"setup","group":"Setup","description":"Configure ports, hostname, transport, token and recording.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free 5-port block."},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"token","flag":"--token","type":"secret","required":false,"choices":[],"description":""},{"name":"backend","flag":"--backend","type":"text","required":false,"choices":["http","https"],"description":""},{"name":"zeta","flag":"--zeta","type":"flag","required":false,"choices":[],"description":""},{"name":"http-only","flag":"--http-only","type":"flag","required":false,"choices":[],"description":""},{"name":"flipbook-record","flag":"--flipbook-record","type":"text","required":false,"choices":[],"description":""},{"name":"flipbook-description","flag":"--flipbook-description","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
 {"path":["activate"],"name":"activate","group":"Setup","description":"Activate a license for the requested number of users.","fields":[{"name":"number_of_users","flag":"","type":"integer","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":"May ask questions in the launching terminal."},
 {"path":["certify"],"name":"certify","group":"Setup","description":"Validate the current license.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
 {"path":["vacancy"],"name":"vacancy","group":"Setup","description":"Read the current license vacancy snapshot.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
@@ -1903,24 +1903,54 @@ ensure_deps() {
     ensure_named_deps "curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "debian:ncat,redhat:nmap/ncat,darwin:nmap/ncat" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout"
 }
 
+# Chrome refuses these ports (ERR_UNSAFE_PORT); the 1024+ entries of
+# Chromium's net/base/port_util.cc kRestrictedPorts.
+BBX_CHROME_UNSAFE_PORTS=" 1719 1720 1723 2049 3659 4045 5060 5061 6000 6566 6665 6666 6667 6668 6669 6697 10080 "
+
+# Print the ports of a main port's block (port-2..port+2, port-3000) that Chrome
+# refuses; prints nothing when the whole block is safe.
+_port_block_unsafe() {
+  local port="$1" candidate
+  for candidate in $((port-2)) $((port-1)) "$port" $((port+1)) $((port+2)) $((port-3000)); do
+    [[ "$BBX_CHROME_UNSAFE_PORTS" == *" $candidate "* ]] && printf '%s ' "$candidate"
+  done
+  return 0
+}
+
+# A main port is usable when its 5-port block (port-2..port+2) and its CDP
+# endpoint (port-3000, at least 1024) are all ports Chrome accepts and none
+# has a listener on loopback.
+_port_block_free() {
+  local port="$1"
+  local cdp_port=$((port-3000))
+  [ "$cdp_port" -lt 1024 ] && return 1
+  [ -n "$(_port_block_unsafe "$port")" ] && return 1
+  local i
+  for ((i=-2; i<=2; i++)); do
+    bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null && return 1
+  done
+  ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$cdp_port" 2>/dev/null
+}
+
+# find_free_port_block [random]: the first free block scanning up from 4026, or
+# with "random" a randomly placed one (falling back to the scan if none is
+# found). Random blocks stay below the ephemeral ranges (Linux 32768+, macOS
+# and Windows 49152+) so outgoing connections cannot claim them later.
 find_free_port_block() {
   local start_port=4024
   local end_port=65533
-  for ((port=start_port+2; port<=end_port-2; port++)); do
-    local cdp_port=$((port-3000))
-    if [ "$cdp_port" -lt 1024 ]; then
-      continue
-    fi
-    local free=true
-    for ((i=-2; i<=2; i++)); do
-      if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
-        : # Port is free
-      else
-        free=false
-        break
+  local port attempt
+  if [[ "${1:-}" == random ]]; then
+    for ((attempt=0; attempt<200; attempt++)); do
+      port=$(( 10026 + (RANDOM * 32768 + RANDOM) % (32765 - 10026 + 1) ))
+      if _port_block_free "$port"; then
+        echo "$port"
+        return 0
       fi
     done
-    if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$cdp_port" 2>/dev/null; then
+  fi
+  for ((port=start_port+2; port<=end_port-2; port++)); do
+    if _port_block_free "$port"; then
       echo "$port"
       return 0
     fi
@@ -2389,6 +2419,8 @@ setup() {
   local backend_scheme="" # Will be 'http' or 'https'
   local flipbook_record_dir=""
   local flipbook_description=""
+  local free_port=""
+  local port_explicit=""
 
   # Capture original arguments to pass to run() later
   local original_args=("$@")
@@ -2398,16 +2430,21 @@ setup() {
       --port|-p)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
+          printf "Usage: bbx setup [--port <p> | --free-port] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
           exit 1
         fi
         port="$2"
+        port_explicit="true"
         shift 2
+        ;;
+      --free-port)
+        free_port="true"
+        shift
         ;;
       --hostname|-h)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
+          printf "Usage: bbx setup [--port <p> | --free-port] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
           exit 1
         fi
         hostname="$2"
@@ -2416,7 +2453,7 @@ setup() {
       --token|-t)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
+          printf "Usage: bbx setup [--port <p> | --free-port] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
           exit 1
         fi
         token="$2"
@@ -2456,14 +2493,29 @@ setup() {
         ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
-        printf "Usage: bbx setup [--port <p>] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
+        printf "Usage: bbx setup [--port <p> | --free-port] [--hostname <h>] [--token <t>] [--zeta] [--backend <http|https>]${NC}\n"
         exit 1
         ;;
     esac
   done
 
+  if [[ -n "$free_port" ]]; then
+    if [[ -n "$port_explicit" ]]; then
+      printf "${RED}Error: use either --port or --free-port, not both${NC}\n"
+      exit 1
+    fi
+    port="$(find_free_port_block random)" || { printf "%s\n" "$port"; exit 1; }
+    printf "${GREEN}Using free port block %s-%s (Chrome %s)${NC}\n" "$((port-2))" "$((port+2))" "$((port-3000))" >&2
+  fi
+
   if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
     printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+    exit 1
+  fi
+  local unsafe_ports
+  unsafe_ports="$(_port_block_unsafe "$port")"
+  if [[ -n "$unsafe_ports" ]]; then
+    printf "${RED}Port $port uses ports Chrome refuses to connect to (ERR_UNSAFE_PORT): ${unsafe_ports% }. Choose another port or use --free-port.${NC}\n"
     exit 1
   fi
 
@@ -6226,12 +6278,15 @@ _for_setup() {
   local token=""
   local zeta_mode=""
   local backend_scheme=""
+  local free_port=""
+  local port_explicit=""
 
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
         [[ -z "$2" ]] && { printf "${RED}Error: $1 requires an argument${NC}\n"; exit 1; }
-        port="$2"; shift 2 ;;
+        port="$2"; port_explicit="true"; shift 2 ;;
+      --free-port) free_port="true"; shift ;;
       --hostname|-h)
         [[ -z "$2" ]] && { printf "${RED}Error: $1 requires an argument${NC}\n"; exit 1; }
         hostname="$2"; shift 2 ;;
@@ -6248,8 +6303,20 @@ _for_setup() {
     esac
   done
 
+  if [[ -n "$free_port" ]]; then
+    [[ -n "$port_explicit" ]] && { printf "${RED}Error: use either --port or --free-port, not both${NC}\n"; exit 1; }
+    port="$(find_free_port_block random)" || { printf "%s\n" "$port"; exit 1; }
+    printf "${GREEN}Using free port block %s-%s (Chrome %s)${NC}\n" "$((port-2))" "$((port+2))" "$((port-3000))" >&2
+  fi
+
   if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
     printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+    exit 1
+  fi
+  local unsafe_ports
+  unsafe_ports="$(_port_block_unsafe "$port")"
+  if [[ -n "$unsafe_ports" ]]; then
+    printf "${RED}Port $port uses ports Chrome refuses to connect to (ERR_UNSAFE_PORT): ${unsafe_ports% }. Choose another port or use --free-port.${NC}\n"
     exit 1
   fi
 
