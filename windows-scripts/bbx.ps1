@@ -119,7 +119,7 @@ function Ensure-BinaryDir {
     }
 }
 
-# Function to get the latest release tag from GitHub
+# Public stable discovery follows the same CDN-first order as downloads.
 function Get-LatestRelease {
     param([string]$Repo)
 
@@ -130,11 +130,27 @@ function Get-LatestRelease {
     
     $headers = @{}
     if ($Token) { $headers["Authorization"] = "Bearer $Token" }
+
+    if ((-not $BbxNoCdn) -and $BbxAssetBase -and (-not $Token) -and ($Repo -eq $PublicRepo)) {
+        try {
+            $response = Invoke-RestMethod -Uri "$($BbxAssetBase.TrimEnd('/'))/latest.json" `
+                -TimeoutSec 20 -Headers @{"Cache-Control"="no-cache"} -ErrorAction Stop
+            if ($response.tag_name -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or $response.draft -eq $true -or $response.prerelease -eq $true) {
+                throw "Invalid stable release metadata"
+            }
+            Write-Host "[update-check] source=cdn tag=$($response.tag_name)" -ForegroundColor Gray
+            return $response.tag_name
+        } catch {
+            $status = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { "unavailable" }
+            Write-Host "[update-check] source=cdn http=$status fallback=github" -ForegroundColor Yellow
+        }
+    }
     
     # 1. Try "Latest" endpoint (works for Stable)
     try {
         $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
         $response = Invoke-RestMethod -Uri $apiUrl -TimeoutSec 10 -Headers $headers -ErrorAction Stop
+        Write-Host "[update-check] source=github tag=$($response.tag_name)" -ForegroundColor Gray
         return $response.tag_name
     }
     catch {

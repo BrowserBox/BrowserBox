@@ -412,7 +412,85 @@ linux_release_arch() {
   esac
 }
 
-# Function to get the latest release tag from GitHub
+# Shared update discovery diagnostics. The command wrapper stays self-contained
+# because installed command bundles must not gain a new sourced dependency.
+_bbx_update_notice() {
+  printf '[update-check] %s\n' "$1" >&2
+  if [[ -w "${BB_CONFIG_DIR}/update-check.log" ]]; then
+    printf '[update-check] %s\n' "$1" >> "${BB_CONFIG_DIR}/update-check.log"
+  fi
+  return 0
+}
+
+_bbx_release_lookup_start() {
+  local cache_file="$1" ts cached age="unknown" proxy="no"
+  mkdir -p "$BB_CONFIG_DIR"
+  if ! (umask 077; : > "${BB_CONFIG_DIR}/update-check.log"); then
+    printf '[update-check] Cannot write update-check.log in the configuration directory.\n' >&2
+  fi
+  if env | grep -qE '^(https_proxy|HTTPS_PROXY|ALL_PROXY|all_proxy)='; then proxy="yes"; fi
+  _bbx_update_notice "lookup=fresh exported_proxy=$proxy"
+  if [[ -f "$cache_file" ]]; then
+    read -r ts cached < "$cache_file" || true
+    if [[ "$ts" =~ ^(0|[1-9][0-9]{0,9})$ ]]; then age=$(( $(date +%s) - ts )); fi
+    if [[ "$cached" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+      _bbx_update_notice "last_known=$cached cache_age_seconds=$age cache_used=no"
+    else
+      _bbx_update_notice "last_known=invalid cache_used=no"
+    fi
+  fi
+}
+
+# stdout is response data; diagnostics never contain tokens or proxy URLs.
+_bbx_release_http() {
+  local url="$1"; shift
+  local response code rc=0 host
+  host="${url#*://}"; host="${host%%/*}"; host="${host##*@}"
+  response="$(curl -sS --connect-timeout 8 --max-time 20 --max-filesize 4194304 \
+    -H 'Accept: application/vnd.github+json' -H 'Cache-Control: no-cache' \
+    "$@" -w $'\n%{http_code}' "$url" 2>/dev/null)" || rc=$?
+  code="${response##*$'\n'}"
+  [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
+  _bbx_update_notice "host=$host http=$code curl_exit=$rc"
+  if [[ "$rc" -ne 0 || "$code" != 200 ]]; then return 1; fi
+  printf '%s' "${response%$'\n'*}"
+}
+
+_bbx_release_tag_from_json() {
+  if command -v jq >/dev/null 2>&1; then
+    jq -r 'if type == "object" then .tag_name // empty else empty end' 2>/dev/null
+  else
+    sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]\+\)".*/\1/p' | head -n1
+  fi
+}
+
+_bbx_latest_release_response() {
+  local repo="$1" response tag
+  local auth=()
+  if [[ "$repo" == BrowserBox/BrowserBox ]] && cdn_eligible; then
+    if response="$(_bbx_release_http "${BBX_ASSET_BASE%/}/latest.json")"; then
+      tag="$(printf '%s' "$response" | _bbx_release_tag_from_json)"
+      if _parse_tag "$tag" && (( PAR_STABLE == 1 )) &&
+         ! printf '%s' "$response" | grep -qE '"(draft|prerelease)"[[:space:]]*:[[:space:]]*true'; then
+        _bbx_update_notice "source=cdn tag=$tag"
+        printf '%s' "$response"
+        return 0
+      fi
+      _bbx_update_notice "source=cdn result=invalid_release"
+    fi
+    _bbx_update_notice "fallback=github"
+  fi
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then auth=(-H "Authorization: Bearer $GITHUB_TOKEN")
+  elif [[ -n "${GH_TOKEN:-}" ]]; then auth=(-H "Authorization: Bearer ${GH_TOKEN}"); fi
+  if response="$(_bbx_release_http "https://api.github.com/repos/${repo}/releases/latest" \
+    "${auth[@]}" -H 'X-GitHub-Api-Version: 2022-11-28')"; then
+    _bbx_update_notice "source=github"
+    printf '%s' "$response"
+    return 0
+  fi
+  return 1
+}
+
 get_latest_release() {
   # Skip API call if BBX_NO_UPDATE is set; if caller passed BBX_RELEASE_TAG, use it.
   if [[ -n "$BBX_NO_UPDATE" ]]; then
@@ -433,25 +511,14 @@ get_latest_release() {
 
   mkdir -p "$BB_CONFIG_DIR"
   local cache_file="${BB_CONFIG_DIR}/latest_release_${repo//\//_}.cache"
-  local now ts cached
+  local now
   now="$(date +%s)"
-  if [[ -f "$cache_file" ]]; then
-    read -r ts cached <"$cache_file" || true
-    if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
-      echo "$cached"
-      return 0
-    fi
-  fi
+  _bbx_release_lookup_start "$cache_file"
 
-  # Try using curl with GitHub API
+  # Public stable discovery uses the mirror first, like release downloads.
   if command -v curl >/dev/null 2>&1; then
-    local api_url="https://api.github.com/repos/${repo}/releases/latest"
-    local curl_auth=()
-    if [[ -n "${GH_TOKEN:-}" ]]; then
-      curl_auth=(-H "Authorization: Bearer ${GH_TOKEN}")
-    fi
     local response
-    response=$(curl -sS --connect-timeout 10 "${curl_auth[@]}" "$api_url" 2>/dev/null || echo "")
+    response="$(_bbx_latest_release_response "$repo")" || true
     
     if [[ -n "$response" ]]; then
       # Try jq first
@@ -467,6 +534,11 @@ get_latest_release() {
   if [[ -z "$tag" ]]; then
     echo -e "${RED}Failed to fetch latest release from ${repo}${NC}" >&2
     exit 1
+  fi
+
+  if [[ "$repo" == BrowserBox/BrowserBox ]] && ! _parse_tag "$tag"; then
+    _bbx_update_notice "result=invalid_release"
+    return 1
   fi
 
   printf '%s %s\n' "$now" "$tag" >"$cache_file" || true
@@ -1148,37 +1220,15 @@ get_latest_release_tag_filtered() {
     fi
   }
 
-  # Helper to use stale cache when API fails
-  _use_stale_cache() {
-    local cache_file="$1"
-    local reason="$2"
-    if [[ -f "$cache_file" ]]; then
-      local ts cached
-      read -r ts cached <"$cache_file" || true
-      if [[ -n "$cached" && "$cached" != "unknown" ]]; then
-        [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}Using cached version due to %s: %s${NC}\n" "$reason" "$cached" >&2
-        echo "$cached"
-        return 0
-      fi
-    fi
-    return 1
-  }
-
   if [[ "$channel" == "stable" ]]; then
     local cache_file="${BB_CONFIG_DIR}/latest_release_${channel}.cache"
     local now ts cached
     now="$(date +%s)"
-    if [[ -f "$cache_file" ]]; then
-      read -r ts cached <"$cache_file" || true
-      if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
-        echo "$cached"
-        return 0
-      fi
-    fi
+    _bbx_release_lookup_start "$cache_file"
 
     # GitHub's "latest" is the newest non-draft, non-prerelease release.
     local resp tag api_status
-    resp="$(curl "${CURL_OPTS[@]}" "$api/releases/latest" 2>/dev/null)" || true
+    resp="$(_bbx_latest_release_response "$release_repo")" || true
     api_status="$(_check_api_error "$resp")"
 
     if [[ "$api_status" == "rate_limit" ]]; then
@@ -1187,20 +1237,14 @@ get_latest_release_tag_filtered() {
       else
         printf "${YELLOW}GitHub API rate limit exceeded (even with token).${NC}\n" >&2
       fi
-      # Try to use stale cache
-      if _use_stale_cache "$cache_file" "rate limit"; then
-        return 0
-      fi
+      _bbx_update_notice "lookup_failed=rate_limit cache_used=no"
       echo "unknown - rate limited"; return 1
     elif [[ "$api_status" == "not_found" ]]; then
       [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}No releases found in repository.${NC}\n" >&2
       echo "unknown"; return 1
     elif [[ "$api_status" == "api_error" ]]; then
       [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}GitHub API error occurred.${NC}\n" >&2
-      # Try stale cache
-      if _use_stale_cache "$cache_file" "API error"; then
-        return 0
-      fi
+      _bbx_update_notice "lookup_failed=api_error cache_used=no"
       echo "unknown"; return 1
     fi
 
@@ -1239,10 +1283,7 @@ get_latest_release_tag_filtered() {
       fi
     fi
 
-    # If nothing found but we have stale cache, use it
-    if _use_stale_cache "$cache_file" "no valid release found"; then
-      return 0
-    fi
+    _bbx_update_notice "lookup_failed=no_valid_release cache_used=no"
 
     # If nothing found, fall through to failure (caller will fallback to tags)
     echo "unknown"; return 1
@@ -1254,18 +1295,11 @@ get_latest_release_tag_filtered() {
   local now
   now="$(date +%s)"
 
-  # Check cache first for rc/any channels too
-  if [[ -f "$cache_file" ]]; then
-    local ts cached
-    read -r ts cached <"$cache_file" || true
-    if [[ -n "$ts" && -n "$cached" ]] && (( now - ts < 3600 )); then
-      echo "$cached"
-      return 0
-    fi
-  fi
+  # Retain last-known metadata for diagnostics; resolve the channel afresh.
+  _bbx_release_lookup_start "$cache_file"
 
   local resp tags best_tag="" api_status
-  resp="$(curl "${CURL_OPTS[@]}" "$api/releases?per_page=100" 2>/dev/null)" || true
+  resp="$(_bbx_release_http "$api/releases?per_page=100" "${CURL_OPTS[@]}")" || true
   api_status="$(_check_api_error "$resp")"
 
   if [[ "$api_status" == "rate_limit" ]]; then
@@ -1274,15 +1308,11 @@ get_latest_release_tag_filtered() {
     else
       printf "${YELLOW}GitHub API rate limit exceeded (even with token).${NC}\n" >&2
     fi
-    if _use_stale_cache "$cache_file" "rate limit"; then
-      return 0
-    fi
+    _bbx_update_notice "lookup_failed=rate_limit cache_used=no"
     echo "unknown - rate limited"; return 1
   elif [[ "$api_status" != "ok" ]]; then
     [[ -n "$BBX_DEBUG" ]] && printf "${YELLOW}GitHub API error for channel ${channel}.${NC}\n" >&2
-    if _use_stale_cache "$cache_file" "API error"; then
-      return 0
-    fi
+    _bbx_update_notice "lookup_failed=api_error cache_used=no"
     echo "unknown"; return 1
   fi
 
@@ -1343,10 +1373,7 @@ get_latest_release_tag_filtered() {
     echo "$best_tag"; return 0
   fi
 
-  # Try stale cache before giving up
-  if _use_stale_cache "$cache_file" "no valid ${channel} release found"; then
-    return 0
-  fi
+  _bbx_update_notice "lookup_failed=no_valid_release cache_used=no"
 
   echo "unknown"; return 1
 }
@@ -1409,6 +1436,7 @@ get_latest_repo_version() {
   fi
 
   # 3) Otherwise, fall back to tags
+  _bbx_update_notice "fallback=git_tags"
   if out=$(timeout 7s git ls-remote --tags --refs "$REPO_URL" 2>/dev/null | get_latest_tag_filtered "$channel"); then
     echo "$out"; return 0
   fi
@@ -1571,6 +1599,10 @@ load_config() {
             BBX_HOSTNAME="$DOMAIN"
         fi
     fi
+
+    # Configured proxies apply to curl and other child processes as well as
+    # this shell. A bare user.env assignment otherwise remains shell-local.
+    export http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY
 
     # Explicit overrides are authoritative, but ambient localhost does not 
     # downgrade a saved non-localhost hostname or route domain.
@@ -5061,17 +5093,8 @@ check_and_prepare_update() {
   mkdir -p "$BB_CONFIG_DIR"
   chmod 700 "$BB_CONFIG_DIR"
 
-  # Fast path: if a prepared update exists, install it immediately (do not wait for the next check window)
-  if [ -f "$PREPARED_FILE" ]; then
-    local prepared_tag
-    prepared_tag=$(sed -n '3p' "$PREPARED_FILE" 2>/dev/null)
-    if [[ -n "$prepared_tag" ]]; then
-      if check_prepare_and_install "$prepared_tag"; then
-        _bbx_reexec_after_install
-        return 0
-      fi
-    fi
-  fi
+  # Prepared downloads bypass the check interval, but still have to match
+  # freshly resolved metadata before the foreground installs them below.
 
   # Define the last update check file and time constraints
   local last_update_check_file="${BB_CONFIG_DIR}/last_update_check"
@@ -5080,7 +5103,7 @@ check_and_prepare_update() {
   local one_hour_ago=$((current_time - 3600))
 
   # Check if we should perform an update check
-  if [ -f "$last_update_check_file" ]; then
+  if [ -f "$last_update_check_file" ] && [ ! -f "$PREPARED_FILE" ]; then
     local last_check_time
     last_check_time=$(cat "$last_update_check_file")
     if [[ "$last_check_time" -gt "$one_hour_ago" ]]; then
