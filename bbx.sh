@@ -1742,7 +1742,12 @@ draw_box() {
     fi
     local padding_left=1  # Left padding space
     local padding_right=1 # Right padding space
-    local text_width=${#text}
+    local line text_width=0
+    while IFS= read -r line; do
+        if (( ${#line} > text_width )); then
+            text_width=${#line}
+        fi
+    done <<< "$text"
     local inner_width=$((text_width + padding_left + padding_right)) # Space inside borders
 
     # Start with a newline to separate from previous output
@@ -1753,12 +1758,14 @@ draw_box() {
         printf "%s" "$horizontal"
     done
     printf "%s\n" "$top_right"
-    # Draw text line with padding
-    printf "  %s" "$vertical"
-    printf "%${padding_left}s" " "
-    printf "%-${text_width}s" "$text"
-    printf "%${padding_right}s" " "
-    printf "%s\n" "$vertical"
+    # Draw each text line with the same padding and width.
+    while IFS= read -r line; do
+        printf "  %s" "$vertical"
+        printf "%${padding_left}s" " "
+        printf "%-${text_width}s" "$line"
+        printf "%${padding_right}s" " "
+        printf "%s\n" "$vertical"
+    done <<< "$text"
     # Draw bottom border
     printf "  %s" "$bottom_left"
     for i in $(seq 1 "$inner_width"); do
@@ -3181,6 +3188,18 @@ tor_run() {
   # Step 2: Show the login link immediately
   printf "${GREEN}BrowserBox with Tor started.${NC}\n"
   draw_box "Login Link: $login_link"
+  {
+    printf '%b' "$PURPLE"
+    draw_box "Tor Browser + local mkcert certificates
+Use 'trust certificate' beside 'toggle audio' in
+BrowserBox's status line to download this server's CA.
+On another device, install and trust that CA first.
+On macOS / Windows, open Tor Browser's about:config:
+  security.enterprise_roots.enabled = true
+Fully quit and restart Tor Browser before reconnecting.
+This trusts OS-installed CAs; reset to false to undo."
+    printf '%b' "$NC"
+  } >&2
   save_config
 
   # Tor status display functions
