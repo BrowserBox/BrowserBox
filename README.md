@@ -5,7 +5,8 @@
 <h1 align="center">BrowserBox — Remote Browser Isolation</h1>
 
 <p align="center">
-  <strong>A full remote browser. Clientless access. Native performance.</strong><br>
+  <strong>Bring the web to any system...safely.</strong><br>
+  A full remote browser. Clientless access. Native performance.<br>
   Self-host on Windows, macOS or Linux, or create cloud browser sessions through the API.
 </p>
 
