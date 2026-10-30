@@ -24,6 +24,8 @@ _bbx_help_json() {
 {"path":["docker","link"],"name":"docker link","group":"Docker","description":"Read the ready Docker login link.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","update"],"name":"docker update","group":"Docker","description":"Update a deployment to a verified image.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"version","flag":"--version","type":"text","required":false,"choices":[],"description":""},{"name":"image","flag":"--image","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","remove"],"name":"docker remove","group":"Docker","description":"Remove a Docker deployment; retain data by default.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"purge","flag":"--purge","type":"flag","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","list"],"name":"docker list","group":"Docker","description":"List every saved Docker deployment.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"unix","note":"Reads saved metadata only; it never starts Docker or Colima and never exposes login credentials."},
+{"path":["docker","clean"],"name":"docker clean","group":"Docker","description":"Remove saved Docker deployment containers and all recorded image references while retaining data.","fields":[],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Preserves named volumes, saved deployment configuration, Docker and Colima."},
 {"path":["docker","config"],"name":"docker config","group":"Docker","description":"Print a saved Compose project.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","exec"],"name":"docker exec","group":"Docker","description":"Invoke existing commands inside a deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"command","flag":"","type":"text","required":true,"choices":[],"description":"Executable inside the container; add arguments separately."}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["status"],"name":"status","group":"Instance","description":"Read current service, endpoint, and audio status.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"out","flag":"--out","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
@@ -44,7 +46,7 @@ _bbx_help_json() {
 {"path":["stop-user"],"name":"stop-user","group":"Users","description":"Stop an instance for a specific OS user.","fields":[{"name":"username","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"delay_seconds","flag":"","type":"integer","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
 {"path":["cf-start"],"name":"cf-start","group":"Tunnels","description":"Run through a Cloudflare tunnel.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"background","flag":"--background","type":"flag","required":false,"choices":[],"description":""}],"aliases":["cf-run"],"confirm":false,"platform":"all","note":""},
 {"path":["zt-start"],"name":"zt-start","group":"Tunnels","description":"Run on a ZeroTier network.","fields":[{"name":"network-id","flag":"--network-id","type":"text","required":true,"choices":[],"description":"The 16-character ZeroTier network ID."}],"aliases":["zt-run"],"confirm":false,"platform":"all","note":""},
-{"path":["tor-start"],"name":"tor-start","group":"Tunnels","description":"Run with Tor routing or an onion service.","fields":[{"name":"anonymize","flag":"--anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"clearnet-only","flag":"--clearnet-only","type":"flag","required":false,"choices":[],"description":""},{"name":"no-darkweb","flag":"--no-darkweb","type":"flag","required":false,"choices":[],"description":""},{"name":"no-anonymize","flag":"--no-anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"onion","flag":"--onion","type":"flag","required":false,"choices":[],"description":""},{"name":"no-onion","flag":"--no-onion","type":"flag","required":false,"choices":[],"description":""}],"aliases":["tor-run"],"confirm":false,"platform":"all","note":""},
+{"path":["tor-start"],"name":"tor-start","group":"Tunnels","description":"Run with Tor routing or an onion service.","fields":[{"name":"anonymize","flag":"--anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"clearnet-only","flag":"--clearnet-only","type":"flag","required":false,"choices":[],"description":""},{"name":"no-darkweb","flag":"--no-darkweb","type":"flag","required":false,"choices":[],"description":""},{"name":"no-anonymize","flag":"--no-anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"onion","flag":"--onion","type":"flag","required":false,"choices":[],"description":""},{"name":"no-onion","flag":"--no-onion","type":"flag","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"macOS: choose a fixed main port instead of a random free block."},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"macOS default: pick a random free 5-port block."}],"aliases":["tor-run"],"confirm":false,"platform":"all","note":""},
 {"path":["ng-start"],"name":"ng-start","group":"Tunnels","description":"Proxy BrowserBox through Nginx.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["ng-run"],"confirm":false,"platform":"all","note":""},
 {"path":["ng-config","print"],"name":"ng-config print","group":"Tunnels","description":"Print external Nginx configuration.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
 {"path":["ng-config","validate"],"name":"ng-config validate","group":"Tunnels","description":"Validate external Nginx configuration.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
@@ -2066,7 +2068,11 @@ ensure_setup_tor() {
     local user="$1"
     local tor_is_running=false
     if [[ "$(uname -s)" == "Darwin" ]]; then
-        brew services list | grep -q "tor.*started" && tor_is_running=true
+        command -v tor >/dev/null || brew install tor || return 1
+        command -v gtimeout >/dev/null || brew install coreutils || return 1
+        source "$(dirname "$(command -v torbb)")/_tor_macos.sh" || return 1
+        macos_tor_ensure_version
+        return $?
     else
         systemctl is-active tor >/dev/null 2>&1 && tor_is_running=true
     fi
@@ -2995,6 +3001,25 @@ _bbx_adopt_config() {
   fi
 }
 
+_bbx_tor_print_login() {
+  local login_link="$1"
+  printf "${GREEN}BrowserBox with Tor started.${NC}\n"
+  draw_box "Login Link: $login_link"
+  {
+    printf '%b' "$PURPLE"
+    draw_box "Tor Browser + local mkcert certificates
+Use 'trust certificate' beside 'toggle audio' in
+BrowserBox's status line to download this server's CA.
+On another device, install and trust that CA first.
+On macOS / Windows, open Tor Browser's about:config:
+  security.enterprise_roots.enabled = true
+Fully quit and restart Tor Browser before reconnecting.
+This trusts OS-installed CAs; reset to false to undo."
+    printf '%b' "$NC"
+  } >&2
+
+}
+
 tor_run() {
   banner
   _bbx_adopt_config tor
@@ -3002,6 +3027,7 @@ tor_run() {
   ensure_deps
 
   local anonymize=true onion=true
+  local tor_port="" tor_free_port=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --anonymize) anonymize=true; shift ;;
@@ -3010,6 +3036,12 @@ tor_run() {
       --no-anonymize) anonymize=false; shift ;;
       --onion) onion=true; shift ;;
       --no-onion) onion=false; shift ;;
+      --port|-p)
+        [[ "$(uname -s)" == Darwin && $# -ge 2 ]] || { printf 'Tor --port requires a value and is supported on macOS.\n' >&2; return 1; }
+        tor_port="$2"; shift 2 ;;
+      --free-port)
+        [[ "$(uname -s)" == Darwin ]] || { printf 'Tor --free-port is supported on macOS.\n' >&2; return 1; }
+        tor_free_port=true; shift ;;
       *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
     esac
   done
@@ -3025,48 +3057,48 @@ tor_run() {
     load_config
   fi
 
+  if [[ "$(uname -s)" == Darwin ]]; then
+    if [[ -n "$tor_port" && -n "$tor_free_port" ]]; then
+      printf 'Use either --port or --free-port, not both.\n' >&2; return 1
+    fi
+    if [[ -n "$tor_port" ]]; then
+      if ! [[ "$tor_port" =~ ^[1-9][0-9]{3,4}$ ]] || (( tor_port < 4024 || tor_port > 65533 )); then
+        printf 'Tor main port must be between 4024 and 65533.\n' >&2; return 1
+      fi
+      _port_block_free "$tor_port" || { printf 'The requested port block is unavailable or unsafe.\n' >&2; return 1; }
+      PORT="$tor_port"
+    else
+      PORT="$(find_free_port_block random)" || return 1
+    fi
+    printf "${GREEN}Using free port block %s-%s (Chrome %s)${NC}\n" "$((PORT-2))" "$((PORT+2))" "$((PORT-3000))" >&2
+  fi
+
   [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
   printf "${YELLOW}Starting BrowserBox with ${NC}${PURPLE}Tor${NC}${YELLOW}...${NC}\n"
   _bbx_progress tor-begin
-  ensure_setup_tor "$(whoami)"
+  ensure_setup_tor "$(whoami)" || return 1
 
-  # Find Tor cookie file dynamically across platforms
-  COOKIE_AUTH_FILE=$(find_tor_cookie)
-  if [[ -z "$COOKIE_AUTH_FILE" ]]; then
-    # Fallback to expected locations if not found
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-      TORDIR="$(brew --prefix)/var/lib/tor"
-    else
-      TORDIR="/var/lib/tor"
-    fi
-    COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
-    printf "${YELLOW}Warning: Tor cookie file not found in common locations. Expected at: $COOKIE_AUTH_FILE${NC}\n"
-  else
-    TORDIR="$(dirname "$COOKIE_AUTH_FILE")"
-    printf "${GREEN}Found Tor cookie at: $COOKIE_AUTH_FILE${NC}\n"
-  fi
-
-  # Determine Tor group dynamically
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-      TOR_GROUP="admin"  # Homebrew default
-  else
-      TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
-      if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
-        TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
-      fi
-      if [[ -z "$TOR_GROUP" ]]; then
-        TOR_GROUP="${TOR_GROUP:-debian-tor}"  # Allow env override
-        printf "${YELLOW}Warning: Could not detect Tor group. Using default: $TOR_GROUP. Set TOR_GROUP env var if incorrect.${NC}\n"
-      fi
-  fi
-
-  local user="$(whoami)"
+  local TOR_CONTROL_PORT=9051 TOR_SOCKS_PORT=9050
   local in_tor_group=false
-  if id | grep -qw "$TOR_GROUP"; then
+  if [[ "$(uname -s)" == Darwin ]]; then
+    # The private job has not started yet. No shared cookie or group discovery.
+    in_tor_group=true
+  else
+    COOKIE_AUTH_FILE=$(find_tor_cookie)
+    if [[ -z "$COOKIE_AUTH_FILE" ]]; then
+      TORDIR="/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+    else
+      TORDIR="$(dirname "$COOKIE_AUTH_FILE")"
+    fi
+    TOR_GROUP=$(ls -ld "$TORDIR" 2>/dev/null | awk '{print $4}')
+    if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == root ]]; then
+      TOR_GROUP=$(getent group | grep -E '^(tor|debian-tor|toranon):' | cut -d: -f1 | head -n1)
+    fi
+    TOR_GROUP="${TOR_GROUP:-debian-tor}"
+    if id -nG | grep -qw "$TOR_GROUP"; then
       in_tor_group=true
-      printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
-  elif ! command -v sg >/dev/null 2>&1; then
-      printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
+    fi
   fi
 
 
@@ -3091,7 +3123,7 @@ tor_run() {
   _bbx_remember_launch tor no-onion "$([[ "$onion" == false ]] && printf true || printf false)"
 
   # Inject TOR_PROXY for --no-onion+anonymize (regular setup leaves it empty).
-  if $anonymize && ! $onion; then
+  if $anonymize && ! $onion && [[ "$(uname -s)" != Darwin ]]; then
     local _tor_proxy_url
     _tor_proxy_url="$(_bbx_tor_socks_url)"
     if grep -q "^export TOR_PROXY=" "${BB_CONFIG_DIR}/test.env"; then
@@ -3124,6 +3156,7 @@ tor_run() {
 
   local login_link=""
   local _tor_max_retries=3
+  [[ "$(uname -s)" != Darwin ]] || _tor_max_retries=1
   local _tor_attempt=0
   local _tor_success=false
 
@@ -3172,9 +3205,24 @@ tor_run() {
           test_port_access $((PORT+i)) || { printf "${RED}Quit software using these ports, or adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
       done
       test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
-      bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+      if [[ "$(uname -s)" == Darwin ]]; then
+        source "$(dirname "$(command -v torbb)")/_tor_macos.sh" || return 1
+        macos_tor_start "$BB_CONFIG_DIR" || return 1
+        macos_tor_wait_ready || { run_quietly stop_bbpro; return 1; }
+        export TOR_PROXY="socks5h://127.0.0.1:$TOR_SOCKS_PORT"
+        _bbx_sed_inplace "s|^export TOR_PROXY=.*|export TOR_PROXY=\"$TOR_PROXY\"|" "$BB_CONFIG_DIR/test.env" || {
+          run_quietly stop_bbpro; return 1;
+        }
+        _bbx_own_config tor
+      fi
+      bbpro || { run_quietly stop_bbpro; printf "${RED}Failed to start${NC}\n"; exit 1; }
       login_link="https://${BBX_HOSTNAME}:${PORT}/login?token=${TOKEN}"
-      _bbx_publish_login_link "$login_link" || return 1
+      _bbx_publish_login_link "$login_link" || { run_quietly stop_bbpro; return 1; }
+  fi
+
+  if [[ "$(uname -s)" == Darwin ]]; then
+    source "$(dirname "$(command -v torbb)")/_tor_macos.sh" || return 1
+    macos_tor_load "$BB_CONFIG_DIR" || { run_quietly stop_bbpro; return 1; }
   fi
 
   # Gate: ensure BrowserBox is listening before continuing (both onion and clearnet paths)
@@ -3185,21 +3233,23 @@ tor_run() {
     exit 1
   }
 
-  # Step 2: Show the login link immediately
-  printf "${GREEN}BrowserBox with Tor started.${NC}\n"
-  draw_box "Login Link: $login_link"
-  {
-    printf '%b' "$PURPLE"
-    draw_box "Tor Browser + local mkcert certificates
-Use 'trust certificate' beside 'toggle audio' in
-BrowserBox's status line to download this server's CA.
-On another device, install and trust that CA first.
-On macOS / Windows, open Tor Browser's about:config:
-  security.enterprise_roots.enabled = true
-Fully quit and restart Tor Browser before reconnecting.
-This trusts OS-installed CAs; reset to false to undo."
-    printf '%b' "$NC"
-  } >&2
+  if [[ "$(uname -s)" == Darwin ]]; then
+    if $onion; then
+      _bbx_progress onion-verify
+      macos_tor_verify_onion "$login_link" || {
+        _bbx_failure onion-failed
+        run_quietly stop_bbpro
+        return 1
+      }
+      _bbx_progress onion-verified
+    fi
+    _bbx_tor_print_login "$login_link"
+    save_config
+    return 0
+  fi
+
+  # Preserve the existing status flow on other platforms.
+  _bbx_tor_print_login "$login_link"
   save_config
 
   # Tor status display functions
@@ -3216,7 +3266,7 @@ This trusts OS-installed CAs; reset to false to undo."
       fi
 
       local cmd=$(printf 'AUTHENTICATE %s\r\nGETINFO status/bootstrap-phase\r\nQUIT\r\n' "$cookie_hex")
-      local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 9051 2>/dev/null)
+      local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 "${TOR_CONTROL_PORT:-9051}" 2>/dev/null)
 
       if [ -z "$response" ]; then
           printf "${YELLOW}Warning: Tor control port not responding${NC}\n" >&2
@@ -3251,7 +3301,7 @@ This trusts OS-installed CAs; reset to false to undo."
   }
 
   show_tor_status() {
-      local max_attempts=240  # 120 seconds total with 0.5s sleep
+      local deadline=$((SECONDS + 120))
       local poll_interval=10  # Check every 5 seconds (10 * 0.5s)
       local spinner_chars="|/-\|"
       local attempts=0
@@ -3260,7 +3310,7 @@ This trusts OS-installed CAs; reset to false to undo."
       local percent=0
 
       printf "${YELLOW}Checking Tor connection status...${NC}\n" >&2
-      while [ $attempts -lt "$max_attempts" ]; do
+      while (( SECONDS < deadline )); do
           if [ $((counter % 2)) -eq 0 ]; then
               spinner_idx=$(( (spinner_idx + 1) % 4 ))
               local spinner="${spinner_chars:$spinner_idx:1}"
@@ -3328,7 +3378,7 @@ This trusts OS-installed CAs; reset to false to undo."
       _tor_http_code="$(curl -s -k -L \
         --connect-timeout 15 --max-time 25 \
         --output /dev/null -w '%{http_code}' \
-        --proxy "socks5h://127.0.0.1:9050" "$login_link" 2>/dev/null)" || true
+        --proxy "socks5h://127.0.0.1:${TOR_SOCKS_PORT:-9050}" "$login_link" 2>/dev/null)" || true
       if [[ "$_tor_http_code" =~ ^(200|302)$ ]]; then
         printf "\r${YELLOW}Onion reachability: [${GREEN}"
         for ((i = 0; i < _bar_w; i++)); do printf "█"; done
@@ -3511,11 +3561,8 @@ cleanup() {
         kill \$tunnel_pid 2>/dev/null || true
         echo "SSH tunnel process killed."
     fi
-    # Remove the /etc/hosts entry
-    if sudo grep -q "127.0.0.1 \$tunnel_host" /etc/hosts; then
-        echo -e "\${YELLOW}Removing '\$tunnel_host' from /etc/hosts (requires sudo)...${NC}"
-        sudo sed -i.bak "/127.0.0.1 \$tunnel_host/d" /etc/hosts
-    fi
+    # The reserved .test hostname is stable profile configuration. Keep both
+    # loopback mappings so another transport consumer never inherits half of it.
     # Remove temp files
     if [ -n "\$cert_dir" ]; then
         rm -rf "\$cert_dir"
@@ -3565,11 +3612,23 @@ mkcert -install
 mkcert -cert-file fullchain.pem -key-file privkey.pem "\$tunnel_host" localhost 127.0.0.1
 echo -e "\${GREEN}Certificates generated.${NC}"
 
-# Add hostname to /etc/hosts
-echo -e "\${YELLOW}Adding '\$tunnel_host' to /etc/hosts (requires sudo)...${NC}"
-if ! grep -q "127.0.0.1 \$tunnel_host" /etc/hosts; then
-    echo "127.0.0.1 \$tunnel_host" | sudo tee -a /etc/hosts >/dev/null
-fi
+# Keep the stable tunnel hostname usable regardless of address-family order.
+ensure_tunnel_host_entry() {
+    local address=\$1
+    if sudo awk -v ip="\$address" -v h="\$tunnel_host" '
+      /^[[:space:]]*#/ { next }
+      \$1 == ip {
+        for (i = 2; i <= NF; i++) if (\$i == h) { found = 1; exit }
+      }
+      END { exit(found ? 0 : 1) }
+    ' /etc/hosts; then
+        return 0
+    fi
+    printf '%s %s\n' "\$address" "\$tunnel_host" | sudo tee -a /etc/hosts >/dev/null
+}
+echo -e "\${YELLOW}Ensuring dual-stack loopback mappings for '\$tunnel_host' (requires sudo)...${NC}"
+ensure_tunnel_host_entry 127.0.0.1
+ensure_tunnel_host_entry ::1
 
 # Join the ZeroTier network
 echo -e "\${YELLOW}Joining ZeroTier network (requires sudo)...${NC}"
