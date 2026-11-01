@@ -2815,15 +2815,49 @@ run() {
   _ms() { python3 -c 'import time; print(int(time.time()*1000))' 2>/dev/null || echo $(( $(date +%s) * 1000 )); }
   local _run_t0; _run_t0=$(_ms)
 
-  # Run bbcertify in background so reservation.json is written while bbpro launches.
-  # The binary's validateLicense polls for reservation.json on retry, so even if bbpro
-  # wins the race the binary will pick up the file within a few seconds.
+  # Certification owns ticket/reservation publication. Await its successful
+  # completion before services can read files left by a previous invocation.
   export LICENSE_KEY;
   local cert_log; cert_log="$(rm -f /tmp/bbx-certify-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-certify-XXXXXX.log)"
   printf "${YELLOW}[startup] Certifying license...${NC}\n"
   _bbx_progress certify-begin
-  bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_NONINTERACTIVE=true; bbcertify" > "$cert_log" 2>&1 &
+  env BBX_NONINTERACTIVE=true bbcertify > "$cert_log" 2>&1 &
   local CERT_PID=$!
+
+  # Wait for background certification to complete (bounded: 120s)
+  printf "${YELLOW}[startup] Waiting for license certification...${NC}\n"
+  _bbx_progress certify-wait
+  local _cert_t0; _cert_t0=$SECONDS
+  local _cert_timeout=120
+  while kill -0 "$CERT_PID" 2>/dev/null; do
+    if (( SECONDS - _cert_t0 >= _cert_timeout )); then
+      printf "${RED}License certification timed out after %ds.${NC}\n" "$_cert_timeout"
+      _bbx_failure certify-timeout
+      printf "${YELLOW}Cert log:${NC}\n"
+      tail -20 "$cert_log"
+      kill "$CERT_PID" 2>/dev/null
+      rm -f "$cert_log"
+      exit 1
+    fi
+    sleep 1
+  done
+  # Collect exit status
+  if ! wait "$CERT_PID"; then
+    printf "${RED}License check failed. Run 'bbx activate' or go to dosaygo.com.${NC}\n"
+    _bbx_failure license-refused
+    printf "${YELLOW}Cert log:${NC}\n"
+    tail -20 "$cert_log"
+    rm -f "$cert_log"
+    exit 1
+  fi
+  rm -f "$cert_log"
+  printf "${GREEN}[startup] License certified.${NC}\n"
+  _bbx_progress certified
+  if [[ -f "$CERT_META_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$CERT_META_FILE"
+    export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
+  fi
 
   # Start bbpro — keep stderr visible so failures aren't silent
   printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
@@ -2842,48 +2876,10 @@ run() {
     _bbx_failure services-failed
     tail -20 "$bbpro_log"
     rm -f "$bbpro_log"
-    kill "$CERT_PID" 2>/dev/null; rm -f "$cert_log"
     exit 1
   fi
   rm -f "$bbpro_log"
   [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] bbpro returned at $(( $(_ms) - _run_t0 ))ms${NC}\n"
-
-  # Wait for background certification to complete (bounded: 120s)
-  printf "${YELLOW}[startup] Waiting for license certification...${NC}\n"
-  _bbx_progress certify-wait
-  local _cert_t0; _cert_t0=$SECONDS
-  local _cert_timeout=120
-  while kill -0 "$CERT_PID" 2>/dev/null; do
-    if (( SECONDS - _cert_t0 >= _cert_timeout )); then
-      printf "${RED}License certification timed out after %ds.${NC}\n" "$_cert_timeout"
-      _bbx_failure certify-timeout
-      printf "${YELLOW}Cert log:${NC}\n"
-      tail -20 "$cert_log"
-      kill "$CERT_PID" 2>/dev/null
-      rm -f "$cert_log"
-      bbx stop 2>/dev/null || true
-      exit 1
-    fi
-    sleep 1
-  done
-  # Collect exit status
-  if ! wait "$CERT_PID"; then
-    printf "${RED}License check failed. Run 'bbx activate' or go to dosaygo.com. Stopping BrowserBox...${NC}\n"
-    _bbx_failure license-refused
-    printf "${YELLOW}Cert log:${NC}\n"
-    tail -20 "$cert_log"
-    rm -f "$cert_log"
-    bbx stop 2>/dev/null || true
-    exit 1
-  fi
-  rm -f "$cert_log"
-  printf "${GREEN}[startup] License certified.${NC}\n"
-  _bbx_progress certified
-  if [[ -f "$CERT_META_FILE" ]]; then
-    # shellcheck disable=SC1090
-    source "$CERT_META_FILE"
-    export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
-  fi
 
   # Reload config to get the final token from the newly created test.env
   load_config
@@ -2914,6 +2910,7 @@ run() {
   fi
 
   draw_box "Login Link: ${login_link}"
+  _bbx_audio_startup_warning
   if [[ -n "$zeta_mode" ]]; then
     printf "${PURPLE}[ZETA MODE] Your Zeta Mode Login Link is above.${NC}\n\n"
   fi
@@ -3712,9 +3709,26 @@ _bbx_retire_login_link() {
   fi
 }
 
+# Reuse a configured direct session only after its authenticated login answers.
+# The tunnel remains a separate owner; ending it must not stop this browser.
+_bbx_cf_existing_origin() {
+  local requested_port="$1" scheme=https
+  [[ -n "${PORT:-}" && -n "${TOKEN:-}" && -f "${BB_CONFIG_DIR}/test.env" ]] || return 1
+  [[ -z "$requested_port" || "$requested_port" == "$PORT" ]] || return 1
+  [[ "$(_bbx_config_owner)" == setup && -z "${HOST_PER_SERVICE:-}" ]] || return 1
+  [[ "${BBX_HTTP_ONLY:-}" == true ]] && scheme=http
+  # Like the Windows cf-start path, TLS verification is relaxed only for this
+  # loopback origin's machine-local certificate, never the public tunnel.
+  if curl --noproxy '*' -ksfL --connect-timeout 2 --max-time 3 \
+      "${scheme}://127.0.0.1:${PORT}/login?token=${TOKEN}" 2>/dev/null | grep 'bb-view\|voodoo' >/dev/null; then
+    printf '%s' "$scheme"
+  else
+    return 1
+  fi
+}
+
 cf_run() {
   banner
-  _bbx_adopt_config cf
   load_config
   ensure_deps
   ensure_cloudflared || { printf "${RED}Failed to install cloudflared${NC}\n"; exit 1; }
@@ -3748,6 +3762,15 @@ cf_run() {
     esac
   done
 
+  local cf_origin_scheme="" cf_owns_browser=false
+  cf_origin_scheme="$(_bbx_cf_existing_origin "$port")" || cf_origin_scheme=""
+  if [[ -z "$cf_origin_scheme" ]]; then
+    _bbx_adopt_config cf
+    load_config
+    cf_origin_scheme=http
+    cf_owns_browser=true
+  fi
+
   # Kill any existing CF tunnel started by bbx before starting a new one
   kill_cf_tunnel
 
@@ -3756,133 +3779,139 @@ cf_run() {
     port="${PORT:-$(find_free_port_block)}"
   fi
 
-  # Ensure a fresh token
-  [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
+  if [[ "$cf_owns_browser" == true ]]; then
+    # Ensure a fresh token
+    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
 
-  # Test the 5-port block and CDP port
-  printf "${YELLOW}Testing port block ${port}...${NC}\n"
-  for i in {-2..2}; do
-    test_port_access $((port+i)) || {
-      printf "${RED}Port $((port+i)) is not accessible. Quit software using these ports, or adjust firewall for ports $((port-2))-$((port+2))/tcp${NC}\n"
+    # Test the 5-port block and CDP port
+    printf "${YELLOW}Testing port block ${port}...${NC}\n"
+    for i in {-2..2}; do
+      test_port_access $((port+i)) || {
+        printf "${RED}Port $((port+i)) is not accessible. Quit software using these ports, or adjust firewall for ports $((port-2))-$((port+2))/tcp${NC}\n"
+        exit 1
+      }
+    done
+    test_port_access $((port-3000)) || {
+      printf "${RED}CDP port $((port-3000)) blocked${NC}\n"
       exit 1
     }
-  done
-  test_port_access $((port-3000)) || {
-    printf "${RED}CDP port $((port-3000)) blocked${NC}\n"
-    exit 1
-  }
 
-  # Run minimal setup using setup_bbpro with HTTP backend. Cloudflare terminates
-  # TLS at the edge and speaks plain HTTP to the origin, so this is correct while
-  # the tunnel is up - and must not outlive it.
-  printf "${YELLOW}Setting up BrowserBox on port ${port} with HTTP backend...${NC}\n"
-  BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || {
-    printf "${RED}Setup failed${NC}\n"
-    exit 1
-  }
-  _bbx_own_config cf
-  _bbx_remember_launch cf background "${background_mode:-false}"
+    # Run minimal setup using setup_bbpro with HTTP backend. Cloudflare terminates
+    # TLS at the edge and speaks plain HTTP to the origin, so this is correct while
+    # the tunnel is up - and must not outlive it.
+    printf "${YELLOW}Setting up BrowserBox on port ${port} with HTTP backend...${NC}\n"
+    BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro --port "$port" --token "$TOKEN" --backend http || {
+      printf "${RED}Setup failed${NC}\n"
+      exit 1
+    }
+    _bbx_own_config cf
+    _bbx_remember_launch cf background "${background_mode:-false}"
 
-  # Reload config to get PORT and TOKEN from test.env
-  source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || {
-    printf "${YELLOW}Warning: test.env not found${NC}\n"
-  }
+    # Reload config to get PORT and TOKEN from test.env
+    source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || {
+      printf "${YELLOW}Warning: test.env not found${NC}\n"
+    }
 
-  # Validate LICENSE_KEY via bbcertify
-  export LICENSE_KEY
-  certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
-  if [[ "$?" -ne 0 ]]; then
-    printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
-    echo "Certification output: $certout"
-    exit 1
-  else
-    printf "${GREEN}Certification complete.${NC}\n"
-    _bbx_progress certified
-    if [[ -f "$CERT_META_FILE" ]]; then
-      # shellcheck disable=SC1090
-      source "$CERT_META_FILE"
-      export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
-    fi
-  fi
-
-  # Start BrowserBox — keep stderr visible so failures aren't silent
-  printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
-  _bbx_progress start-begin
-  local _cf_start_max_attempts=3
-  local _cf_start_attempt=1
-  local _cf_start_wait=30
-  local _cf_retry_sleep=30
-  local _cf_ready=false
-  local _cf_startup_log="${BB_CONFIG_DIR}/cf-run-startup.log"
-  local _cf_service_log_dir="${BB_CONFIG_DIR}/service_logs"
-
-  while [[ "$_cf_start_attempt" -le "$_cf_start_max_attempts" ]]; do
-    local _cf_bbpro_log
-    _cf_bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
-    local _cf_bbpro_rc
-    local _cf_attempt_log="${BB_CONFIG_DIR}/cf-run-startup-attempt-${_cf_start_attempt}.log"
-
-    printf "${YELLOW}Launching BrowserBox startup attempt %d/%d...${NC}\n" "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
-    _bbx_progress services-begin >&2
-
-    if [[ -n ${BBX_DEBUG:-} ]]; then
-      BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
-      _cf_bbpro_rc=${PIPESTATUS[0]}
+    # Validate LICENSE_KEY via bbcertify
+    export LICENSE_KEY
+    certout="$(bash -c "export LICENSE_KEY=\"$LICENSE_KEY\"; bbcertify 2>&1")"
+    if [[ "$?" -ne 0 ]]; then
+      printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
+      echo "Certification output: $certout"
+      exit 1
     else
-      env BBX_NONINTERACTIVE=true bbpro > "$_cf_bbpro_log" 2>&1
-      _cf_bbpro_rc=$?
+      printf "${GREEN}Certification complete.${NC}\n"
+      _bbx_progress certified
+      if [[ -f "$CERT_META_FILE" ]]; then
+        # shellcheck disable=SC1090
+        source "$CERT_META_FILE"
+        export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
+      fi
     fi
 
-    cp "$_cf_bbpro_log" "$_cf_startup_log" 2>/dev/null || true
-    cp "$_cf_bbpro_log" "$_cf_attempt_log" 2>/dev/null || true
+    # Start BrowserBox — keep stderr visible so failures aren't silent
+    printf "${YELLOW}Starting BrowserBox on 127.0.0.1:${PORT}...${NC}\n"
+    _bbx_progress start-begin
+    local _cf_start_max_attempts=3
+    local _cf_start_attempt=1
+    local _cf_start_wait=30
+    local _cf_retry_sleep=30
+    local _cf_ready=false
+    local _cf_startup_log="${BB_CONFIG_DIR}/cf-run-startup.log"
+    local _cf_service_log_dir="${BB_CONFIG_DIR}/service_logs"
 
-    if [[ "$_cf_bbpro_rc" -eq 0 ]] && wait_for_local_ready "$PORT" http "$_cf_start_wait"; then
-      _cf_ready=true
+    while [[ "$_cf_start_attempt" -le "$_cf_start_max_attempts" ]]; do
+      local _cf_bbpro_log
+      _cf_bbpro_log="$(rm -f /tmp/bbx-bbpro-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-bbpro-XXXXXX.log)"
+      local _cf_bbpro_rc
+      local _cf_attempt_log="${BB_CONFIG_DIR}/cf-run-startup-attempt-${_cf_start_attempt}.log"
+
+      printf "${YELLOW}Launching BrowserBox startup attempt %d/%d...${NC}\n" "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
+      _bbx_progress services-begin >&2
+
+      if [[ -n ${BBX_DEBUG:-} ]]; then
+        BBX_DEBUG="$BBX_DEBUG" env BBX_NONINTERACTIVE=true bbpro 2>&1 | tee "$_cf_bbpro_log"
+        _cf_bbpro_rc=${PIPESTATUS[0]}
+      else
+        env BBX_NONINTERACTIVE=true bbpro > "$_cf_bbpro_log" 2>&1
+        _cf_bbpro_rc=$?
+      fi
+
+      cp "$_cf_bbpro_log" "$_cf_startup_log" 2>/dev/null || true
+      cp "$_cf_bbpro_log" "$_cf_attempt_log" 2>/dev/null || true
+
+      if [[ "$_cf_bbpro_rc" -eq 0 ]] && wait_for_local_ready "$PORT" http "$_cf_start_wait"; then
+        _cf_ready=true
+        rm -f "$_cf_bbpro_log"
+        break
+      fi
+
+      if [[ "$_cf_bbpro_rc" -ne 0 ]]; then
+        printf "${RED}BrowserBox startup attempt %d/%d failed immediately (exit %d).${NC}\n" \
+          "$_cf_start_attempt" "$_cf_start_max_attempts" "$_cf_bbpro_rc" >&2
+        printf "${YELLOW}Saved startup log to %s${NC}\n" "$_cf_attempt_log" >&2
+        tail -20 "$_cf_bbpro_log" >&2
+      else
+        printf "${RED}BrowserBox did not become ready during startup attempt %d/%d.${NC}\n" \
+          "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
+        printf "${YELLOW}Saved startup log to %s${NC}\n" "$_cf_attempt_log" >&2
+        if [[ -f "${_cf_service_log_dir}/bb-main-out.log" ]]; then
+          printf "${YELLOW}===== bb-main-out.log (last 40 lines) =====${NC}\n" >&2
+          tail -40 "${_cf_service_log_dir}/bb-main-out.log" >&2
+        fi
+        if [[ -f "${_cf_service_log_dir}/bb-main-err.log" ]]; then
+          printf "${YELLOW}===== bb-main-err.log (last 40 lines) =====${NC}\n" >&2
+          tail -40 "${_cf_service_log_dir}/bb-main-err.log" >&2
+        fi
+        browserbox pm2 list >&2 || true
+      fi
+
       rm -f "$_cf_bbpro_log"
-      break
-    fi
 
-    if [[ "$_cf_bbpro_rc" -ne 0 ]]; then
-      printf "${RED}BrowserBox startup attempt %d/%d failed immediately (exit %d).${NC}\n" \
-        "$_cf_start_attempt" "$_cf_start_max_attempts" "$_cf_bbpro_rc" >&2
-      printf "${YELLOW}Saved startup log to %s${NC}\n" "$_cf_attempt_log" >&2
-      tail -20 "$_cf_bbpro_log" >&2
-    else
-      printf "${RED}BrowserBox did not become ready during startup attempt %d/%d.${NC}\n" \
-        "$_cf_start_attempt" "$_cf_start_max_attempts" >&2
-      printf "${YELLOW}Saved startup log to %s${NC}\n" "$_cf_attempt_log" >&2
-      if [[ -f "${_cf_service_log_dir}/bb-main-out.log" ]]; then
-        printf "${YELLOW}===== bb-main-out.log (last 40 lines) =====${NC}\n" >&2
-        tail -40 "${_cf_service_log_dir}/bb-main-out.log" >&2
+      if [[ "$_cf_start_attempt" -ge "$_cf_start_max_attempts" ]]; then
+        break
       fi
-      if [[ -f "${_cf_service_log_dir}/bb-main-err.log" ]]; then
-        printf "${YELLOW}===== bb-main-err.log (last 40 lines) =====${NC}\n" >&2
-        tail -40 "${_cf_service_log_dir}/bb-main-err.log" >&2
-      fi
-      browserbox pm2 list >&2 || true
+
+      printf "${YELLOW}Retrying Cloudflare startup in %ds...${NC}\n" "$_cf_retry_sleep" >&2
+      run_quietly stop_bbpro || true
+      sleep "$_cf_retry_sleep"
+      _cf_start_attempt=$((_cf_start_attempt + 1))
+    done
+
+    if [[ "$_cf_ready" != "true" ]]; then
+      printf "${RED}BrowserBox never became ready on port ${PORT}. Aborting tunnel.${NC}\n"
+      _bbx_failure ready-timeout
+      run_quietly stop_bbpro || true
+      exit 1
     fi
 
-    rm -f "$_cf_bbpro_log"
-
-    if [[ "$_cf_start_attempt" -ge "$_cf_start_max_attempts" ]]; then
-      break
-    fi
-
-    printf "${YELLOW}Retrying Cloudflare startup in %ds...${NC}\n" "$_cf_retry_sleep" >&2
-    run_quietly stop_bbpro || true
-    sleep "$_cf_retry_sleep"
-    _cf_start_attempt=$((_cf_start_attempt + 1))
-  done
-
-  if [[ "$_cf_ready" != "true" ]]; then
-    printf "${RED}BrowserBox never became ready on port ${PORT}. Aborting tunnel.${NC}\n"
-    _bbx_failure ready-timeout
-    run_quietly stop_bbpro || true
-    exit 1
+    # Reload config to capture final token
+    load_config
+  else
+    printf 'Adding a Cloudflare tunnel to the running BrowserBox on port %s (%s).\n' "$PORT" "$cf_origin_scheme"
+    _bbx_own_config cf
+    _bbx_remember_launch cf background "${background_mode:-false}"
   fi
-
-  # Reload config to capture final token
-  load_config
 
   # Cloudflared log and PID files
   local cf_log_file="${BB_CONFIG_DIR}/cloudflared.log"
@@ -3914,7 +3943,9 @@ cf_run() {
   # Function to start cloudflared and return its PID
   start_cloudflared() {
     : > "$cf_log_file"  # Clear log file
-    cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" --url "http://127.0.0.1:${PORT}" >> "$cf_log_file" 2>&1 &
+    local origin_args=(--url "${cf_origin_scheme}://127.0.0.1:${PORT}")
+    [[ "$cf_origin_scheme" == https ]] && origin_args+=(--no-tls-verify)
+    cloudflared tunnel --no-autoupdate "${cf_edge_args[@]}" "${origin_args[@]}" >> "$cf_log_file" 2>&1 &
     echo $!
   }
 
@@ -4096,7 +4127,7 @@ cf_run() {
   }
 
   # Start cloudflared with auto-restart on failure
-  printf "${YELLOW}Starting Cloudflare tunnel to http://127.0.0.1:${PORT}...${NC}\n"
+  printf "${YELLOW}Starting Cloudflare tunnel to ${cf_origin_scheme}://127.0.0.1:${PORT}...${NC}\n"
 
   local cf_pid=""
   local tunnel_url=""
@@ -4113,10 +4144,10 @@ cf_run() {
     cf_run_stopping="true"
     _bbx_retire_login_link "$login_link"
     trap - EXIT INT TERM
-    printf "\n${YELLOW}Stopping BrowserBox and Cloudflare tunnel...${NC}\n"
+    printf "\n${YELLOW}Stopping Cloudflare tunnel...${NC}\n"
     kill "$cf_pid" 2>/dev/null || true
     rm -f "$CF_PID_FILE"
-    run_quietly stop_bbpro || true
+    if [[ "$cf_owns_browser" == true ]]; then run_quietly stop_bbpro || true; fi
     printf "${GREEN}Cleanup complete.${NC}\n"
   }
 
@@ -4170,7 +4201,7 @@ cf_run() {
     tail -n 30 "$cf_log_file"
     kill "$cf_pid" 2>/dev/null || true
     rm -f "$CF_PID_FILE"
-    run_quietly stop_bbpro || true
+    if [[ "$cf_owns_browser" == true ]]; then run_quietly stop_bbpro || true; fi
     exit 1
   fi
 
@@ -5867,6 +5898,25 @@ _bbx_connections_json() {
   printf ']}'
 }
 
+_bbx_audio_report() {
+  case "${1:-}" in
+    ready) printf "${GREEN}Audio: Capture source available (startup check)${NC}\n" ;;
+    degraded)
+      printf "${YELLOW}Warning: audio unavailable — %s${NC}\n" "${2:-sound server unavailable}"
+      printf 'Check as the BrowserBox user: pactl info\n'
+      printf 'Audio logs: browserbox pm2 logs bb-audio --lines 50\n'
+      ;;
+    disabled) printf "${YELLOW}Audio: Disabled (%s)${NC}\n" "${2:-configuration}" ;;
+  esac
+}
+
+_bbx_audio_startup_warning() {
+  local file="${BB_CONFIG_DIR}/audio.state"
+  if [[ "$(_bbx_profile_value "$file" state)" == degraded ]]; then
+    _bbx_audio_report degraded "$(_bbx_profile_value "$file" detail)" >&2
+  fi
+}
+
 status() {
     # Observation must never save a stale snapshot over a concurrent setup.
     trap - EXIT
@@ -5895,7 +5945,9 @@ status() {
 
     load_config
     local status_scheme="https"
-    [[ "${BBX_HTTP_ONLY:-}" == "true" ]] && status_scheme="http"
+    if [[ "${BBX_HTTP_ONLY:-}" == "true" || "$(_bbx_config_owner)" == win9x ]]; then
+      status_scheme="http"
+    fi
 
     # One probe, one answer, shared by both output modes so the human line and
     # the JSON can never disagree about whether BrowserBox is up.
@@ -5953,14 +6005,7 @@ status() {
     else
         draw_box "Status: Not Running"
     fi
-    case "$audio_state" in
-      ready) printf "${GREEN}Audio: Ready${NC}\n" ;;
-      degraded)
-        printf "${YELLOW}Audio: Degraded - %s${NC}\n" "${audio_detail:-sound server unavailable}"
-        printf "${YELLOW}Check the service-user session with: pactl info${NC}\n"
-        ;;
-      disabled) printf "${YELLOW}Audio: Disabled (%s)${NC}\n" "${audio_detail:-configuration}" ;;
-    esac
+    _bbx_audio_report "$audio_state" "$audio_detail"
 }
 
 _bbx_license_request() {

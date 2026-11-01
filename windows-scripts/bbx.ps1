@@ -1335,8 +1335,8 @@ if ($normalizedCommand -in $chromeNeededCommands) {
 }
 
 if ($normalizedCommand -in @("run", "start")) {
-    # Mirror Unix bbx.sh: run certify in background, launch binary concurrently,
-    # wait for certify. The binary's validateLicense polls for reservation.json.
+    # Certification owns ticket/reservation publication. As on Unix, await its
+    # successful completion before services read a previous invocation's files.
     $certifyScript = Join-Path $PSScriptRoot "certify.ps1"
     $startScript = Join-Path $PSScriptRoot "start.ps1"
 
@@ -1363,6 +1363,26 @@ if ($normalizedCommand -in @("run", "start")) {
         & $script
     } -ArgumentList $certifyScript, $lk
 
+    # Wait for background certification (bounded: 120s)
+    Write-Host "[startup] Waiting for license certification..." -ForegroundColor Yellow
+    $certResult = $certJob | Wait-Job -Timeout 120
+    if (-not $certResult -or $certResult.State -eq 'Running') {
+        Write-Host "License certification timed out after 120s." -ForegroundColor Red
+        Receive-Job $certJob -ErrorAction SilentlyContinue | Write-Host
+        Stop-Job $certJob -ErrorAction SilentlyContinue
+        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    $certOutput = Receive-Job $certJob -ErrorAction SilentlyContinue
+    if ($certResult.State -eq 'Failed') {
+        Write-Host "License check failed. Run 'bbx certify' or visit dosaygo.com." -ForegroundColor Red
+        $certOutput | Write-Host
+        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    Remove-Job $certJob -Force -ErrorAction SilentlyContinue
+    Write-Host "[startup] License certified." -ForegroundColor Green
+
     Write-Host "[startup] Starting BrowserBox services..." -ForegroundColor Yellow
     if ($CommandArgs -and $CommandArgs.Count -gt 0) {
         $params = Convert-ArgListToSplat -Command $normalizedCommand -ArgList $CommandArgs
@@ -1373,32 +1393,9 @@ if ($normalizedCommand -in @("run", "start")) {
     $startRc = $LASTEXITCODE
     if ($startRc -ne 0) {
         Write-Host "Failed to start BrowserBox (exit $startRc)." -ForegroundColor Red
-        Stop-Job $certJob -ErrorAction SilentlyContinue
-        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
         exit $startRc
     }
 
-    # Wait for background certification (bounded: 120s)
-    Write-Host "[startup] Waiting for license certification..." -ForegroundColor Yellow
-    $certResult = $certJob | Wait-Job -Timeout 120
-    if (-not $certResult -or $certResult.State -eq 'Running') {
-        Write-Host "License certification timed out after 120s." -ForegroundColor Red
-        Receive-Job $certJob -ErrorAction SilentlyContinue | Write-Host
-        Stop-Job $certJob -ErrorAction SilentlyContinue
-        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
-        bbx stop 2>$null
-        exit 1
-    }
-    $certOutput = Receive-Job $certJob -ErrorAction SilentlyContinue
-    if ($certResult.State -eq 'Failed') {
-        Write-Host "License check failed. Run 'bbx certify' or visit dosaygo.com." -ForegroundColor Red
-        $certOutput | Write-Host
-        Remove-Job $certJob -Force -ErrorAction SilentlyContinue
-        bbx stop 2>$null
-        exit 1
-    }
-    Remove-Job $certJob -Force -ErrorAction SilentlyContinue
-    Write-Host "[startup] License certified." -ForegroundColor Green
     exit 0
 }
 elseif ($ScriptMap.ContainsKey($normalizedCommand)) {
