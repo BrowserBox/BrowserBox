@@ -2878,6 +2878,7 @@ run() {
     rm -f "$bbpro_log"
     exit 1
   fi
+  [[ -n "${BBX_DEBUG:-}" ]] || grep '^\[perf\] ' "$bbpro_log" >&2 || true
   rm -f "$bbpro_log"
   [[ -n "${BBX_DEBUG:-}" ]] && printf "${YELLOW}[startup] bbpro returned at $(( $(_ms) - _run_t0 ))ms${NC}\n"
 
@@ -3862,6 +3863,7 @@ cf_run() {
 
       if [[ "$_cf_bbpro_rc" -eq 0 ]] && wait_for_local_ready "$PORT" http "$_cf_start_wait"; then
         _cf_ready=true
+        [[ -n "${BBX_DEBUG:-}" ]] || grep '^\[perf\] ' "$_cf_bbpro_log" >&2 || true
         rm -f "$_cf_bbpro_log"
         break
       fi
@@ -6596,6 +6598,7 @@ _for_run() {
     kill "$CERT_PID" 2>/dev/null
     exit 1
   fi
+  [[ -n "${BBX_DEBUG:-}" ]] || grep '^\[perf\] ' "$bbpro_log" >&2 || true
   rm -f "$bbpro_log"
 
   # Wait for certification (bounded: 120s)
@@ -7820,7 +7823,8 @@ _fleet_create_seat_user() {
 
 _fleet_pipewire_audio_configured() {
   [[ -r /etc/pipewire/pipewire-pulse.conf.d/90-browserbox-audio.conf ]] \
-    && grep -q 'sink_name=rtp' /etc/pipewire/pipewire-pulse.conf.d/90-browserbox-audio.conf
+    && grep -q 'sink_name=channel' /etc/pipewire/pipewire-pulse.conf.d/90-browserbox-audio.conf \
+    && ! grep -q 'module-loopback' /etc/pipewire/pipewire-pulse.conf.d/90-browserbox-audio.conf
 }
 
 # Assign a stable main port for a new seat: deterministic upward scan
