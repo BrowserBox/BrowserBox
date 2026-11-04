@@ -1605,6 +1605,9 @@ load_config() {
     # Configured proxies apply to curl and other child processes as well as
     # this shell. A bare user.env assignment otherwise remains shell-local.
     export http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY
+    # Stop's native Chrome cleanup must see the same bare user.env assignment
+    # as startup's existing BBX environment producer.
+    export BBX_USER_DATA_DIR
 
     # Explicit overrides are authoritative, but ambient localhost does not 
     # downgrade a saved non-localhost hostname or route domain.
@@ -5092,7 +5095,7 @@ gui() {
 
   if [[ "$(uname -s)" == "Darwin" ]]; then
     local open_args=(-n "$app") var
-    for var in PATH BBX_NO_UPDATE BBX_BROWSER_PATH CHROME_PATH BBX_MINIMAL_MODE \
+    for var in PATH BBX_NO_UPDATE BBX_BROWSER_PATH CHROME_PATH BBX_USER_DATA_DIR BBX_MINIMAL_MODE \
       BBX_DOCKER_IMAGE BBX_DOCKER_CONTEXT BBX_DOCKER_REPOSITORY BBX_DOCKER_HOME \
       BBX_SSLCERTS_DIR SSLCERTS_DIR XDG_CONFIG_HOME LICENSE_KEY; do
       if [[ -n "${!var:-}" ]]; then open_args+=(--env "${var}=${!var}"); fi
@@ -6333,6 +6336,7 @@ _tu_run() {
   [[ -n "${BBX_HTTP_ONLY:-}" ]] && printf -v _env_prefix '%s; export BBX_HTTP_ONLY=%q' "$_env_prefix" "$BBX_HTTP_ONLY"
   [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP:-}" ]] && printf -v _env_prefix '%s; export BBX_DONT_KILL_CHROME_ON_STOP=%q' "$_env_prefix" "$BBX_DONT_KILL_CHROME_ON_STOP"
   [[ -n "${BBX_CLEAN_SLATE:-}" ]] && printf -v _env_prefix '%s; export BBX_CLEAN_SLATE=%q' "$_env_prefix" "$BBX_CLEAN_SLATE"
+  [[ -n "${BBX_USER_DATA_DIR:-}" ]] && printf -v _env_prefix '%s; export BBX_USER_DATA_DIR=%q' "$_env_prefix" "$BBX_USER_DATA_DIR"
   # Fleet-wide BrowserBox defaults (populated only by bbx fleet from
   # its validated defaults.env; empty for ordinary --for usage).
   if [[ -n "${BBX_FLEET_EXTRA_ENV+x}" ]]; then
