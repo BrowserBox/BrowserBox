@@ -3137,6 +3137,14 @@ tor_run() {
     _bbx_own_config tor
   fi
 
+  if $anonymize; then
+    if grep -q '^export BBX_TOR_MODE=' "${BB_CONFIG_DIR}/test.env"; then
+      _bbx_sed_inplace 's|^export BBX_TOR_MODE=.*|export BBX_TOR_MODE="true"|' "${BB_CONFIG_DIR}/test.env" || return 1
+    else
+      printf '\nexport BBX_TOR_MODE="true"\n' >> "${BB_CONFIG_DIR}/test.env" || return 1
+    fi
+    _bbx_own_config tor
+  fi
   source "${BB_CONFIG_DIR}/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   # Validate existing product key
   export LICENSE_KEY;
