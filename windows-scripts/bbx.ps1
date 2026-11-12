@@ -564,7 +564,7 @@ function Get-BbxHelpCatalogue {
     $commands = @(
         & $command @("status") "status" "Instance" "Read current service and endpoint status." @(& $flag "json" "--json")
         & $command @("setup") "setup" "Instance" "Configure BrowserBox for this Windows user." @(& $text "hostname" "--hostname"; & $text "port" "--port"; & $flag "free-port" "--free-port")
-        & $command @("start") "start" "Instance" "Start BrowserBox services." @(& $text "hostname" "--hostname"; & $text "port" "--port")
+        & $command @("start") "start" "Instance" "Start BrowserBox services." @(& $text "hostname" "--hostname"; & $text "port" "--port"; & $flag "free-port" "--free-port")
         & $command @("stop") "stop" "Instance" "Stop BrowserBox services." @() $true
         & $command @("install") "install" "Lifecycle" "Install BrowserBox." @() $true
         & $command @("update") "update" "Lifecycle" "Update BrowserBox." @() $true
@@ -588,14 +588,14 @@ function Get-BbxHelpCatalogue {
         & $command @("activate") "activate" "Setup" "Activate a license for more users." @(& $text "seats" "--seats")
         & $command @("vacancy") "vacancy" "Setup" "Show the current license vacancy snapshot." @()
         & $command @("use-chrome") "use-chrome" "Setup" "Install a specific browser and use it." @(& $text "target" "--target" $true) $true
-        & $command @("cf-start") "cf-start" "Tunnels" "Run BrowserBox through a Cloudflare quick tunnel." @(& $text "port" "--port"; & $flag "background" "--background")
-        & $command @("zt-start") "zt-start" "Tunnels" "Expose BrowserBox on your ZeroTier network." @(& $text "network-id" "--network-id" $true; & $text "port" "--port")
-        & $command @("tor-start") "tor-start" "Tunnels" "Serve BrowserBox as a Tor onion service." @(& $flag "no-onion" "--no-onion"; & $flag "no-anonymize" "--no-anonymize"; & $text "port" "--port")
-        & $command @("ng-start") "ng-start" "Tunnels" "Proxy BrowserBox with Nginx." @(& $text "listen-port" "--listen-port"; & $text "port" "--port"; & $text "hostname" "--hostname")
+        & $command @("cf-start") "cf-start" "Tunnels" "Run BrowserBox through a Cloudflare quick tunnel." @(& $text "port" "--port"; & $flag "free-port" "--free-port"; & $flag "background" "--background")
+        & $command @("zt-start") "zt-start" "Tunnels" "Expose BrowserBox on your ZeroTier network." @(& $text "network-id" "--network-id" $true; & $text "port" "--port"; & $flag "free-port" "--free-port")
+        & $command @("tor-start") "tor-start" "Tunnels" "Serve BrowserBox as a Tor onion service." @(& $flag "no-onion" "--no-onion"; & $flag "no-anonymize" "--no-anonymize"; & $text "port" "--port"; & $flag "free-port" "--free-port")
+        & $command @("ng-start") "ng-start" "Tunnels" "Proxy BrowserBox with Nginx." @(& $text "listen-port" "--listen-port"; & $text "port" "--port"; & $flag "free-port" "--free-port"; & $text "hostname" "--hostname")
         & $command @("ng-config","print") "ng-config print" "Tunnels" "Print external Nginx configuration." @()
         & $command @("ng-config","validate") "ng-config validate" "Tunnels" "Validate external Nginx configuration." @()
         & $command @("ng-config","apply") "ng-config apply" "Tunnels" "Apply external Nginx configuration." @() $true
-        & $command @("win9x-start") "win9x-start" "Tunnels" "Run in Windows 9x compatibility mode." @(& $text "port" "--port")
+        & $command @("win9x-start") "win9x-start" "Tunnels" "Run in Windows 9x compatibility mode." @(& $text "port" "--port"; & $flag "free-port" "--free-port")
         & $command @("--faq") "--faq" "Help" "Show frequently asked questions." @()
         & $command @("--help-json") "--help-json" "Help" "Show the machine-readable command catalogue." @(& $text "out" "--out")
     )
@@ -895,7 +895,7 @@ function Show-Help {
     Write-Host "  restart         Restart using the configuration in use" -ForegroundColor White
     Write-Host ""
     Write-Host "ADVANCED RUNNERS & TUNNELS" -ForegroundColor Cyan
-    Write-Host "  cf-start        Run through a Cloudflare quick tunnel. bbx cf-start [-Port <p>] [-Background]" -ForegroundColor White
+    Write-Host "  cf-start        Run through a Cloudflare quick tunnel. bbx cf-start [-Port <p> | -FreePort] [-Background]" -ForegroundColor White
     Write-Host "  zt-start        Serve on your ZeroTier network. bbx zt-start -NetworkId <id>" -ForegroundColor White
     Write-Host "  tor-start       Serve as a Tor onion service. bbx tor-start [-NoOnion] [-NoAnonymize]" -ForegroundColor White
     Write-Host "  ng-start        Proxy with nginx. bbx ng-start [-ListenPort <p>]" -ForegroundColor White
@@ -998,20 +998,20 @@ function Convert-ArgListToSplat {
     $map = @{}
     switch -Wildcard ($Command) {
         "setup" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname"; "free-port" = "FreePort" } }
-        "run" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
-        "start" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname" } }
-        "cf-*" { $map = @{ "port" = "Port"; "p" = "Port"; "background" = "Background"; "d" = "Background";
+        "run" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname"; "port" = "Port"; "p" = "Port"; "free-port" = "FreePort" } }
+        "start" { $map = @{ "host" = "Hostname"; "hostname" = "Hostname"; "port" = "Port"; "p" = "Port"; "free-port" = "FreePort" } }
+        "cf-*" { $map = @{ "port" = "Port"; "p" = "Port"; "free-port" = "FreePort"; "background" = "Background"; "d" = "Background";
                            "tunnel-timeout" = "TunnelTimeout" } }
-        "tor-*" { $map = @{ "port" = "Port"; "p" = "Port"; "no-onion" = "NoOnion"; "onion" = "Onion";
+        "tor-*" { $map = @{ "port" = "Port"; "p" = "Port"; "free-port" = "FreePort"; "no-onion" = "NoOnion"; "onion" = "Onion";
                             "no-darkweb" = "NoAnonymize"; "no-anonymize" = "NoAnonymize";
                             "anonymize" = "Anonymize"; "bootstrap-timeout" = "BootstrapTimeout" } }
-        "zt-*" { $map = @{ "port" = "Port"; "p" = "Port"; "network-id" = "NetworkId";
+        "zt-*" { $map = @{ "port" = "Port"; "p" = "Port"; "free-port" = "FreePort"; "network-id" = "NetworkId";
                            "address-timeout" = "AddressTimeout" } }
-        "ng-start" { $map = @{ "port" = "Port"; "p" = "Port"; "listen-port" = "ListenPort";
+        "ng-start" { $map = @{ "port" = "Port"; "p" = "Port"; "free-port" = "FreePort"; "listen-port" = "ListenPort";
                                "host" = "Hostname"; "hostname" = "Hostname" } }
-        "ng-run" { $map = @{ "port" = "Port"; "p" = "Port"; "listen-port" = "ListenPort";
+        "ng-run" { $map = @{ "port" = "Port"; "p" = "Port"; "free-port" = "FreePort"; "listen-port" = "ListenPort";
                              "host" = "Hostname"; "hostname" = "Hostname" } }
-        "win9x-*" { $map = @{ "port" = "Port"; "p" = "Port" } }
+        "win9x-*" { $map = @{ "port" = "Port"; "p" = "Port"; "free-port" = "FreePort" } }
         "logs" { $map = @{ "service" = "Service"; "s" = "Service"; "lines" = "Lines"; "n" = "Lines" } }
         "use-chrome" { $map = @{} }
         "gui" { $map = @{ "reinstall" = "Reinstall" } }

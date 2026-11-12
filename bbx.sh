@@ -14,8 +14,8 @@
 _bbx_help_json() {
   cat <<'BBX_HELP_JSON'
 {"schema":"bbx.help/1","name":"bbx","commands":[
-{"path":["docker","setup"],"name":"docker setup","group":"Docker","description":"Configure a local Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":"Defaults to the installed BrowserBox hostname"},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"Main service port"}],"aliases":[],"confirm":false,"platform":"unix","note":"Reuses the installed licence, terms agreement and TLS conventions. Named deployments have separate data; host Session controls do not stop them."},
-{"path":["docker","run"],"name":"docker run","group":"Docker","description":"Create and start a local deployment. For saved deployments, choose docker start.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":"Defaults to the installed BrowserBox hostname"},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"Main service port"}],"aliases":[],"confirm":false,"platform":"unix","note":"Reuses the installed licence, terms agreement and TLS conventions. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","setup"],"name":"docker setup","group":"Docker","description":"Configure a local Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":"Defaults to the installed BrowserBox hostname"},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"Main service port"},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free port block on this host."}],"aliases":[],"confirm":false,"platform":"unix","note":"Reuses the installed licence, terms agreement and TLS conventions. Named deployments have separate data; host Session controls do not stop them."},
+{"path":["docker","run"],"name":"docker run","group":"Docker","description":"Create and start a local deployment. For saved deployments, choose docker start.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":"Defaults to the installed BrowserBox hostname"},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"Main service port"},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free port block on this host."}],"aliases":[],"confirm":false,"platform":"unix","note":"Reuses the installed licence, terms agreement and TLS conventions. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","start"],"name":"docker start","group":"Docker","description":"Start a saved Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","stop"],"name":"docker stop","group":"Docker","description":"Gracefully stop a Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","restart"],"name":"docker restart","group":"Docker","description":"Restart a Docker deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":true,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
@@ -29,7 +29,7 @@ _bbx_help_json() {
 {"path":["docker","config"],"name":"docker config","group":"Docker","description":"Print a saved Compose project.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["docker","exec"],"name":"docker exec","group":"Docker","description":"Invoke existing commands inside a deployment.","fields":[{"name":"name","flag":"","type":"text","required":true,"choices":[],"description":"Named deployment"},{"name":"command","flag":"","type":"text","required":true,"choices":[],"description":"Executable inside the container; add arguments separately."}],"aliases":[],"confirm":false,"platform":"unix","note":"Linux/macOS. Dependencies are managed on demand. Named deployments have separate data; host Session controls do not stop them."},
 {"path":["status"],"name":"status","group":"Instance","description":"Read current service, endpoint, and audio status.","fields":[{"name":"json","flag":"--json","type":"flag","required":false,"choices":[],"description":""},{"name":"out","flag":"--out","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":false,"platform":"all","note":""},
-{"path":["start"],"name":"start","group":"Instance","description":"Start BrowserBox for the current or selected user.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["run"],"confirm":false,"platform":"all","note":""},
+{"path":["start"],"name":"start","group":"Instance","description":"Start BrowserBox for the current or selected user.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free 5-port block."},{"name":"hostname","flag":"--hostname","type":"text","required":false,"choices":[],"description":""},{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["run"],"confirm":false,"platform":"all","note":""},
 {"path":["stop"],"name":"stop","group":"Instance","description":"Stop the current or selected BrowserBox instance.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
 {"path":["restart"],"name":"restart","group":"Instance","description":"Restart BrowserBox using the current configuration type.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":""},
 {"path":["logs"],"name":"logs","group":"Instance","description":"Show service process information and log instructions.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
@@ -42,11 +42,11 @@ _bbx_help_json() {
 {"path":["update-background"],"name":"update-background","group":"Maintenance","description":"Check for an update in the background.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":"Disabled when BBX_NO_UPDATE is set."},
 {"path":["uninstall"],"name":"uninstall","group":"Maintenance","description":"Remove all BrowserBox components.","fields":[],"aliases":[],"confirm":true,"platform":"all","note":"May require terminal input and administrator privileges."},
 {"path":["install"],"name":"install","group":"Maintenance","description":"Display the standalone installation instructions.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
-{"path":["start-as"],"name":"start-as","group":"Users","description":"Start an instance owned by another OS user.","fields":[{"name":"username","flag":"","type":"text","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"temporary","flag":"--temporary","type":"flag","required":false,"choices":[],"description":""}],"aliases":["run-as"],"confirm":false,"platform":"linux","note":""},
+{"path":["start-as"],"name":"start-as","group":"Users","description":"Start an instance owned by another OS user.","fields":[{"name":"username","flag":"","type":"text","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free 5-port block."},{"name":"temporary","flag":"--temporary","type":"flag","required":false,"choices":[],"description":""}],"aliases":["run-as"],"confirm":false,"platform":"linux","note":""},
 {"path":["stop-user"],"name":"stop-user","group":"Users","description":"Stop an instance for a specific OS user.","fields":[{"name":"username","flag":"","type":"text","required":true,"choices":[],"description":""},{"name":"delay_seconds","flag":"","type":"integer","required":false,"choices":[],"description":""}],"aliases":[],"confirm":true,"platform":"all","note":""},
-{"path":["cf-start"],"name":"cf-start","group":"Tunnels","description":"Run through a Cloudflare tunnel.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"background","flag":"--background","type":"flag","required":false,"choices":[],"description":""}],"aliases":["cf-run"],"confirm":false,"platform":"all","note":""},
+{"path":["cf-start"],"name":"cf-start","group":"Tunnels","description":"Run through a Cloudflare tunnel.","fields":[{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":""},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free 5-port block."},{"name":"background","flag":"--background","type":"flag","required":false,"choices":[],"description":""}],"aliases":["cf-run"],"confirm":false,"platform":"all","note":""},
 {"path":["zt-start"],"name":"zt-start","group":"Tunnels","description":"Run on a ZeroTier network.","fields":[{"name":"network-id","flag":"--network-id","type":"text","required":true,"choices":[],"description":"The 16-character ZeroTier network ID."}],"aliases":["zt-run"],"confirm":false,"platform":"all","note":""},
-{"path":["tor-start"],"name":"tor-start","group":"Tunnels","description":"Run with Tor routing or an onion service.","fields":[{"name":"anonymize","flag":"--anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"clearnet-only","flag":"--clearnet-only","type":"flag","required":false,"choices":[],"description":""},{"name":"no-darkweb","flag":"--no-darkweb","type":"flag","required":false,"choices":[],"description":""},{"name":"no-anonymize","flag":"--no-anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"onion","flag":"--onion","type":"flag","required":false,"choices":[],"description":""},{"name":"no-onion","flag":"--no-onion","type":"flag","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"macOS: choose a fixed main port instead of a random free block."},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"macOS default: pick a random free 5-port block."}],"aliases":["tor-run"],"confirm":false,"platform":"all","note":""},
+{"path":["tor-start"],"name":"tor-start","group":"Tunnels","description":"Run with Tor routing or an onion service.","fields":[{"name":"anonymize","flag":"--anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"clearnet-only","flag":"--clearnet-only","type":"flag","required":false,"choices":[],"description":""},{"name":"no-darkweb","flag":"--no-darkweb","type":"flag","required":false,"choices":[],"description":""},{"name":"no-anonymize","flag":"--no-anonymize","type":"flag","required":false,"choices":[],"description":""},{"name":"onion","flag":"--onion","type":"flag","required":false,"choices":[],"description":""},{"name":"no-onion","flag":"--no-onion","type":"flag","required":false,"choices":[],"description":""},{"name":"port","flag":"--port","type":"integer","required":false,"choices":[],"description":"macOS: choose a fixed main port instead of a random free block."},{"name":"free-port","flag":"--free-port","type":"flag","required":false,"choices":[],"description":"Pick a random free 5-port block (the default)."}],"aliases":["tor-run"],"confirm":false,"platform":"all","note":""},
 {"path":["ng-start"],"name":"ng-start","group":"Tunnels","description":"Proxy BrowserBox through Nginx.","fields":[{"name":"for","flag":"--for","type":"text","required":false,"choices":[],"description":""}],"aliases":["ng-run"],"confirm":false,"platform":"all","note":""},
 {"path":["ng-config","print"],"name":"ng-config print","group":"Tunnels","description":"Print external Nginx configuration.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
 {"path":["ng-config","validate"],"name":"ng-config validate","group":"Tunnels","description":"Validate external Nginx configuration.","fields":[],"aliases":[],"confirm":false,"platform":"all","note":""},
@@ -2003,6 +2003,19 @@ find_free_port_block() {
   exit 1
 }
 
+# --free-port for a launch that also takes --port: the random block setup
+# picks, announced on stderr, and never both. $1 is non-empty when --port was given.
+_bbx_free_port_choice() {
+  if [[ -n "${1:-}" ]]; then
+    printf "${RED}Error: use either --port or --free-port, not both${NC}\n"
+    return 1
+  fi
+  local chosen
+  chosen="$(find_free_port_block random)" || { printf "%s\n" "$chosen"; return 1; }
+  printf "${GREEN}Using free port block %s-%s (Chrome %s)${NC}\n" "$((chosen-2))" "$((chosen+2))" "$((chosen-3000))" >&2
+  printf "%s\n" "$chosen"
+}
+
 # Test port accessibility via firewall
 test_port_access() {
     local port="$1"
@@ -2712,9 +2725,27 @@ run() {
   rm -f "$STOP_SENTINEL"
 
   # Ensure setup has been run
+  local first_setup=""
   if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [[ ! -f "${BB_CONFIG_DIR}/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
-    setup "$@" # Pass arguments to setup
+    # Setup gets only the address options it shares with run; anything else is
+    # a start argument it would refuse as unknown.
+    local -a first_setup_args=()
+    local first_setup_at
+    for ((first_setup_at = 1; first_setup_at <= $#; first_setup_at++)); do
+      case "${!first_setup_at}" in
+        --port|-p|--hostname|-h)
+          local first_setup_value=$((first_setup_at + 1))
+          case "${!first_setup_at}" in
+            --port|-p) first_setup_args+=(--port "${!first_setup_value:-}") ;;
+            *) first_setup_args+=(--hostname "${!first_setup_value:-}") ;;
+          esac
+          first_setup_at=$first_setup_value ;;
+        --free-port) first_setup_args+=(--free-port) ;;
+      esac
+    done
+    setup "${first_setup_args[@]}"
+    first_setup=true
     load_config
     # After setup, the values in test.env are the source of truth, so we don't need to re-parse args
     # But if setup calls run (like in ng_run), we need to avoid an infinite loop.
@@ -2736,6 +2767,7 @@ run() {
   local port="${PORT}"
   local hostname="${BBX_HOSTNAME}"
   local address_requested=false
+  local port_explicit="" free_port=""
   local run_args=() # Store args to pass to bbpro
 
   # Explicit address changes update this launch type through setup.
@@ -2755,17 +2787,22 @@ run() {
       --port|-p)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+          printf "Usage: bbx run [--port|-p <port> | --free-port] [--hostname|-h <hostname>]\n"
           exit 1
         fi
         port="$2"
+        port_explicit=true
         address_requested=true
         shift 2
+        ;;
+      --free-port)
+        free_port=true
+        shift
         ;;
       --hostname|-h)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+          printf "Usage: bbx run [--port|-p <port> | --free-port] [--hostname|-h <hostname>]\n"
           exit 1
         fi
         hostname="$2"
@@ -2781,6 +2818,12 @@ run() {
   done
 
   hostname="$(normalize_hostname_for_local_use "$hostname")"
+
+  # A first-time setup above already took --free-port and chose the block.
+  if [[ -n "$free_port" && -z "$first_setup" ]]; then
+    port="$(_bbx_free_port_choice "$port_explicit")" || { printf "%s\n" "$port"; exit 1; }
+    address_requested=true
+  fi
 
   if $address_requested; then
     _bbx_prepare_run_address "$hostname" "$port" || return $?
@@ -3038,11 +3081,9 @@ tor_run() {
       --onion) onion=true; shift ;;
       --no-onion) onion=false; shift ;;
       --port|-p)
-        [[ "$(uname -s)" == Darwin && $# -ge 2 ]] || { printf 'Tor --port requires a value and is supported on macOS.\n' >&2; return 1; }
+        [[ $# -ge 2 ]] || { printf 'Tor --port requires a value.\n' >&2; return 1; }
         tor_port="$2"; shift 2 ;;
-      --free-port)
-        [[ "$(uname -s)" == Darwin ]] || { printf 'Tor --free-port is supported on macOS.\n' >&2; return 1; }
-        tor_free_port=true; shift ;;
+      --free-port) tor_free_port=true; shift ;;
       *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
     esac
   done
@@ -3058,21 +3099,21 @@ tor_run() {
     load_config
   fi
 
-  if [[ "$(uname -s)" == Darwin ]]; then
-    if [[ -n "$tor_port" && -n "$tor_free_port" ]]; then
-      printf 'Use either --port or --free-port, not both.\n' >&2; return 1
-    fi
-    if [[ -n "$tor_port" ]]; then
-      if ! [[ "$tor_port" =~ ^[1-9][0-9]{3,4}$ ]] || (( tor_port < 4024 || tor_port > 65533 )); then
-        printf 'Tor main port must be between 4024 and 65533.\n' >&2; return 1
-      fi
-      _port_block_free "$tor_port" || { printf 'The requested port block is unavailable or unsafe.\n' >&2; return 1; }
-      PORT="$tor_port"
-    else
-      PORT="$(find_free_port_block random)" || return 1
-    fi
-    printf "${GREEN}Using free port block %s-%s (Chrome %s)${NC}\n" "$((PORT-2))" "$((PORT+2))" "$((PORT-3000))" >&2
+  # Each OS user gets its own block: --port names one, otherwise a random free
+  # one is chosen (--free-port says so explicitly), on every platform.
+  if [[ -n "$tor_port" && -n "$tor_free_port" ]]; then
+    printf 'Use either --port or --free-port, not both.\n' >&2; return 1
   fi
+  if [[ -n "$tor_port" ]]; then
+    if ! [[ "$tor_port" =~ ^[1-9][0-9]{3,4}$ ]] || (( tor_port < 4024 || tor_port > 65533 )); then
+      printf 'Tor main port must be between 4024 and 65533.\n' >&2; return 1
+    fi
+    _port_block_free "$tor_port" || { printf 'The requested port block is unavailable or unsafe.\n' >&2; return 1; }
+    PORT="$tor_port"
+  else
+    PORT="$(find_free_port_block random)" || return 1
+  fi
+  printf "${GREEN}Using free port block %s-%s (Chrome %s)${NC}\n" "$((PORT-2))" "$((PORT+2))" "$((PORT-3000))" >&2
 
   [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
   printf "${YELLOW}Starting BrowserBox with ${NC}${PURPLE}Tor${NC}${YELLOW}...${NC}\n"
@@ -3751,16 +3792,21 @@ cf_run() {
   # Parse arguments
   local port=""
   local background_mode=""
+  local free_port=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
         if [ -z "$2" ]; then
           printf "${RED}Error: Option $1 requires an argument${NC}\n"
-          printf "Usage: bbx cf-run [--port|-p <port>] [--background|-d]\n"
+          printf "Usage: bbx cf-run [--port|-p <port> | --free-port] [--background|-d]\n"
           exit 1
         fi
         port="$2"
         shift 2
+        ;;
+      --free-port)
+        free_port=true
+        shift
         ;;
       --background|-d)
         background_mode="true"
@@ -3768,11 +3814,14 @@ cf_run() {
         ;;
       *)
         printf "${RED}Unknown option: $1${NC}\n"
-        printf "Usage: bbx cf-run [--port|-p <port>] [--background|-d]\n"
+        printf "Usage: bbx cf-run [--port|-p <port> | --free-port] [--background|-d]\n"
         exit 1
         ;;
     esac
   done
+  if [[ -n "$free_port" ]]; then
+    port="$(_bbx_free_port_choice "$port")" || { printf "%s\n" "$port"; exit 1; }
+  fi
 
   local cf_origin_scheme="" cf_owns_browser=false
   cf_origin_scheme="$(_bbx_cf_existing_origin "$port")" || cf_origin_scheme=""
@@ -10127,6 +10176,7 @@ run_as() {
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
     hostname="$(normalize_hostname_for_local_use "$hostname")"
     local temporary=false
+    local port_explicit="" free_port=""
 
     # Parse arguments with named flags
     while [ $# -gt 0 ]; do
@@ -10138,24 +10188,32 @@ run_as() {
             --port|-p)
                 if [ -z "$2" ]; then
                     printf "${RED}Error: Option $1 requires an argument${NC}\n"
-                    printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
+                    printf "Usage: bbx run-as [--temporary] [--port|-p <port> | --free-port] <username>${NC}\n"
                     exit 1
                 fi
                 port="$2"
+                port_explicit=true
                 shift 2
+                ;;
+            --free-port)
+                free_port=true
+                shift
                 ;;
             *)
                 if [ -z "$user" ]; then
                     user="$1" # First non-flag argument is the username
                 else
                     printf "${RED}Unknown or extra argument: $1${NC}\n"
-                    printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
+                    printf "Usage: bbx run-as [--temporary] [--port|-p <port> | --free-port] <username>${NC}\n"
                     exit 1
                 fi
                 shift
                 ;;
         esac
     done
+    if [[ -n "$free_port" ]]; then
+        port="$(_bbx_free_port_choice "$port_explicit")" || { printf "%s\n" "$port"; exit 1; }
+    fi
 
     # Generate username if none provided or handle --temporary
     local epoch=$(date +%s)
@@ -10638,7 +10696,7 @@ usage() {
     printf "${BOLD}CORE ACTIONS${NC}\n"
     printf "  ${GREEN}start${NC}           Start BrowserBox for the current user. ${BOLD}bbx start [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
     printf "  ${GREEN}stop${NC}            Stop the BrowserBox instance for the current user.\n"
-    printf "  ${GREEN}start-as${NC}        Run a new instance as a different OS user. ${BOLD}bbx start-as [--temporary] [username] [port]${NC}\n"
+    printf "  ${GREEN}start-as${NC}        Run a new instance as a different OS user. ${BOLD}bbx start-as [--temporary] [--port <p> | --free-port] [username]${NC}\n"
     printf "  ${GREEN}stop-user${NC}       Stop a BrowserBox instance for a specific user. ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}fleet${NC}           Allocate and release clean-slate BrowserBox sessions from a Linux user pool. ${BOLD}bbx fleet help${NC}\n\n"
 
@@ -10650,7 +10708,7 @@ usage() {
 
     printf "${BOLD}ADVANCED RUNNERS & TUNNELS${NC}\n"
     printf "  ${GREEN}docker${NC}          Manage a named Docker deployment. ${BOLD}bbx docker help${NC}\n"
-    printf "  ${CYAN}cf-start${NC}        Run BrowserBox securely through a Cloudflare tunnel. ${BOLD}bbx cf-start [--port|-p <port>]${NC}\n"
+    printf "  ${CYAN}cf-start${NC}        Run BrowserBox securely through a Cloudflare tunnel. ${BOLD}bbx cf-start [--port|-p <port> | --free-port]${NC}\n"
     printf "  ${BLUE}zt-start${NC}        Expose BrowserBox on your ZeroTier network.\n"
     printf "  ${PURPLE}tor-start${NC}       Serve BrowserBox as a Tor hidden service. ${BOLD}bbx tor-start [--no-darkweb] [--no-onion]${NC}\n"
     printf "  ${GREEN}ng-start${NC}        Proxy BrowserBox with Nginx.\n"
@@ -11088,7 +11146,11 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
+# The command's own status is bbx's status; the advisory footer below must not
+# replace it (it used to turn every returned failure into 0).
+bbx_command_status=$?
 
 # Always show policy status footer (except for fleet, whose paths are
 # non-interactive). Policy status is advisory, so keep command stdout clean.
 show_policy_footer >&2
+exit "$bbx_command_status"
