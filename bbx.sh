@@ -2610,10 +2610,15 @@ setup() {
     fi
     setup_hostname="${new_hostname}"
   fi
-  configure_setup_hostname_transport "$setup_hostname" "$backend_scheme" || exit 1
+  # The direct-IP container starts immediately after setup. Issue its public
+  # certificate during start, alongside the required license certification.
+  if [[ "${BBX_CONTAINER:-}" != "true" || "${BBX_CLOUD_AGENT:-}" != "true" || "${BBX_CLOUD_ACCESS:-}" != "direct-ip" ]]; then
+    configure_setup_hostname_transport "$setup_hostname" "$backend_scheme" || exit 1
+  fi
 
-  # Ensure we have a valid product key
-  if ! validate_license_key; then
+  # Cloud workers immediately run the reservation-owning certification in
+  # bbx start; avoid a second, non-reserving server round trip during setup.
+  if [[ "${BBX_CLOUD_AGENT:-}" != "true" ]] && ! validate_license_key; then
     printf "${RED}License key invalid or missing. Run 'bbx activate' or go to dosaygo.com to get a valid key.${NC}\n"
   fi
 
@@ -2851,9 +2856,23 @@ run() {
   # no form field changed. tls admits the existing pair for this hostname.
   local backend_scheme=https
   [[ -n "$http_only" ]] && backend_scheme=http
+  export LICENSE_KEY
+  local cert_log CERT_PID _cert_t0 transport_rc=0
+  cert_log="$(rm -f /tmp/bbx-certify-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-certify-XXXXXX.log)"
+  if [[ "${BBX_CONTAINER:-}" == "true" && "${BBX_CLOUD_AGENT:-}" == "true" && "${BBX_CLOUD_ACCESS:-}" == "direct-ip" && -z "$zeta_mode" ]]; then
+    printf "${YELLOW}[startup] Certifying license...${NC}\n"
+    _bbx_progress certify-begin
+    env BBX_NONINTERACTIVE=true bbcertify > "$cert_log" 2>&1 &
+    CERT_PID=$!
+    _cert_t0=$SECONDS
+  fi
   # ng-run owns admission for its generated service hostnames and wildcard.
   if [[ -z "$zeta_mode" ]]; then
-    configure_setup_hostname_transport "$hostname" "$backend_scheme" || return $?
+    configure_setup_hostname_transport "$hostname" "$backend_scheme" || transport_rc=$?
+  fi
+  if (( transport_rc != 0 )) && [[ -z "$CERT_PID" ]]; then
+    rm -f "$cert_log"
+    return "$transport_rc"
   fi
 
   export HOST_PER_SERVICE BBX_HTTP_ONLY;
@@ -2863,17 +2882,17 @@ run() {
 
   # Certification owns ticket/reservation publication. Await its successful
   # completion before services can read files left by a previous invocation.
-  export LICENSE_KEY;
-  local cert_log; cert_log="$(rm -f /tmp/bbx-certify-XXXXXX.log 2>/dev/null; mktemp /tmp/bbx-certify-XXXXXX.log)"
-  printf "${YELLOW}[startup] Certifying license...${NC}\n"
-  _bbx_progress certify-begin
-  env BBX_NONINTERACTIVE=true bbcertify > "$cert_log" 2>&1 &
-  local CERT_PID=$!
+  if [[ -z "$CERT_PID" ]]; then
+    printf "${YELLOW}[startup] Certifying license...${NC}\n"
+    _bbx_progress certify-begin
+    env BBX_NONINTERACTIVE=true bbcertify > "$cert_log" 2>&1 &
+    CERT_PID=$!
+    _cert_t0=$SECONDS
+  fi
 
   # Wait for background certification to complete (bounded: 120s)
   printf "${YELLOW}[startup] Waiting for license certification...${NC}\n"
   _bbx_progress certify-wait
-  local _cert_t0; _cert_t0=$SECONDS
   local _cert_timeout=120
   while kill -0 "$CERT_PID" 2>/dev/null; do
     if (( SECONDS - _cert_t0 >= _cert_timeout )); then
@@ -2904,6 +2923,9 @@ run() {
     source "$CERT_META_FILE"
     export BBX_RESERVATION_CODE BBX_RESERVED_SEAT_ID BBX_TICKET_ID BBX_TICKET_SLOT
   fi
+  # Wait for certification even on a TLS failure, so the container's existing
+  # exit owner can release any reservation that certification created.
+  (( transport_rc == 0 )) || return "$transport_rc"
 
   # Start bbpro — keep stderr visible so failures aren't silent
   printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
@@ -10911,6 +10933,11 @@ faq() {
 }
 
 check_agreement() {
+  local terms_label="BrowserBox Terms"
+  local version_major="${VERSION%%.*}"
+  if [[ "$version_major" =~ ^[0-9]+$ ]]; then
+    terms_label="BrowserBox v${version_major} Terms"
+  fi
   if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
     if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
       # Write a valid email-like string for test agreement so install.sh can pick it up
@@ -10919,7 +10946,7 @@ check_agreement() {
     return 0
   fi
   if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
-      printf "${BLUE}BrowserBox v15 Terms:${NC} https://dosaygo.com/terms.txt\n"
+      printf "${BLUE}%s:${NC} https://dosaygo.com/terms.txt\n" "$terms_label"
       printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
       printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
       read -r -p " Agree? (yes/no): " AGREE
