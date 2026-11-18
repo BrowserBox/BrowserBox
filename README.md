@@ -12,6 +12,7 @@
 
 <p align="center">
   <a href="https://browserbox.io/evaluate"><strong>Start a 7-Day Paid Evaluation</strong></a> ·
+  <a href="https://browserbox.io/go/gh-readme-org-nov18?to=evaluate#free"><strong>Request a Free Organization Evaluation</strong></a> ·
   <a href="https://dosaygo.com/commerce"><strong>Buy a Commercial License</strong></a> ·
   <a href="mailto:sales@dosaygo.com?subject=BrowserBox%20Enterprise%20Demo">Talk to Sales</a>
 </p>
