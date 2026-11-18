@@ -332,6 +332,8 @@ await bbx.page.navigate('https://example.com');
 
 The API also exposes tabs, capture, augmentation, selection, and policy-gated capabilities. Allow your embedding origin in the session configuration before connecting. [Try the live console](https://www.hyper-frame.art/console) to explore the API.
 
+[Watch the 54-second embedding demo](https://www.youtube.com/watch?v=z6yGI-tiXqU) to see a live page in `<hyper-frame>` alongside a regular iframe. To test an embedded browser with one of your apps, [request an organization evaluation](https://browserbox.io/go/gh-readme-org-nov18?to=evaluate#free).
+
 ## 16. Advanced Usage
 
 - **Secure document viewing:** view supported documents in the remote environment without transferring the original file to the client (Linux only).
