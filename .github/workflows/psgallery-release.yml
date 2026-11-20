@@ -15,6 +15,7 @@ permissions:
 jobs:
   qualify:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +27,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Install-PackageProvider NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
           $module = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery/BrowserBox-Installer'
           $manifest = Test-ModuleManifest (Join-Path $module 'BrowserBox-Installer.psd1')
           if ($manifest.Version.ToString() -ne $env:VERSION) { throw 'Version does not match manifest' }
