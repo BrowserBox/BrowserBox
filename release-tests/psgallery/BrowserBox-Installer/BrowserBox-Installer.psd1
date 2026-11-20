@@ -12,7 +12,7 @@
 RootModule = 'BrowserBox-Installer.psm1'
 
 # Version number of this module.
-ModuleVersion = '16.9.5'
+ModuleVersion = '16.9.6'
 
 # ID used to uniquely identify this module
 GUID = '9242b39a-deff-465a-90ee-3a075c858690'

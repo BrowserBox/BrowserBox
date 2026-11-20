@@ -11,6 +11,8 @@ Install-Module -Name BrowserBox-Installer -Scope CurrentUser
 Install-BrowserBox
 ```
 
+Run `Install-BrowserBox -Help` first to see the options and environment overrides without installing anything.
+
 If PowerShell Gallery cannot download or extract the module, use the [official Windows installer instructions](https://docs.browserbox.io/installation/#sec:windows).
 
 ## Get a license and run BrowserBox
