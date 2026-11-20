@@ -1,5 +1,7 @@
 name: Qualify PowerShell Gallery installer
 on:
+  push:
+    branches: [gallery-qualification-1694]
   workflow_dispatch:
 permissions:
   contents: read
