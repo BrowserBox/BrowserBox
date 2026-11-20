@@ -1,0 +1,68 @@
+name: Release BrowserBox installer to PowerShell Gallery
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact version in installer manifest
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package locally and reject Gallery-corrupting metadata
+        shell: powershell
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          $module = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery/BrowserBox-Installer'
+          $manifest = Test-ModuleManifest (Join-Path $module 'BrowserBox-Installer.psd1')
+          if ($manifest.Version.ToString() -ne $env:VERSION) { throw 'Version does not match manifest' }
+          $repo = Join-Path $env:RUNNER_TEMP 'localrepo'; New-Item -ItemType Directory $repo | Out-Null
+          Register-PSRepository -Name LocalCheck -SourceLocation $repo -PublishLocation $repo -InstallationPolicy Trusted
+          Publish-Module -Path $module -Repository LocalCheck -NuGetApiKey unused -Force
+          $pkg = Get-ChildItem $repo -Filter '*.nupkg' | Select-Object -First 1
+          if (-not $pkg) { throw 'No package produced' }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead($pkg.FullName)
+          try {
+            $entry = $zip.Entries | Where-Object { $_.FullName -like '*.nuspec' } | Select-Object -First 1
+            if (-not $entry) { throw 'Missing nuspec' }
+            $reader = New-Object IO.StreamReader($entry.Open()); try { [xml]$xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            foreach ($name in @('readme','icon','license')) {
+              if ($xml.SelectSingleNode("//*[local-name()='$name']")) { throw "Forbidden nuspec element: $name" }
+            }
+          } finally { $zip.Dispose() }
+          Install-Module BrowserBox-Installer -RequiredVersion $env:VERSION -Repository LocalCheck -Scope CurrentUser -AcceptLicense -Force
+          Import-Module BrowserBox-Installer -RequiredVersion $env:VERSION -Force
+          Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
+  publish:
+    needs: qualify
+    runs-on: [self-hosted, bbx-gallery-release-ephemeral]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Publish qualified module
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $module = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery/BrowserBox-Installer'
+          $key = & /usr/bin/security find-generic-password -s 'powershellgallery-BrowserBox-Installer-pushversion' -a 'dosyago' -w
+          if ($LASTEXITCODE -ne 0 -or -not $key) { throw 'Unable to retrieve Gallery credential' }
+          try { Publish-Module -Path $module -Repository PSGallery -NuGetApiKey $key -Force -ErrorAction Stop | Out-Null }
+          catch { throw 'Publish-Module failed; inspect Gallery state before retrying.' }
+          finally { $key = $null }
+  verify-public:
+    needs: publish
+    uses: ./.github/workflows/psgallery-post-publish-check.yml
+    with:
+      version: ${{ inputs.version }}

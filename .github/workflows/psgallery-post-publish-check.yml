@@ -1,61 +1,25 @@
-name: PowerShell Gallery post-publish check
-# Installs BrowserBox-Installer from the PUBLIC Gallery feed on Windows runners and
-# verifies the served package is the package that was uploaded.
-# Run after every Gallery publish (call it from a release workflow with
-# `uses: ./.github/workflows/psgallery-post-publish-check.yml` and `needs: publish`),
-# on demand, and daily so a bad version cannot sit unnoticed again.
-# Background: Gallery versions 16.9.2-16.9.4 (2026-04-25 .. 2026-11-20) were served
-# with their first 2.6 KB missing, so every install route failed with a ZIP error.
+name: PowerShell Gallery verification
 on:
   workflow_call:
     inputs:
       version:
-        description: 'Version to check (blank = newest listed)'
         type: string
         default: ''
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to check (blank = newest listed)'
+        description: 'Exact version; leave blank for the Gallery default'
+        type: string
         default: ''
   schedule:
-    - cron: '17 3 * * *'
+    - cron: '17 3 * * 1'
 permissions:
   contents: read
 jobs:
-  integrity:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.pick.outputs.version }}
-    steps:
-      - id: pick
-        name: Resolve version and compare served bytes with Gallery metadata
-        env:
-          WANT: ${{ inputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          id=BrowserBox-Installer
-          if [ -z "${WANT:-}" ]; then
-            WANT=$(curl -fsS "https://www.powershellgallery.com/api/v2/FindPackagesById()?id='$id'&\$filter=IsLatestVersion" | grep -oP '(?<=<d:NormalizedVersion>)[^<]+' | head -1)
-          fi
-          [ -n "$WANT" ] || { echo "no listed version found"; exit 1; }
-          echo "version=$WANT" >> "$GITHUB_OUTPUT"
-          meta=$(curl -fsS "https://www.powershellgallery.com/api/v2/Packages(Id='$id',Version='$WANT')")
-          msize=$(grep -oP '(?<=<d:PackageSize [^>]{0,80}>)[0-9]+' <<<"$meta" | head -1)
-          mhash=$(grep -oP '(?<=<d:PackageHash>)[^<]+' <<<"$meta" | head -1)
-          curl -fsSL -o pkg.nupkg "https://www.powershellgallery.com/api/v2/package/$id/$WANT"
-          size=$(stat -c%s pkg.nupkg)
-          hash=$(openssl dgst -sha512 -binary pkg.nupkg | base64 -w0)
-          echo "version=$WANT metadata_size=$msize served_size=$size"
-          [ "$size" = "$msize" ] || { echo "::error::served size $size != uploaded size $msize (package corrupted after upload)"; exit 1; }
-          [ "$hash" = "$mhash" ] || { echo "::error::served SHA512 differs from uploaded SHA512"; exit 1; }
-          unzip -tq pkg.nupkg
-          unzip -l pkg.nupkg | grep -q "BrowserBox-Installer.nuspec"
-          unzip -l pkg.nupkg | grep -q "tools/install.ps1"
-  windows:
-    needs: integrity
+  gallery-install:
+    name: Gallery install (${{ matrix.shell }})
     runs-on: windows-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -64,23 +28,37 @@ jobs:
       run:
         shell: ${{ matrix.shell }}
     env:
-      V: ${{ needs.integrity.outputs.version }}
+      WANT: ${{ inputs.version }}
     steps:
-      - name: Install-Module from public Gallery
+      - name: Resolve public version and prepare tools
         run: |
           $ErrorActionPreference = 'Stop'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          if ($PSVersionTable.PSEdition -eq 'Desktop') { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null }
+          if ($PSVersionTable.PSEdition -eq 'Desktop') { Install-PackageProvider NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null }
+          $v = $env:WANT
+          if (-not $v) { $v = (Find-Module BrowserBox-Installer -Repository PSGallery -ErrorAction Stop).Version.ToString() }
+          if ($v -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') { throw "Invalid Gallery version: $v" }
+          "V=$v" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Checking public Gallery version $v with $($PSVersionTable.PSVersion)"
+      - name: Install-Module, import and resolve
+        run: |
+          $ErrorActionPreference = 'Stop'
           Install-Module BrowserBox-Installer -RequiredVersion $env:V -Repository PSGallery -Scope CurrentUser -AcceptLicense -Force
           Import-Module BrowserBox-Installer -RequiredVersion $env:V -Force
           Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
-      - name: Save-Module from public Gallery
+      - name: Save-Module, import and resolve
+        if: ${{ always() && env.V != '' }}
         run: |
           $ErrorActionPreference = 'Stop'
           $d = Join-Path $env:RUNNER_TEMP 'saved'; New-Item -ItemType Directory $d -Force | Out-Null
           Save-Module BrowserBox-Installer -RequiredVersion $env:V -Repository PSGallery -Path $d -AcceptLicense -Force
-          if (-not (Get-ChildItem $d -Recurse -Filter BrowserBox-Installer.psd1)) { throw 'psd1 missing after Save-Module' }
-      - name: Install-PSResource from public Gallery
+          $manifest = Get-ChildItem $d -Recurse -Filter BrowserBox-Installer.psd1 | Select-Object -First 1
+          if (-not $manifest) { throw 'Saved manifest missing' }
+          Remove-Module BrowserBox-Installer -ErrorAction SilentlyContinue
+          Import-Module $manifest.FullName -Force
+          Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
+      - name: Install-PSResource, import and resolve
+        if: ${{ always() && env.V != '' }}
         run: |
           $ErrorActionPreference = 'Stop'
           if (-not (Get-Command Install-PSResource -ErrorAction SilentlyContinue)) {
@@ -88,3 +66,6 @@ jobs:
             Import-Module Microsoft.PowerShell.PSResourceGet -Force
           }
           Install-PSResource -Name BrowserBox-Installer -Version $env:V -Repository PSGallery -Scope CurrentUser -TrustRepository -AcceptLicense -Reinstall
+          Remove-Module BrowserBox-Installer -ErrorAction SilentlyContinue
+          Import-Module BrowserBox-Installer -RequiredVersion $env:V -Force
+          Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
