@@ -6,6 +6,10 @@ on:
         description: Exact version in installer manifest
         type: string
         required: true
+      publish:
+        description: 'Publish after qualification (leave false to test packaging only)'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -44,6 +48,7 @@ jobs:
           Import-Module BrowserBox-Installer -RequiredVersion $env:VERSION -Force
           Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
   publish:
+    if: ${{ inputs.publish }}
     needs: qualify
     runs-on: [self-hosted, bbx-gallery-release-ephemeral]
     timeout-minutes: 10
