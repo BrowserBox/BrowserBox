@@ -20,7 +20,10 @@ jobs:
           $fixture = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery'
           $package = Join-Path $fixture 'BrowserBox-Installer.16.9.5.nupkg'
           if ((Get-FileHash $package -Algorithm SHA256).Hash.ToLowerInvariant() -ne '564d2fc40d08d14825ebe552a580609c30b29084386cd16db6ee1addd70cc616') { throw 'Candidate hash mismatch' }
-          Register-PSRepository -Name Candidate -SourceLocation $fixture -InstallationPolicy Trusted
+          $source = Join-Path $env:RUNNER_TEMP "candidate-repository"
+          New-Item -ItemType Directory -Path $source | Out-Null
+          Copy-Item $package $source
+          Register-PSRepository -Name Candidate -SourceLocation $source -InstallationPolicy Trusted
           Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository Candidate -Scope CurrentUser -AcceptLicense -Force
           Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
           Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
