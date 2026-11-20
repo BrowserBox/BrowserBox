@@ -1,0 +1,67 @@
+name: Gallery scope matrix (published versions)
+on:
+  push:
+    branches: [gallery-scope-matrix-20261120]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scope:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+        shell: [powershell, pwsh]
+        version: ['16.9.2', '16.9.3', '16.9.4', '16.9.5']
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    env:
+      V: ${{ matrix.version }}
+    steps:
+      - name: Environment
+        run: |
+          $PSVersionTable | Out-String | Write-Host
+          [Environment]::OSVersion.VersionString
+          "PSGet: " + ((Get-Module -ListAvailable PowerShellGet | Select -First 3 | % { $_.Version }) -join ',')
+          "PSResourceGet: " + ((Get-Module -ListAvailable Microsoft.PowerShell.PSResourceGet | % { $_.Version }) -join ',')
+      - name: Route Install-Module
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference='Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+          Install-Module BrowserBox-Installer -RequiredVersion $env:V -Repository PSGallery -Scope CurrentUser -AcceptLicense -Force
+          Import-Module BrowserBox-Installer -RequiredVersion $env:V -Force
+          Get-Command Install-BrowserBox -Module BrowserBox-Installer | Out-Null
+          "RESULT route=Install-Module OK"
+      - name: Route Save-Module
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference='Stop'
+          $d = Join-Path $env:RUNNER_TEMP 'saved'; New-Item -ItemType Directory $d -Force | Out-Null
+          Save-Module BrowserBox-Installer -RequiredVersion $env:V -Repository PSGallery -Path $d -Force
+          if (-not (Test-Path (Join-Path $d "BrowserBox-Installer\$env:V\BrowserBox-Installer.psd1"))) { throw 'psd1 missing' }
+          "RESULT route=Save-Module OK"
+      - name: Route Install-PSResource
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference='Stop'
+          if (-not (Get-Command Install-PSResource -ErrorAction SilentlyContinue)) {
+            Install-Module Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force -AllowClobber -Repository PSGallery
+            Import-Module Microsoft.PowerShell.PSResourceGet -Force
+          }
+          Install-PSResource -Name BrowserBox-Installer -Version $env:V -Repository PSGallery -Scope CurrentUser -TrustRepository -AcceptLicense
+          Import-Module BrowserBox-Installer -RequiredVersion $env:V -Force
+          "RESULT route=Install-PSResource OK"
+      - name: Route raw nupkg download and ZIP check
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference='Stop'
+          $f = Join-Path $env:RUNNER_TEMP "bb-$env:V.nupkg"
+          Invoke-WebRequest "https://www.powershellgallery.com/api/v2/package/BrowserBox-Installer/$env:V" -OutFile $f -UseBasicParsing
+          "bytes=" + (Get-Item $f).Length
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $z=[System.IO.Compression.ZipFile]::OpenRead($f); try { "entries=" + $z.Entries.Count; $z.Entries | % { $s=$_.Open(); $s.CopyTo([IO.Stream]::Null); $s.Dispose() } } finally { $z.Dispose() }
+          "RESULT route=raw-zip OK"
