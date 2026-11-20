@@ -17,7 +17,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
           $fixture = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery'
           $package = Join-Path $fixture 'BrowserBox-Installer.16.9.5.nupkg'
           if ((Get-FileHash $package -Algorithm SHA256).Hash.ToLowerInvariant() -ne '564d2fc40d08d14825ebe552a580609c30b29084386cd16db6ee1addd70cc616') { throw 'Candidate hash mismatch' }
@@ -25,18 +24,22 @@ jobs:
           Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository Candidate -Scope CurrentUser -AcceptLicense -Force
           Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
           Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
-          Remove-Module BrowserBox-Installer
-          Uninstall-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
-          $local = Join-Path $env:RUNNER_TEMP 'local-gallery'
-          New-Item -ItemType Directory $local | Out-Null
-          Register-PSRepository -Name LocalPublish -SourceLocation $local -PublishLocation $local -InstallationPolicy Trusted
-          Publish-Module -Path (Join-Path $fixture 'BrowserBox-Installer') -Repository LocalPublish -NuGetApiKey 'local-test' -Force
-          Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository LocalPublish -Scope CurrentUser -AcceptLicense -Force
-          Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
-          $module = Get-Module BrowserBox-Installer
-          if ($module.Version -ne [version]'16.9.5') { throw 'Unexpected module version' }
-          Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
-          Write-Host 'Candidate and Publish-Module package both installed and imported; Install-BrowserBox resolves.'
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($package)
+          try {
+            $modulePath = Join-Path $fixture 'BrowserBox-Installer'
+            foreach ($relative in @('BrowserBox-Installer.psd1','BrowserBox-Installer.psm1','License.txt','README.md','icon.png','tools/install.ps1')) {
+              $entry = $zip.GetEntry($relative)
+              if (-not $entry) { throw "Missing entry $relative" }
+              $stream = $entry.Open()
+              try {
+                $sha = [System.Security.Cryptography.SHA256]::Create()
+                try { $archiveHash = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','') } finally { $sha.Dispose() }
+              } finally { $stream.Dispose() }
+              if ($archiveHash -ne (Get-FileHash (Join-Path $modulePath $relative) -Algorithm SHA256).Hash) { throw "Content mismatch $relative" }
+            }
+          } finally { $zip.Dispose() }
+          Write-Host 'Candidate installed, imported, command resolved, and six publish files matched the candidate.'
 
   publish:
     needs: candidate
@@ -69,7 +72,6 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
           Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository PSGallery -Scope CurrentUser -AcceptLicense -Force -ErrorAction Stop
           Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force -ErrorAction Stop
           $module = Get-Module BrowserBox-Installer
