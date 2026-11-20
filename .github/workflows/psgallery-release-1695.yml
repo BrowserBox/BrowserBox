@@ -1,0 +1,78 @@
+name: Release Gallery 16.9.5
+on:
+  push:
+    branches: [gallery-release-1695-20261120]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test candidate and Publish-Module packaging
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+          $fixture = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery'
+          $package = Join-Path $fixture 'BrowserBox-Installer.16.9.5.nupkg'
+          if ((Get-FileHash $package -Algorithm SHA256).Hash.ToLowerInvariant() -ne '564d2fc40d08d14825ebe552a580609c30b29084386cd16db6ee1addd70cc616') { throw 'Candidate hash mismatch' }
+          Register-PSRepository -Name Candidate -SourceLocation $fixture -InstallationPolicy Trusted
+          Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository Candidate -Scope CurrentUser -AcceptLicense -Force
+          Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
+          Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
+          Remove-Module BrowserBox-Installer
+          Uninstall-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
+          $local = Join-Path $env:RUNNER_TEMP 'local-gallery'
+          New-Item -ItemType Directory $local | Out-Null
+          Register-PSRepository -Name LocalPublish -SourceLocation $local -PublishLocation $local -InstallationPolicy Trusted
+          Publish-Module -Path (Join-Path $fixture 'BrowserBox-Installer') -Repository LocalPublish -NuGetApiKey 'local-test' -Force
+          Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository LocalPublish -Scope CurrentUser -AcceptLicense -Force
+          Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force
+          $module = Get-Module BrowserBox-Installer
+          if ($module.Version -ne [version]'16.9.5') { throw 'Unexpected module version' }
+          Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop | Out-Null
+          Write-Host 'Candidate and Publish-Module package both installed and imported; Install-BrowserBox resolves.'
+
+  publish:
+    needs: candidate
+    runs-on: [self-hosted, bbx-gallery-release-ephemeral]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Publish qualified module
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $modulePath = Join-Path $env:GITHUB_WORKSPACE 'release-tests/psgallery/BrowserBox-Installer'
+          $key = & /usr/bin/security find-generic-password -s 'powershellgallery-BrowserBox-Installer-pushversion' -a 'dosyago' -w
+          if ($LASTEXITCODE -ne 0 -or -not $key) { throw 'Unable to retrieve Gallery credential' }
+          try {
+            Publish-Module -Path $modulePath -Repository PSGallery -NuGetApiKey $key -Force -ErrorAction Stop | Out-Null
+            Write-Host 'Publish-Module completed.'
+          } catch {
+            throw 'Publish-Module failed; inspect Gallery state before retrying.'
+          } finally { $key = $null }
+  verify-public:
+    needs: publish
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install published package from Gallery
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
+          Install-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Repository PSGallery -Scope CurrentUser -AcceptLicense -Force -ErrorAction Stop
+          Import-Module BrowserBox-Installer -RequiredVersion 16.9.5 -Force -ErrorAction Stop
+          $module = Get-Module BrowserBox-Installer
+          if ($module.Version -ne [version]'16.9.5') { throw 'Unexpected installed version' }
+          $command = Get-Command Install-BrowserBox -Module BrowserBox-Installer -ErrorAction Stop
+          Write-Host "Installed and loaded $($module.Name) $($module.Version); command $($command.Name) resolves."
