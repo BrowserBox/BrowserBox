@@ -5148,7 +5148,7 @@ stop() {
     _bbx_browser_adopted() {
       local mode="" port="" generation=""
       local record="${BROWSERBOX_PM2_HOME:-$BB_CONFIG_DIR}/pm2/bb-main/chrome-owner"
-      read -r mode port generation < "$record" 2>/dev/null || true
+      [[ -r "$record" ]] && read -r mode port generation < "$record" || true
       [[ "$mode" == adopted ]]
     }
     local adopted_browser=0
