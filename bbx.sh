@@ -2539,7 +2539,7 @@ setup() {
   if [[ -n "${_bbx_setup_explicit:-}" ]]; then
     _bbx_setup_explicit=""
     BBX_USER_DATA_DIR="$BBX_CALLER_USER_DATA_DIR"
-    if [[ -n "$BBX_CALLER_ADOPT_CDP_PORT" ]]; then export BBX_ADOPT_CDP_PORT="$BBX_CALLER_ADOPT_CDP_PORT"; else unset BBX_ADOPT_CDP_PORT; fi
+    BBX_ADOPT_CDP_PORT="$BBX_CALLER_ADOPT_CDP_PORT"; export BBX_ADOPT_CDP_PORT
   fi
   ensure_deps
   ensure_installation_id
@@ -2702,7 +2702,8 @@ setup() {
     test_port_access $((setup_port+i)) || { printf "${RED}Quit software using these ports, or adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
   done
   # An adopted browser already listens on its own port; BrowserBox launches none.
-  if [[ -z "${BBX_ADOPT_CDP_PORT:-}" ]]; then
+  if [[ -z "${BBX_ADOPT_CDP_PORT:-}" ]] || ! [[ "$BBX_ADOPT_CDP_PORT" =~ ^[0-9]{1,5}$ ]] ||
+      ((10#$BBX_ADOPT_CDP_PORT < 1 || 10#$BBX_ADOPT_CDP_PORT > 65535)); then
     test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked${NC}\n"; exit 1; }
   fi
 
@@ -5144,9 +5145,18 @@ stop() {
 
     load_config
 
+    _bbx_browser_adopted() {
+      local mode="" port="" generation=""
+      local record="${BROWSERBOX_PM2_HOME:-$BB_CONFIG_DIR}/pm2/bb-main/chrome-owner"
+      read -r mode port generation < "$record" 2>/dev/null || true
+      [[ "$mode" == adopted ]]
+    }
+    local adopted_browser=0
+    if _bbx_browser_adopted; then adopted_browser=1; fi
+
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
     # Also stop any Cloudflare tunnel started by bbx cf-run
-    [[ -n "${BBX_ADOPT_CDP_PORT:-}${BBX_INSTANCE_NAME:-}" ]] || kill_cf_tunnel quiet
+    if [[ -z "${BBX_INSTANCE_NAME:-}" && "$adopted_browser" == 0 ]]; then kill_cf_tunnel quiet; fi
     # Clear login link so stale CF links aren't reused by next bbx run
     rm -f "${BB_CONFIG_DIR}/login.link"
 
@@ -5199,7 +5209,7 @@ stop() {
         printf "${YELLOW}Reaped lingering helper processes.${NC}\n"
       fi
     }
-    [[ -n "${BBX_ADOPT_CDP_PORT:-}${BBX_INSTANCE_NAME:-}" ]] || _bbx_reap_stragglers
+    if [[ -z "${BBX_INSTANCE_NAME:-}" && "$adopted_browser" == 0 ]]; then _bbx_reap_stragglers; fi
 
     # Flipbook: finalize recording and deploy if BBX_FLIPBOOK_DIR is set.
     # All flipbook logic (claim, generation, cleanup) lives in the Node process.
