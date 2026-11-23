@@ -118,6 +118,17 @@ if [[ -z "${BBX_LIB_MODE:-}" && "${1:-}" == docker ]]; then
   exec bash "$_bbx_docker_cli" "$@"
 fi
 
+# Named instances: `bbx instance <command> NAME`, the same shape as `bbx docker`.
+# Every other bbx command stays on the default instance and never reaches here.
+if [[ -z "${BBX_LIB_MODE:-}" && "${1:-}" == instance ]]; then
+  shift
+  _bbx_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  _bbx_instance_cli="${_bbx_bin_dir}/bbx-instance.d/cli.sh"
+  [[ -f "$_bbx_instance_cli" ]] || _bbx_instance_cli="${_bbx_bin_dir}/deploy-scripts/instance/cli.sh"
+  [[ -f "$_bbx_instance_cli" ]] || { printf 'Instance commands are missing; reinstall BrowserBox commands.\n' >&2; exit 1; }
+  BBX_INSTANCE_BBX="${_bbx_bin_dir}/$(basename "${BASH_SOURCE[0]}")" exec bash "$_bbx_instance_cli" "$@"
+fi
+
 if [[ "${1:-}" == "--help-json" ]]; then
   shift
   if (( $# == 0 )); then _bbx_help_json; exit $?; fi
@@ -948,6 +959,11 @@ fi
 BBX_CALLER_HOSTNAME="${BBX_HOSTNAME:-}"
 BBX_CALLER_DOMAIN="${DOMAIN:-}"
 export BBX_CALLER_DOMAIN
+# The two session overrides as the caller gave them, before any saved config
+# is read. The caller's value wins over the saved one (load_config), and an
+# explicit `bbx setup` saves exactly what the caller gave.
+BBX_CALLER_USER_DATA_DIR="${BBX_USER_DATA_DIR:-}"
+BBX_CALLER_ADOPT_CDP_PORT="${BBX_ADOPT_CDP_PORT:-}"
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
@@ -973,6 +989,14 @@ CONFIG_FILE="${BB_CONFIG_DIR}/config"
 CERT_META_FILE="${BB_CONFIG_DIR}/tickets/cert.meta.env"
 [ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
 
+# A named instance's config directory records its name (bbx instance setup
+# writes it; the default directory never has one). A stop raised from inside
+# the instance carries only HOME, and must still stop that instance alone.
+if [[ -z "${BBX_INSTANCE_NAME:-}" && -f "${BB_CONFIG_DIR}/instance.name" ]]; then
+  BBX_INSTANCE_NAME="$(head -n 1 "${BB_CONFIG_DIR}/instance.name")"
+  export BBX_INSTANCE_NAME
+fi
+
 # Docker containers file — commented out, not removed. Docker support may be re-enabled.
 # DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 # [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
@@ -985,6 +1009,42 @@ CF_PID_FILE="${BB_CONFIG_DIR}/cloudflared.pid"
 STOP_SENTINEL="${BB_CONFIG_DIR}/.stop-in-progress"
 
 # Kill any existing Cloudflare tunnel started by bbx
+# Plain bbx commands pertain to the default instance. User-wide process sweeps
+# pass their pid lists through bbx_default_pids, which drops the processes of
+# named instances (bbx instance run NAME). Without the instance commands
+# installed it passes every pid through.
+bbx_default_pids() { cat; }
+_bbx_load_default_pids() {
+  local lib bin_dir
+  bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  for lib in "$bin_dir/bbx-instance.d/pids.sh" "$bin_dir/deploy-scripts/instance/pids.sh"; do
+    if [[ -f "$lib" ]]; then . "$lib"; return 0; fi
+  done
+}
+
+# A service command claims pm2/<service>/launch-owner (an empty directory) for
+# its own run and removes it on the way out. Killed part-way it leaves the
+# directory behind, and every later start and stop fails with "already owned".
+# A lock is stale when it is at least 5 seconds old and no service command of
+# this user is alive, or when it is older than a command can hold it (the
+# 255-second settlement bound). Only an empty directory is ever removed.
+_bbx_clear_stale_launch_locks() {
+  local root="${BROWSERBOX_PM2_HOME:-${BB_CONFIG_DIR}/pm2}" lock now mtime age
+  for lock in "$root"/*/launch-owner; do
+    [[ -d "$lock" && ! -L "$lock" ]] || continue
+    now="$(date +%s)"
+    mtime="$(stat -f %m "$lock" 2>/dev/null || stat -c %Y "$lock" 2>/dev/null || printf '%s' "$now")"
+    age=$((now - mtime))
+    (( age >= 5 )) || continue
+    if pgrep -u "$(id -u)" -f 'browserbox pm2 (start|stop|restart|delete)' >/dev/null 2>&1; then
+      (( age > 300 )) || continue
+    fi
+    if rmdir "$lock" 2>/dev/null; then
+      printf 'Cleared a stale launch lock (%ss old): %s\n' "$age" "$lock" >&2
+    fi
+  done
+}
+
 kill_cf_tunnel() {
   local quiet="${1:-}"
   if [[ -f "$CF_PID_FILE" ]]; then
@@ -1008,7 +1068,10 @@ kill_cf_tunnel() {
     rm -f "$CF_PID_FILE"
   fi
   # Also kill any orphan cloudflared quick-tunnel processes started by this user
-  pkill -u "$(id -u)" -f "cloudflared.*tunnel.*--url" 2>/dev/null || true
+  local orphans
+  _bbx_load_default_pids
+  orphans="$(pgrep -u "$(id -u)" -f "cloudflared.*tunnel.*--url" 2>/dev/null | bbx_default_pids || true)"
+  [[ -z "$orphans" ]] || kill $orphans 2>/dev/null || true
 }
 
 # Version tracking and update lock files
@@ -1607,7 +1670,11 @@ load_config() {
     export http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY
     # Stop's native Chrome cleanup must see the same bare user.env assignment
     # as startup's existing BBX environment producer.
+    [[ -z "${BBX_CALLER_USER_DATA_DIR:-}" ]] || BBX_USER_DATA_DIR="$BBX_CALLER_USER_DATA_DIR"
     export BBX_USER_DATA_DIR
+    # Adopt-by-port reads the same in the environment or in the saved config.
+    [[ -z "${BBX_CALLER_ADOPT_CDP_PORT:-}" ]] || BBX_ADOPT_CDP_PORT="$BBX_CALLER_ADOPT_CDP_PORT"
+    [[ -z "${BBX_ADOPT_CDP_PORT:-}" ]] || export BBX_ADOPT_CDP_PORT
 
     # Explicit overrides are authoritative, but ambient localhost does not 
     # downgrade a saved non-localhost hostname or route domain.
@@ -2466,6 +2533,14 @@ setup() {
   fi
 
   load_config
+  # `bbx setup` typed by the caller saves the overrides the caller gave, and
+  # drops saved ones the caller no longer gives. A setup made by start or
+  # restart keeps what the saved config holds.
+  if [[ -n "${_bbx_setup_explicit:-}" ]]; then
+    _bbx_setup_explicit=""
+    BBX_USER_DATA_DIR="$BBX_CALLER_USER_DATA_DIR"
+    if [[ -n "$BBX_CALLER_ADOPT_CDP_PORT" ]]; then export BBX_ADOPT_CDP_PORT="$BBX_CALLER_ADOPT_CDP_PORT"; else unset BBX_ADOPT_CDP_PORT; fi
+  fi
   ensure_deps
   ensure_installation_id
 
@@ -2626,7 +2701,10 @@ setup() {
   for i in {-2..2}; do
     test_port_access $((setup_port+i)) || { printf "${RED}Quit software using these ports, or adjust firewall to allow ports $((setup_port-2))-$((setup_port+2))/tcp${NC}\n"; exit 1; }
   done
-  test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked${NC}\n"; exit 1; }
+  # An adopted browser already listens on its own port; BrowserBox launches none.
+  if [[ -z "${BBX_ADOPT_CDP_PORT:-}" ]]; then
+    test_port_access $((setup_port-3000)) || { printf "${RED}CDP port $((setup_port-3000)) blocked${NC}\n"; exit 1; }
+  fi
 
   # Persist hostname so save_config (EXIT trap) writes it to disk
   BBX_HOSTNAME="$setup_hostname"
@@ -2641,7 +2719,9 @@ setup() {
   fi
 
   # Call setup_bbpro, which writes to test.env
-  BBX_HOSTNAME="${BBX_HOSTNAME}" BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  BBX_HOSTNAME="${BBX_HOSTNAME}" BBX_MINIMAL_MODE="${BBX_MINIMAL_MODE:-}" LICENSE_KEY="${LICENSE_KEY}" \
+    BBX_USER_DATA_DIR="${BBX_USER_DATA_DIR:-}" BBX_ADOPT_CDP_PORT="${BBX_ADOPT_CDP_PORT:-}" \
+    setup_bbpro "${setup_args[@]}" || { printf "${RED}Setup failed${NC}\n"; exit 1; }
 
   # Append flipbook recording env vars to test.env if requested
   if [[ -n "$flipbook_record_dir" ]]; then
@@ -2927,6 +3007,7 @@ run() {
   # exit owner can release any reservation that certification created.
   (( transport_rc == 0 )) || return "$transport_rc"
 
+  _bbx_clear_stale_launch_locks
   # Start bbpro — keep stderr visible so failures aren't silent
   printf "${YELLOW}[startup] Starting BrowserBox services...${NC}\n"
   _bbx_progress services-begin
@@ -5065,7 +5146,7 @@ stop() {
 
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
     # Also stop any Cloudflare tunnel started by bbx cf-run
-    kill_cf_tunnel quiet
+    [[ -n "${BBX_ADOPT_CDP_PORT:-}${BBX_INSTANCE_NAME:-}" ]] || kill_cf_tunnel quiet
     # Clear login link so stale CF links aren't reused by next bbx run
     rm -f "${BB_CONFIG_DIR}/login.link"
 
@@ -5091,6 +5172,7 @@ stop() {
     # signals that can arrive asynchronously.
     trap '' TERM
 
+    _bbx_clear_stale_launch_locks
     run_quietly stop_bbpro || {
       printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"
       rm -f "$STOP_SENTINEL"
@@ -5105,17 +5187,19 @@ stop() {
     _bbx_reap_stragglers() {
       local pat='browserbox-(sound|devtools|microfilm)|(^|/)parec($| )'
       local pids
-      pids=$(pgrep -u "$USER" -f "$pat" 2>/dev/null || true)
+      # Helpers of a named instance are not the default stop's to reap.
+      _bbx_load_default_pids
+      pids=$(pgrep -u "$USER" -f "$pat" 2>/dev/null | bbx_default_pids || true)
       [[ -z "$pids" ]] && return 0
       kill $pids 2>/dev/null || true
       sleep 2
-      pids=$(pgrep -u "$USER" -f "$pat" 2>/dev/null || true)
+      pids=$(pgrep -u "$USER" -f "$pat" 2>/dev/null | bbx_default_pids || true)
       if [[ -n "$pids" ]]; then
         kill -9 $pids 2>/dev/null || true
         printf "${YELLOW}Reaped lingering helper processes.${NC}\n"
       fi
     }
-    _bbx_reap_stragglers
+    [[ -n "${BBX_ADOPT_CDP_PORT:-}${BBX_INSTANCE_NAME:-}" ]] || _bbx_reap_stragglers
 
     # Flipbook: finalize recording and deploy if BBX_FLIPBOOK_DIR is set.
     # All flipbook logic (claim, generation, cleanup) lives in the Node process.
@@ -5174,7 +5258,7 @@ gui() {
 
   if [[ "$(uname -s)" == "Darwin" ]]; then
     local open_args=(-n "$app") var
-    for var in PATH BBX_NO_UPDATE BBX_BROWSER_PATH CHROME_PATH BBX_USER_DATA_DIR BBX_MINIMAL_MODE \
+    for var in PATH BBX_NO_UPDATE BBX_BROWSER_PATH CHROME_PATH BBX_USER_DATA_DIR BBX_ADOPT_CDP_PORT BBX_MINIMAL_MODE \
       BBX_DOCKER_IMAGE BBX_DOCKER_CONTEXT BBX_DOCKER_REPOSITORY BBX_DOCKER_HOME \
       BBX_SSLCERTS_DIR SSLCERTS_DIR XDG_CONFIG_HOME LICENSE_KEY; do
       if [[ -n "${!var:-}" ]]; then open_args+=(--env "${var}=${!var}"); fi
@@ -6416,6 +6500,7 @@ _tu_run() {
   [[ -n "${BBX_DONT_KILL_CHROME_ON_STOP:-}" ]] && printf -v _env_prefix '%s; export BBX_DONT_KILL_CHROME_ON_STOP=%q' "$_env_prefix" "$BBX_DONT_KILL_CHROME_ON_STOP"
   [[ -n "${BBX_CLEAN_SLATE:-}" ]] && printf -v _env_prefix '%s; export BBX_CLEAN_SLATE=%q' "$_env_prefix" "$BBX_CLEAN_SLATE"
   [[ -n "${BBX_USER_DATA_DIR:-}" ]] && printf -v _env_prefix '%s; export BBX_USER_DATA_DIR=%q' "$_env_prefix" "$BBX_USER_DATA_DIR"
+  [[ -n "${BBX_ADOPT_CDP_PORT:-}" ]] && printf -v _env_prefix '%s; export BBX_ADOPT_CDP_PORT=%q' "$_env_prefix" "$BBX_ADOPT_CDP_PORT"
   # Fleet-wide BrowserBox defaults (populated only by bbx fleet from
   # its validated defaults.env; empty for ordinary --for usage).
   if [[ -n "${BBX_FLEET_EXTRA_ENV+x}" ]]; then
@@ -10705,7 +10790,7 @@ usage() {
 
     printf "${BOLD}SETUP & MANAGEMENT${NC}\n"
     printf "  ${GREEN}uninstall${NC}      Remove all BrowserBox components.\n"
-    printf "  ${GREEN}setup${NC}          Configure core options. ${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z] [--flipbook-record <dir>] [--flipbook-description <text>]${NC}\n"
+    printf "  ${GREEN}setup${NC}          Configure core options. ${BOLD}bbx setup [--port|-p <p> | --free-port] [--hostname|-h <h>] [--token|-t <t>] [--zeta|-z] [--backend <http|https>] [--flipbook-record <dir>] [--flipbook-description <text>]${NC}\n"
     printf "  ${CYAN}activate${NC}       Activate a license for more users. ${BOLD}bbx activate [number_of_users]${NC}\n"
     printf "  ${GREEN}certify${NC}        Validate your current license status.\n"
     printf "  ${GREEN}update${NC}         Update BrowserBox to a specific or latest version. ${BOLD}bbx update [<version>|--latest-rc]${NC}\n"
@@ -10716,7 +10801,7 @@ usage() {
     printf "  ${GREEN}gui${NC}            Install and open the desktop app; prints where it lives. ${BOLD}bbx gui [--reinstall]${NC}\n\n"
 
     printf "${BOLD}CORE ACTIONS${NC}\n"
-    printf "  ${GREEN}start${NC}           Start BrowserBox for the current user. ${BOLD}bbx start [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
+    printf "  ${GREEN}start${NC}           Start BrowserBox for the current user. ${BOLD}bbx start [--port|-p <port> | --free-port] [--hostname|-h <hostname>]${NC}\n"
     printf "  ${GREEN}stop${NC}            Stop the BrowserBox instance for the current user.\n"
     printf "  ${GREEN}start-as${NC}        Run a new instance as a different OS user. ${BOLD}bbx start-as [--temporary] [--port <p> | --free-port] [username]${NC}\n"
     printf "  ${GREEN}stop-user${NC}       Stop a BrowserBox instance for a specific user. ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
@@ -10726,7 +10811,7 @@ usage() {
     printf "  ${CYAN}--for <user>${NC}    Run any supported command on behalf of another user.\n"
     printf "                  The operator provides privilege; the target user owns runtime.\n"
     printf "                  ${BOLD}bbx <command> --for <user> [args...]${NC}\n"
-    printf "                  Supported: setup, start, stop, status, ng-start\n\n"
+    printf "                  Supported: setup, start, stop, status, ng-start, policy\n\n"
 
     printf "${BOLD}ADVANCED RUNNERS & TUNNELS${NC}\n"
     printf "  ${GREEN}docker${NC}          Manage a named Docker deployment. ${BOLD}bbx docker help${NC}\n"
@@ -10744,6 +10829,17 @@ usage() {
     printf "  ${GREEN}--faq${NC}           Display frequently asked questions.\n"
     printf "  ${GREEN}--version${NC}       Show the version of the bbx CLI.\n"
     printf "  ${GREEN}--help${NC}          Show this help screen.\n\n"
+
+    printf "${BOLD}ENVIRONMENT OVERRIDES${NC}\n"
+    printf "  BBX_USER_DATA_DIR          Dedicated Chrome user-data root (default: ~/.config/dosaygo/bbpro/browser-cache; saved by setup).\n"
+    printf "  BBX_ADOPT_CDP_PORT         Adopt an existing browser on loopback DevTools port 1-65535 (default: unset; saved by setup).\n"
+    printf "  BBX_MAX_FPS                Per-viewer frame rate cap as a positive integer (default: unset, no cap).\n"
+    printf "  BBX_MAX_EGRESS_MB_PER_MIN  Combined frame and download egress cap in MB/min (default: unset, no cap).\n"
+    printf "  BBX_LOW_END_MODE           Chrome low-end device mode; off (false) by default, true enables smaller memory mode.\n"
+    printf "  BBX_INSTANCES_HOME         Parent directory for additional per-user home directories (default: ~/.config/dosaygo/bbx-instances).\n"
+    printf "  BBX_INSTANCE_NAME          Per-user home directory name scoping start/stop process cleanup (default: unset).\n"
+    printf "  BBX_NO_AUDIO               Disable remote audio service when true (default: unset).\n"
+    printf "  BBX_NO_UPDATE              Disable automatic and explicit updates when true (default: unset).\n\n"
     printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2026${NC}\n"
 }
 
@@ -11129,7 +11225,7 @@ case "$1" in
       exit 0
       ;;
     uninstall) shift 1; uninstall "$@";;
-    setup) shift 1; setup "$@";;
+    setup) shift 1; _bbx_setup_explicit=1; setup "$@";;
     certify) shift 1; certify "$@";;
     run|start) shift 1; run "$@";;
     restart) shift 1; restart "$@";;

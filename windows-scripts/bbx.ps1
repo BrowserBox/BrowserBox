@@ -541,7 +541,10 @@ function Stop-BrowserBoxMain {
         Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
         Write-Host "Stopped BrowserBox main (PID: $ProcessId)." -ForegroundColor Green
     } else {
-        # Fallback: stop any browserbox.exe processes owned by this user
+        # Fallback: stop any browserbox.exe processes owned by this user.
+        # A named instance stops by its recorded pids only; this sweep would
+        # take the user's other instances down.
+        if ($env:BBX_INSTANCE_NAME) { return }
         Get-Process -Name "browserbox" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Write-Host "Stopped browserbox processes (fallback)." -ForegroundColor Yellow
     }
@@ -876,7 +879,7 @@ function Show-Help {
     Write-Host "Usage: bbx <command> [options]" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "SETUP & MANAGEMENT" -ForegroundColor Cyan
-    Write-Host "  install         Install BrowserBox binary and CLI" -ForegroundColor White
+    Write-Host "  install         Install BrowserBox binary and CLI (or Install-BrowserBox [-Help])" -ForegroundColor White
     Write-Host "  update          Update BrowserBox to the latest version" -ForegroundColor White
     Write-Host "  uninstall       Remove BrowserBox from this machine" -ForegroundColor White
     Write-Host "  setup           Configure core options. bbx setup [-Hostname <h>] [-Port <p> | -FreePort] [-Token <t>]" -ForegroundColor White
@@ -908,6 +911,17 @@ function Show-Help {
     Write-Host "  --version, -v   Show version information" -ForegroundColor White
     Write-Host "  --help, -h      Show this help message" -ForegroundColor White
     Write-Host "  --help-json     Show the GUI command catalogue" -ForegroundColor White
+    Write-Host ""
+    Write-Host "ENVIRONMENT OVERRIDES" -ForegroundColor Cyan
+    Write-Host "  BBX_USER_DATA_DIR          Dedicated Chrome user-data root (default: %USERPROFILE%\.config\dosaygo\bbpro\browser-cache)" -ForegroundColor White
+    Write-Host "  BBX_ADOPT_CDP_PORT         Adopt an existing browser on loopback DevTools port 1-65535 (default: unset)" -ForegroundColor White
+    Write-Host "  BBX_MAX_FPS                Per-viewer frame rate cap as a positive integer (default: unset, no cap)" -ForegroundColor White
+    Write-Host "  BBX_MAX_EGRESS_MB_PER_MIN  Combined frame and download egress cap in MB/min (default: unset, no cap)" -ForegroundColor White
+    Write-Host "  BBX_LOW_END_MODE           Chrome low-end device mode; off (false) by default, true enables smaller memory mode" -ForegroundColor White
+    Write-Host "  BBX_INSTANCES_HOME         Parent directory for additional per-user home directories (default: %USERPROFILE%\.config\dosaygo\bbx-instances)" -ForegroundColor White
+    Write-Host "  BBX_INSTANCE_NAME          Per-user home directory name scoping start/stop process cleanup (default: unset)" -ForegroundColor White
+    Write-Host "  BBX_NO_AUDIO               Disable remote audio service when true (default: unset)" -ForegroundColor White
+    Write-Host "  BBX_NO_UPDATE              Disable automatic and explicit updates when true (default: unset)" -ForegroundColor White
     Write-Host ""
     Write-Host "Not available on Windows: audio (Windows Server multi-user RDP audio needs" -ForegroundColor Gray
     Write-Host "per-seat licensing), fleet, start-as and stop-user (Linux user pools)." -ForegroundColor Gray
@@ -1196,6 +1210,21 @@ if (-not $argv -or $argv.Count -eq 0) {
 }
 
 $Command = [string]$argv[0]
+
+# Named instances: `bbx instance <command> NAME`, the same shape as on Unix.
+# Every other bbx command stays on the default instance and never reaches here.
+if ($Command -eq "instance") {
+    $instanceScript = Join-Path $PSScriptRoot "instance.ps1"
+    if (-not (Test-Path $instanceScript)) {
+        [Console]::Error.WriteLine("Instance commands are missing; reinstall BrowserBox commands.")
+        exit 1
+    }
+    $instanceArgs = @(); if ($argv.Count -gt 1) { $instanceArgs = @($argv[1..($argv.Count - 1)]) }
+    $env:BBX_INSTANCE_BBX = $PSCommandPath
+    & $instanceScript @instanceArgs
+    exit $LASTEXITCODE
+}
+
 $CommandArgs = @()
 if ($argv.Count -gt 1) { $CommandArgs = @($argv[1..($argv.Count - 1)]) }
 
