@@ -10839,17 +10839,6 @@ usage() {
     printf "  ${GREEN}--faq${NC}           Display frequently asked questions.\n"
     printf "  ${GREEN}--version${NC}       Show the version of the bbx CLI.\n"
     printf "  ${GREEN}--help${NC}          Show this help screen.\n\n"
-
-    printf "${BOLD}ENVIRONMENT OVERRIDES${NC}\n"
-    printf "  BBX_USER_DATA_DIR          Dedicated Chrome user-data root (default: ~/.config/dosaygo/bbpro/browser-cache; saved by setup).\n"
-    printf "  BBX_ADOPT_CDP_PORT         Adopt an existing browser on loopback DevTools port 1-65535 (default: unset; saved by setup).\n"
-    printf "  BBX_MAX_FPS                Per-viewer frame rate cap as a positive integer (default: unset, no cap).\n"
-    printf "  BBX_MAX_EGRESS_MB_PER_MIN  Combined frame and download egress cap in MB/min (default: unset, no cap).\n"
-    printf "  BBX_LOW_END_MODE           Chrome low-end device mode; off (false) by default, true enables smaller memory mode.\n"
-    printf "  BBX_INSTANCES_HOME         Parent directory for additional per-user home directories (default: ~/.config/dosaygo/bbx-instances).\n"
-    printf "  BBX_INSTANCE_NAME          Per-user home directory name scoping start/stop process cleanup (default: unset).\n"
-    printf "  BBX_NO_AUDIO               Disable remote audio service when true (default: unset).\n"
-    printf "  BBX_NO_UPDATE              Disable automatic and explicit updates when true (default: unset).\n\n"
     printf "  ${NC}bbx CLI version ${VERSION}  |  © DOSAYGO Corp 2018-2026${NC}\n"
 }
 

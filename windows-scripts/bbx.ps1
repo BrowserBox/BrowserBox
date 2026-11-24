@@ -912,17 +912,6 @@ function Show-Help {
     Write-Host "  --help, -h      Show this help message" -ForegroundColor White
     Write-Host "  --help-json     Show the GUI command catalogue" -ForegroundColor White
     Write-Host ""
-    Write-Host "ENVIRONMENT OVERRIDES" -ForegroundColor Cyan
-    Write-Host "  BBX_USER_DATA_DIR          Dedicated Chrome user-data root (default: %USERPROFILE%\.config\dosaygo\bbpro\browser-cache)" -ForegroundColor White
-    Write-Host "  BBX_ADOPT_CDP_PORT         Adopt an existing browser on loopback DevTools port 1-65535 (default: unset)" -ForegroundColor White
-    Write-Host "  BBX_MAX_FPS                Per-viewer frame rate cap as a positive integer (default: unset, no cap)" -ForegroundColor White
-    Write-Host "  BBX_MAX_EGRESS_MB_PER_MIN  Combined frame and download egress cap in MB/min (default: unset, no cap)" -ForegroundColor White
-    Write-Host "  BBX_LOW_END_MODE           Chrome low-end device mode; off (false) by default, true enables smaller memory mode" -ForegroundColor White
-    Write-Host "  BBX_INSTANCES_HOME         Parent directory for additional per-user home directories (default: %USERPROFILE%\.config\dosaygo\bbx-instances)" -ForegroundColor White
-    Write-Host "  BBX_INSTANCE_NAME          Per-user home directory name scoping start/stop process cleanup (default: unset)" -ForegroundColor White
-    Write-Host "  BBX_NO_AUDIO               Disable remote audio service when true (default: unset)" -ForegroundColor White
-    Write-Host "  BBX_NO_UPDATE              Disable automatic and explicit updates when true (default: unset)" -ForegroundColor White
-    Write-Host ""
     Write-Host "Not available on Windows: audio (Windows Server multi-user RDP audio needs" -ForegroundColor Gray
     Write-Host "per-seat licensing), fleet, start-as and stop-user (Linux user pools)." -ForegroundColor Gray
     Write-Host "Recognized binary commands are passed through; unknown or unsupported commands exit 2." -ForegroundColor Gray
